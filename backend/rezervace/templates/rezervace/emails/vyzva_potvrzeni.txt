@@ -1,0 +1,27 @@
+Dobrý den {{ rezervace.kontaktni_jmeno }},
+
+
+
+děkujeme za rezervaci v salonu {{ salon.name }}.
+
+Termín zatím není potvrzený — prosím potvrďte ho kliknutím na odkaz níže (platí {{ platnost_hodin }} h):
+
+
+
+{{ potvrzeni_url }}
+
+
+
+Navrhovaný termín: {{ rezervace.zacatek|date:"d.m.Y" }} v {{ rezervace.zacatek|time:"H:i" }}
+
+Služby: {{ sluzby }}
+
+{% if rezervace.zamestnanec %}Pracovník: {{ rezervace.zamestnanec.jmeno }}{% endif %}
+
+
+
+Pokud jste rezervaci nevytvářeli, tento e-mail ignorujte — termín se po vypršení platnosti sám zruší.
+
+
+
+{{ salon.name }}

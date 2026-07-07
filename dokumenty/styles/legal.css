@@ -1,0 +1,266 @@
+/* Ulov Rezervaci — právní / compliance dokumenty (tisk / PDF) */
+
+@page {
+  size: A4;
+  margin: 22mm 20mm 24mm 20mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 11pt;
+}
+
+body {
+  font-family: "Segoe UI", "Source Sans 3", Calibri, Arial, sans-serif;
+  color: #1a1a1a;
+  line-height: 1.55;
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 12mm 0 20mm;
+  background: #fff;
+}
+
+.doc-header {
+  border-bottom: 2px solid #1e3a5f;
+  padding-bottom: 14px;
+  margin-bottom: 28px;
+}
+
+.doc-brand {
+  font-size: 9pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5c6b7a;
+  margin: 0 0 6px;
+}
+
+.doc-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20pt;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0 0 4px;
+  line-height: 1.25;
+}
+
+.doc-subtitle {
+  font-size: 11pt;
+  color: #444;
+  margin: 0;
+}
+
+.doc-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f4f7fa;
+  border-radius: 4px;
+  font-size: 9.5pt;
+}
+
+.doc-meta dt {
+  font-weight: 600;
+  color: #5c6b7a;
+  margin: 0;
+}
+
+.doc-meta dd {
+  margin: 0;
+}
+
+.part-title {
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1e3a5f;
+  margin: 32px 0 8px;
+  padding-top: 8px;
+  border-top: 1px solid #d0d8e0;
+}
+
+.article {
+  margin-bottom: 24px;
+  page-break-inside: avoid;
+}
+
+.article h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13pt;
+  color: #1e3a5f;
+  margin: 0 0 10px;
+}
+
+.article h3 {
+  font-size: 11pt;
+  color: #333;
+  margin: 16px 0 8px;
+}
+
+.article p,
+.article li {
+  margin: 0 0 8px;
+  text-align: justify;
+}
+
+.article ol {
+  margin: 0 0 12px;
+  padding-left: 1.4em;
+}
+
+.article ol > li {
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.article ul {
+  margin: 4px 0 12px;
+  padding-left: 1.4em;
+}
+
+.party-box {
+  margin: 12px 0 20px;
+  padding: 14px 16px;
+  border-left: 3px solid #1e3a5f;
+  background: #fafbfc;
+}
+
+.party-box p {
+  margin: 0 0 6px;
+  text-align: left;
+}
+
+.party-box p:last-child {
+  margin-bottom: 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin: 12px 0 16px;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #c5ced6;
+  padding: 7px 8px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.data-table th {
+  background: #1e3a5f;
+  color: #fff;
+  font-weight: 600;
+}
+
+.data-table tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.table-note {
+  font-size: 9pt;
+  color: #555;
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+.signatures {
+  margin-top: 40px;
+  page-break-inside: avoid;
+}
+
+.signatures .place-date {
+  margin-bottom: 28px;
+}
+
+.sig-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.sig-block h3 {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #1e3a5f;
+  margin: 0 0 12px;
+}
+
+.sig-line {
+  border-bottom: 1px solid #333;
+  height: 28px;
+  margin: 20px 0 8px;
+}
+
+.sig-label {
+  font-size: 9pt;
+  color: #666;
+}
+
+.annex-ref {
+  padding: 14px 16px;
+  background: #eef4fa;
+  border: 1px solid #c5d8eb;
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.footer-note {
+  margin-top: 32px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  font-size: 8.5pt;
+  color: #777;
+  text-align: center;
+}
+
+.page-break {
+  page-break-before: always;
+}
+
+@media print {
+  body {
+    padding: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+.print-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #1e3a5f;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  font-size: 10pt;
+}
+
+.print-bar button {
+  background: #fff;
+  color: #1e3a5f;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+body.has-print-bar {
+  padding-top: 52px;
+}

@@ -1,0 +1,7 @@
+Dobrý den {{ rezervace.kontaktni_jmeno }},
+
+Vaše rezervace v salonu {{ salon.name }} byla zrušena ({{ kdo }}).
+
+Původní termín: {{ rezervace.zacatek|date:"d.m.Y" }} v {{ rezervace.zacatek|time:"H:i" }}
+
+{{ salon.name }}

@@ -1,0 +1,40 @@
+Dobrý den {{ rezervace.kontaktni_jmeno }},
+
+
+
+Vaše rezervace v salonu {{ salon.name }} byla potvrzena.
+
+
+
+Termín: {{ rezervace.zacatek|date:"d.m.Y" }} v {{ rezervace.zacatek|time:"H:i" }}
+
+Služby: {{ sluzby }}
+
+{% if rezervace.zamestnanec %}Pracovník: {{ rezervace.zamestnanec.jmeno }}{% endif %}
+
+
+
+Adresa: {{ salon.address }}
+
+Telefon: {{ salon.phone }}
+
+
+
+Storno rezervace (bez přihlášení):
+
+{{ storno_url }}
+
+
+
+Moje rezervace (přehled všech termínů):
+
+{{ rezervace_url }} → záložka „Moje rezervace“
+
+Pokud ještě nemáte heslo, použijte stejný e-mail a tlačítko „Zapomenuté heslo“ – nové heslo vám přijde e-mailem.
+
+
+
+Těšíme se na vás!
+
+{{ salon.name }}
+

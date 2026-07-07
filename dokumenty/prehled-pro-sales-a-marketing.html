@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ULOV KLIENTY — přehled pro sales a marketing</title>
+  <link rel="stylesheet" href="styles/legal.css">
+  <link rel="stylesheet" href="styles/sales.css">
+</head>
+<body class="has-print-bar">
+  <div class="print-bar no-print">
+    <span>ULOV KLIENTY — Přehled pro sales a marketing (náhled / PDF)</span>
+    <button type="button" onclick="window.print()">Uložit jako PDF / Tisk</button>
+  </div>
+
+  <header class="doc-header sales-header">
+    <p class="doc-brand">ULOV KLIENTY · Ulov Rezervaci</p>
+    <h1 class="doc-title">Přehled pro sales a marketing</h1>
+    <p class="doc-subtitle">Web salonu na míru · rezervace · administrace · e-maily · recenze</p>
+    <dl class="doc-meta">
+      <div><dt>Verze</dt><dd>červen 2026</dd></div>
+      <div><dt>Web</dt><dd>www.ulovklienty.cz</dd></div>
+      <div><dt>Interní</dt><dd>sales &amp; marketing</dd></div>
+    </dl>
+  </header>
+
+  <article class="article">
+<p><strong>Produkt:</strong> Ulov Rezervaci (web + rezervační systém)</p>
+<p><strong>Značka:</strong> <a href="https://www.ulovklienty.cz">ULOV KLIENTY</a> · <a href="https://www.ulovsalon.cz">ULOV SALON</a></p>
+<p><strong>Verze dokumentu:</strong> červen 2026</p>
+<p><strong>Účel:</strong> obchodní a marketingové představení — web salonu na míru, administrace, rezervace, e-maily, recenze, QR platby, NO-show a multi-salon architektura.</p>
+<hr class="section-break">
+<h2>Executive summary</h2>
+<p><strong>ULOV KLIENTY</strong> dodává salonům krásy a wellness kompletní digitální řešení: <strong>originální web ručně na míru</strong> (ne generická šablona) a pod ním výkonný systém <strong>Ulov Rezervaci</strong> — online rezervace, e-maily, kalendář, QR platby a správa provozu.</p>
+<p>Salon získá <strong>web + rezervace + administrace + notifikace v jednom</strong>. Nemusí skládat řešení z pěti různých nástrojů ani platit agenturu za každou drobnou změnu.</p>
+<p><strong>Prezentační web pro zákazníky:</strong> složka <code>presentace/</code> — landing s ukázkami, výhodami a formulářem nezávazné poptávky (<code>POST /api/poptavka/</code>).</p>
+<hr class="section-break">
+<h2>Hlavní výhody projektu</h2>
+<h3>Pro majitele salonu (obchodní přínos)</h3>
+<table class="data-table"><thead><tr><th>Výhoda</th><th>Co to znamená v praxi</th></tr></thead><tbody><tr><td><strong>Web, který prodává termíny</strong></td><td>Ne jen fotky — zákazník si rovnou rezervuje. 24/7, i mimo otevírací dobu.</td></tr><tr><td><strong>Důvěra a viditelnost</strong></td><td>Bez profesionálního webu může být i špičková služba málo důvěryhodná. Web + rezervace = „tady se můžete spolehnout“.</td></tr><tr><td><strong>Méně telefonátů a chaosu</strong></td><td>Kalendář, personál, termíny a notifikace na jednom místě. Majitel má přehled, zaměstnanec vidí jen své.</td></tr><tr><td><strong>Více recenzí</strong></td><td>Automatická výzva po návštěvě může <strong>zvýšit získávání hodnocení až o 100 %</strong> — lepší Google, více nových klientů.</td></tr><tr><td><strong>Ochrana před NO-show</strong></td><td>Archiv, varování a blokace problematických e-mailů <strong>v rámci salonu</strong> (GDPR, data se mezi salony nesdílí).</td></tr><tr><td><strong>QR platby</strong></td><td>Žádost o úhradu e-mailem s QR kódem + QR na displeji kadeřnice (SPAYD, české banky).</td></tr><tr><td><strong>Jeden dodavatel</strong></td><td>Web, booking, e-maily, platby, statistiky — bez fragmentace nástrojů.</td></tr></tbody></table>
+<h3>Prodejní diferenciátory (proč my, ne šablona)</h3>
+<table class="data-table"><thead><tr><th>Výhoda</th><th>Detail</th></tr></thead><tbody><tr><td><strong>Brand ručně na míru</strong></td><td>Žádné nudné šablony, které sdílí tisíce provozoven. Barvy, typografie, fotky, texty — vše podle domluvy, originálně.</td></tr><tr><td><strong>Čtyři ukázkové identity</strong></td><td>Elegance (luxus), Krása (spa), CRAZY (neon), U dvou přátel (kavárna) — stejná platforma, čtyři zcela odlišné světy.</td></tr><tr><td><strong>Přátelská administrace</strong></td><td>Salon si sám mění otevírací dobu, ceník, fotky, novinky, dovolené, kolegy — intuitivně, bez programátora.</td></tr><tr><td><strong>„Uděláme to za vás“</strong></td><td>Nechce majitel řešit panel sám? Nastavení i úpravy obsahu zvládneme my.</td></tr><tr><td><strong>Support 7 dní v týdnu</strong></td><td>Nejsme anonymní SaaS — pomoc s nastavením, školením a provozem každý den.</td></tr><tr><td><strong>GDPR připraveno</strong></td><td>Smlouvy DPA, ROPA, audit log, retence, žádný marketing zákazníkům bez souhlasu.</td></tr><tr><td><strong>Responzivní na mobilech</strong></td><td>Web i rezervace fungují na telefonu — včetně přihlášení a administrace.</td></tr></tbody></table>
+<h3>Technické výhody (důvěryhodnost u náročnějšího klienta)</h3>
+<ul>
+<li>Jeden backend, více salonů — každý izolovaný (<code>salon_id</code>), vlastní SMTP, vlastní branding.</li>
+<li>Otevírací doba <strong>automaticky</strong> z rozvrhu aktivního personálu — jeden zdroj pravdy.</li>
+<li>Potvrzení rezervace e-mailem včetně odkazu na potvrzení termínu.</li>
+<li>Cron: připomínky, děkovné e-maily s recenzí, životní cyklus rezervací.</li>
+<li>Bunny.net CDN pro rychlé načítání fotek.</li>
+</ul>
+<hr class="section-break">
+<h2>1. Veřejný web salonu</h2>
+<p>Každý salon má <strong>vlastní web</strong> napojený na centrální backend. Obsah se načítá z databáze — změna v administraci se hned projeví na webu.</p>
+<h3>Sekce webu</h3>
+<table class="data-table"><thead><tr><th>Sekce</th><th>Co zákazník vidí</th></tr></thead><tbody><tr><td><strong>Úvod / O nás</strong></td><td>Název, popis, hero fotka, kontakt, CTA <strong>Rezervovat termín</strong></td></tr><tr><td><strong>Galerie</strong></td><td>Fotogalerie s lightboxem</td></tr><tr><td><strong>Personál</strong></td><td>Karty týmu — foto, specializace, popis, týdenní rozvrh</td></tr><tr><td><strong>Ceník</strong></td><td>Služby s cenami v Kč (stejné položky jako v rezervacích)</td></tr><tr><td><strong>Novinky</strong></td><td>Aktuality s datem a volitelným obrázkem</td></tr><tr><td><strong>Kontakt</strong></td><td>Adresa, telefon, e-mail, <strong>otevírací doba</strong></td></tr></tbody></table>
+<h3>Klíčové vlastnosti webu</h3>
+<ul>
+<li><strong>Responzivní design</strong> — mobil, tablet, desktop (všechny ukázkové salony otestované na mobilech).</li>
+<li><strong>Ručně navržený vzhled</strong> — ne katalogová šablona; každý salon může mít zcela jinou identitu.</li>
+<li><strong>Otevírací doba automaticky</strong> ze sjednocení pracovní doby aktivního personálu.</li>
+<li><strong>Personál na webu = personál v rezervacích</strong> — jeden zdroj pravdy.</li>
+<li><strong>Rezervační stránka</strong> ve stejném designu jako hlavní web.</li>
+<li><strong>Prázdné sekce se schovávají</strong> — galerie bez fotek nebo personál bez členů se na veřejném webu nezobrazí.</li>
+<li><strong>Patička tvůrce</strong> — diskrétní branding ULOV KLIENTY / ULOV SALON (lze stylovat podle salonu).</li>
+</ul>
+<h3>Ukázkové salony (demo)</h3>
+<table class="data-table"><thead><tr><th>Salon</th><th>Styl</th><th>Typ</th><th>Port (dev)</th><th>Složka</th></tr></thead><tbody><tr><td><strong>Salon Elegance</strong></td><td>Tmavý luxus, zlaté akcenty</td><td>Kadeřnictví</td><td>5500</td><td><code>salon1/</code></td></tr><tr><td><strong>Studio Krása</strong></td><td>Světlé spa, měkké barvy</td><td>Kosmetika</td><td>5501</td><td><code>salon2/</code></td></tr><tr><td><strong>CRAZY</strong></td><td>Neon, hype marketing</td><td>Kadeřnictví</td><td>5502</td><td><code>salon3/</code></td></tr><tr><td><strong>U dvou přátel</strong></td><td>Francouzská kavárna, mobilní rám</td><td>Barbershop / kavárna</td><td>5503</td><td><code>salon4/</code></td></tr></tbody></table>
+<p><strong>Spuštění dema:</strong> doporučeně jeden server z kořene projektu (<code>python -m http.server 8080</code>) → <code>http://localhost:8080/presentace/</code> a <code>…/salon1/</code> atd. Viz <code>README.md</code>.</p>
+<hr class="section-break">
+<h2>2. Administrace webu (⚙ panel)</h2>
+<p>Přístup přes tlačítko <strong>⚙</strong> vpravo dole. <strong>Přátelské rozhraní</strong> — majitel zvládne většinu úprav sám; pokud nechce, uděláme to za něj.</p>
+<h3>Co si salon spravuje sám</h3>
+<table class="data-table"><thead><tr><th>Oblast</th><th>Možnosti</th></tr></thead><tbody><tr><td><strong>Základní údaje</strong></td><td>Název, popis, adresa, telefon, e-mail</td></tr><tr><td><strong>Obrázky</strong></td><td>Hero fotka, galerie (Bunny.net CDN), mazání a výměna</td></tr><tr><td><strong>Personál (web)</strong></td><td>Jméno, specializace, popis, foto, rozvrh Po–Ne, zobrazení na webu</td></tr><tr><td><strong>Ceník</strong></td><td>Služby a ceny — automaticky služby pro online rezervace</td></tr><tr><td><strong>Novinky</strong></td><td>Nadpis, text, volitelný obrázek</td></tr><tr><td><strong>E-mail</strong></td><td>SMTP salonu, URL rezervací, test odeslání</td></tr><tr><td><strong>Otevírací doba</strong></td><td>Odvozena z personálu; lze ladit přes rozvrhy a absence</td></tr></tbody></table>
+<h3>Role majitele vs. zaměstnanec</h3>
+<ul>
+<li><strong>Majitel (administrátor)</strong> — správa salonu, kalendář, nastavení, personál. <strong>Neprovádí služby</strong> — není v nabídce pro rezervaci, nemá rezervační rozvrh jako kadeřník.</li>
+<li><strong>Kdo stříhá / provádí služby</strong> — samostatný účet jako <strong>zaměstnanec</strong> s vlastním rozvrhem a kalendářem.</li>
+<li>Oddělené přihlášení personálu — vlastní session, bez „přihlášen bez přihlášení“ chyb.</li>
+</ul>
+<h3>Bezpečnost</h3>
+<ul>
+<li>Přístup chráněn heslem (nastavitelné v backendu).</li>
+<li>Veřejný web neobsahuje technické návody typu „nahraj v administraci“ — chybové stavy jsou uživatelsky srozumitelné.</li>
+</ul>
+<hr class="section-break">
+<h2>3. Rezervační systém (pro zákazníky)</h2>
+<p>Stránka <strong>Rezervace</strong> — záložky: <strong>Nová rezervace</strong> · <strong>Moje rezervace</strong> · <strong>Personál</strong> (admin).</p>
+<h3>Online rezervace — 4 kroky</h3>
+<ol>
+<li><strong>Služby</strong> — jedna nebo více najednou, délka, cena, celkový čas.</li>
+<li><strong>Termín</strong> — výběr kadeřníka nebo „Je mi to jedno“, volné sloty s ohledem na rozvrh, absence, svátky, blokace, rezervu mezi klienty.</li>
+<li><strong>Údaje</strong> — jméno/přezdívka, e-mail, poznámka, GDPR (plnění smlouvy, ne marketingový souhlas).</li>
+<li><strong>Potvrzení</strong> — odkaz na storno, soubor <strong>.ics</strong> do kalendáře.</li>
+</ol>
+<h3>Zákaznický účet</h3>
+<ul>
+<li>Registrace, přihlášení, zapomenuté heslo.</li>
+<li>Přehled budoucích a minulých rezervací, storno jedním klikem.</li>
+<li>Rezervace <strong>bez registrace</strong> u první návštěvy — stačí e-mail.</li>
+</ul>
+<h3>Potvrzení e-mailem</h3>
+<ul>
+<li>Po vytvoření rezervace zákazník dostane e-mail s odkazem na <strong>potvrzení termínu</strong> (snižuje no-show).</li>
+<li>Storno bez přihlášení přes unikátní odkaz v e-mailu.</li>
+</ul>
+<hr class="section-break">
+<h2>4. Administrace rezervací (Personál)</h2>
+<h3>Kalendář</h3>
+<ul>
+<li>Měsíční pohled, detail dne, timeline rezervací.</li>
+<li>Akce: dokončeno · NO-show · žádost o platbu (QR).</li>
+</ul>
+<h3>Personál a provoz</h3>
+<ul>
+<li>Zaměstnanci aktivní/neaktivní, rozvrhy, absence (dovolená, nemoc).</li>
+<li>Ruční rezervace (telefon, osobně).</li>
+<li>Číslo účtu pro QR platby u každé kadeřnice.</li>
+</ul>
+<h3>Statistiky</h3>
+<ul>
+<li>Rezervace, dokončení, storna, NO-show.</li>
+<li>Top služby a nejvytíženější zaměstnanci.</li>
+</ul>
+<h3>NO-show archiv</h3>
+<ul>
+<li>Pouze v daném salonu, bez sdílení mezi pobočkami.</li>
+<li>2× NO-show → problematický, 3× → auto-blokace online rezervací.</li>
+<li>Ruční blokace kdykoli.</li>
+</ul>
+<h3>Nastavení</h3>
+<ul>
+<li>Interval slotů, min./max. předstih, limit storna.</li>
+<li>URL recenze (Google apod.).</li>
+<li>4 konfigurovatelné e-mailové notifikace s tagy.</li>
+</ul>
+<hr class="section-break">
+<h2>5. E-maily a notifikace</h2>
+<h3>Okamžité e-maily</h3>
+<table class="data-table"><thead><tr><th>E-mail</th><th>Kdy</th></tr></thead><tbody><tr><td>Potvrzení rezervace</td><td>Po vytvoření</td></tr><tr><td>Výzva k potvrzení termínu</td><td>S odkazem v e-mailu</td></tr><tr><td>Storno</td><td>Zákazník + salon</td></tr><tr><td>Zapomenuté heslo</td><td>Na požádání</td></tr><tr><td>Test SMTP</td><td>Z administrace</td></tr></tbody></table>
+<h3>4 konfigurovatelné notifikace</h3>
+<table class="data-table"><thead><tr><th>#</th><th>Účel</th><th>Timing</th></tr></thead><tbody><tr><td>1</td><td>Připomínka před termínem</td><td>cca +24 h předem (cron)</td></tr><tr><td>2</td><td>Poděkování + <strong>prosba o recenzi</strong></td><td>cca −2 h po službě (cron)</td></tr><tr><td>3</td><td>Upozornění na NO-show</td><td>ručně</td></tr><tr><td>4</td><td>Žádost o platbu + QR</td><td>ručně</td></tr></tbody></table>
+<p><strong>Recenze:</strong> notifikace č. 2 automaticky vede spokojené zákazníky k hodnocení — bez ručního prosazování u každého klienta. Cíl: <strong>až o 100 % vyšší míra získaných recenzí</strong> oproti bez systému.</p>
+<h3>SMTP</h3>
+<ul>
+<li>Každý salon vlastní SMTP a odesílatele (e-mail salonu).</li>
+<li>Pro testování lze zkopírovat nastavení referenčního salonu: <code>python manage.py sync_smtp_salon2</code>.</li>
+</ul>
+<hr class="section-break">
+<h2>6. QR platby</h2>
+<ol>
+<li>Personál u rezervace → <strong>Požádat o platbu na účet</strong>.</li>
+<li>Částka, účet (předvyplněno), variabilní symbol.</li>
+<li>E-mail zákazníkovi s QR + QR na displeji kadeřnice.</li>
+<li>Zákazník platí přes bankovní aplikaci (SPAYD).</li>
+</ol>
+<hr class="section-break">
+<h2>7. NO-show management</h2>
+<ul>
+<li>Data a blokace <strong>pouze v rámci jednoho salonu</strong> (GDPR).</li>
+<li>Modal při NO-show: odeslat upozornění, zablokovat e-mail.</li>
+<li>Archiv s vyhledáváním a zvýrazněním opakovaných případů.</li>
+</ul>
+<hr class="section-break">
+<h2>8. Multi-salon architektura</h2>
+<table class="data-table"><thead><tr><th>Zvlášť pro každý salon</th><th>Sdílená infrastruktura</th></tr></thead><tbody><tr><td>Web, branding, ceník, galerie</td><td>Backend, API, CDN</td></tr><tr><td>Personál, rozvrhy, absence</td><td>Referenční státní svátky</td></tr><tr><td>Zákazníci, rezervace, NO-show</td><td>—</td></tr><tr><td>SMTP, notifikace, parametry rezervací</td><td>—</td></tr></tbody></table>
+<p>Nová pobočka = nový frontend + záznam v DB — bez stavby systému od nuly.</p>
+<hr class="section-break">
+<h2>9. GDPR a compliance</h2>
+<ul>
+<li>Dokumentace ve složce <code>dokumenty/</code> — DPA, přílohy, ROPA (PDF).</li>
+<li>Žádný marketing zákazníkům bez souhlasu; e-mail zákazníka se po službě u salonu skrývá.</li>
+<li>Audit log změn, retence dat, anonymizace.</li>
+</ul>
+<hr class="section-break">
+<h2>10. Technické parametry</h2>
+<table class="data-table"><thead><tr><th>Oblast</th><th>Technologie</th></tr></thead><tbody><tr><td>Backend</td><td>Django + DRF</td></tr><tr><td>Frontend</td><td>HTML, CSS, vanilla JS</td></tr><tr><td>API</td><td>REST, JSON</td></tr><tr><td>Obrázky</td><td>Bunny.net CDN</td></tr><tr><td>QR</td><td>SPAYD</td></tr><tr><td>E-maily</td><td>SMTP per salon</td></tr><tr><td>Jazyk</td><td>Čeština, Europe/Prague</td></tr></tbody></table>
+<hr class="section-break">
+<h2>11. Srovnání — bez nás vs. s námi</h2>
+<table class="data-table"><thead><tr><th>Potřeba</th><th>Bez ULOV KLIENTY</th><th>S ULOV KLIENTY</th></tr></thead><tbody><tr><td>Web</td><td>Šablona jako tisíc jiných / drahá agentura</td><td><strong>Originál na míru</strong> + propojené rezervace</td></tr><tr><td>Rezervace</td><td>Samostatný booking</td><td>Integrovaný, napojený na ceník a personál</td></tr><tr><td>Obsah</td><td>Volání programátora</td><td><strong>Přátelská admin</strong> — sám, nebo za vás</td></tr><tr><td>Recenze</td><td>Ruční prosba</td><td>Automatická výzva po návštěvě</td></tr><tr><td>Připomínky</td><td>SMS / ručně</td><td>Automatické e-maily</td></tr><tr><td>NO-show</td><td>Excel / paměť</td><td>Archiv a blokace (GDPR)</td></tr><tr><td>Platba</td><td>Diktování účtu</td><td>QR e-mail + displej</td></tr><tr><td>Podpora</td><td>Ticketová fronta</td><td><strong>7 dní v týdnu</strong>, známe váš salon</td></tr></tbody></table>
+<hr class="section-break">
+<h2>12. Klíčové prodejní argumenty (talking points)</h2>
+<ol>
+<li><strong>Web, který prodává termíny</strong> — ne jen vizitka na internetu.</li>
+<li><strong>Ručně na míru</strong> — žádná šablona, kterou má konkurence ve stejné ulici.</li>
+<li><strong>Vše v jednom</strong> — web, rezervace, e-maily, QR, NO-show, statistiky.</li>
+<li><strong>Přátelská administrace</strong> — otevírací doba, ceník, fotky, novinky, dovolené, kolegové; nebo <strong>uděláme za vás</strong>.</li>
+<li><strong>Více recenzí</strong> — automatická výzva, až <strong>+100 %</strong> získaných hodnocení.</li>
+<li><strong>Důvěra</strong> — bez webu zákazník zaváhá, i když jste špička.</li>
+<li><strong>Méně administrace</strong> — jeden kalendář, jeden ceník, jeden personál.</li>
+<li><strong>GDPR</strong> — připravené smlouvy, žádný marketing, data salonů oddělená.</li>
+<li><strong>Support 7 dní</strong> — nejsme anonymní platforma.</li>
+<li><strong>Čtyři živá dema</strong> — Elegance, Krása, CRAZY, U dvou přátel — ukažte, ne vykládejte.</li>
+<li><strong>Růst</strong> — více kadeřnic, služeb, vlastní doména; systém roste s vámi.</li>
+<li><strong>Česko</strong> — SPAYD, svátky, čeština, .ics do kalendáře.</li>
+</ol>
+<hr class="section-break">
+<h2>13. Demo, prezentace a poptávky</h2>
+<h3>Prezentační web (prodej)</h3>
+<table class="data-table"><thead><tr><th>Položka</th><th>URL / cesta</th></tr></thead><tbody><tr><td>Landing</td><td><code>presentace/index.html</code></td></tr><tr><td>Lokálně (doporučeno)</td><td><code>http://localhost:8080/presentace/</code></td></tr><tr><td>Jen prezentace</td><td><code>http://localhost:5510</code></td></tr><tr><td>Formulář poptávky</td><td><code>POST /api/poptavka/</code> → e-mail přes SMTP salonu 2</td></tr></tbody></table>
+<h3>Ukázkové salony</h3>
+<table class="data-table"><thead><tr><th>Salon</th><th>Web (dev)</th><th>Rezervace</th></tr></thead><tbody><tr><td>Elegance</td><td><code>:5500</code> nebo <code>/salon1/</code></td><td><code>rezervace.html</code></td></tr><tr><td>Krása</td><td><code>:5501</code> nebo <code>/salon2/</code></td><td><code>rezervace.html</code></td></tr><tr><td>CRAZY</td><td><code>:5502</code> nebo <code>/salon3/</code></td><td><code>rezervace.html</code></td></tr><tr><td>U dvou přátel</td><td><code>:5503</code> nebo <code>/salon4/</code></td><td><code>rezervace.html</code></td></tr></tbody></table>
+<h3>Technické (dev)</h3>
+<table class="data-table"><thead><tr><th>Položka</th><th>Hodnota</th></tr></thead><tbody><tr><td>Backend API</td><td><code>http://localhost:8000/api</code></td></tr><tr><td>Admin heslo (dev)</td><td><code>admin123</code></td></tr><tr><td>Cron připomínek</td><td><code>python manage.py odesli_pripominky</code></td></tr><tr><td>Životní cyklus</td><td><code>python manage.py rezervace_zivotni_cyklus</code></td></tr></tbody></table>
+<hr class="section-break">
+<h2>Kontakt a další kroky</h2>
+<table class="data-table"><thead><tr><th>Kanál</th><th>Odkaz</th></tr></thead><tbody><tr><td>Web</td><td><a href="https://www.ulovklienty.cz">www.ulovklienty.cz</a></td></tr><tr><td>Salony</td><td><a href="https://www.ulovsalon.cz">www.ulovsalon.cz</a></td></tr><tr><td>Prezentace</td><td><code>presentace/</code> — nezávazná poptávka</td></tr><tr><td>Compliance</td><td><code>dokumenty/</code> — smlouvy pro partnery</td></tr></tbody></table>
+<p><strong>Typický prodejní flow:</strong> prezentace → prohlídka dema (1–4 salony) → konzultace → web na míru → nastavení provozu (sami nebo za klienta) → spuštění → support.</p>
+<hr class="section-break">
+<p class="footer-note">Dokument pro interní potřeby sales a marketingu ULOV KLIENTY. Aktualizováno červen 2026.</p>
+<p><strong>PDF verze:</strong> spusťte <code>python dokumenty/generate_sales_pdf.py</code> → soubor <code>dokumenty/pdf/PREHLED-pro-sales-a-marketing.pdf</code></p>
+  </article>
+
+  <p class="footer-note">© ULOV KLIENTY — interní materiál pro obchod a marketing. Zdroj: PREHLED_PRO_SALES_A_MARKETING.md</p>
+</body>
+</html>

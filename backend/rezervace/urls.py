@@ -1,0 +1,52 @@
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path('salon/<int:pk>/admin/email/', views.AdminEmailNastaveniView.as_view(), name='admin-email'),
+    path('salon/<int:pk>/admin/email/test/', views.AdminEmailTestView.as_view(), name='admin-email-test'),
+    path('salon/<int:pk>/personel/', views.PersonelPublicView.as_view(), name='personel-public'),
+    path('salon/<int:pk>/rezervace/info/', views.RezervaceInfoView.as_view(), name='rezervace-info'),
+    path('salon/<int:pk>/rezervace/volne-terminy/', views.VolneTerminyView.as_view(), name='rezervace-volne-terminy'),
+    path('salon/<int:pk>/rezervace/', views.RezervaceCreateView.as_view(), name='rezervace-create'),
+    path('salon/<int:pk>/rezervace/storno/<uuid:token>/', views.RezervaceStornoView.as_view(), name='rezervace-storno'),
+    path('salon/<int:pk>/rezervace/storno/<uuid:token>/info/', views.RezervaceStornoInfoView.as_view(), name='rezervace-storno-info'),
+    path('salon/<int:pk>/rezervace/potvrdit/<uuid:token>/', views.RezervacePotvrditView.as_view(), name='rezervace-potvrdit'),
+    path('salon/<int:pk>/rezervace/potvrdit/<uuid:token>/info/', views.RezervacePotvrditInfoView.as_view(), name='rezervace-potvrdit-info'),
+    path('salon/<int:pk>/rezervace/<int:rezervace_id>/ics/', views.RezervaceIcsView.as_view(), name='rezervace-ics'),
+
+    path('salon/<int:pk>/rezervace/zakaznik/registrace/', views.ZakaznikRegistraceView.as_view(), name='zakaznik-registrace'),
+    path('salon/<int:pk>/rezervace/zakaznik/prihlaseni/', views.ZakaznikPrihlaseniView.as_view(), name='zakaznik-prihlaseni'),
+    path('salon/<int:pk>/rezervace/zakaznik/zapomenute-heslo/', views.ZakaznikZapomenuteHesloView.as_view(), name='zakaznik-zapomenute-heslo'),
+    path('salon/<int:pk>/rezervace/zakaznik/moje/', views.ZakaznikMojeView.as_view(), name='zakaznik-moje'),
+
+    path('salon/<int:pk>/rezervace/staff/prihlaseni/', views.StaffPrihlaseniView.as_view(), name='staff-prihlaseni'),
+    path('salon/<int:pk>/rezervace/staff/odhlaseni/', views.StaffOdhlaseniView.as_view(), name='staff-odhlaseni'),
+    path('salon/<int:pk>/rezervace/staff/me/', views.StaffMeView.as_view(), name='staff-me'),
+
+    path('salon/<int:pk>/rezervace/admin/nastaveni/', views.AdminNastaveniView.as_view(), name='admin-nastaveni'),
+    path('salon/<int:pk>/rezervace/admin/zamestnanci/', views.AdminZamestnanciView.as_view(), name='admin-zamestnanci'),
+    path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/deaktivovat/', views.AdminZamestnanecDeaktivovatView.as_view(), name='admin-zamestnanec-deaktivovat'),
+    path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/', views.AdminZamestnanecDetailView.as_view(), name='admin-zamestnanec-detail'),
+    path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/absence/', views.AdminZamestnanecAbsenceView.as_view(), name='admin-zamestnanec-absence'),
+    path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/absence/<int:absence_id>/', views.AdminZamestnanecAbsenceDetailView.as_view(), name='admin-zamestnanec-absence-detail'),
+    path('salon/<int:pk>/rezervace/admin/kalendar/', views.AdminKalendarView.as_view(), name='admin-kalendar'),
+    path('salon/<int:pk>/rezervace/admin/vytvorit/', views.AdminRezervaceCreateView.as_view(), name='admin-rezervace-create'),
+    path('salon/<int:pk>/rezervace/admin/<int:rezervace_id>/', views.AdminRezervaceDetailView.as_view(), name='admin-rezervace-detail'),
+    path('salon/<int:pk>/rezervace/admin/<int:rezervace_id>/dokonceno/', views.AdminRezervaceDokoncenoView.as_view(), name='admin-rezervace-dokonceno'),
+    path('salon/<int:pk>/rezervace/admin/<int:rezervace_id>/no-show/', views.AdminRezervaceNoShowView.as_view(), name='admin-rezervace-no-show'),
+    path('salon/<int:pk>/rezervace/admin/<int:rezervace_id>/platba/', views.AdminRezervacePlatbaView.as_view(), name='admin-rezervace-platba'),
+    path('salon/<int:pk>/rezervace/admin/no-show-archiv/', views.AdminNoShowArchivView.as_view(), name='admin-no-show-archiv'),
+    path('salon/<int:pk>/rezervace/admin/no-show-blokovat/', views.AdminNoShowBlokovatView.as_view(), name='admin-no-show-blokovat'),
+    path('salon/<int:pk>/rezervace/admin/no-show-odblokovat/', views.AdminNoShowOdblokovatView.as_view(), name='admin-no-show-odblokovat'),
+    path('salon/<int:pk>/rezervace/admin/blokace/', views.AdminBlokaceView.as_view(), name='admin-blokace'),
+    path('salon/<int:pk>/rezervace/admin/blokace/<int:blokace_id>/', views.AdminBlokaceView.as_view(), name='admin-blokace-delete'),
+    path('salon/<int:pk>/rezervace/admin/statistiky/', views.AdminStatistikyView.as_view(), name='admin-statistiky'),
+    path('salon/<int:pk>/rezervace/admin/export-hodin/', views.AdminExportHodinView.as_view(), name='admin-export-hodin'),
+    path('salon/<int:pk>/rezervace/admin/zakaznik/<int:zakaznik_id>/odblokovat/', views.AdminOdblokovatZakaznikaView.as_view(), name='admin-odblokovat'),
+    path('salon/<int:pk>/rezervace/admin/vyjimky/', views.AdminVyjimkyView.as_view(), name='admin-vyjimky'),
+    path('salon/<int:pk>/rezervace/admin/audit-log/', views.AdminAuditLogView.as_view(), name='admin-audit-log'),
+    path('salon/<int:pk>/rezervace/admin/gdpr/export/', views.AdminGdprExportView.as_view(), name='admin-gdpr-export'),
+    path('salon/<int:pk>/rezervace/admin/gdpr/vymaz/', views.AdminGdprVymazView.as_view(), name='admin-gdpr-vymaz'),
+    path('salon/<int:pk>/rezervace/admin/<int:rezervace_id>/historie/', views.AdminHistorieView.as_view(), name='admin-historie'),
+]

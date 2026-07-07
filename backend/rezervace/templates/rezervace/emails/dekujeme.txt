@@ -1,0 +1,8 @@
+Dobrý den {{ rezervace.kontaktni_jmeno }},
+
+děkujeme za návštěvu salonu {{ salon.name }}!
+
+Budeme rádi, když nás ohodnotíte:
+{% if hodnoceni_url %}{{ hodnoceni_url }}{% else %}Odpovězte na tento e-mail s vaším hodnocením.{% endif %}
+
+{{ salon.name }}

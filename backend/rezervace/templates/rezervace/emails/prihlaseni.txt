@@ -1,0 +1,9 @@
+Dobrý den {{ zakaznik.nick }},
+
+pro přihlášení k vašim rezervacím v salonu {{ salon.name }} použijte tento token:
+
+{{ token }}
+
+Token vložte do formuláře „Moje rezervace“ na stránce rezervací.
+
+{{ salon.name }}

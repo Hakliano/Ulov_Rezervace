@@ -1,0 +1,9 @@
+Dobrý den {{ rezervace.kontaktni_jmeno }},
+
+Připomínáme vaši rezervaci v salonu {{ salon.name }}.
+
+Termín: {{ rezervace.zacatek|date:"d.m.Y" }} v {{ rezervace.zacatek|time:"H:i" }}
+Adresa: {{ salon.address }}
+
+Těšíme se na vás!
+{{ salon.name }}

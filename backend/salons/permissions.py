@@ -1,0 +1,54 @@
+from django.conf import settings
+from rest_framework.permissions import BasePermission
+
+from rezervace.services.staff_auth import get_staff_from_request, je_majitel
+
+
+def _legacy_admin_password(request):
+    password = request.headers.get('X-Admin-Password', '')
+    return password == settings.SALON_ADMIN_PASSWORD
+
+
+class StaffPermission(BasePermission):
+    """Vyžaduje přihlášeného zaměstnance (token) nebo legacy heslo salonu."""
+
+    def has_permission(self, request, view):
+        salon_id = view.kwargs.get('pk') or view.kwargs.get('salon_id')
+        if get_staff_from_request(request, salon_id):
+            return True
+        return _legacy_admin_password(request)
+
+
+class MajitelPermission(BasePermission):
+    """Pouze majitel/majitelka salonu (nebo legacy admin heslo)."""
+
+    def has_permission(self, request, view):
+        salon_id = view.kwargs.get('pk') or view.kwargs.get('salon_id')
+        staff = get_staff_from_request(request, salon_id)
+        if je_majitel(staff):
+            return True
+        return _legacy_admin_password(request)
+
+
+class AdminOnlyPasswordPermission(BasePermission):
+    """Vyžaduje majitele nebo legacy heslo (GET i zápis)."""
+
+    def has_permission(self, request, view):
+        salon_id = view.kwargs.get('pk')
+        staff = get_staff_from_request(request, salon_id)
+        if je_majitel(staff):
+            return True
+        password = request.headers.get('X-Admin-Password', '')
+        return password == settings.SALON_ADMIN_PASSWORD
+
+
+class AdminPasswordPermission(BasePermission):
+    """Čtení veřejné; zápis vyžaduje přihlášení personálu."""
+
+    def has_permission(self, request, view):
+        if request.method in ('GET', 'HEAD', 'OPTIONS'):
+            return True
+        salon_id = view.kwargs.get('pk')
+        if get_staff_from_request(request, salon_id):
+            return True
+        return _legacy_admin_password(request)

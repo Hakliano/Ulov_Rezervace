@@ -1,0 +1,12 @@
+Dobrý den {{ zakaznik.nick }},
+
+pro přihlášení k vašim rezervacím v salonu {{ salon.name }} jsme vám vygenerovali nové heslo:
+
+{{ heslo }}
+
+Přihlásit se můžete na stránce Moje rezervace:
+{{ rezervace_url }}
+
+Heslo si po přihlášení můžete změnit registrací znovu se stejným e-mailem (nebo si ho bezpečně uložte).
+
+{{ salon.name }}
