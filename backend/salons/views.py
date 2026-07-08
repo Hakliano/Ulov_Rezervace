@@ -14,7 +14,7 @@ from rezervace.throttles import PoptavkaRateThrottle
 from .poptavka import odeslat_poptavku
 from .bunny import BunnyUploadError, delete_image, is_bunny_configured, upload_image
 from .models import Novinka, Salon, SalonObrazek
-from .permissions import AdminPasswordPermission, MajitelPermission, StaffPermission
+from .permissions import AdminPasswordPermission, MajitelPermission
 from .serializers import NovinkaSerializer, SalonObrazekSerializer, SalonSerializer
 
 

@@ -26,16 +26,29 @@ if _env_path.exists():
             os.environ.setdefault(key.strip(), val.strip())
 
 
+def _env_bool(key, default=False):
+    return os.environ.get(key, str(default)).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _env_list(key, default=''):
+    return [x.strip() for x in os.environ.get(key, default).split(',') if x.strip()]
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-i-i@a&2$uh_sl&!hw41-cscn6a0%50i$0kh6&rzcd3@x269y%6'
+# V produkci VŽDY nastavte SECRET_KEY v .env. Fallback slouží jen pro lokální vývoj.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-i-i@a&2$uh_sl&!hw41-cscn6a0%50i$0kh6&rzcd3@x269y%6',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Default je False (produkce). Pro lokální vývoj nastavte DEBUG=True v .env.
+DEBUG = _env_bool('DEBUG', False)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 
 # Application definition
@@ -55,6 +68,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'salon_api.security_middleware.SecurityHeadersMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -87,13 +101,28 @@ WSGI_APPLICATION = 'salon_api.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# Produkce: nastavte DB_NAME (+ DB_USER, DB_PASSWORD, DB_HOST) v .env → PostgreSQL.
+# Lokální vývoj bez těchto proměnných zůstává na SQLite.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('DB_NAME'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ['DB_NAME'],
+            'USER': os.environ.get('DB_USER', 'ulov'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -129,8 +158,20 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
+# Statika (Django admin, DRF) se v produkci sbírá přes `collectstatic` do STATIC_ROOT
+# a servíruje ji WhiteNoise přímo z Gunicornu. Fotky salonů jdou na Bunny.net CDN.
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -195,6 +236,17 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
+# Produkční HTTPS hardening — aktivní jen mimo DEBUG (za Nginx reverse proxy).
+if not DEBUG:
+    # Nginx terminuje TLS a předává hlavičku X-Forwarded-Proto.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -243,4 +295,55 @@ else:
     EMAIL_BACKEND = os.environ.get(
         'EMAIL_BACKEND',
         'django.core.mail.backends.console.EmailBackend',
+    )
+
+
+# Logging — pouze na stdout. Sběr řeší Docker (`docker compose logs`) + Sentry.
+# Žádné logování do souborů (jednodušší provoz, žádná rotace/plnění disku).
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '{asctime} {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': LOG_LEVEL,
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
+
+
+# Sentry — aktivní jen když je nastaven SENTRY_DSN (jinak žádná režie).
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '').strip()
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=os.environ.get('SENTRY_ENVIRONMENT', 'production'),
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
+        send_default_pii=False,
     )

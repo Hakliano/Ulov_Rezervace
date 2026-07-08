@@ -165,10 +165,6 @@ class Zamestnanec(models.Model):
     def ma_prihlaseni(self):
         return bool(self.prihlasovaci_jmeno and self.password_hash)
 
-    @property
-    def provadi_sluzby(self):
-        return self.role != self.ROLE_MAJITEL
-
     def set_password(self, raw_password):
         self.password_hash = make_password(raw_password)
 
@@ -250,10 +246,6 @@ class Zakaznik(models.Model):
 
     def __str__(self):
         return f'{self.nick} ({self.email})'
-
-    @property
-    def auto_blokovan(self):
-        return self.no_show_pocet >= 3
 
     def set_password(self, raw_password):
         self.password_hash = make_password(raw_password)

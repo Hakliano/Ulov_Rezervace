@@ -119,10 +119,6 @@ def je_manualni(notifikace):
     return bool(notifikace.get('manual')) or str(notifikace.get('offset', '')) == MANUAL_OFFSET
 
 
-def je_casovana(notifikace):
-    return not je_manualni(notifikace)
-
-
 def nova_notifikace(offset='+24', aktivni=False, predmet=None, text=None, manual=False, manual_typ=None):
     if manual or offset == MANUAL_OFFSET:
         mt = manual_typ or MANUAL_TYP_NOSHOW

@@ -43,10 +43,6 @@ def pocet_noshow_v_salonu(email, salon_id):
     return _noshow_filter(email, salon_id).count()
 
 
-def je_problematicky_v_salonu(email, salon_id):
-    return pocet_noshow_v_salonu(email, salon_id) >= PROBLEMATICKY_OD
-
-
 def je_blokovan_v_salonu(email, salon_id):
     zak = _najdi_zakaznik(salon_id, email)
     return bool(zak and zak.blokovan)

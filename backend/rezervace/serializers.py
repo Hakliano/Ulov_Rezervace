@@ -15,7 +15,6 @@ from rezervace.notifikace_defaults import (
 from rezervace.models import (
     BlokaceCasu,
     NoShowZaznam,
-    OpakovanaRezervace,
     Rezervace,
     RezervaceHistorie,
     RezervacniNastaveni,

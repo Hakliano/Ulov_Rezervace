@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import json
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -26,7 +25,6 @@ from rezervace.models import (
 from rezervace.notifikace_defaults import (
     MANUAL_TYP_NOSHOW,
     MANUAL_TYP_PLATBA,
-    dopln_na_notifikace,
     get_manual_notifikace,
 )
 from rezervace.serializers import (
@@ -58,8 +56,6 @@ from rezervace.services.availability import (
     salon_je_zavreny,
 )
 from rezervace.services.emails import (
-    email_dekujeme,
-    email_je_nakonfigurovan,
     email_nove_heslo,
     email_potvrzeni,
     email_storno,
@@ -87,8 +83,6 @@ from rezervace.services.staff_auth import (
     get_staff_from_request,
     je_majitel,
     muze_rezervaci,
-    muze_zamestnance,
-    nastav_heslo_staff,
     odhlasit_staff,
     prihlasit_staff,
     staff_do_dict,

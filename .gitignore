@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 .env
 testovaci hesla
+
+# Produkce – generované / citlivé (necommitovat)
+backend/staticfiles/
+backups/
+deploy/certbot/conf/
+deploy/certbot/www/
+*.log

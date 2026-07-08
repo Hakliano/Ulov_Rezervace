@@ -97,7 +97,7 @@ Zápis vyžaduje HTTP hlavičku:
 X-Admin-Password: <heslo>
 ```
 
-Některé admin čtení (web PUT, rezervační admin GET) je veřejné; zápis vždy chráněný (`AdminPasswordPermission` / `AdminOnlyPasswordPermission`).
+Některé admin čtení (web PUT, rezervační admin GET) je veřejné; zápis vždy chráněný (`AdminPasswordPermission` / `MajitelPermission`).
 
 Kompletní seznam: `backend/rezervace/urls.py`, `backend/salons/urls.py`.
 

@@ -1,0 +1,82 @@
+# Produkční nasazení ULOV KLIENTY — Django API + PostgreSQL + cron + Nginx.
+# Konfigurace se čte z kořenového .env (viz .env.production.example).
+#
+#   cp .env.production.example .env   # a vyplnit hodnoty
+#   docker compose up -d --build
+#
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn salon_api.wsgi:application
+             --bind 0.0.0.0:8000
+             --workers 3
+             --timeout 60
+             --access-logfile -
+             --error-logfile -"
+    expose:
+      - "8000"
+
+  cron:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+    # Životní cyklus rezervací: připomínky, děkovné e-maily, GDPR anonymizace, mazání.
+    command: >
+      sh -c "while true; do
+               python manage.py rezervace_zivotni_cyklus || echo 'cron beh selhal';
+               sleep 3600;
+             done"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./deploy/certbot/www:/var/www/certbot:ro
+      - ./deploy/certbot/conf:/etc/letsencrypt:ro
+    # Periodický reload kvůli obnoveným certifikátům.
+    command: >
+      sh -c "while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+
+  # Automatická obnova Let's Encrypt certifikátů (kontrola 2× denně).
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./deploy/certbot/www:/var/www/certbot
+      - ./deploy/certbot/conf:/etc/letsencrypt
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done"
+
+volumes:
+  pgdata:

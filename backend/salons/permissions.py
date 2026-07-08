@@ -30,18 +30,6 @@ class MajitelPermission(BasePermission):
         return _legacy_admin_password(request)
 
 
-class AdminOnlyPasswordPermission(BasePermission):
-    """Vyžaduje majitele nebo legacy heslo (GET i zápis)."""
-
-    def has_permission(self, request, view):
-        salon_id = view.kwargs.get('pk')
-        staff = get_staff_from_request(request, salon_id)
-        if je_majitel(staff):
-            return True
-        password = request.headers.get('X-Admin-Password', '')
-        return password == settings.SALON_ADMIN_PASSWORD
-
-
 class AdminPasswordPermission(BasePermission):
     """Čtení veřejné; zápis vyžaduje přihlášení personálu."""
 

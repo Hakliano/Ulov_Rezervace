@@ -72,12 +72,6 @@ def get_email_config(salon):
     }
 
 
-def email_je_nakonfigurovan(salon=None):
-    if salon:
-        return get_email_config(salon)['smtp_ready']
-    return 'smtp' in settings.EMAIL_BACKEND and bool(settings.EMAIL_HOST_PASSWORD)
-
-
 def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachments=None, inline_images=None):
     if not prijemce:
         return False
@@ -234,35 +228,6 @@ def email_storno(rezervace, kdo='zákazník'):
     _odeslat_pro_salon(salon, rezervace.kontaktni_email, f'Storno rezervace – {salon.name}', zprava)
     if salon.email:
         _odeslat_pro_salon(salon, salon.email, f'Storno rezervace – {rezervace.kontaktni_jmeno}', zprava)
-
-
-def email_pripominka(rezervace):
-    salon = rezervace.salon
-    zprava = render_to_string('rezervace/emails/pripominka.txt', {
-        'rezervace': rezervace,
-        'salon': salon,
-    })
-    return _odeslat_pro_salon(
-        salon,
-        rezervace.kontaktni_email,
-        f'Připomínka rezervace – {salon.name}',
-        zprava,
-    )
-
-
-def email_dekujeme(rezervace, hodnoceni_url=''):
-    salon = rezervace.salon
-    zprava = render_to_string('rezervace/emails/dekujeme.txt', {
-        'rezervace': rezervace,
-        'salon': salon,
-        'hodnoceni_url': hodnoceni_url,
-    })
-    return _odeslat_pro_salon(
-        salon,
-        rezervace.kontaktni_email,
-        f'Děkujeme za návštěvu – {salon.name}',
-        zprava,
-    )
 
 
 def email_nove_heslo(zakaznik, heslo):

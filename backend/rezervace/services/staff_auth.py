@@ -37,15 +37,6 @@ def je_majitel(staff):
     return bool(staff and staff.role == 'majitel')
 
 
-def provadi_sluzby(staff):
-    """Majitel má jen správcovský přístup — není rezervovatelný."""
-    return bool(staff and staff.role != Zamestnanec.ROLE_MAJITEL)
-
-
-def rezervovatelni_zamestnanci(salon):
-    return Zamestnanec.objects.filter(salon=salon, aktivni=True).exclude(role=Zamestnanec.ROLE_MAJITEL)
-
-
 def staff_do_dict(staff):
     return {
         'id': staff.id,
@@ -114,11 +105,3 @@ def muze_rezervaci(staff, rezervace):
     if je_majitel(staff):
         return True
     return rezervace.zamestnanec_id == staff.id
-
-
-def muze_zamestnance(staff, zamestnanec_id):
-    if not staff:
-        return False
-    if je_majitel(staff):
-        return True
-    return staff.id == int(zamestnanec_id)
