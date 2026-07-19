@@ -175,7 +175,11 @@ def _rezervace_web_url(salon):
     return url
 
 
-def email_vyzva_k_potvrzeni(rezervace):
+def _email_via_celery():
+    return bool(getattr(settings, 'EMAIL_VIA_CELERY', False))
+
+
+def email_vyzva_k_potvrzeni_sync(rezervace):
     salon = rezervace.salon
     sluzby = ', '.join(p.sluzba.nazev for p in rezervace.polozky.all())
     try:
@@ -197,7 +201,15 @@ def email_vyzva_k_potvrzeni(rezervace):
     )
 
 
-def email_potvrzeni(rezervace):
+def email_vyzva_k_potvrzeni(rezervace):
+    if _email_via_celery():
+        from rezervace.tasks import task_email_vyzva_k_potvrzeni
+        task_email_vyzva_k_potvrzeni.delay(rezervace.pk)
+        return True
+    return email_vyzva_k_potvrzeni_sync(rezervace)
+
+
+def email_potvrzeni_sync(rezervace):
     salon = rezervace.salon
     sluzby = ', '.join(p.sluzba.nazev for p in rezervace.polozky.all())
     storno_url = _storno_url(rezervace)
@@ -218,7 +230,15 @@ def email_potvrzeni(rezervace):
     )
 
 
-def email_storno(rezervace, kdo='zákazník'):
+def email_potvrzeni(rezervace):
+    if _email_via_celery():
+        from rezervace.tasks import task_email_potvrzeni
+        task_email_potvrzeni.delay(rezervace.pk)
+        return True
+    return email_potvrzeni_sync(rezervace)
+
+
+def email_storno_sync(rezervace, kdo='zákazník'):
     salon = rezervace.salon
     zprava = render_to_string('rezervace/emails/storno.txt', {
         'rezervace': rezervace,
@@ -230,7 +250,16 @@ def email_storno(rezervace, kdo='zákazník'):
         _odeslat_pro_salon(salon, salon.email, f'Storno rezervace – {rezervace.kontaktni_jmeno}', zprava)
 
 
-def email_nove_heslo(zakaznik, heslo):
+def email_storno(rezervace, kdo='zákazník'):
+    if _email_via_celery():
+        from rezervace.tasks import task_email_storno
+        task_email_storno.delay(rezervace.pk, kdo=kdo)
+        return True
+    email_storno_sync(rezervace, kdo=kdo)
+    return True
+
+
+def email_nove_heslo_sync(zakaznik, heslo):
     salon = zakaznik.salon
     try:
         base = (salon.rezervacni_nastaveni.web_rezervace_url or '').strip()
@@ -248,7 +277,16 @@ def email_nove_heslo(zakaznik, heslo):
     return _odeslat_pro_salon(salon, zakaznik.email, f'Nové heslo – {salon.name}', zprava)
 
 
+def email_nove_heslo(zakaznik, heslo):
+    if _email_via_celery():
+        from rezervace.tasks import task_email_nove_heslo
+        task_email_nove_heslo.delay(zakaznik.pk, heslo)
+        return True
+    return email_nove_heslo_sync(zakaznik, heslo)
+
+
 def email_test(salon, prijemce):
+    """Testovací e-mail vždy synchronně — diagnostika SMTP musí být okamžitá."""
     cfg = get_email_config(salon)
     zprava = (
         f'Toto je testovací e-mail ze salonu {salon.name}.\n\n'

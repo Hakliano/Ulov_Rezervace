@@ -1,6 +1,11 @@
+from django.conf import settings
 from django.utils import timezone
 
 from rezervace.services.emails import _odeslat_pro_salon, _storno_url
+
+
+def _email_via_celery():
+    return bool(getattr(settings, 'EMAIL_VIA_CELERY', False))
 
 
 def _kontext_rezervace(rezervace):
@@ -46,14 +51,22 @@ def render_sablonu(text, rezervace, extra_ctx=None):
         return text
 
 
-def email_notifikace(rezervace, notifikace, extra_ctx=None):
+def email_notifikace_sync(rezervace, notifikace, extra_ctx=None):
     salon = rezervace.salon
     predmet = render_sablonu(notifikace['predmet'], rezervace, extra_ctx)
     zprava = render_sablonu(notifikace['text'], rezervace, extra_ctx)
     return _odeslat_pro_salon(salon, rezervace.kontaktni_email, predmet, zprava)
 
 
-def email_platba_qr(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
+def email_notifikace(rezervace, notifikace, extra_ctx=None):
+    if _email_via_celery():
+        from rezervace.tasks import task_email_notifikace
+        task_email_notifikace.delay(rezervace.pk, notifikace, extra_ctx)
+        return True
+    return email_notifikace_sync(rezervace, notifikace, extra_ctx=extra_ctx)
+
+
+def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
     from rezervace.services.platba_qr import generuj_platbu_qr
 
     salon = rezervace.salon
@@ -82,4 +95,17 @@ def email_platba_qr(rezervace, notifikace, castka, ucet, variabilni_symbol, plat
         html_body=html,
         inline_images=[('qrplatba', qr_png, 'qr_platba.png')],
         attachments=[('qr_platba.png', qr_png, 'image/png')],
+    )
+
+
+def email_platba_qr(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
+    if _email_via_celery():
+        from rezervace.tasks import task_email_platba_qr
+        # QR se znovu vygeneruje ve workeru (PNG není vhodné do Redis fronty).
+        task_email_platba_qr.delay(
+            rezervace.pk, notifikace, castka, ucet, variabilni_symbol
+        )
+        return True
+    return email_platba_qr_sync(
+        rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=platba_data
     )

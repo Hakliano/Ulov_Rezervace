@@ -184,13 +184,44 @@ SALON_ADMIN_PASSWORD = os.environ.get('SALON_ADMIN_PASSWORD', 'admin123')
 # GDPR — jednotná retenční doba pro všechny salony (měsíce); mění pouze provozovatel platformy
 GDPR_UCHOVAVANI_MESICU_DEFAULT = int(os.environ.get('GDPR_UCHOVAVANI_MESICU', '12'))
 
-# Rate limiting (vyžaduje cache)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'ulov-rezervaci',
+# Redis — sdílená cache (throttling) + broker pro Celery.
+# Bez REDIS_URL zůstane LocMem (lokální vývoj). V Dockeru: redis://redis:6379/0
+REDIS_URL = os.environ.get('REDIS_URL', '').strip()
+
+# E-maily přes frontu (Celery). false = sync SMTP jako dřív (rollback / nouzový režim).
+# Zapínejte jen když běží služba `worker` a Redis.
+EMAIL_VIA_CELERY = _env_bool('EMAIL_VIA_CELERY', False)
+if EMAIL_VIA_CELERY and not REDIS_URL:
+    EMAIL_VIA_CELERY = False
+
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'KEY_PREFIX': 'ulov',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'ulov-rezervaci',
+        }
+    }
+
+# Celery (použije se jen při EMAIL_VIA_CELERY=true; broker může běžet i pro budoucí tasky)
+CELERY_BROKER_URL = REDIS_URL or 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = None
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_TIME_LIMIT = 120
+CELERY_TASK_SOFT_TIME_LIMIT = 90
+CELERY_TASK_DEFAULT_RETRY_DELAY = 60
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Europe/Prague')
 
 # CORS — API tokeny (X-Staff-Token), ne session cookies
 _cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '').strip()

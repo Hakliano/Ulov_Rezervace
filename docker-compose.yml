@@ -1,4 +1,4 @@
-# Produkční nasazení ULOV KLIENTY — Django API + PostgreSQL + cron + Nginx.
+# Produkční nasazení ULOV KLIENTY — Django API + PostgreSQL + Redis + Celery + cron + Nginx.
 # Konfigurace se čte z kořenového .env (viz .env.production.example).
 #
 #   cp .env.production.example .env   # a vyplnit hodnoty
@@ -20,12 +20,26 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   api:
     build: ./backend
     restart: unless-stopped
     env_file: ./.env
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command: >
       sh -c "python manage.py migrate --noinput &&
@@ -38,6 +52,20 @@ services:
     expose:
       - "8000"
 
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      celery -A salon_api worker
+      --loglevel=info
+      --concurrency=2
+
   cron:
     build: ./backend
     restart: unless-stopped
@@ -45,7 +73,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     # Životní cyklus rezervací: připomínky, děkovné e-maily, GDPR anonymizace, mazání.
+    # Při EMAIL_VIA_CELERY=true cron jen zařadí maily do fronty; odesílá je `worker`.
     command: >
       sh -c "while true; do
                python manage.py rezervace_zivotni_cyklus || echo 'cron beh selhal';
@@ -64,6 +95,8 @@ services:
       - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./deploy/certbot/www:/var/www/certbot:ro
       - ./deploy/certbot/conf:/etc/letsencrypt:ro
+      # Weby salonů — nový salon = jen složka www/salonN/, bez úpravy compose
+      - ./www:/var/www/sites:ro
     # Periodický reload kvůli obnoveným certifikátům.
     command: >
       sh -c "while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
@@ -80,3 +113,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
