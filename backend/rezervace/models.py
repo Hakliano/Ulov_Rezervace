@@ -339,6 +339,10 @@ class Rezervace(models.Model):
         verbose_name = 'rezervace'
         verbose_name_plural = 'rezervace'
         ordering = ['zacatek']
+        indexes = [
+            models.Index(fields=['salon', 'zacatek'], name='rezervace_salon_zacatek_idx'),
+            models.Index(fields=['salon', 'stav'], name='rezervace_salon_stav_idx'),
+        ]
 
     def __str__(self):
         return f'{self.zacatek:%d.%m.%Y %H:%M} – {self.get_stav_display()}'
@@ -387,6 +391,9 @@ class NoShowZaznam(models.Model):
         verbose_name = 'no-show záznam'
         verbose_name_plural = 'no-show archiv'
         ordering = ['-vytvoreno']
+        indexes = [
+            models.Index(fields=['salon', 'email'], name='noshow_salon_email_idx'),
+        ]
 
     def __str__(self):
         return f'{self.jmeno} – {self.zacatek:%d.%m.%Y %H:%M}'
