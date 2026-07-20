@@ -41,14 +41,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn salon_api.wsgi:application
-             --bind 0.0.0.0:8000
-             --workers 3
-             --timeout 60
-             --access-logfile -
-             --error-logfile -"
+    command:
+      [
+        "sh",
+        "-c",
+        "python manage.py migrate --noinput && gunicorn salon_api.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60 --access-logfile - --error-logfile -",
+      ]
     expose:
       - "8000"
 
