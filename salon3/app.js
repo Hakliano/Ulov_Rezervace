@@ -25,7 +25,7 @@ function staffHeaders(extra = {}) {
 
 async function fetchPersonel() {
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/personel/`);
-  if (!res.ok) throw new Error('Nepoda¯ilo se naËÌst person·l.');
+  if (!res.ok) throw new Error('Nepoda√∏ilo se na√®√≠st person√°l.');
   return res.json();
 }
 
@@ -50,7 +50,7 @@ function renderPersonelPublic(list) {
   section?.classList.remove('hidden');
   grid.innerHTML = list.map((p, i) => {
     const hours = (p.rozvrh || []).map((r) => {
-      const cas = r.volno ? '<span class="zavreno">Volno</span>' : `${formatTime(r.od)} ñ ${formatTime(r.do)}`;
+      const cas = r.volno ? '<span class="zavreno">Volno</span>' : `${formatTime(r.od)} ‚Äì ${formatTime(r.do)}`;
       return `<tr><td>${esc(r.den_nazev)}</td><td>${cas}</td></tr>`;
     }).join('');
     return `<article class="team-card" style="--i:${i}">
@@ -82,24 +82,24 @@ function personelEditCard(z) {
   const id = z.id || '';
   return `<div class="personel-edit-card" data-id="${id}">
     <div class="personel-edit-head">
-      <strong>${esc(z.jmeno || 'Nov˝ Ëlen t˝mu')}</strong>
+      <strong>${esc(z.jmeno || 'Nov√Ω √®len t√Ωmu')}</strong>
       <label class="checkbox"><input type="checkbox" class="p-web" ${z.zobrazit_na_webu !== false ? 'checked' : ''}> Na webu</label>
     </div>
-    <label>JmÈno<input type="text" class="p-jmeno" value="${esc(z.jmeno)}"></label>
-    <label>Specializace (kr·tk˝ text)<input type="text" class="p-spec" value="${esc(z.specializace || '')}"></label>
+    <label>Jm√©no<input type="text" class="p-jmeno" value="${esc(z.jmeno)}"></label>
+    <label>Specializace (kr√°tk√Ω text)<input type="text" class="p-spec" value="${esc(z.specializace || '')}"></label>
     <label>Popis<textarea class="p-popis" rows="3">${esc(z.popis || '')}</textarea></label>
     <div class="p-foto-preview">${z.fotka ? `<img src="${esc(z.fotka)}" alt="">` : '<span class="placeholder">Bez fotky</span>'}</div>
-    <label class="btn btn-secondary btn-upload btn-sm">Nahr·t fotku<input type="file" class="p-foto-upload" accept="image/*" hidden></label>
-    <p class="admin-hint">PracovnÌ doba urËuje dostupnost v rezervacÌch i otevÌracÌ dobu salonu na webu (souËet vöech zamÏstnanc˘).</p>
+    <label class="btn btn-secondary btn-upload btn-sm">Nahr√°t fotku<input type="file" class="p-foto-upload" accept="image/*" hidden></label>
+    <p class="admin-hint">Pracovn√≠ doba ur√®uje dostupnost v rezervac√≠ch i otev√≠rac√≠ dobu salonu na webu (sou√®et v≈°ech zam√¨stnanc√π).</p>
     <table class="rozvrh-table admin-rozvrh">
       <thead><tr><th>Den</th><th>Od</th><th>Do</th><th>Volno</th></tr></thead>
       <tbody>${personelRozvrhRows(z.rozvrh)}</tbody>
     </table>
     <div class="personel-edit-actions">
-      <button type="button" class="btn btn-primary btn-sm btn-save-personel">Uloûit</button>
-      ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat ˙Ëet</button>' : ''}
+      <button type="button" class="btn btn-primary btn-sm btn-save-personel">Ulo≈æit</button>
+      ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat √∫√®et</button>' : ''}
     </div>
-    ${id && z.aktivni === false ? '<p class="admin-hint error">⁄Ëet deaktivov·n ó zamÏstnanec se nem˘ûe p¯ihl·sit. Obnovte zaökrtnutÌm ÑAktivnÌì v rezervacÌch õ Kade¯nice.</p>' : ''}
+    ${id && z.aktivni === false ? '<p class="admin-hint error">√ö√®et deaktivov√°n ‚Äî zam√¨stnanec se nem√π≈æe p√∏ihl√°sit. Obnovte za≈°krtnut√≠m ‚ÄûAktivn√≠‚Äú v rezervac√≠ch ‚Ä∫ Kade√∏nice.</p>' : ''}
   </div>`;
 }
 
@@ -159,11 +159,11 @@ async function savePersonelCard(card) {
     rozvrh: collectPersonelRozvrh(card),
   };
   if (!payload.jmeno) {
-    msg.textContent = 'JmÈno je povinnÈ.';
+    msg.textContent = 'Jm√©no je povinn√©.';
     msg.className = 'status-msg error';
     return;
   }
-  msg.textContent = 'Ukl·d·m person·lÖ';
+  msg.textContent = 'Ukl√°d√°m person√°l‚Ä¶';
   msg.className = 'status-msg';
   try {
     const id = card.dataset.id;
@@ -179,7 +179,7 @@ async function savePersonelCard(card) {
     await loadPersonelAdmin();
     renderPersonelPublic(await fetchPersonel());
     await refreshOteviraciDoba();
-    msg.textContent = 'Person·l uloûen.';
+    msg.textContent = 'Person√°l ulo≈æen.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -189,7 +189,7 @@ async function savePersonelCard(card) {
 
 async function deletePersonelCard(card) {
   const id = card.dataset.id;
-  if (!id || !confirm('Deaktivovat ˙Ëet tohoto Ëlena t˝mu?\n\n⁄Ëet se nesmaûe ó z˘stane historie a audit. ZamÏstnanec se uû nep¯ihl·sÌ.')) return;
+  if (!id || !confirm('Deaktivovat √∫√®et tohoto √®lena t√Ωmu?\n\n√ö√®et se nesma≈æe ‚Äî z√πstane historie a audit. Zam√¨stnanec se u≈æ nep√∏ihl√°s√≠.')) return;
   await apiRezervace(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${id}/deaktivovat/`, { method: 'POST' });
   await loadPersonelAdmin();
   renderPersonelPublic(await fetchPersonel());
@@ -200,7 +200,7 @@ async function uploadPersonelPhoto(e, card) {
   const file = e.target.files[0];
   const id = card.dataset.id;
   if (!file || !id) {
-    alert('Nejd¯Ìve uloûte Ëlena t˝mu, pak nahrajte fotku.');
+    alert('Nejd√∏√≠ve ulo≈æte √®lena t√Ωmu, pak nahrajte fotku.');
     e.target.value = '';
     return;
   }
@@ -209,7 +209,7 @@ async function uploadPersonelPhoto(e, card) {
   form.append('file', file);
   form.append('typ', 'personel');
   form.append('zamestnanec_id', id);
-  msg.textContent = 'Nahr·v·m fotkuÖ';
+  msg.textContent = 'Nahr√°v√°m fotku‚Ä¶';
   try {
     const res = await fetch(`${API_BASE}/salon/${SALON_ID}/upload/`, {
       method: 'POST',
@@ -217,12 +217,12 @@ async function uploadPersonelPhoto(e, card) {
       body: form,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Nahr·nÌ selhalo');
+    if (!res.ok) throw new Error(data.detail || 'Nahr√°n√≠ selhalo');
     card.querySelector('.p-foto-preview').innerHTML = `<img src="${esc(data.url)}" alt="">`;
     await loadPersonelAdmin();
     renderPersonelPublic(await fetchPersonel());
     await refreshOteviraciDoba();
-    msg.textContent = 'Fotka nahr·na.';
+    msg.textContent = 'Fotka nahr√°na.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -233,7 +233,7 @@ async function uploadPersonelPhoto(e, card) {
 
 async function fetchSalon() {
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/`);
-  if (!res.ok) throw new Error('Nepoda¯ilo se naËÌst data salonu.');
+  if (!res.ok) throw new Error('Nepoda√∏ilo se na√®√≠st data salonu.');
   return res.json();
 }
 
@@ -270,8 +270,8 @@ function renderOteviraciDoba(list) {
   if (!tbody) return;
   tbody.innerHTML = (list || []).map(d => {
     const cas = d.zavreno
-      ? '<span class="zavreno">Zav¯eno</span>'
-      : `${formatTime(d.od)} ñ ${formatTime(d.do)}`;
+      ? '<span class="zavreno">Zav√∏eno</span>'
+      : `${formatTime(d.od)} ‚Äì ${formatTime(d.do)}`;
     return `<tr><td>${d.den_nazev}</td><td>${cas}</td></tr>`;
   }).join('');
 }
@@ -329,7 +329,7 @@ function renderSalon(data) {
   document.getElementById('cenik-list').innerHTML = data.cenik.map(item =>
     `<div class="price-card">
       <span class="price-name">${esc(item.nazev)}</span>
-      <span class="price-value">${item.cena} KË</span>
+      <span class="price-value">${item.cena} K√®</span>
     </div>`
   ).join('');
 
@@ -423,7 +423,7 @@ async function handleLogin(e) {
   const login = document.getElementById('staff-login').value.trim();
   const password = document.getElementById('staff-password').value;
   const msg = document.getElementById('login-status-msg');
-  msg.textContent = 'OvÏ¯ujiÖ';
+  msg.textContent = 'Ov√¨√∏uji‚Ä¶';
   msg.className = 'status-msg';
 
   try {
@@ -432,7 +432,7 @@ async function handleLogin(e) {
       body: JSON.stringify({ prihlasovaci_jmeno: login, password }),
     });
     if (!data.staff?.je_majitel) {
-      msg.textContent = '⁄prava webu je dostupn· jen pro majitelku salonu.';
+      msg.textContent = '√öprava webu je dostupn√° jen pro majitelku salonu.';
       msg.className = 'status-msg error';
       return;
     }
@@ -444,7 +444,7 @@ async function handleLogin(e) {
     showEditForm();
     msg.textContent = '';
   } catch (err) {
-    msg.textContent = err.message || 'Nespr·vnÈ p¯ihlaöovacÌ jmÈno nebo heslo.';
+    msg.textContent = err.message || 'Nespr√°vn√© p√∏ihla≈°ovac√≠ jm√©no nebo heslo.';
     msg.className = 'status-msg error';
     console.error(err);
   }
@@ -460,7 +460,7 @@ async function handleWebAdminLogout() {
     try {
       await apiRezervace(`/salon/${SALON_ID}/rezervace/staff/odhlaseni/`, { method: 'POST' });
     } catch {
-      /* token uû mohl b˝t neplatn˝ */
+      /* token u≈æ mohl b√Ωt neplatn√Ω */
     }
   }
   staffToken = '';
@@ -490,8 +490,8 @@ function showEditForm() {
 
   const hint = document.getElementById('bunny-hint');
   hint.textContent = bunnyConfigured
-    ? 'Obr·zky se nahr·vajÌ na Bunny.net CDN.'
-    : '? Bunny.net nenÌ nastaven ñ vyplÚte backend/.env (viz README).';
+    ? 'Obr√°zky se nahr√°vaj√≠ na Bunny.net CDN.'
+    : '? Bunny.net nen√≠ nastaven ‚Äì vypl√≤te backend/.env (viz README).';
 
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = d.cenik.map(item => cenikEditRow(item)).join('');
@@ -512,7 +512,7 @@ function renderHeroPreview(url) {
   const el = document.getElementById('hero-preview');
   el.innerHTML = url
     ? `<img src="${esc(url)}" alt="Hero">`
-    : '<span class="placeholder">é·dn· fotka</span>';
+    : '<span class="placeholder">≈Ω√°dn√° fotka</span>';
 }
 
 function renderGalleryEdit(obrazky) {
@@ -535,7 +535,7 @@ async function uploadImage(file, typ) {
   form.append('file', file);
   form.append('typ', typ);
 
-  msg.textContent = 'Nahr·v·mÖ';
+  msg.textContent = 'Nahr√°v√°m‚Ä¶';
   msg.className = 'status-msg';
 
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/upload/?typ=${typ}`, {
@@ -545,7 +545,7 @@ async function uploadImage(file, typ) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'Nahr·nÌ selhalo');
+  if (!res.ok) throw new Error(data.detail || 'Nahr√°n√≠ selhalo');
   return data;
 }
 
@@ -558,7 +558,7 @@ async function handleHeroUpload(e) {
     renderSalon(salonData);
     renderHeroPreview(data.url);
     const msg = document.getElementById('status-msg');
-    msg.textContent = 'Hero fotka nahr·na.';
+    msg.textContent = 'Hero fotka nahr√°na.';
     msg.className = 'status-msg success';
   } catch (err) {
     const msg = document.getElementById('status-msg');
@@ -578,7 +578,7 @@ async function handleGalleryUpload(e) {
     renderSalon(salonData);
     renderGalleryEdit(salonData.obrazky);
     const msg = document.getElementById('status-msg');
-    msg.textContent = 'Fotka p¯id·na do galerie.';
+    msg.textContent = 'Fotka p√∏id√°na do galerie.';
     msg.className = 'status-msg success';
   } catch (err) {
     const msg = document.getElementById('status-msg');
@@ -589,18 +589,18 @@ async function handleGalleryUpload(e) {
 }
 
 async function deleteImage(imageId) {
-  if (!confirm('Smazat tento obr·zek?')) return;
+  if (!confirm('Smazat tento obr√°zek?')) return;
   const msg = document.getElementById('status-msg');
   try {
     const res = await fetch(`${API_BASE}/salon/${SALON_ID}/obrazek/${imageId}/`, {
       method: 'DELETE',
       headers: staffHeaders(),
     });
-    if (!res.ok) throw new Error('Smaz·nÌ selhalo');
+    if (!res.ok) throw new Error('Smaz√°n√≠ selhalo');
     salonData = await fetchSalon();
     renderSalon(salonData);
     renderGalleryEdit(salonData.obrazky || []);
-    msg.textContent = 'Obr·zek smaz·n.';
+    msg.textContent = 'Obr√°zek smaz√°n.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -610,8 +610,8 @@ async function deleteImage(imageId) {
 
 function cenikEditRow(item) {
   return `<div class="edit-row cenik-edit-item" data-id="${item.id || ''}">
-    <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Sluûba">
-    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="KË">
+    <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Slu≈æba">
+    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="K√®">
   </div>`;
 }
 
@@ -620,7 +620,7 @@ function renderNovinkaPreview(row, url) {
   if (!prev) return;
   prev.innerHTML = url
     ? `<img src="${esc(url)}" alt="">`
-    : '<span class="placeholder">Bez obr·zku</span>';
+    : '<span class="placeholder">Bez obr√°zku</span>';
 }
 
 function refreshNovinkyEdit() {
@@ -641,9 +641,9 @@ function novinkaEditRow(item) {
   return `<div class="edit-block novinka-edit-item" data-id="${item.id || ''}" data-obrazek="${attrEsc(url)}">
     <input type="text" class="novinka-nadpis" value="${esc(item.nadpis)}" placeholder="Nadpis">
     <textarea class="novinka-text" rows="2" placeholder="Text">${esc(item.text)}</textarea>
-    <div class="novinka-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obr·zku</span>'}</div>
+    <div class="novinka-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obr√°zku</span>'}</div>
     <div class="novinka-img-actions">
-      <label class="btn btn-secondary btn-sm btn-upload">Nahr·t obr·zek<input type="file" class="upload-novinka" accept="image/*" hidden></label>
+      <label class="btn btn-secondary btn-sm btn-upload">Nahr√°t obr√°zek<input type="file" class="upload-novinka" accept="image/*" hidden></label>
       <button type="button" class="btn-remove-novinka-img btn-sm">Odebrat</button>
     </div>
   </div>`;
@@ -658,7 +658,7 @@ async function handleNovinkaUpload(e) {
   const msg = document.getElementById('status-msg');
 
   if (!row.dataset.id) {
-    msg.textContent = 'Nejd¯Ìv uloûte novinku (tlaËÌtko ÑUloûit textov· dataì), pak nahrajte obr·zek.';
+    msg.textContent = 'Nejd√∏√≠v ulo≈æte novinku (tla√®√≠tko ‚ÄûUlo≈æit textov√° data‚Äú), pak nahrajte obr√°zek.';
     msg.className = 'status-msg error';
     input.value = '';
     return;
@@ -667,7 +667,7 @@ async function handleNovinkaUpload(e) {
   const form = new FormData();
   form.append('file', file);
 
-  msg.textContent = 'Nahr·v·m obr·zek novinkyÖ';
+  msg.textContent = 'Nahr√°v√°m obr√°zek novinky‚Ä¶';
   msg.className = 'status-msg';
 
   try {
@@ -680,12 +680,12 @@ async function handleNovinkaUpload(e) {
       },
     );
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Nahr·nÌ selhalo');
+    if (!res.ok) throw new Error(data.detail || 'Nahr√°n√≠ selhalo');
 
     salonData = await fetchSalon();
     renderSalon(salonData);
     refreshNovinkyEdit();
-    msg.textContent = 'Obr·zek novinky nahr·n a uloûen.';
+    msg.textContent = 'Obr√°zek novinky nahr√°n a ulo≈æen.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -751,7 +751,7 @@ function collectFormData() {
 async function handleSave() {
   const msg = document.getElementById('status-msg');
   if (!staffToken || !isMajitel()) {
-    msg.textContent = 'Pro uloûenÌ se p¯ihlaste jako majitel salonu.';
+    msg.textContent = 'Pro ulo≈æen√≠ se p√∏ihlaste jako majitel salonu.';
     msg.className = 'status-msg error';
     return;
   }
@@ -769,7 +769,7 @@ async function handleSave() {
     salonData = await fetchSalon();
     renderSalon(salonData);
     refreshNovinkyEdit();
-    msg.textContent = 'ZmÏny uloûeny.';
+    msg.textContent = 'Zm√¨ny ulo≈æeny.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = 'Chyba: ' + err.message;
@@ -792,7 +792,7 @@ document.getElementById('btn-add-personel').addEventListener('click', () => {
   personelAdminData.push({
     jmeno: '', specializace: '', popis: '', fotka: '', zobrazit_na_webu: true,
     rozvrh: [0, 1, 2, 3, 4, 5, 6].map((den) => ({
-      den, den_nazev: ['PondÏlÌ', '⁄ter˝', 'St¯eda', '»tvrtek', 'P·tek', 'Sobota', 'NedÏle'][den],
+      den, den_nazev: ['Pond√¨l√≠', '√öter√Ω', 'St√∏eda', '√àtvrtek', 'P√°tek', 'Sobota', 'Ned√¨le'][den],
       od: null, do: null, volno: true,
     })),
   });
@@ -811,7 +811,7 @@ async function loadEmailSettings() {
       headers: staffHeaders(),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Nelze naËÌst');
+    if (!res.ok) throw new Error(data.detail || 'Nelze na√®√≠st');
     document.getElementById('smtp-host').value = data.smtp_host || 'smtp.forpsi.com';
     document.getElementById('smtp-port').value = data.smtp_port || 465;
     document.getElementById('smtp-ssl').checked = data.smtp_use_ssl !== false;
@@ -819,11 +819,11 @@ async function loadEmailSettings() {
     document.getElementById('smtp-password').value = '';
     document.getElementById('web-rezervace-url').value = data.web_rezervace_url || defaultRezervaceUrl();
     document.getElementById('smtp-password').placeholder = data.smtp_password_nastaveno
-      ? 'ïïïïïïïï (nastaveno ñ nechte pr·zdnÈ pro zachov·nÌ)'
-      : 'Heslo ke schr·nce';
+      ? '‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢ (nastaveno ‚Äì nechte pr√°zdn√© pro zachov√°n√≠)'
+      : 'Heslo ke schr√°nce';
     status.textContent = data.smtp_aktivni
-      ? `? OdesÌl·nÌ aktivnÌ ∑ Od: ${data.email_odesilatel}`
-      : '? DoplÚte SMTP heslo pro odesÌl·nÌ potvrzenÌ rezervacÌ.';
+      ? `? Odes√≠l√°n√≠ aktivn√≠ ¬∑ Od: ${data.email_odesilatel}`
+      : '? Dopl√≤te SMTP heslo pro odes√≠l√°n√≠ potvrzen√≠ rezervac√≠.';
     status.className = data.smtp_aktivni ? 'admin-hint success' : 'admin-hint';
   } catch (err) {
     status.textContent = err.message;
@@ -833,7 +833,7 @@ async function loadEmailSettings() {
 
 async function saveEmailSettings() {
   const msg = document.getElementById('email-save-msg');
-  msg.textContent = 'Ukl·d·mÖ';
+  msg.textContent = 'Ukl√°d√°m‚Ä¶';
   msg.className = 'status-msg';
   const payload = {
     smtp_host: document.getElementById('smtp-host').value.trim(),
@@ -853,7 +853,7 @@ async function saveEmailSettings() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
-    msg.textContent = 'E-mail nastavenÌ uloûeno.';
+    msg.textContent = 'E-mail nastaven√≠ ulo≈æeno.';
     msg.className = 'status-msg success';
     loadEmailSettings();
   } catch (err) {
@@ -864,7 +864,7 @@ async function saveEmailSettings() {
 
 async function testEmailSettings() {
   const msg = document.getElementById('email-save-msg');
-  msg.textContent = 'OdesÌl·m testÖ';
+  msg.textContent = 'Odes√≠l√°m test‚Ä¶';
   msg.className = 'status-msg';
   try {
     const res = await fetch(`${API_BASE}/salon/${SALON_ID}/admin/email/test/`, {
@@ -923,6 +923,6 @@ Promise.all([fetchSalon(), fetchBunnyStatus(), fetchPersonel()])
   })
   .catch(err => {
     document.getElementById('loading').innerHTML =
-      '<p>Obsah se nepoda¯ilo naËÌst. Zkuste to prosÌm pozdÏji.</p>';
+      '<p>Obsah se nepoda√∏ilo na√®√≠st. Zkuste to pros√≠m pozd√¨ji.</p>';
     console.error(err);
   });
