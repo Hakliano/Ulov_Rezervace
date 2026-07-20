@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Silver kosmetika</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../shared/creator-footer.css?v=2">
+</head>
+<body>
+  <div class="metal-grain" aria-hidden="true"></div>
+
+  <header class="topbar" id="nav">
+    <a href="#" class="brand" id="nav-logo">SILVER</a>
+    <nav class="nav-links">
+      <a href="#o-nas">O nás</a>
+      <a href="#galerie">Galerie</a>
+      <a href="#personel">Tým</a>
+      <a href="#cenik">Ceník</a>
+      <a href="#novinky">Novinky</a>
+      <a href="#kontakt">Kontakt</a>
+      <a href="rezervace.html" class="topbar-rez">Rezervovat</a>
+    </nav>
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menu">☰</button>
+  </header>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Načítám salon…</p>
+  </div>
+
+  <div id="content" class="page hidden">
+    <section class="hero-block" id="uvod" aria-label="Úvod">
+      <div class="hero-copy">
+        <p class="hero-kicker">Kosmetický salon · Šedo-stříbrný</p>
+        <h1 id="salon-name">Silver</h1>
+        <p class="hero-lead" id="salon-desc"></p>
+        <a href="rezervace.html" class="hero-cta">Rezervovat termín</a>
+      </div>
+      <div class="hero-plane" id="hero-bg" role="img" aria-label="Silver kosmetika"></div>
+    </section>
+
+    <section id="o-nas" class="slab slab-about">
+      <div class="slab-label">01 — O nás</div>
+      <div class="slab-body">
+        <h2>Přesná péče.<br>Čisté linie.</h2>
+        <p id="about-text"></p>
+      </div>
+    </section>
+
+    <section id="galerie" class="slab slab-gallery">
+      <div class="slab-label">02 — Galerie</div>
+      <div class="gallery" id="gallery"></div>
+    </section>
+
+    <section id="personel" class="slab slab-team">
+      <div class="slab-label">03 — Tým</div>
+      <h2 class="slab-title">Lidé za péčí</h2>
+      <div class="team-grid" id="personel-list"></div>
+    </section>
+
+    <section id="cenik" class="slab slab-price">
+      <div class="slab-label">04 — Ceník</div>
+      <h2 class="slab-title">Služby</h2>
+      <div class="price-grid" id="cenik-list"></div>
+    </section>
+
+    <section id="novinky" class="slab slab-news">
+      <div class="slab-label">05 — Novinky</div>
+      <h2 class="slab-title">Aktuality</h2>
+      <div class="news-list" id="novinky-list"></div>
+    </section>
+
+    <section id="kontakt" class="slab slab-contact">
+      <div class="slab-label">06 — Kontakt</div>
+      <div class="contact-split">
+        <div class="contact-info">
+          <h2 class="slab-title">Navštivte nás</h2>
+          <ul class="contact-list">
+            <li><span>Adresa</span><strong id="salon-address"></strong></li>
+            <li><span>Telefon</span><a id="salon-phone" href="#"></a></li>
+            <li><span>E-mail</span><a id="salon-email" href="#"></a></li>
+          </ul>
+        </div>
+        <div class="hours-block" id="oteviraci-doba">
+          <h3>Otevírací doba</h3>
+          <p class="hours-note">Vypočteno z pracovní doby personálu</p>
+          <table><tbody></tbody></table>
+        </div>
+        <div class="map-wrap" id="map-wrap">
+          <iframe id="salon-map" title="Mapa salonu" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p id="footer-name">Silver</p>
+      <p class="footer-copy">© 2026 · Silver kosmetika</p>
+    </footer>
+  </div>
+
+  <aside class="creator-bar" aria-label="Informace o tvůrci webu">
+    <div class="creator-bar-inner">
+      <p class="creator-bar-copy">© 2026 <a href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">ULOV KLIENTY</a></p>
+      <div class="creator-bar-credits">
+        <span>Vytvořeno Jiřím Haklem</span>
+        <span class="creator-bar-sep" aria-hidden="true">·</span>
+        <a class="creator-brand" href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">
+          <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="" width="18" height="18" loading="lazy" decoding="async">
+          <span class="creator-brand-url">www.ulovklienty.cz</span>
+        </a>
+        <span class="creator-bar-sep" aria-hidden="true">·</span>
+        <a class="creator-brand" href="https://www.ulovsalon.cz" target="_blank" rel="noopener noreferrer">
+          <img src="https://ulovsalon-images.b-cdn.net/images/ulov_salon-1759830649.webp" alt="" width="18" height="18" loading="lazy" decoding="async">
+          <span class="creator-brand-url">www.ulovsalon.cz</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <button id="admin-toggle" class="admin-fab" type="button" title="Administrace">⚙</button>
+
+  <div id="admin-panel" class="admin-panel">
+    <div class="admin-drawer">
+      <div class="admin-header">
+        <h2>Administrace</h2>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <button type="button" id="btn-web-logout" class="btn btn-secondary btn-sm hidden">Odhlásit</button>
+          <button type="button" id="btn-cancel" class="btn-icon">✕</button>
+        </div>
+      </div>
+
+      <div id="login-section" class="admin-body">
+        <form id="login-form" class="login-form">
+          <p class="admin-hint">Přihlášení majitelky pro úpravu obsahu webu.</p>
+          <label for="staff-login">Přihlašovací jméno</label>
+          <input type="text" id="staff-login" placeholder="majitelka" autocomplete="username" required>
+          <label for="staff-password">Heslo</label>
+          <input type="password" id="staff-password" autocomplete="current-password" required>
+          <div id="login-status-msg" class="status-msg"></div>
+          <button type="submit" class="btn btn-primary btn-block">Přihlásit</button>
+        </form>
+      </div>
+
+      <div id="edit-section" class="admin-body hidden">
+        <div class="admin-tabs">
+          <button type="button" class="tab active" data-tab="zaklad">Základní</button>
+          <button type="button" class="tab" data-tab="obrazky">Obrázky</button>
+          <button type="button" class="tab" data-tab="personel">Personál</button>
+          <button type="button" class="tab" data-tab="cenik">Ceník</button>
+          <button type="button" class="tab" data-tab="novinky">Novinky</button>
+          <button type="button" class="tab" data-tab="email">E-mail</button>
+        </div>
+
+        <div class="tab-panel active" data-panel="zaklad">
+          <label for="edit-name">Název</label>
+          <input type="text" id="edit-name">
+          <label for="edit-desc">Popis</label>
+          <textarea id="edit-desc" rows="3"></textarea>
+          <label for="edit-address">Adresa</label>
+          <input type="text" id="edit-address">
+          <label for="edit-phone">Telefon</label>
+          <input type="text" id="edit-phone">
+          <label for="edit-email">E-mail (kontakt na webu)</label>
+          <input type="email" id="edit-email">
+        </div>
+
+        <div class="tab-panel" data-panel="email">
+          <p class="admin-hint">Nastavení odesílání potvrzení rezervací. Údaje najdete u poskytovatele e-mailu (Forpsi → Ruční nastavení klienta).</p>
+          <p id="email-status" class="admin-hint"></p>
+          <label for="smtp-host">SMTP server</label>
+          <input type="text" id="smtp-host" placeholder="smtp.forpsi.com">
+          <label for="smtp-port">Port</label>
+          <input type="number" id="smtp-port" placeholder="465">
+          <label class="checkbox"><input type="checkbox" id="smtp-ssl" checked> Použít SSL (port 465)</label>
+          <label for="smtp-user">Přihlášení (e-mail)</label>
+          <input type="email" id="smtp-user" placeholder="info@vase-domena.cz">
+          <label for="smtp-password">Heslo ke schránce</label>
+          <input type="password" id="smtp-password" placeholder="Nechte prázdné = beze změny">
+          <label for="web-rezervace-url">URL stránky rezervací (odkazy v e-mailech)</label>
+          <input type="url" id="web-rezervace-url" placeholder="https://vase-domena.cz/rezervace.html">
+          <p id="email-save-msg" class="status-msg"></p>
+          <button type="button" id="btn-save-email" class="btn btn-primary btn-block">Uložit e-mail nastavení</button>
+          <button type="button" id="btn-test-email" class="btn btn-secondary btn-block">Odeslat testovací e-mail</button>
+        </div>
+
+        <div class="tab-panel" data-panel="obrazky">
+          <div class="upload-box">
+            <h4>Úvodní fotka (hero)</h4>
+            <div class="hero-preview" id="hero-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát hero fotku
+              <input type="file" id="upload-hero" accept="image/*" hidden>
+            </label>
+          </div>
+          <div class="upload-box">
+            <h4>Galerie</h4>
+            <div id="gallery-edit" class="gallery-edit"></div>
+            <label class="btn btn-secondary btn-upload">
+              + Přidat do galerie
+              <input type="file" id="upload-gallery" accept="image/*" hidden>
+            </label>
+            <p class="bunny-hint" id="bunny-hint"></p>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-panel="personel">
+          <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Personál. Fotku nahrajte tlačítkem níže.</p>
+          <div id="personel-edit"></div>
+          <button type="button" id="btn-add-personel" class="btn btn-secondary btn-sm">+ Přidat člena týmu</button>
+        </div>
+
+        <div class="tab-panel" data-panel="cenik">
+          <div id="cenik-edit"></div>
+          <button type="button" id="btn-add-cenik" class="btn btn-secondary btn-sm">+ Položka</button>
+        </div>
+
+        <div class="tab-panel" data-panel="novinky">
+          <div id="novinky-edit"></div>
+          <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
+        </div>
+
+        <div class="admin-footer">
+          <button type="button" id="btn-save" class="btn btn-primary btn-block">Uložit textová data</button>
+          <div id="status-msg" class="status-msg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden">
+    <button class="lightbox-close" type="button">✕</button>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>

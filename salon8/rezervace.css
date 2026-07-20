@@ -1,21 +1,21 @@
-﻿/* Maky Saloon — rezervace (šedo-stříbrný styl) */
+﻿/* RELAX — rezervace (navy & červená, noční lázně) */
 :root {
-  --primary: #6a7078;
-  --primary-dark: #3c424b;
-  --accent: #d6d9de;
-  --accent-warm: #eceef1;
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-2: #edeff2;
-  --text: #1f242b;
-  --muted: #6b727c;
-  --border: #e1e4e9;
-  --line: #e1e4e9;
-  --danger: #c0392b;
-  --radius: 10px;
-  --shadow: 0 12px 40px rgba(31, 36, 43, 0.08);
-  --font-display: 'DM Serif Display', Georgia, serif;
-  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --primary: #d4202a;
+  --primary-dark: #9e1820;
+  --accent: #132a42;
+  --accent-warm: #1e364f;
+  --bg: #060e18;
+  --surface: #0b1a2a;
+  --surface-2: #132a42;
+  --text: #e8eef4;
+  --muted: #8fa8bf;
+  --border: #1e364f;
+  --line: #1e364f;
+  --danger: #ff6b6b;
+  --radius: 0;
+  --shadow: none;
+  --font-display: 'Teko', sans-serif;
+  --font-body: 'Source Sans 3', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -165,7 +165,7 @@ a:hover { color: var(--primary-dark); }
 .sluzba-card:has(input:checked) {
   border-color: var(--primary);
   background: var(--surface-2);
-  box-shadow: 0 0 0 3px rgba(61, 122, 110, 0.12);
+  box-shadow: 0 0 0 3px rgba(212, 32, 42, 0.2);
 }
 
 .sluzba-card input { margin-bottom: 0.5rem; accent-color: var(--primary); }
@@ -211,7 +211,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(61, 122, 110, 0.15);
+  box-shadow: 0 0 0 3px rgba(212, 32, 42, 0.22);
 }
 
 .terminy-grid {
@@ -279,7 +279,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-primary { background: var(--accent-warm); color: var(--text); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(232, 201, 168, 0.45); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(212, 32, 42, 0.35); }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-secondary { background: var(--border); color: var(--text); }
 .btn-secondary:hover { background: #cdded8; }

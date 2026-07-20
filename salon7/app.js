@@ -1,5 +1,8 @@
-﻿const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
+﻿const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname))
+  ? 'http://localhost:8000/api'
+  : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 7;
+const FALLBACK_HERO = 'https://haklweb.b-cdn.net/webs/salon-7/hero/dee6d74ea6a54a97bc36a4bd02fa7f21.webp';
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;
 
@@ -298,9 +301,22 @@ function renderSalon(data) {
   emailEl.textContent = data.email;
   emailEl.href = `mailto:${data.email}`;
 
+  const mapEl = document.getElementById('salon-map');
+  const mapWrap = document.getElementById('map-wrap');
+  if (mapEl && mapWrap) {
+    if (data.address) {
+      mapEl.src = `https://maps.google.com/maps?q=${encodeURIComponent(data.address)}&z=16&output=embed&hl=cs`;
+      mapWrap.classList.remove('hidden');
+    } else {
+      mapEl.removeAttribute('src');
+      mapWrap.classList.add('hidden');
+    }
+  }
+
   const heroBg = document.getElementById('hero-bg');
-  if (data.hero_image) {
-    heroBg.style.backgroundImage = `url('${data.hero_image}')`;
+  const heroUrl = data.hero_image || FALLBACK_HERO;
+  if (heroUrl) {
+    heroBg.style.backgroundImage = `url('${heroUrl}')`;
     heroBg.classList.add('has-image');
   } else {
     heroBg.style.backgroundImage = '';

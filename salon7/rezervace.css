@@ -1,21 +1,21 @@
-﻿/* Salon Klid — rezervace (klidný modrý styl) */
+﻿/* Silver kosmetika — rezervace (šedo-stříbrný blokový styl) */
 :root {
-  --primary: #4a6d8c;
-  --primary-dark: #35516b;
-  --accent: #bcd3e2;
-  --accent-warm: #e3d9cf;
-  --bg: #f5f7f9;
+  --primary: #4a5058;
+  --primary-dark: #1a1c20;
+  --accent: #c5cad1;
+  --accent-warm: #d8dce2;
+  --bg: #eceef1;
   --surface: #ffffff;
-  --surface-2: #eef2f6;
-  --text: #1c2a35;
-  --muted: #5c6b78;
-  --border: #dde5ec;
-  --line: #dde5ec;
+  --surface-2: #f4f5f7;
+  --text: #1a1c20;
+  --muted: #6e757f;
+  --border: #d0d4da;
+  --line: #d0d4da;
   --danger: #c0392b;
-  --radius: 16px;
-  --shadow: 0 12px 40px rgba(28, 42, 53, 0.08);
-  --font-display: 'DM Serif Display', Georgia, serif;
-  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --radius: 0;
+  --shadow: none;
+  --font-display: 'Archivo Black', 'Archivo', system-ui, sans-serif;
+  --font-body: 'Archivo', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
