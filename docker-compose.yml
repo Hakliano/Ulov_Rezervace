@@ -95,6 +95,8 @@ services:
       - ./deploy/certbot/conf:/etc/letsencrypt:ro
       # Weby salonů — nový salon = jen složka www/salonN/, bez úpravy compose
       - ./www:/var/www/sites:ro
+      # Staging statika (oddělená od LIVE)
+      - ./www-staging:/var/www/sites-staging:ro
     # Periodický reload kvůli obnoveným certifikátům.
     command: >
       sh -c "while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"

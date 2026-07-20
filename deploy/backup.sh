@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Záloha produkce: PostgreSQL dump + kritická konfigurace.
-# Doporučeno spouštět denně přes cron:
+# Záloha produkce: PostgreSQL dump + konfigurace + statické weby (www/).
+# Doporučeno spouštět denně přes cron A vždy před deployem do www/:
 #   0 3 * * * cd /opt/ulov && bash deploy/backup.sh >> /var/log/ulov-backup.log 2>&1
+# Proces a checklist: deploy/DEPLOY_SAFETY.md
 set -euo pipefail
 
 cd "$(dirname "$0")/.."   # kořen projektu
@@ -29,8 +30,16 @@ tar -czf "$BACKUP_DIR/config_${STAMP}.tar.gz" \
   deploy/nginx \
   deploy/certbot/conf 2>/dev/null || true
 
+# Statické weby (presentace, salonN, vertikální dema) — bez toho nelze obnovit LIVE HTML
+if [ -d www ]; then
+  echo "### Záloha www/ (statické weby) ..."
+  tar -czf "$BACKUP_DIR/www_${STAMP}.tar.gz" www
+else
+  echo "### Přeskočeno: složka www/ neexistuje"
+fi
+
 echo "### Úklid záloh starších než ${KEEP_DAYS} dní ..."
 find "$BACKUP_DIR" -type f -name '*.gz' -mtime +"$KEEP_DAYS" -delete
 
 echo "### Hotovo. Zálohy v $BACKUP_DIR:"
-ls -lh "$BACKUP_DIR" | tail -n 5
+ls -lh "$BACKUP_DIR" | tail -n 8

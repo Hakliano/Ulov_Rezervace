@@ -1,0 +1,52 @@
+---
+description: Povinná bezpečnost deploye — zákaz přepsání LIVE neúplným zdrojem (incident demo7/8)
+alwaysApply: true
+---
+
+# Deploy safety (Ulov)
+
+## Pipeline (železné pravidlo)
+
+```
+LOCAL (Cursor) → GitHub DEV → Hetzner Staging (Copy DTB)
+                      ↓ merge po schválení
+                 GitHub MAIN → Hetzner LIVE (ostrá DTB)
+```
+
+| Prostředí | Branch | URL | DB |
+|-----------|--------|-----|-----|
+| Staging | **DEV** | `www.staging.ulovklienty.cz` | kopie |
+| LIVE | **MAIN** | `www.ulovklienty.cz` | ostrá |
+
+Žádný přímý upload z PC. Staging: `deploy/deploy-staging.sh` z **DEV**. LIVE jen po tvém potvrzení: `deploy/deploy-live.sh` z **MAIN**. Havárie → `deploy/rollback-live.sh`.
+
+## Jedna pravda
+
+- **Zdroj pravdy pro weby je git** (`salonN/`, `presentace/`, vertikální dema).
+- LIVE `www/` je jen výstup deploye — ne „tajná“ novější verze mimo repo.
+- Před pushem musí být lokál kompletní a ověřený. Nikdy necommituj poloviční salon.
+
+## Zakázané bez výslovného souhlasu uživatele
+
+- `rsync --delete` / sync, který **maže** soubory na LIVE
+- `git reset --hard` na produkci bez zálohy
+- Přepis `www/salonN/` nebo `www/presentace/` ze složky, která nemá `index.html` (+ obvykle `style.css`, `app.js`)
+
+## Povinný postup před každým LIVE deployem statiky
+
+1. Záloha: `bash deploy/backup.sh` (musí zahrnout DB + config + **www/**)
+2. Extra snapshot před syncem: `tar -czf /root/www-predeploy-$(date +%Y%m%d_%H%M%S).tar.gz -C /opt/ulov www`
+3. Checklist na každou syncovanou složku: `bash deploy/pre-deploy-check.sh <složky…>`
+4. Preferuj `rsync -a --dry-run` nejdřív; `--delete` jen po dry-run a souhlasu
+5. Po deployi: curl HTTP 200 na hub + každý změněný demo host/cestu
+
+## Incident (2026-07-20) — proč
+
+Neúplné `salon7`/`salon8` (bez `index.html`) šly do gitu → `rsync -a --delete` do `www/` smazal funkční LIVE weby. Záloha `www/` neexistovala → neobnovitelné.
+
+## Reference
+
+- Bezpečný sync / incident: `deploy/DEPLOY_SAFETY.md`
+- Pipeline GitHub → staging → LIVE + rollback: `deploy/DEPLOY_PIPELINE.md`
+- Skripty: `deploy/deploy-live.sh`, `deploy/rollback-live.sh`, `deploy/pre-deploy-check.sh`
+

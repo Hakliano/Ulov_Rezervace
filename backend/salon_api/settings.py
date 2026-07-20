@@ -316,6 +316,8 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'rezervace@ulovrezervaci.cz')
 POPTAVKA_EMAIL = os.environ.get('POPTAVKA_EMAIL', '')
+# Staging: všechny odchozí maily přesměruj (prázdné = vypnuto, jen produkce)
+EMAIL_OVERRIDE_TO = os.environ.get('EMAIL_OVERRIDE_TO', '').strip()
 
 if EMAIL_HOST_PASSWORD and EMAIL_HOST_USER:
     EMAIL_BACKEND = os.environ.get(

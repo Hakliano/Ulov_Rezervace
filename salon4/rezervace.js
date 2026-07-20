@@ -1,4 +1,4 @@
-ï»¿const API_BASE = 'http://localhost:8000/api';
+const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 4;
 
 let info = null;
@@ -69,20 +69,20 @@ function setStep(n) {
 async function loadInfo() {
   info = await api(`/salon/${SALON_ID}/rezervace/info/`);
   if (info.gdpr) gdprMeta = { ...gdprMeta, ...info.gdpr };
-  $('#salon-name').textContent = `Rezervace â€“ ${info.salon.name}`;
-  document.title = `Rezervace â€“ ${info.salon.name}`;
+  $('#salon-name').textContent = `Rezervace – ${info.salon.name}`;
+  document.title = `Rezervace – ${info.salon.name}`;
 
   const sel = $('#select-zamestnanec');
   sel.innerHTML = '<option value="any">Je mi to jedno</option>';
   info.zamestnanci.forEach(z => {
-    sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)} â€“ ${esc(z.specializace)}</option>`;
+    sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)} – ${esc(z.specializace)}</option>`;
   });
 
   $('#sluzby-list').innerHTML = info.sluzby.map(s => `
     <label class="sluzba-card">
       <input type="checkbox" value="${s.id}" data-delka="${s.delka_minut + s.rezerva_minut}">
       <span class="sluzba-name">${esc(s.nazev)}</span>
-      <span class="sluzba-meta">${s.delka_minut} min Â· ${s.cena} KÄ</span>
+      <span class="sluzba-meta">${s.delka_minut} min · ${s.cena} Kè</span>
     </label>
   `).join('');
 
@@ -107,7 +107,7 @@ async function loadInfo() {
 function updateDelkaInfo() {
   let total = 0;
   $$('#sluzby-list input:checked').forEach(inp => { total += parseInt(inp.dataset.delka, 10); });
-  $('#delka-info').textContent = vybraneSluzby.size ? `CelkovÃ¡ dÃ©lka: cca ${total} min` : '';
+  $('#delka-info').textContent = vybraneSluzby.size ? `Celková délka: cca ${total} min` : '';
   $('#btn-krok2').disabled = vybraneSluzby.size === 0;
 }
 
@@ -119,21 +119,21 @@ async function loadTerminy() {
   if (z !== 'any') params.set('zamestnanec', z);
 
   $('#terminy-list').innerHTML = '';
-  $('#terminy-msg').textContent = 'NaÄÃ­tÃ¡m termÃ­nyâ€¦';
+  $('#terminy-msg').textContent = 'Naèítám termíny…';
   vybranyCas = null;
   $('#btn-krok3').disabled = true;
 
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/volne-terminy/?${params}`);
     if (data.zavreno) {
-      $('#terminy-msg').textContent = data.duvod || 'Salon je tento den zavÅ™enÃ½.';
+      $('#terminy-msg').textContent = data.duvod || 'Salon je tento den zavøenı.';
       return;
     }
     if (!data.terminy.length) {
-      $('#terminy-msg').textContent = data.duvod || 'Å½Ã¡dnÃ© volnÃ© termÃ­ny. Zkuste jinÃ½ den nebo pracovnÃ­ka.';
+      $('#terminy-msg').textContent = data.duvod || 'ádné volné termíny. Zkuste jinı den nebo pracovníka.';
       return;
     }
-    $('#terminy-msg').textContent = `${data.terminy.length} volnÃ½ch termÃ­nÅ¯`;
+    $('#terminy-msg').textContent = `${data.terminy.length} volnıch termínù`;
     $('#terminy-list').innerHTML = data.terminy.map(t => `
       <button type="button" class="termin-btn" data-cas="${t.cas}">${t.cas}</button>
     `).join('');
@@ -153,16 +153,16 @@ async function loadTerminy() {
 function updateSummary() {
   const sluzby = info.sluzby.filter(s => vybraneSluzby.has(s.id)).map(s => s.nazev).join(', ');
   $('#summary').innerHTML = `
-    <p><strong>SluÅ¾by:</strong> ${esc(sluzby)}</p>
-    <p><strong>TermÃ­n:</strong> ${$('#input-datum').value} v ${vybranyCas}</p>
-    <p><strong>PracovnÃ­k:</strong> ${esc($('#select-zamestnanec').selectedOptions[0].text)}</p>
+    <p><strong>Sluby:</strong> ${esc(sluzby)}</p>
+    <p><strong>Termín:</strong> ${$('#input-datum').value} v ${vybranyCas}</p>
+    <p><strong>Pracovník:</strong> ${esc($('#select-zamestnanec').selectedOptions[0].text)}</p>
   `;
 }
 
 async function submitRezervace(e) {
   e.preventDefault();
   const msg = $('#rezervace-msg');
-  msg.textContent = 'OdesÃ­lÃ¡mâ€¦';
+  msg.textContent = 'Odesílám…';
   msg.className = 'status-msg';
 
   const payload = {
@@ -186,22 +186,22 @@ async function submitRezervace(e) {
     const cekaPotvrzeni = data.stav === 'ceka';
     const hotovoTitle = $('#panel-hotovo h2');
     if (hotovoTitle) {
-      hotovoTitle.textContent = cekaPotvrzeni ? 'Zkontrolujte e-mail' : 'âœ“ Rezervace potvrzena';
+      hotovoTitle.textContent = cekaPotvrzeni ? 'Zkontrolujte e-mail' : '? Rezervace potvrzena';
     }
     const stornoLink = data.storno_url || `rezervace.html?storno=${data.cancel_token}`;
     const potvrzeniLink = data.potvrzeni_url || (data.potvrzeni_token ? `rezervace.html?potvrdit=${data.potvrzeni_token}` : '');
     const emailNote = data.email_smtp
       ? (cekaPotvrzeni
-        ? `Na <strong>${esc(payload.email)}</strong> jsme odeslali e-mail s odkazem pro potvrzenÃ­. Rezervace je platnÃ¡ aÅ¾ po kliknutÃ­ na odkaz.`
-        : `PotvrzenÃ­ bylo odeslÃ¡no z adresy <strong>${esc(data.email_odesilatel || '')}</strong> na <strong>${esc(payload.email)}</strong>.`)
+        ? `Na <strong>${esc(payload.email)}</strong> jsme odeslali e-mail s odkazem pro potvrzení. Rezervace je platná a po kliknutí na odkaz.`
+        : `Potvrzení bylo odesláno z adresy <strong>${esc(data.email_odesilatel || '')}</strong> na <strong>${esc(payload.email)}</strong>.`)
       : (cekaPotvrzeni && potvrzeniLink
-        ? `PotvrÄte rezervaci kliknutÃ­m na odkaz: <a href="${esc(potvrzeniLink)}">${esc(potvrzeniLink)}</a>`
-        : `Odkaz pro zruÅ¡enÃ­ rezervace: <a href="${esc(stornoLink)}">${esc(stornoLink)}</a>`);
+        ? `Potvrïte rezervaci kliknutím na odkaz: <a href="${esc(potvrzeniLink)}">${esc(potvrzeniLink)}</a>`
+        : `Odkaz pro zrušení rezervace: <a href="${esc(stornoLink)}">${esc(stornoLink)}</a>`);
     $('#hotovo-text').innerHTML = `
-      ${cekaPotvrzeni ? 'Rezervace <strong>ÄekÃ¡ na potvrzenÃ­</strong>.' : `Rezervace <strong>${esc(data.stav_label)}</strong>.`}<br>
-      TermÃ­n: ${formatDateTime(data.zacatek)}<br>
+      ${cekaPotvrzeni ? 'Rezervace <strong>èeká na potvrzení</strong>.' : `Rezervace <strong>${esc(data.stav_label)}</strong>.`}<br>
+      Termín: ${formatDateTime(data.zacatek)}<br>
       ${emailNote}<br><br>
-      ${cekaPotvrzeni ? '' : `<a href="${esc(stornoLink)}" class="storno-link">ZruÅ¡it tuto rezervaci</a>`}
+      ${cekaPotvrzeni ? '' : `<a href="${esc(stornoLink)}" class="storno-link">Zrušit tuto rezervaci</a>`}
     `;
     const icsLink = $('#ics-link');
     if (icsLink) {
@@ -236,8 +236,8 @@ async function loadMoje() {
         ${r.stav === 'potvrzeno' || r.stav === 'ceka' ? `<a href="rezervace.html?storno=${r.cancel_token}">Stornovat</a>` : ''}
       </div>`;
 
-    $('#moje-budouci').innerHTML = data.budouci.length ? data.budouci.map(renderRez).join('') : '<p class="hint">Å½Ã¡dnÃ© budoucÃ­ rezervace.</p>';
-    $('#moje-historie').innerHTML = data.historie.length ? data.historie.map(renderRez).join('') : '<p class="hint">PrÃ¡zdnÃ¡ historie.</p>';
+    $('#moje-budouci').innerHTML = data.budouci.length ? data.budouci.map(renderRez).join('') : '<p class="hint">ádné budoucí rezervace.</p>';
+    $('#moje-historie').innerHTML = data.historie.length ? data.historie.map(renderRez).join('') : '<p class="hint">Prázdná historie.</p>';
   } catch {
     sessionToken = null;
     localStorage.removeItem(`rez_token_${SALON_ID}`);
@@ -254,7 +254,7 @@ async function handlePotvrzeni(token) {
     const r = data.rezervace;
     if (data.jiz_potvrzeno) {
       $('#potvrzeni-info').innerHTML = `
-        <p class="success">Rezervace je jiÅ¾ potvrzena.</p>
+        <p class="success">Rezervace je ji potvrzena.</p>
         <p><strong>${formatDateTime(r.zacatek)}</strong></p>
         <p>${r.polozky.map(p => esc(p.nazev)).join(', ')}</p>
       `;
@@ -262,10 +262,10 @@ async function handlePotvrzeni(token) {
       return;
     }
     $('#potvrzeni-info').innerHTML = `
-      <p>ProsÃ­m potvrÄte rezervaci na tento termÃ­n:</p>
+      <p>Prosím potvrïte rezervaci na tento termín:</p>
       <p><strong>${formatDateTime(r.zacatek)}</strong></p>
       <p>${r.polozky.map(p => esc(p.nazev)).join(', ')}</p>
-      ${r.zamestnanec_jmeno ? `<p>PracovnÃ­k: ${esc(r.zamestnanec_jmeno)}</p>` : ''}
+      ${r.zamestnanec_jmeno ? `<p>Pracovník: ${esc(r.zamestnanec_jmeno)}</p>` : ''}
       ${data.lze_potvrdit ? '' : `<p class="error">${esc(data.detail)}</p>`}
     `;
     $('#btn-potvrdit').classList.remove('hidden');
@@ -277,9 +277,9 @@ async function handlePotvrzeni(token) {
           <p class="success">${esc(res.message)}</p>
           <p><strong>${formatDateTime(res.rezervace.zacatek)}</strong></p>
           <p>${res.rezervace.polozky.map(p => esc(p.nazev)).join(', ')}</p>
-          <p><a href="${API_BASE}/salon/${SALON_ID}/rezervace/${res.rezervace.id}/ics/">StÃ¡hnout kalendÃ¡Å™ (.ics)</a></p>
+          <p><a href="${API_BASE}/salon/${SALON_ID}/rezervace/${res.rezervace.id}/ics/">Stáhnout kalendáø (.ics)</a></p>
         `;
-        $('#potvrzeni-msg').textContent = 'PotvrzovacÃ­ e-mail byl odeslÃ¡n.';
+        $('#potvrzeni-msg').textContent = 'Potvrzovací e-mail byl odeslán.';
         $('#potvrzeni-msg').className = 'status-msg success';
         $('#btn-potvrdit').classList.add('hidden');
       } catch (e) {
@@ -309,7 +309,7 @@ async function handleStorno(token) {
     $('#btn-storno').onclick = async () => {
       try {
         await api(`/salon/${SALON_ID}/rezervace/storno/${token}/`, { method: 'POST', body: '{}' });
-        $('#storno-msg').textContent = 'Rezervace zruÅ¡ena.';
+        $('#storno-msg').textContent = 'Rezervace zrušena.';
         $('#storno-msg').className = 'status-msg success';
         $('#btn-storno').disabled = true;
       } catch (e) {
@@ -322,14 +322,14 @@ async function handleStorno(token) {
   }
 }
 
-const MONTH_NAMES = ['Leden', 'Ãšnor', 'BÅ™ezen', 'Duben', 'KvÄ›ten', 'ÄŒerven', 'ÄŒervenec', 'Srpen', 'ZÃ¡Å™Ã­', 'Å˜Ã­jen', 'Listopad', 'Prosinec'];
+const MONTH_NAMES = ['Leden', 'Únor', 'Bøezen', 'Duben', 'Kvìten', 'Èerven', 'Èervenec', 'Srpen', 'Záøí', 'Øíjen', 'Listopad', 'Prosinec'];
 const STAV_OPTS = [
-  ['ceka', 'ÄŒekÃ¡'],
+  ['ceka', 'Èeká'],
   ['potvrzeno', 'Potvrzeno'],
-  ['dokonceno', 'DokonÄeno'],
+  ['dokonceno', 'Dokonèeno'],
   ['no_show', 'No-show'],
   ['salon_storno', 'Salon storno'],
-  ['zakaznik_storno', 'ZÃ¡k. storno'],
+  ['zakaznik_storno', 'Zák. storno'],
 ];
 
 let adminCalMonth = new Date();
@@ -405,12 +405,12 @@ function renderRezAkceButtons(r) {
   let html = '<div class="rez-akce">';
   if (canNoshow) {
     html += `
-      <button type="button" class="btn btn-primary btn-sm btn-rez-dokonceno" data-id="${r.id}">Rezervace probÄ›hla</button>
+      <button type="button" class="btn btn-primary btn-sm btn-rez-dokonceno" data-id="${r.id}">Rezervace probìhla</button>
       <button type="button" class="btn btn-danger btn-sm btn-rez-noshow" data-id="${r.id}">NO-show</button>`;
   }
   if (canPlatba) {
     html += `
-      <button type="button" class="btn btn-secondary btn-sm btn-rez-platba" data-id="${r.id}">PoÅ¾Ã¡dat o platbu na ÃºÄet</button>`;
+      <button type="button" class="btn btn-secondary btn-sm btn-rez-platba" data-id="${r.id}">Poádat o platbu na úèet</button>`;
   }
   html += '</div>';
   return html;
@@ -419,19 +419,19 @@ function renderRezAkceButtons(r) {
 const STAV_LABELS = Object.fromEntries(STAV_OPTS);
 
 function renderAdminEvent(r) {
-  const jmeno = r.kontaktni_jmeno || r.zakaznik_nick || r.jmeno_host || 'â€”';
+  const jmeno = r.kontaktni_jmeno || r.zakaznik_nick || r.jmeno_host || '—';
   const sluzby = r.polozky.map((p) => esc(p.nazev)).join(', ');
   const stavLabel = STAV_LABELS[r.stav] || r.stav;
   return `
     <div class="cal-event admin-card">
-      <div class="cal-event-time">${formatTime(r.zacatek)} â€“ ${formatTime(r.konec)}</div>
+      <div class="cal-event-time">${formatTime(r.zacatek)} – ${formatTime(r.konec)}</div>
       <div class="cal-event-body">
         <div class="rez-event-head">
           <strong>${esc(jmeno)}</strong>
           <span class="stav stav-${r.stav}">${esc(stavLabel)}</span>
         </div>
         <p>${sluzby}</p>
-        ${r.zamestnanec_jmeno ? `<p class="hint">PracovnÃ­k: ${esc(r.zamestnanec_jmeno)}</p>` : ''}
+        ${r.zamestnanec_jmeno ? `<p class="hint">Pracovník: ${esc(r.zamestnanec_jmeno)}</p>` : ''}
         ${renderRezAkceButtons(r)}
       </div>
     </div>`;
@@ -469,24 +469,24 @@ let pendingNoShowId = null;
 function openNoShowModal(rezId) {
   const r = adminCalData.find((x) => Number(x.id) === Number(rezId));
   if (!r) {
-    alert('Rezervaci se nepodaÅ™ilo naÄÃ­st. Obnovte strÃ¡nku klÃ¡vesou Ctrl+F5.');
+    alert('Rezervaci se nepodaøilo naèíst. Obnovte stránku klávesou Ctrl+F5.');
     return;
   }
   if (!['ceka', 'potvrzeno'].includes(r.stav)) {
-    alert('Tuto rezervaci uÅ¾ nelze oznaÄit jako NO-show (je ve stavu: ' + (STAV_LABELS[r.stav] || r.stav) + ').');
+    alert('Tuto rezervaci u nelze oznaèit jako NO-show (je ve stavu: ' + (STAV_LABELS[r.stav] || r.stav) + ').');
     return;
   }
   pendingNoShowId = rezId;
-  const jmeno = r.kontaktni_jmeno || r.zakaznik_nick || r.jmeno_host || 'â€”';
+  const jmeno = r.kontaktni_jmeno || r.zakaznik_nick || r.jmeno_host || '—';
   const email = r.kontaktni_email || r.email_host || 'bez e-mailu';
-  $('#noshow-modal-info').textContent = `${jmeno} (${email}) â€” ${formatDateTime(r.zacatek)}`;
+  $('#noshow-modal-info').textContent = `${jmeno} (${email}) — ${formatDateTime(r.zacatek)}`;
   $('#noshow-send-email').checked = !!r.kontaktni_email;
   $('#noshow-send-email').disabled = !r.kontaktni_email;
   $('#noshow-block-email').checked = false;
   $('#noshow-modal-msg').textContent = '';
   const modal = $('#noshow-modal');
   if (!modal) {
-    alert('ChybÃ­ dialog NO-show. Obnovte strÃ¡nku Ctrl+F5.');
+    alert('Chybí dialog NO-show. Obnovte stránku Ctrl+F5.');
     return;
   }
   modal.classList.remove('hidden');
@@ -504,17 +504,17 @@ let pendingPlatbaId = null;
 function openPlatbaModal(rezId) {
   const r = adminCalData.find((x) => Number(x.id) === Number(rezId));
   if (!r) {
-    alert('Rezervaci se nepodaÅ™ilo naÄÃ­st. Obnovte strÃ¡nku klÃ¡vesou Ctrl+F5.');
+    alert('Rezervaci se nepodaøilo naèíst. Obnovte stránku klávesou Ctrl+F5.');
     return;
   }
   const email = r.kontaktni_email || r.email_host;
   if (!email) {
-    alert('Rezervace nemÃ¡ e-mail zÃ¡kaznÃ­ka.');
+    alert('Rezervace nemá e-mail zákazníka.');
     return;
   }
   pendingPlatbaId = rezId;
-  const jmeno = r.kontaktni_jmeno || r.zakaznik_nick || r.jmeno_host || 'â€”';
-  $('#platba-modal-info').textContent = `${jmeno} (${email}) â€” ${formatDateTime(r.zacatek)}`;
+  const jmeno = r.kontaktni_jmeno || r.zakaznik_nick || r.jmeno_host || '—';
+  $('#platba-modal-info').textContent = `${jmeno} (${email}) — ${formatDateTime(r.zacatek)}`;
   $('#platba-castka').value = '';
   const ucet = r.zamestnanec_cislo_uctu
     || staffData.find((s) => s.id === r.zamestnanec)?.cislo_uctu
@@ -541,8 +541,8 @@ function showPlatbaQrOnScreen(data) {
   img.alt = 'QR platba';
   if (info) {
     info.innerHTML = `
-      <p><strong>${esc(data.castka || '')} KÄ</strong></p>
-      <p>ÃšÄet: ${esc(data.ucet || '')}</p>
+      <p><strong>${esc(data.castka || '')} Kè</strong></p>
+      <p>Úèet: ${esc(data.ucet || '')}</p>
       <p>VS: ${esc(data.variabilni_symbol || '')}</p>`;
   }
   $('#platba-qr-modal')?.classList.remove('hidden');
@@ -558,7 +558,7 @@ function applyStaffUI() {
   const badge = $('#admin-actor-badge');
   if (badge && staffUser) {
     badge.textContent = staffUser.je_majitel
-      ? `${staffUser.jmeno} Â· majitelka`
+      ? `${staffUser.jmeno} · majitelka`
       : staffUser.jmeno;
   }
   const majitelOnly = ['kadernice', 'noshow', 'nastaveni', 'audit'];
@@ -577,7 +577,7 @@ async function loadAuditLog(page = 1) {
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/audit-log/?page=${page}`);
   const el = $('#audit-log-list');
   if (!data.vysledky?.length) {
-    el.innerHTML = '<p class="hint">ZatÃ­m Å¾Ã¡dnÃ© zÃ¡znamy.</p>';
+    el.innerHTML = '<p class="hint">Zatím ádné záznamy.</p>';
   } else {
     el.innerHTML = `<table class="tag-table audit-table">
       <thead><tr><th>Kdy</th><th>Kdo</th><th>Co se stalo</th></tr></thead>
@@ -589,7 +589,7 @@ async function loadAuditLog(page = 1) {
     </table>`;
   }
   const pag = $('#audit-pager');
-  if (pag) pag.textContent = `Strana ${data.stranka} / ${data.celkem_stranek} (${data.celkem} zÃ¡znamÅ¯)`;
+  if (pag) pag.textContent = `Strana ${data.stranka} / ${data.celkem_stranek} (${data.celkem} záznamù)`;
   $('#audit-prev').disabled = data.stranka <= 1;
   $('#audit-next').disabled = data.stranka >= data.celkem_stranek;
 }
@@ -603,20 +603,20 @@ async function loadNoShowArchiv(page = 1) {
   const pag = $('#noshow-pagination');
 
   if (!data.vysledky?.length) {
-    el.innerHTML = '<p class="hint">Å½Ã¡dnÃ½ zÃ¡znam NO-show'
-      + (noshowQuery ? ' pro zadanÃ© hledÃ¡nÃ­' : '') + '.</p>';
+    el.innerHTML = '<p class="hint">ádnı záznam NO-show'
+      + (noshowQuery ? ' pro zadané hledání' : '') + '.</p>';
     pag.classList.add('hidden');
     return;
   }
 
   el.innerHTML = `<table class="tag-table noshow-table">
     <thead><tr>
-      <th>E-mail</th><th>JmÃ©no</th><th>NO-show</th><th>Stav</th><th>PoslednÃ­</th><th></th>
+      <th>E-mail</th><th>Jméno</th><th>NO-show</th><th>Stav</th><th>Poslední</th><th></th>
     </tr></thead>
     <tbody>${data.vysledky.map((z) => {
       let stav = 'V seznamu';
-      if (z.blokovan_v_salonu) stav = 'BlokovÃ¡n';
-      else if (z.problematicky) stav = 'ProblematickÃ½';
+      if (z.blokovan_v_salonu) stav = 'Blokován';
+      else if (z.problematicky) stav = 'Problematickı';
       const rowCls = z.kriticky ? 'noshow-row-kriticky' : (z.problematicky ? 'noshow-row-varovani' : '');
       const btn = z.blokovan_v_salonu
         ? `<button type="button" class="btn btn-secondary btn-sm btn-noshow-odblok" data-email="${esc(z.email)}">ODBLOKOVAT</button>`
@@ -624,13 +624,13 @@ async function loadNoShowArchiv(page = 1) {
       return `<tr class="${rowCls}">
         <td>${esc(z.email)}</td>
         <td>${esc(z.jmeno)}</td>
-        <td><strong>${z.pocet_no_show}Ã—</strong></td>
+        <td><strong>${z.pocet_no_show}×</strong></td>
         <td><span class="stav stav-${z.blokovan_v_salonu ? 'no_show' : z.problematicky ? 'ceka' : 'potvrzeno'}">${stav}</span></td>
         <td>${formatDateTime(z.posledni)}</td>
         <td>${btn}</td>
       </tr>`;
     }).join('')}</tbody></table>
-    <p class="hint">Zobrazeno ${data.vysledky.length} z ${data.celkem} kontaktÅ¯ (strana ${data.stranka}/${data.celkem_stranek}). Å˜Ã¡dky s 3+ NO-show jsou zvÃ½raznÄ›ny ÄervenÄ›, s 2 NO-show oranÅ¾ovÄ›.</p>`;
+    <p class="hint">Zobrazeno ${data.vysledky.length} z ${data.celkem} kontaktù (strana ${data.stranka}/${data.celkem_stranek}). Øádky s 3+ NO-show jsou zvıraznìny èervenì, s 2 NO-show oranovì.</p>`;
 
   el.querySelectorAll('.btn-noshow-blok').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -669,9 +669,9 @@ async function loadNoShowArchiv(page = 1) {
   if (data.celkem_stranek > 1) {
     pag.classList.remove('hidden');
     pag.innerHTML = `
-      <button type="button" class="btn btn-secondary btn-sm" id="noshow-prev" ${data.stranka <= 1 ? 'disabled' : ''}>â† PÅ™edchozÃ­</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="noshow-prev" ${data.stranka <= 1 ? 'disabled' : ''}>‹ Pøedchozí</button>
       <span>Strana ${data.stranka} / ${data.celkem_stranek}</span>
-      <button type="button" class="btn btn-secondary btn-sm" id="noshow-next" ${data.stranka >= data.celkem_stranek ? 'disabled' : ''}>DalÅ¡Ã­ â†’</button>`;
+      <button type="button" class="btn btn-secondary btn-sm" id="noshow-next" ${data.stranka >= data.celkem_stranek ? 'disabled' : ''}>Další ›</button>`;
     $('#noshow-prev')?.addEventListener('click', () => loadNoShowArchiv(data.stranka - 1));
     $('#noshow-next')?.addEventListener('click', () => loadNoShowArchiv(data.stranka + 1));
   } else {
@@ -694,7 +694,7 @@ function showCalDay(dateStr) {
 
   $('#cal-day-timeline').innerHTML = events.length
     ? events.map(renderAdminEvent).join('')
-    : '<p class="hint">Å½Ã¡dnÃ© rezervace.</p>';
+    : '<p class="hint">ádné rezervace.</p>';
   bindRezAkce($('#cal-day-timeline'));
   $('#cal-day-detail').classList.remove('hidden');
 }
@@ -702,13 +702,13 @@ function showCalDay(dateStr) {
 async function loadStats() {
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/statistiky/`);
   $('#stats-box').innerHTML = `
-    <p>Celkem rezervacÃ­: <strong>${data.celkem_rezervaci}</strong></p>
-    <p>DokonÄeno: ${data.dokonceno} Â· Storno: ${data.storno} (${data.storno_procent}%)</p>
+    <p>Celkem rezervací: <strong>${data.celkem_rezervaci}</strong></p>
+    <p>Dokonèeno: ${data.dokonceno} · Storno: ${data.storno} (${data.storno_procent}%)</p>
     <p>No-show: ${data.no_show}</p>
-    <h4>NejprodÃ¡vanÄ›jÅ¡Ã­ sluÅ¾by</h4>
-    <ul>${data.nejprodavanejsi_sluzby.map(s => `<li>${esc(s.sluzba__nazev)} (${s.pocet}Ã—)</li>`).join('')}</ul>
-    <h4>NejvytÃ­Å¾enÄ›jÅ¡Ã­ zamÄ›stnanci</h4>
-    <ul>${data.nejvytizenejsi_zamestnanci.map(z => `<li>${esc(z.zamestnanec__jmeno)} (${z.pocet}Ã—)</li>`).join('')}</ul>
+    <h4>Nejprodávanìjší sluby</h4>
+    <ul>${data.nejprodavanejsi_sluzby.map(s => `<li>${esc(s.sluzba__nazev)} (${s.pocet}×)</li>`).join('')}</ul>
+    <h4>Nejvytíenìjší zamìstnanci</h4>
+    <ul>${data.nejvytizenejsi_zamestnanci.map(z => `<li>${esc(z.zamestnanec__jmeno)} (${z.pocet}×)</li>`).join('')}</ul>
   `;
 }
 
@@ -727,10 +727,10 @@ async function loadNastaveni() {
 const MAX_NOTIFIKACE = 4;
 
 const NOTIF_POPISY = [
-  'PÅ™ipomÃ­nka pÅ™ed termÃ­nem (doporuÄeno +24 h) â€” odesÃ­lÃ¡ se automaticky',
-  'PodÄ›kovÃ¡nÃ­ po nÃ¡vÅ¡tÄ›vÄ› a prosba o recenzi (doporuÄeno -2 h po sluÅ¾bÄ›) â€” automaticky',
-  'UpozornÄ›nÃ­ na neuskuteÄnÄ›nou rezervaci â€” pouze ruÄnÄ› u NO-show, bez automatickÃ©ho Äasu',
-  'Å½Ã¡dost o Ãºhradu na ÃºÄet s QR kÃ³dem â€” pouze ruÄnÄ› u rezervace (tlaÄÃ­tko PoÅ¾Ã¡dat o platbu)',
+  'Pøipomínka pøed termínem (doporuèeno +24 h) — odesílá se automaticky',
+  'Podìkování po návštìvì a prosba o recenzi (doporuèeno -2 h po slubì) — automaticky',
+  'Upozornìní na neuskuteènìnou rezervaci — pouze ruènì u NO-show, bez automatického èasu',
+  'ádost o úhradu na úèet s QR kódem — pouze ruènì u rezervace (tlaèítko Poádat o platbu)',
 ];
 
 function renderTagGuide(tagy) {
@@ -741,7 +741,7 @@ function renderTagGuide(tagy) {
   const table = document.createElement('table');
   table.className = 'tag-table';
   const thead = document.createElement('thead');
-  thead.innerHTML = '<tr><th>Tag (zkopÃ­rujte do textu)</th><th>Co se vypÃ­Å¡e</th><th>PÅ™Ã­klad</th></tr>';
+  thead.innerHTML = '<tr><th>Tag (zkopírujte do textu)</th><th>Co se vypíše</th><th>Pøíklad</th></tr>';
   table.appendChild(thead);
   const tbody = document.createElement('tbody');
   tagy.forEach((row) => {
@@ -750,7 +750,7 @@ function renderTagGuide(tagy) {
     const code = document.createElement('code');
     code.className = 'tag-copy';
     code.textContent = row.tag;
-    code.title = 'KliknutÃ­m zkopÃ­rujete';
+    code.title = 'Kliknutím zkopírujete';
     code.addEventListener('click', () => {
       navigator.clipboard?.writeText(row.tag);
       code.classList.add('tag-copied');
@@ -808,8 +808,8 @@ function buildNotifCard(n, i) {
     const manualHint = document.createElement('p');
     manualHint.className = 'notif-manual-hint';
     manualHint.textContent = manualTyp === 'platba'
-      ? 'Tento e-mail se neodesÃ­lÃ¡ automaticky. PersonÃ¡l ho odeÅ¡le tlaÄÃ­tkem â€PoÅ¾Ã¡dat o platbu na ÃºÄetâ€œ u rezervace â€” v e-mailu bude QR kÃ³d pro platbu.'
-      : 'Tento e-mail se neodesÃ­lÃ¡ automaticky. Text si pÅ™ipravÃ­te zde, odeÅ¡le se aÅ¾ po stisknutÃ­ NO-show u konkrÃ©tnÃ­ rezervace v kalendÃ¡Å™i.';
+      ? 'Tento e-mail se neodesílá automaticky. Personál ho odešle tlaèítkem „Poádat o platbu na úèet“ u rezervace — v e-mailu bude QR kód pro platbu.'
+      : 'Tento e-mail se neodesílá automaticky. Text si pøipravíte zde, odešle se a po stisknutí NO-show u konkrétní rezervace v kalendáøi.';
     header.appendChild(manualHint);
   } else {
     const activeLabel = document.createElement('label');
@@ -821,24 +821,24 @@ function buildNotifCard(n, i) {
     activeCb.addEventListener('change', () => {
       card.classList.toggle('notif-inactive', !activeCb.checked);
     });
-    activeLabel.append(activeCb, document.createTextNode(' OdesÃ­lat automaticky (cron)'));
+    activeLabel.append(activeCb, document.createTextNode(' Odesílat automaticky (cron)'));
 
     const offsetLabel = document.createElement('label');
     offsetLabel.className = 'notif-offset-label';
-    offsetLabel.append(document.createTextNode('ÄŒas odeslÃ¡nÃ­ '));
+    offsetLabel.append(document.createTextNode('Èas odeslání '));
     const offsetInput = document.createElement('input');
     offsetInput.type = 'text';
     offsetInput.className = 'notif-offset';
     offsetInput.value = n.offset || '+24';
     offsetInput.placeholder = '+24 nebo -2';
-    offsetInput.title = '+24 = pÅ™ed termÃ­nem, -2 = po skonÄenÃ­ rezervace';
+    offsetInput.title = '+24 = pøed termínem, -2 = po skonèení rezervace';
     offsetLabel.appendChild(offsetInput);
     header.append(activeLabel, offsetLabel);
   }
 
   const predmetLabel = document.createElement('label');
   predmetLabel.className = 'notif-field';
-  predmetLabel.append(document.createTextNode('PÅ™edmÄ›t e-mailu'));
+  predmetLabel.append(document.createTextNode('Pøedmìt e-mailu'));
   const predmetInput = document.createElement('input');
   predmetInput.type = 'text';
   predmetInput.className = 'notif-predmet';
@@ -900,14 +900,14 @@ function formatTimeInput(t) {
 
 function renderSalonHoursHint() {
   if (!staffSalonHours.length) {
-    $('#salon-hours-hint').textContent = 'â€”';
+    $('#salon-hours-hint').textContent = '—';
     return;
   }
   const parts = staffSalonHours.map((d) => {
-    if (d.zavreno) return `${d.den_nazev}: zavÅ™eno`;
-    return `${d.den_nazev}: ${formatTimeInput(d.od)}â€“${formatTimeInput(d.do)}`;
+    if (d.zavreno) return `${d.den_nazev}: zavøeno`;
+    return `${d.den_nazev}: ${formatTimeInput(d.od)}–${formatTimeInput(d.do)}`;
   });
-  $('#salon-hours-hint').textContent = parts.join(' Â· ');
+  $('#salon-hours-hint').textContent = parts.join(' · ');
 }
 
 async function loadStaff() {
@@ -932,7 +932,7 @@ function renderStaffList() {
   $('#staff-list').innerHTML = staffData.map((s) => `
     <button type="button" class="staff-list-btn ${s.id === selectedStaffId ? 'active' : ''} ${s.aktivni ? '' : 'staff-inactive'}" data-id="${s.id}">
       ${esc(s.jmeno)}
-      <small>${esc(s.specializace || 'bez specializace')}${s.role === 'majitel' ? ' Â· majitelka' : ''}${s.aktivni ? '' : ' Â· ÃºÄet deaktivovÃ¡n'}</small>
+      <small>${esc(s.specializace || 'bez specializace')}${s.role === 'majitel' ? ' · majitelka' : ''}${s.aktivni ? '' : ' · úèet deaktivován'}</small>
     </button>
   `).join('');
   $$('#staff-list .staff-list-btn').forEach((btn) => {
@@ -957,16 +957,16 @@ function updateStaffUcetUI(staff) {
   const isMajitelka = staff.role === 'majitel';
   if (status) {
     if (isMajitelka) {
-      status.textContent = 'ÃšÄet majitele â€” jen sprÃ¡va salonu, bez rezervacÃ­ a rozvrhu. Pokud majitel takÃ© provÃ¡dÃ­ sluÅ¾by, zaloÅ¾te mu bÄ›Å¾nÃ½ zamÄ›stnaneckÃ½ ÃºÄet.';
+      status.textContent = 'Úèet majitele — jen správa salonu, bez rezervací a rozvrhu. Pokud majitel také provádí sluby, zalote mu bìnı zamìstnaneckı úèet.';
       status.className = 'hint';
     } else if (!staff.aktivni) {
-      status.textContent = 'ÃšÄet je deaktivovÃ¡n. ZamÄ›stnanec se nemÅ¯Å¾e pÅ™ihlÃ¡sit, historie rezervacÃ­ a audit zÅ¯stÃ¡vajÃ­ zachovanÃ©.';
+      status.textContent = 'Úèet je deaktivován. Zamìstnanec se nemùe pøihlásit, historie rezervací a audit zùstávají zachované.';
       status.className = 'hint error';
     } else if (staff.ma_prihlaseni) {
-      status.textContent = `PÅ™ihlÃ¡Å¡enÃ­: ${staff.prihlasovaci_jmeno}`;
+      status.textContent = `Pøihlášení: ${staff.prihlasovaci_jmeno}`;
       status.className = 'hint success';
     } else {
-      status.textContent = 'ÃšÄet zatÃ­m nemÃ¡ nastavenÃ© pÅ™ihlÃ¡Å¡enÃ­.';
+      status.textContent = 'Úèet zatím nemá nastavené pøihlášení.';
       status.className = 'hint';
     }
   }
@@ -1017,12 +1017,12 @@ function selectStaff(id) {
   $('#staff-absence-list').innerHTML = (staff.absence || []).length
     ? staff.absence.map((a) => `
       <div class="absence-item">
-        <span><strong>${esc(a.typ_label)}</strong> ${formatDate(a.datum_od)} â€“ ${formatDate(a.datum_do)}
-        ${a.poznamka ? ` Â· ${esc(a.poznamka)}` : ''}</span>
+        <span><strong>${esc(a.typ_label)}</strong> ${formatDate(a.datum_od)} – ${formatDate(a.datum_do)}
+        ${a.poznamka ? ` · ${esc(a.poznamka)}` : ''}</span>
         <button type="button" class="btn btn-secondary btn-sm btn-del-absence" data-id="${a.id}">Smazat</button>
       </div>
     `).join('')
-    : '<p class="hint">Å½Ã¡dnÃ© zadanÃ© volno.</p>';
+    : '<p class="hint">ádné zadané volno.</p>';
   $$('.btn-del-absence').forEach((btn) => {
     btn.addEventListener('click', () => deleteStaffAbsence(parseInt(btn.dataset.id, 10)));
   });
@@ -1052,13 +1052,13 @@ function collectStaffRozvrh() {
 async function deactivateStaffAccount() {
   const staff = getSelectedStaff();
   if (!staff || staff.role === 'majitel') return;
-  if (!confirm(`Deaktivovat ÃºÄet zamÄ›stnance ${staff.jmeno}?\n\nÃšÄet se nesmaÅ¾e â€” zÅ¯stane historie rezervacÃ­ a audit. ZamÄ›stnanec se uÅ¾ nepÅ™ihlÃ¡sÃ­.`)) return;
+  if (!confirm(`Deaktivovat úèet zamìstnance ${staff.jmeno}?\n\nÚèet se nesmae — zùstane historie rezervací a audit. Zamìstnanec se u nepøihlásí.`)) return;
   const msg = $('#staff-rozvrh-msg');
-  msg.textContent = 'Deaktivuji ÃºÄetâ€¦';
+  msg.textContent = 'Deaktivuji úèet…';
   msg.className = 'status-msg';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${staff.id}/deaktivovat/`, { method: 'POST' });
-    msg.textContent = 'ÃšÄet byl deaktivovÃ¡n.';
+    msg.textContent = 'Úèet byl deaktivován.';
     msg.className = 'status-msg success';
     await loadStaff();
   } catch (err) {
@@ -1071,7 +1071,7 @@ async function saveStaffRozvrh() {
   const staff = getSelectedStaff();
   if (!staff || staff.role === 'majitel') return;
   const msg = $('#staff-rozvrh-msg');
-  msg.textContent = 'UklÃ¡dÃ¡mâ€¦';
+  msg.textContent = 'Ukládám…';
   msg.className = 'status-msg';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${staff.id}/`, {
@@ -1086,7 +1086,7 @@ async function saveStaffRozvrh() {
         rozvrh: collectStaffRozvrh(),
       }),
     });
-    msg.textContent = 'Ãšdaje kadeÅ™nice uloÅ¾eny.';
+    msg.textContent = 'Údaje kadeønice uloeny.';
     msg.className = 'status-msg success';
     await loadStaff();
   } catch (err) {
@@ -1104,9 +1104,9 @@ async function deleteStaffAbsence(absenceId) {
 }
 
 async function addStaffMember() {
-  const jmeno = prompt('JmÃ©no kadeÅ™nice:');
+  const jmeno = prompt('Jméno kadeønice:');
   if (!jmeno?.trim()) return;
-  const specializace = prompt('Specializace (volitelnÃ©):') || '';
+  const specializace = prompt('Specializace (volitelné):') || '';
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/`, {
     method: 'POST',
     body: JSON.stringify({ jmeno: jmeno.trim(), specializace: specializace.trim(), aktivni: true }),
@@ -1171,7 +1171,7 @@ $('#form-prihlaseni').addEventListener('submit', async (e) => {
   const fallback = $('#heslo-fallback');
   fallback.classList.add('hidden');
   fallback.innerHTML = '';
-  msg.textContent = 'PÅ™ihlaÅ¡ujiâ€¦';
+  msg.textContent = 'Pøihlašuji…';
   msg.className = 'status-msg';
 
   try {
@@ -1198,11 +1198,11 @@ $('#btn-zapomenute-heslo').addEventListener('click', async () => {
   const fallback = $('#heslo-fallback');
   fallback.classList.add('hidden');
   if (!email) {
-    msg.textContent = 'NejdÅ™Ã­ve zadejte e-mail.';
+    msg.textContent = 'Nejdøíve zadejte e-mail.';
     msg.className = 'status-msg error';
     return;
   }
-  msg.textContent = 'OdesÃ­lÃ¡m novÃ© hesloâ€¦';
+  msg.textContent = 'Odesílám nové heslo…';
   msg.className = 'status-msg';
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/zakaznik/zapomenute-heslo/`, {
@@ -1212,7 +1212,7 @@ $('#btn-zapomenute-heslo').addEventListener('click', async () => {
     msg.textContent = data.message;
     msg.className = `status-msg ${data.email_odeslan !== false ? 'success' : 'error'}`;
     if (data.heslo) {
-      fallback.innerHTML = `<strong>NovÃ© heslo (e-mail se neodeslal):</strong> <code>${esc(data.heslo)}</code>`;
+      fallback.innerHTML = `<strong>Nové heslo (e-mail se neodeslal):</strong> <code>${esc(data.heslo)}</code>`;
       fallback.classList.remove('hidden');
       $('#login-password').value = data.heslo;
     }
@@ -1232,7 +1232,7 @@ $('#btn-odhlasit').addEventListener('click', () => {
 $('#form-admin-login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#admin-login-msg');
-  msg.textContent = 'PÅ™ihlaÅ¡ujiâ€¦';
+  msg.textContent = 'Pøihlašuji…';
   msg.className = 'status-msg';
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/staff/prihlaseni/`, {
@@ -1341,7 +1341,7 @@ $('#noshow-search').addEventListener('keydown', (e) => {
 $('#noshow-confirm').addEventListener('click', async () => {
   if (!pendingNoShowId) return;
   const msg = $('#noshow-modal-msg');
-  msg.textContent = 'UklÃ¡dÃ¡mâ€¦';
+  msg.textContent = 'Ukládám…';
   msg.className = 'status-msg';
   try {
     const res = await api(`/salon/${SALON_ID}/rezervace/admin/${pendingNoShowId}/no-show/`, {
@@ -1353,11 +1353,11 @@ $('#noshow-confirm').addEventListener('click', async () => {
     });
     closeNoShowModal();
     await refreshCalDayAfterChange();
-    let info = 'NO-show uloÅ¾en.';
-    if (res.email_odeslan) info += ' UpozornÄ›nÃ­ odeslÃ¡no.';
-    if (res.reputace?.blokovan_v_salonu) info += ' E-mail zablokovÃ¡n (3+ NO-show v tomto salonu).';
-    else if (res.reputace?.problematicky) info += ` E-mail je problematickÃ½ (${res.reputace.pocet}Ã— NO-show v tomto salonu).`;
-    else if (res.zakaznik_blokovan) info += ' E-mail zablokovÃ¡n v tomto salonu.';
+    let info = 'NO-show uloen.';
+    if (res.email_odeslan) info += ' Upozornìní odesláno.';
+    if (res.reputace?.blokovan_v_salonu) info += ' E-mail zablokován (3+ NO-show v tomto salonu).';
+    else if (res.reputace?.problematicky) info += ` E-mail je problematickı (${res.reputace.pocet}× NO-show v tomto salonu).`;
+    else if (res.zakaznik_blokovan) info += ' E-mail zablokován v tomto salonu.';
     alert(info);
   } catch (e) {
     msg.textContent = e.message;
@@ -1376,11 +1376,11 @@ $('#platba-confirm').addEventListener('click', async () => {
   const ucet = $('#platba-ucet').value.trim();
   const vs = $('#platba-vs').value.trim();
   if (!castka || !ucet || !vs) {
-    msg.textContent = 'VyplÅˆte ÄÃ¡stku, ÄÃ­slo ÃºÄtu a variabilnÃ­ symbol.';
+    msg.textContent = 'Vyplòte èástku, èíslo úètu a variabilní symbol.';
     msg.className = 'status-msg error';
     return;
   }
-  msg.textContent = 'OdesÃ­lÃ¡mâ€¦';
+  msg.textContent = 'Odesílám…';
   msg.className = 'status-msg';
   try {
     const res = await api(`/salon/${SALON_ID}/rezervace/admin/${pendingPlatbaId}/platba/`, {
@@ -1401,11 +1401,11 @@ $('#btn-gdpr-export')?.addEventListener('click', async () => {
   const email = $('#gdpr-email')?.value.trim();
   const msg = $('#gdpr-admin-msg');
   if (!email) {
-    msg.textContent = 'Zadejte e-mail zÃ¡kaznÃ­ka.';
+    msg.textContent = 'Zadejte e-mail zákazníka.';
     msg.className = 'status-msg error';
     return;
   }
-  msg.textContent = 'Exportujiâ€¦';
+  msg.textContent = 'Exportuji…';
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/admin/gdpr/export/?email=${encodeURIComponent(email)}`);
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1414,7 +1414,7 @@ $('#btn-gdpr-export')?.addEventListener('click', async () => {
     a.download = `gdpr-export-${email.replace('@', '_')}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    msg.textContent = 'Export staÅ¾en.';
+    msg.textContent = 'Export staen.';
     msg.className = 'status-msg success';
   } catch (e) {
     msg.textContent = e.message;
@@ -1426,18 +1426,18 @@ $('#btn-gdpr-vymaz')?.addEventListener('click', async () => {
   const email = $('#gdpr-email')?.value.trim();
   const msg = $('#gdpr-admin-msg');
   if (!email) {
-    msg.textContent = 'Zadejte e-mail zÃ¡kaznÃ­ka.';
+    msg.textContent = 'Zadejte e-mail zákazníka.';
     msg.className = 'status-msg error';
     return;
   }
-  if (!confirm(`Trvale vymazat osobnÃ­ Ãºdaje zÃ¡kaznÃ­ka ${email}?\n\nRezervace zÅ¯stanou anonymizovanÃ© pro statistiky.`)) return;
-  msg.textContent = 'MaÅ¾uâ€¦';
+  if (!confirm(`Trvale vymazat osobní údaje zákazníka ${email}?\n\nRezervace zùstanou anonymizované pro statistiky.`)) return;
+  msg.textContent = 'Mau…';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/gdpr/vymaz/`, {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
-    msg.textContent = 'OsobnÃ­ Ãºdaje byly vymazÃ¡ny.';
+    msg.textContent = 'Osobní údaje byly vymazány.';
     msg.className = 'status-msg success';
   } catch (e) {
     msg.textContent = e.message;
@@ -1474,12 +1474,12 @@ $('#form-staff-rezervace').addEventListener('submit', async (e) => {
   const msg = $('#staff-rez-msg');
   const sluzby = [...$$('#staff-sluzby input:checked')].map((i) => parseInt(i.value, 10));
   if (!sluzby.length) {
-    msg.textContent = 'Vyberte alespoÅˆ jednu sluÅ¾bu.';
+    msg.textContent = 'Vyberte alespoò jednu slubu.';
     msg.className = 'status-msg error';
     return;
   }
   const cas = $('#staff-rez-cas').value.slice(0, 5);
-  msg.textContent = 'VytvÃ¡Å™Ã­m rezervaciâ€¦';
+  msg.textContent = 'Vytváøím rezervaci…';
   msg.className = 'status-msg';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/vytvorit/`, {
@@ -1497,7 +1497,7 @@ $('#form-staff-rezervace').addEventListener('submit', async (e) => {
         stav: 'potvrzeno',
       }),
     });
-    msg.textContent = 'Rezervace vytvoÅ™ena.';
+    msg.textContent = 'Rezervace vytvoøena.';
     msg.className = 'status-msg success';
     $('#form-staff-rezervace').reset();
     renderStaffSluzby();
@@ -1524,7 +1524,7 @@ $('#form-nastaveni').addEventListener('submit', async (e) => {
       notifikace: collectNotifikace(),
     }),
   });
-  alert('NastavenÃ­ uloÅ¾eno.');
+  alert('Nastavení uloeno.');
   loadNastaveni();
   } catch (err) {
     alert(err.message);

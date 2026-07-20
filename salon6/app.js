@@ -1,4 +1,4 @@
-ï»¿const API_BASE = 'http://localhost:8000/api';
+const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 2;
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;
@@ -25,7 +25,7 @@ function staffHeaders(extra = {}) {
 
 async function fetchPersonel() {
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/personel/`);
-  if (!res.ok) throw new Error('NepodaÅ™ilo se naÄÃ­st personÃ¡l.');
+  if (!res.ok) throw new Error('Nepodaøilo se naèíst personál.');
   return res.json();
 }
 
@@ -50,7 +50,7 @@ function renderPersonelPublic(list) {
   section?.classList.remove('hidden');
   grid.innerHTML = list.map((p, i) => {
     const hours = (p.rozvrh || []).map((r) => {
-      const cas = r.volno ? '<span class="zavreno">Volno</span>' : `${formatTime(r.od)} â€“ ${formatTime(r.do)}`;
+      const cas = r.volno ? '<span class="zavreno">Volno</span>' : `${formatTime(r.od)} – ${formatTime(r.do)}`;
       return `<tr><td>${esc(r.den_nazev)}</td><td>${cas}</td></tr>`;
     }).join('');
     return `<article class="team-card" style="--i:${i}">
@@ -82,24 +82,24 @@ function personelEditCard(z) {
   const id = z.id || '';
   return `<div class="personel-edit-card" data-id="${id}">
     <div class="personel-edit-head">
-      <strong>${esc(z.jmeno || 'NovÃ½ Älen tÃ½mu')}</strong>
+      <strong>${esc(z.jmeno || 'Novı èlen tımu')}</strong>
       <label class="checkbox"><input type="checkbox" class="p-web" ${z.zobrazit_na_webu !== false ? 'checked' : ''}> Na webu</label>
     </div>
-    <label>JmÃ©no<input type="text" class="p-jmeno" value="${esc(z.jmeno)}"></label>
-    <label>Specializace (krÃ¡tkÃ½ text)<input type="text" class="p-spec" value="${esc(z.specializace || '')}"></label>
+    <label>Jméno<input type="text" class="p-jmeno" value="${esc(z.jmeno)}"></label>
+    <label>Specializace (krátkı text)<input type="text" class="p-spec" value="${esc(z.specializace || '')}"></label>
     <label>Popis<textarea class="p-popis" rows="3">${esc(z.popis || '')}</textarea></label>
     <div class="p-foto-preview">${z.fotka ? `<img src="${esc(z.fotka)}" alt="">` : '<span class="placeholder">Bez fotky</span>'}</div>
-    <label class="btn btn-secondary btn-upload btn-sm">NahrÃ¡t fotku<input type="file" class="p-foto-upload" accept="image/*" hidden></label>
-    <p class="admin-hint">PracovnÃ­ doba urÄuje dostupnost v rezervacÃ­ch i otevÃ­racÃ­ dobu salonu na webu (souÄet vÅ¡ech zamÄ›stnancÅ¯).</p>
+    <label class="btn btn-secondary btn-upload btn-sm">Nahrát fotku<input type="file" class="p-foto-upload" accept="image/*" hidden></label>
+    <p class="admin-hint">Pracovní doba urèuje dostupnost v rezervacích i otevírací dobu salonu na webu (souèet všech zamìstnancù).</p>
     <table class="rozvrh-table admin-rozvrh">
       <thead><tr><th>Den</th><th>Od</th><th>Do</th><th>Volno</th></tr></thead>
       <tbody>${personelRozvrhRows(z.rozvrh)}</tbody>
     </table>
     <div class="personel-edit-actions">
-      <button type="button" class="btn btn-primary btn-sm btn-save-personel">UloÅ¾it</button>
-      ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat ÃºÄet</button>' : ''}
+      <button type="button" class="btn btn-primary btn-sm btn-save-personel">Uloit</button>
+      ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat úèet</button>' : ''}
     </div>
-    ${id && z.aktivni === false ? '<p class="admin-hint error">ÃšÄet deaktivovÃ¡n â€” zamÄ›stnanec se nemÅ¯Å¾e pÅ™ihlÃ¡sit. Obnovte zaÅ¡krtnutÃ­m â€AktivnÃ­â€œ v rezervacÃ­ch â†’ KadeÅ™nice.</p>' : ''}
+    ${id && z.aktivni === false ? '<p class="admin-hint error">Úèet deaktivován — zamìstnanec se nemùe pøihlásit. Obnovte zaškrtnutím „Aktivní“ v rezervacích › Kadeønice.</p>' : ''}
   </div>`;
 }
 
@@ -159,11 +159,11 @@ async function savePersonelCard(card) {
     rozvrh: collectPersonelRozvrh(card),
   };
   if (!payload.jmeno) {
-    msg.textContent = 'JmÃ©no je povinnÃ©.';
+    msg.textContent = 'Jméno je povinné.';
     msg.className = 'status-msg error';
     return;
   }
-  msg.textContent = 'UklÃ¡dÃ¡m personÃ¡lâ€¦';
+  msg.textContent = 'Ukládám personál…';
   msg.className = 'status-msg';
   try {
     const id = card.dataset.id;
@@ -179,7 +179,7 @@ async function savePersonelCard(card) {
     await loadPersonelAdmin();
     renderPersonelPublic(await fetchPersonel());
     await refreshOteviraciDoba();
-    msg.textContent = 'PersonÃ¡l uloÅ¾en.';
+    msg.textContent = 'Personál uloen.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -189,7 +189,7 @@ async function savePersonelCard(card) {
 
 async function deletePersonelCard(card) {
   const id = card.dataset.id;
-  if (!id || !confirm('Deaktivovat ÃºÄet tohoto Älena tÃ½mu?\n\nÃšÄet se nesmaÅ¾e â€” zÅ¯stane historie a audit. ZamÄ›stnanec se uÅ¾ nepÅ™ihlÃ¡sÃ­.')) return;
+  if (!id || !confirm('Deaktivovat úèet tohoto èlena tımu?\n\nÚèet se nesmae — zùstane historie a audit. Zamìstnanec se u nepøihlásí.')) return;
   await apiRezervace(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${id}/deaktivovat/`, { method: 'POST' });
   await loadPersonelAdmin();
   renderPersonelPublic(await fetchPersonel());
@@ -200,7 +200,7 @@ async function uploadPersonelPhoto(e, card) {
   const file = e.target.files[0];
   const id = card.dataset.id;
   if (!file || !id) {
-    alert('NejdÅ™Ã­ve uloÅ¾te Älena tÃ½mu, pak nahrajte fotku.');
+    alert('Nejdøíve ulote èlena tımu, pak nahrajte fotku.');
     e.target.value = '';
     return;
   }
@@ -209,7 +209,7 @@ async function uploadPersonelPhoto(e, card) {
   form.append('file', file);
   form.append('typ', 'personel');
   form.append('zamestnanec_id', id);
-  msg.textContent = 'NahrÃ¡vÃ¡m fotkuâ€¦';
+  msg.textContent = 'Nahrávám fotku…';
   try {
     const res = await fetch(`${API_BASE}/salon/${SALON_ID}/upload/`, {
       method: 'POST',
@@ -217,12 +217,12 @@ async function uploadPersonelPhoto(e, card) {
       body: form,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'NahrÃ¡nÃ­ selhalo');
+    if (!res.ok) throw new Error(data.detail || 'Nahrání selhalo');
     card.querySelector('.p-foto-preview').innerHTML = `<img src="${esc(data.url)}" alt="">`;
     await loadPersonelAdmin();
     renderPersonelPublic(await fetchPersonel());
     await refreshOteviraciDoba();
-    msg.textContent = 'Fotka nahrÃ¡na.';
+    msg.textContent = 'Fotka nahrána.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -233,7 +233,7 @@ async function uploadPersonelPhoto(e, card) {
 
 async function fetchSalon() {
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/`);
-  if (!res.ok) throw new Error('NepodaÅ™ilo se naÄÃ­st data salonu.');
+  if (!res.ok) throw new Error('Nepodaøilo se naèíst data salonu.');
   return res.json();
 }
 
@@ -270,8 +270,8 @@ function renderOteviraciDoba(list) {
   if (!tbody) return;
   tbody.innerHTML = (list || []).map(d => {
     const cas = d.zavreno
-      ? '<span class="zavreno">ZavÅ™eno</span>'
-      : `${formatTime(d.od)} â€“ ${formatTime(d.do)}`;
+      ? '<span class="zavreno">Zavøeno</span>'
+      : `${formatTime(d.od)} – ${formatTime(d.do)}`;
     return `<tr><td>${d.den_nazev}</td><td>${cas}</td></tr>`;
   }).join('');
 }
@@ -329,7 +329,7 @@ function renderSalon(data) {
   document.getElementById('cenik-list').innerHTML = data.cenik.map(item =>
     `<div class="price-card">
       <span class="price-name">${esc(item.nazev)}</span>
-      <span class="price-value">${item.cena} KÄ</span>
+      <span class="price-value">${item.cena} Kè</span>
     </div>`
   ).join('');
 
@@ -423,7 +423,7 @@ async function handleLogin(e) {
   const login = document.getElementById('staff-login').value.trim();
   const password = document.getElementById('staff-password').value;
   const msg = document.getElementById('login-status-msg');
-  msg.textContent = 'OvÄ›Å™ujiâ€¦';
+  msg.textContent = 'Ovìøuji…';
   msg.className = 'status-msg';
 
   try {
@@ -432,7 +432,7 @@ async function handleLogin(e) {
       body: JSON.stringify({ prihlasovaci_jmeno: login, password }),
     });
     if (!data.staff?.je_majitel) {
-      msg.textContent = 'Ãšprava webu je dostupnÃ¡ jen pro majitelku salonu.';
+      msg.textContent = 'Úprava webu je dostupná jen pro majitelku salonu.';
       msg.className = 'status-msg error';
       return;
     }
@@ -446,8 +446,8 @@ async function handleLogin(e) {
   } catch (err) {
     const raw = err.message || '';
     msg.textContent = /failed to fetch|networkerror|load failed/i.test(raw)
-      ? 'NepodaÅ™ilo se spojit s API. Zkontrolujte internet a zkuste obnovit strÃ¡nku (Ctrl+F5).'
-      : (raw || 'NesprÃ¡vnÃ© pÅ™ihlaÅ¡ovacÃ­ jmÃ©no nebo heslo.');
+      ? 'Nepodaøilo se spojit s API. Zkontrolujte internet a zkuste obnovit stránku (Ctrl+F5).'
+      : (raw || 'Nesprávné pøihlašovací jméno nebo heslo.');
     msg.className = 'status-msg error';
     console.error(err);
   }
@@ -463,7 +463,7 @@ async function handleWebAdminLogout() {
     try {
       await apiRezervace(`/salon/${SALON_ID}/rezervace/staff/odhlaseni/`, { method: 'POST' });
     } catch {
-      /* token uÅ¾ mohl bÃ½t neplatnÃ½ */
+      /* token u mohl bıt neplatnı */
     }
   }
   staffToken = '';
@@ -493,8 +493,8 @@ function showEditForm() {
 
   const hint = document.getElementById('bunny-hint');
   hint.textContent = bunnyConfigured
-    ? 'ObrÃ¡zky se nahrÃ¡vajÃ­ na Bunny.net CDN.'
-    : 'âš  Bunny.net nenÃ­ nastaven â€“ vyplÅˆte backend/.env (viz README).';
+    ? 'Obrázky se nahrávají na Bunny.net CDN.'
+    : '? Bunny.net není nastaven – vyplòte backend/.env (viz README).';
 
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = d.cenik.map(item => cenikEditRow(item)).join('');
@@ -515,7 +515,7 @@ function renderHeroPreview(url) {
   const el = document.getElementById('hero-preview');
   el.innerHTML = url
     ? `<img src="${esc(url)}" alt="Hero">`
-    : '<span class="placeholder">Å½Ã¡dnÃ¡ fotka</span>';
+    : '<span class="placeholder">ádná fotka</span>';
 }
 
 function renderGalleryEdit(obrazky) {
@@ -538,7 +538,7 @@ async function uploadImage(file, typ) {
   form.append('file', file);
   form.append('typ', typ);
 
-  msg.textContent = 'NahrÃ¡vÃ¡mâ€¦';
+  msg.textContent = 'Nahrávám…';
   msg.className = 'status-msg';
 
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/upload/?typ=${typ}`, {
@@ -548,7 +548,7 @@ async function uploadImage(file, typ) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || 'NahrÃ¡nÃ­ selhalo');
+  if (!res.ok) throw new Error(data.detail || 'Nahrání selhalo');
   return data;
 }
 
@@ -561,7 +561,7 @@ async function handleHeroUpload(e) {
     renderSalon(salonData);
     renderHeroPreview(data.url);
     const msg = document.getElementById('status-msg');
-    msg.textContent = 'Hero fotka nahrÃ¡na.';
+    msg.textContent = 'Hero fotka nahrána.';
     msg.className = 'status-msg success';
   } catch (err) {
     const msg = document.getElementById('status-msg');
@@ -581,7 +581,7 @@ async function handleGalleryUpload(e) {
     renderSalon(salonData);
     renderGalleryEdit(salonData.obrazky);
     const msg = document.getElementById('status-msg');
-    msg.textContent = 'Fotka pÅ™idÃ¡na do galerie.';
+    msg.textContent = 'Fotka pøidána do galerie.';
     msg.className = 'status-msg success';
   } catch (err) {
     const msg = document.getElementById('status-msg');
@@ -592,18 +592,18 @@ async function handleGalleryUpload(e) {
 }
 
 async function deleteImage(imageId) {
-  if (!confirm('Smazat tento obrÃ¡zek?')) return;
+  if (!confirm('Smazat tento obrázek?')) return;
   const msg = document.getElementById('status-msg');
   try {
     const res = await fetch(`${API_BASE}/salon/${SALON_ID}/obrazek/${imageId}/`, {
       method: 'DELETE',
       headers: staffHeaders(),
     });
-    if (!res.ok) throw new Error('SmazÃ¡nÃ­ selhalo');
+    if (!res.ok) throw new Error('Smazání selhalo');
     salonData = await fetchSalon();
     renderSalon(salonData);
     renderGalleryEdit(salonData.obrazky || []);
-    msg.textContent = 'ObrÃ¡zek smazÃ¡n.';
+    msg.textContent = 'Obrázek smazán.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -613,8 +613,8 @@ async function deleteImage(imageId) {
 
 function cenikEditRow(item) {
   return `<div class="edit-row cenik-edit-item" data-id="${item.id || ''}">
-    <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="SluÅ¾ba">
-    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="KÄ">
+    <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Sluba">
+    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kè">
   </div>`;
 }
 
@@ -623,7 +623,7 @@ function renderNovinkaPreview(row, url) {
   if (!prev) return;
   prev.innerHTML = url
     ? `<img src="${esc(url)}" alt="">`
-    : '<span class="placeholder">Bez obrÃ¡zku</span>';
+    : '<span class="placeholder">Bez obrázku</span>';
 }
 
 function refreshNovinkyEdit() {
@@ -644,9 +644,9 @@ function novinkaEditRow(item) {
   return `<div class="edit-block novinka-edit-item" data-id="${item.id || ''}" data-obrazek="${attrEsc(url)}">
     <input type="text" class="novinka-nadpis" value="${esc(item.nadpis)}" placeholder="Nadpis">
     <textarea class="novinka-text" rows="2" placeholder="Text">${esc(item.text)}</textarea>
-    <div class="novinka-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obrÃ¡zku</span>'}</div>
+    <div class="novinka-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obrázku</span>'}</div>
     <div class="novinka-img-actions">
-      <label class="btn btn-secondary btn-sm btn-upload">NahrÃ¡t obrÃ¡zek<input type="file" class="upload-novinka" accept="image/*" hidden></label>
+      <label class="btn btn-secondary btn-sm btn-upload">Nahrát obrázek<input type="file" class="upload-novinka" accept="image/*" hidden></label>
       <button type="button" class="btn-remove-novinka-img btn-sm">Odebrat</button>
     </div>
   </div>`;
@@ -661,7 +661,7 @@ async function handleNovinkaUpload(e) {
   const msg = document.getElementById('status-msg');
 
   if (!row.dataset.id) {
-    msg.textContent = 'NejdÅ™Ã­v uloÅ¾te novinku (tlaÄÃ­tko â€UloÅ¾it textovÃ¡ dataâ€œ), pak nahrajte obrÃ¡zek.';
+    msg.textContent = 'Nejdøív ulote novinku (tlaèítko „Uloit textová data“), pak nahrajte obrázek.';
     msg.className = 'status-msg error';
     input.value = '';
     return;
@@ -670,7 +670,7 @@ async function handleNovinkaUpload(e) {
   const form = new FormData();
   form.append('file', file);
 
-  msg.textContent = 'NahrÃ¡vÃ¡m obrÃ¡zek novinkyâ€¦';
+  msg.textContent = 'Nahrávám obrázek novinky…';
   msg.className = 'status-msg';
 
   try {
@@ -683,12 +683,12 @@ async function handleNovinkaUpload(e) {
       },
     );
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'NahrÃ¡nÃ­ selhalo');
+    if (!res.ok) throw new Error(data.detail || 'Nahrání selhalo');
 
     salonData = await fetchSalon();
     renderSalon(salonData);
     refreshNovinkyEdit();
-    msg.textContent = 'ObrÃ¡zek novinky nahrÃ¡n a uloÅ¾en.';
+    msg.textContent = 'Obrázek novinky nahrán a uloen.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = err.message;
@@ -754,7 +754,7 @@ function collectFormData() {
 async function handleSave() {
   const msg = document.getElementById('status-msg');
   if (!staffToken || !isMajitel()) {
-    msg.textContent = 'Pro uloÅ¾enÃ­ se pÅ™ihlaste jako majitel salonu.';
+    msg.textContent = 'Pro uloení se pøihlaste jako majitel salonu.';
     msg.className = 'status-msg error';
     return;
   }
@@ -772,7 +772,7 @@ async function handleSave() {
     salonData = await fetchSalon();
     renderSalon(salonData);
     refreshNovinkyEdit();
-    msg.textContent = 'ZmÄ›ny uloÅ¾eny.';
+    msg.textContent = 'Zmìny uloeny.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = 'Chyba: ' + err.message;
@@ -795,7 +795,7 @@ document.getElementById('btn-add-personel').addEventListener('click', () => {
   personelAdminData.push({
     jmeno: '', specializace: '', popis: '', fotka: '', zobrazit_na_webu: true,
     rozvrh: [0, 1, 2, 3, 4, 5, 6].map((den) => ({
-      den, den_nazev: ['PondÄ›lÃ­', 'ÃšterÃ½', 'StÅ™eda', 'ÄŒtvrtek', 'PÃ¡tek', 'Sobota', 'NedÄ›le'][den],
+      den, den_nazev: ['Pondìlí', 'Úterı', 'Støeda', 'Ètvrtek', 'Pátek', 'Sobota', 'Nedìle'][den],
       od: null, do: null, volno: true,
     })),
   });
@@ -819,7 +819,7 @@ async function loadEmailSettings() {
       headers: staffHeaders(),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Nelze naÄÃ­st');
+    if (!res.ok) throw new Error(data.detail || 'Nelze naèíst');
     document.getElementById('smtp-host').value = data.smtp_host || 'smtp.forpsi.com';
     document.getElementById('smtp-port').value = data.smtp_port || 465;
     document.getElementById('smtp-ssl').checked = data.smtp_use_ssl !== false;
@@ -827,11 +827,11 @@ async function loadEmailSettings() {
     document.getElementById('smtp-password').value = '';
     document.getElementById('web-rezervace-url').value = data.web_rezervace_url || defaultRezervaceUrl();
     document.getElementById('smtp-password').placeholder = data.smtp_password_nastaveno
-      ? 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢ (nastaveno â€“ nechte prÃ¡zdnÃ© pro zachovÃ¡nÃ­)'
-      : 'Heslo ke schrÃ¡nce';
+      ? '•••••••• (nastaveno – nechte prázdné pro zachování)'
+      : 'Heslo ke schránce';
     status.textContent = data.smtp_aktivni
-      ? `âœ“ OdesÃ­lÃ¡nÃ­ aktivnÃ­ Â· Od: ${data.email_odesilatel}`
-      : 'âš  DoplÅˆte SMTP heslo pro odesÃ­lÃ¡nÃ­ potvrzenÃ­ rezervacÃ­.';
+      ? `? Odesílání aktivní · Od: ${data.email_odesilatel}`
+      : '? Doplòte SMTP heslo pro odesílání potvrzení rezervací.';
     status.className = data.smtp_aktivni ? 'admin-hint success' : 'admin-hint';
   } catch (err) {
     status.textContent = err.message;
@@ -841,7 +841,7 @@ async function loadEmailSettings() {
 
 async function saveEmailSettings() {
   const msg = document.getElementById('email-save-msg');
-  msg.textContent = 'UklÃ¡dÃ¡mâ€¦';
+  msg.textContent = 'Ukládám…';
   msg.className = 'status-msg';
   const payload = {
     smtp_host: document.getElementById('smtp-host').value.trim(),
@@ -861,7 +861,7 @@ async function saveEmailSettings() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
-    msg.textContent = 'E-mail nastavenÃ­ uloÅ¾eno.';
+    msg.textContent = 'E-mail nastavení uloeno.';
     msg.className = 'status-msg success';
     loadEmailSettings();
   } catch (err) {
@@ -872,7 +872,7 @@ async function saveEmailSettings() {
 
 async function testEmailSettings() {
   const msg = document.getElementById('email-save-msg');
-  msg.textContent = 'OdesÃ­lÃ¡m testâ€¦';
+  msg.textContent = 'Odesílám test…';
   msg.className = 'status-msg';
   try {
     const res = await fetch(`${API_BASE}/salon/${SALON_ID}/admin/email/test/`, {
@@ -931,6 +931,6 @@ Promise.all([fetchSalon(), fetchBunnyStatus(), fetchPersonel()])
   })
   .catch(err => {
     document.getElementById('loading').innerHTML =
-      '<p>Obsah se nepodaÅ™ilo naÄÃ­st. Zkuste to prosÃ­m pozdÄ›ji.</p>';
+      '<p>Obsah se nepodaøilo naèíst. Zkuste to prosím pozdìji.</p>';
     console.error(err);
   });

@@ -1,0 +1,80 @@
+# Staging stack — oddělená DB/Redis/API (sdílí síť s LIVE nginx).
+# Bez vlastního nginx/certbot (šetrné k RAM ~2 GB VPS).
+#
+#   docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build
+#
+# LIVE nginx proxy → služba api na této síti + root www-staging.
+
+name: ulov-staging
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - staging_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    volumes:
+      - staging_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./.env.staging
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      [
+        "sh",
+        "-c",
+        "python manage.py migrate --noinput && gunicorn salon_api.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 60 --access-logfile - --error-logfile -",
+      ]
+    expose:
+      - "8000"
+    networks:
+      - default
+      - ulov_live
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./.env.staging
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      celery -A salon_api worker
+      --loglevel=info
+      --concurrency=1
+
+volumes:
+  staging_pgdata:
+  staging_redisdata:
+
+networks:
+  ulov_live:
+    external: true
+    name: ulov_default

@@ -76,6 +76,12 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
     if not prijemce:
         return False
 
+    # Staging / test: všechny odchozí maily na jednu adresu (nikdy ostrým zákazníkům)
+    override = (getattr(settings, 'EMAIL_OVERRIDE_TO', '') or '').strip()
+    if override:
+        predmet = f"[STAGING → {prijemce}] {predmet}"
+        prijemce = override
+
     cfg = get_email_config(salon)
     if not cfg['smtp_ready']:
         from django.core.mail import send_mail

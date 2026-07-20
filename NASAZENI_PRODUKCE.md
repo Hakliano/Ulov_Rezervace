@@ -16,11 +16,21 @@ Prostředí: **Hetzner VPS + Ubuntu 24.04 + Docker Compose + Nginx + Gunicorn + 
 | `docker-compose.yml` | Služby `db`, `api`, `cron`, `nginx`, `certbot` |
 | `deploy/nginx/conf.d/ulov.conf` | Reverse proxy + HTTPS |
 | `deploy/init-letsencrypt.sh` | Prvotní vydání certifikátu |
-| `deploy/backup.sh` | Záloha DB + konfigurace |
+| `deploy/backup.sh` | Záloha DB + konfigurace + **www/** |
+| `deploy/pre-deploy-check.sh` | Kontrola `index.html` (+ style/app) před syncem |
+| `deploy/deploy-live.sh` | LIVE jen z GitHub tagu/`main` (záloha → check → sync) |
+| `deploy/rollback-live.sh` | Návrat na tag + volitelně DB/www ze zálohy |
+| `deploy/DEPLOY_SAFETY.md` | Sync bez `--delete` naslepo; incident demo7/8 |
+| `deploy/DEPLOY_PIPELINE.md` | **Staging + rollback strategie** (GitHub povinně) |
 | `deploy/restore.sh` | Obnova zálohy (drill i ostrá havárie) |
 | `deploy/disk-check.sh` | Hlídání obsazenosti disku (80/90 %) |
 | `deploy/loadtest/locustfile.py` | Load test veřejných endpointů |
 | `.env.production.example` | Vzor produkčního `.env` |
+
+> **Před každým deployem do `www/`** (salonN, presentace, dema): přečíst
+> [`deploy/DEPLOY_SAFETY.md`](deploy/DEPLOY_SAFETY.md) a
+> [`deploy/DEPLOY_PIPELINE.md`](deploy/DEPLOY_PIPELINE.md) (GitHub → staging → LIVE).
+> Incident 2026-07-20: `rsync --delete` z neúplného gitu smazal LIVE demo7/8.
 
 Backend čte veškerou konfiguraci z prostředí (`.env`). Bez `DB_NAME` běží na SQLite (jen dev),
 `DEBUG` je defaultně `False`, `SECRET_KEY` se bere z `.env`.
@@ -113,7 +123,18 @@ Logika aplikace se nemění — jen na jeden salon:
 2. v `salonX/*.js` nastavit `API_BASE = 'https://api.vase-domena.cz/api'` a `SALON_ID`,
 3. branding (CSS, loga, texty).
 
-Statika salonů (HTML/CSS/JS) se nahrává na Bunny `webs/salon-{id}/`.
+Statika salonů (HTML/CSS/JS) se nahrává na Bunny `webs/salon-{id}/`
+nebo na VPS do `/opt/ulov/www/salonN/` (demos `demoN.ulovklienty.cz`).
+
+### 6.1 Sync na VPS `www/` — povinně
+
+Postup, checklist a zákaz nebezpečného `rsync --delete`: **`deploy/DEPLOY_SAFETY.md`**.
+
+Minimálně:
+1. `bash deploy/backup.sh` (včetně `www_*.tar.gz`)
+2. ověřit, že zdrojová složka má `index.html`
+3. nejdřív `rsync --dry-run`, teprve pak ostrý sync
+4. po nasazení curl 200 na dané demo / cestu
 
 ## 7. Cron úlohy
 
