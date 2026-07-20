@@ -122,16 +122,29 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
         msg.send()
         return True
 
+    if html_body:
+        from django.core.mail import EmailMultiAlternatives
+
+        msg = EmailMultiAlternatives(
+            subject=predmet,
+            body=zprava,
+            from_email=cfg['from_email'],
+            to=[prijemce],
+            connection=connection,
+        )
+        msg.attach_alternative(html_body, 'text/html')
+        for att in attachments or []:
+            msg.attach(*att)
+        msg.send()
+        return True
+
     msg = EmailMessage(
         subject=predmet,
-        body=html_body or zprava,
+        body=zprava,
         from_email=cfg['from_email'],
         to=[prijemce],
         connection=connection,
     )
-    if html_body:
-        msg.content_subtype = 'html'
-        msg.attach('platba.txt', zprava, 'text/plain')
     for att in attachments or []:
         msg.attach(*att)
     msg.send()
@@ -192,18 +205,21 @@ def email_vyzva_k_potvrzeni_sync(rezervace):
         platnost = salon.rezervacni_nastaveni.potvrzeni_platnost_hodin or 24
     except Exception:
         platnost = 24
-    zprava = render_to_string('rezervace/emails/vyzva_potvrzeni.txt', {
+    ctx = {
         'rezervace': rezervace,
         'salon': salon,
         'sluzby': sluzby,
         'potvrzeni_url': _potvrzeni_url(rezervace),
         'platnost_hodin': platnost,
-    })
+    }
+    zprava = render_to_string('rezervace/emails/vyzva_potvrzeni.txt', ctx)
+    html = render_to_string('rezervace/emails/vyzva_potvrzeni.html', ctx)
     return _odeslat_pro_salon(
         salon,
         rezervace.kontaktni_email,
         f'Potvrďte rezervaci – {salon.name}',
         zprava,
+        html_body=html,
     )
 
 
