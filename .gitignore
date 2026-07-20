@@ -11,3 +11,9 @@ backups/
 deploy/certbot/conf/
 deploy/certbot/www/
 *.log
+
+# Local SMTP credentials (never commit)
+deploy/smtp-salon2.json
+deploy/demo-media.json
+_recovered/
+

@@ -1,0 +1,439 @@
+﻿<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rezervace – RentGo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Karla:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="rezervace.css?v=3">
+  <link rel="stylesheet" href="/shared/creator-footer.css?v=5">
+</head>
+<body>
+  <header class="rez-header">
+    <a href="index.html" class="back-link">← Zpět na web</a>
+    <div class="rez-brand">
+      <span class="rez-eyebrow">Půjčovna · Flexibilně · Hned</span>
+      <h1 id="salon-name">Rezervace</h1>
+    </div>
+    <nav class="rez-tabs">
+      <button type="button" class="rez-tab active" data-view="nova">Nová rezervace</button>
+      <button type="button" class="rez-tab" data-view="moje">Moje rezervace</button>
+      <button type="button" class="rez-tab" data-view="admin">Personál</button>
+    </nav>
+  </header>
+
+  <main class="rez-main">
+    <div id="loading" class="loading">Načítám…</div>
+
+    <!-- Nová rezervace -->
+    <section id="view-nova" class="view hidden">
+      <div class="steps">
+        <div class="step active" data-step="1"><span>1</span> Služby</div>
+        <div class="step" data-step="2"><span>2</span> Termín</div>
+        <div class="step" data-step="3"><span>3</span> Údaje</div>
+        <div class="step" data-step="4"><span>4</span> Hotovo</div>
+      </div>
+
+      <div id="panel-sluzby" class="panel">
+        <h2>Vyberte služby</h2>
+        <p class="hint">Můžete vybrat více služeb najednou.</p>
+        <div id="sluzby-list" class="sluzby-grid"></div>
+        <div class="panel-footer">
+          <span id="delka-info" class="delka-info"></span>
+          <button type="button" id="btn-krok2" class="btn btn-primary" disabled>Pokračovat</button>
+        </div>
+      </div>
+
+      <div id="panel-termin" class="panel hidden">
+        <h2>Termín a pracovník</h2>
+        <div class="form-row">
+          <label>Pracovník
+            <select id="select-zamestnanec">
+              <option value="any">Je mi to jedno</option>
+            </select>
+          </label>
+          <label>Datum
+            <input type="date" id="input-datum">
+          </label>
+        </div>
+        <div id="terminy-list" class="terminy-grid"></div>
+        <p id="terminy-msg" class="hint"></p>
+        <div class="panel-footer">
+          <button type="button" id="btn-krok1" class="btn btn-secondary">Zpět</button>
+          <button type="button" id="btn-krok3" class="btn btn-primary" disabled>Pokračovat</button>
+        </div>
+      </div>
+
+      <div id="panel-udaje" class="panel hidden">
+        <h2>Vaše údaje</h2>
+        <form id="form-rezervace" class="form-grid">
+          <label>Přezdívka / jméno<input type="text" id="input-nick" required maxlength="100"></label>
+          <label>E-mail<input type="email" id="input-email" required></label>
+          <label class="full">Poznámka<textarea id="input-poznamka" rows="3" placeholder="Např. pouze dopoledne…"></textarea></label>
+          <label class="checkbox full"><input type="checkbox" id="input-ochrana" required> Odesláním rezervace beru na vědomí zpracování osobních údajů podle <a href="ochrana-osobnich-udaju.html" target="_blank" rel="noopener">Zásad ochrany osobních údajů</a>.</label>
+        </form>
+        <div class="summary" id="summary"></div>
+        <div class="panel-footer">
+          <button type="button" id="btn-krok2b" class="btn btn-secondary">Zpět</button>
+          <button type="submit" form="form-rezervace" class="btn btn-primary">Odeslat rezervaci</button>
+        </div>
+        <p id="rezervace-msg" class="status-msg"></p>
+      </div>
+
+      <div id="panel-hotovo" class="panel hidden">
+        <div class="success-box">
+          <h2>✓ Rezervace odeslána</h2>
+          <p id="hotovo-text"></p>
+          <a id="ics-link" href="#" class="btn btn-secondary">Stáhnout kalendář (.ics)</a>
+          <button type="button" id="btn-nova-rezervace" class="btn btn-primary">Nová rezervace</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Moje rezervace -->
+    <section id="view-moje" class="view hidden">
+        <div id="moje-login" class="panel">
+        <h2>Přihlášení / registrace</h2>
+        <p class="hint">Registrací si vytvoříte heslo pro přístup k budoucím rezervacím.</p>
+        <div class="dual-forms">
+          <form id="form-registrace">
+            <h3>Registrace</h3>
+            <label>Přezdívka<input type="text" id="reg-nick" required></label>
+            <label>E-mail<input type="email" id="reg-email" required></label>
+            <label>Heslo (min. 8 znaků)<input type="password" id="reg-password" required minlength="8" autocomplete="new-password"></label>
+            <label class="checkbox full"><input type="checkbox" id="reg-ochrana" required> Beru na vědomí zpracování osobních údajů podle <a href="ochrana-osobnich-udaju.html" target="_blank" rel="noopener">Zásad ochrany osobních údajů</a>.</label>
+            <button type="submit" class="btn btn-primary btn-block">Registrovat</button>
+          </form>
+          <form id="form-prihlaseni">
+            <h3>Přihlášení</h3>
+            <label>E-mail<input type="email" id="login-email" required autocomplete="username"></label>
+            <label>Heslo<input type="password" id="login-password" required autocomplete="current-password"></label>
+            <button type="button" id="btn-zapomenute-heslo" class="link-btn">Zapomenuté heslo</button>
+            <div id="heslo-fallback" class="token-box hidden"></div>
+            <button type="submit" class="btn btn-secondary btn-block">Přihlásit</button>
+          </form>
+        </div>
+        <p id="moje-login-msg" class="status-msg"></p>
+      </div>
+      <div id="moje-seznam" class="panel hidden">
+        <h2>Moje rezervace – <span id="moje-nick"></span></h2>
+        <h3>Budoucí</h3>
+        <div id="moje-budouci" class="rez-list"></div>
+        <h3>Historie</h3>
+        <div id="moje-historie" class="rez-list"></div>
+        <button type="button" id="btn-odhlasit" class="btn btn-secondary">Odhlásit</button>
+      </div>
+    </section>
+
+    <!-- Storno -->
+    <section id="view-storno" class="view hidden">
+      <div class="panel">
+        <h2>Storno rezervace</h2>
+        <div id="storno-info"></div>
+        <button type="button" id="btn-storno" class="btn btn-danger">Zrušit rezervaci</button>
+        <p id="storno-msg" class="status-msg"></p>
+      </div>
+    </section>
+
+    <!-- Potvrzení rezervace -->
+    <section id="view-potvrzeni" class="view hidden">
+      <div class="panel">
+        <h2>Potvrzení rezervace</h2>
+        <div id="potvrzeni-info"></div>
+        <button type="button" id="btn-potvrdit" class="btn btn-primary">Potvrdit rezervaci</button>
+        <p id="potvrzeni-msg" class="status-msg"></p>
+      </div>
+    </section>
+
+    <!-- Admin personál -->
+    <section id="view-admin" class="view hidden">
+      <div id="admin-login" class="panel">
+        <h2>Přihlášení personálu</h2>
+        <form id="form-admin-login">
+          <label>Přihlašovací jméno<input type="text" id="staff-login" required autocomplete="username" placeholder="eva"></label>
+          <label>Heslo<input type="password" id="staff-password" required autocomplete="current-password"></label>
+          <p class="hint">Každý zaměstnanec má vlastní účet. Majitelka vidí celý salon včetně nastavení a NO-show archivu.</p>
+          <button type="submit" class="btn btn-primary">Přihlásit</button>
+        </form>
+        <p id="admin-login-msg" class="status-msg"></p>
+      </div>
+      <div id="admin-panel" class="panel hidden">
+        <div class="admin-toolbar">
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="kalendar">Kalendář</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="kadernice">Kadeřnice</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="statistiky">Statistiky</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="noshow">NO-show archiv</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="nastaveni">Nastavení</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="audit">Audit log</button>
+          <span id="admin-actor-badge" class="admin-actor-badge"></span>
+          <button type="button" id="btn-staff-logout" class="btn btn-secondary btn-sm">Odhlásit</button>
+        </div>
+        <div id="admin-kalendar" class="admin-section">
+          <div class="cal-header">
+            <button type="button" id="cal-prev" class="btn btn-secondary btn-sm" aria-label="Předchozí měsíc">←</button>
+            <h3 id="cal-month-label"></h3>
+            <button type="button" id="cal-next" class="btn btn-secondary btn-sm" aria-label="Další měsíc">→</button>
+          </div>
+          <div class="cal-weekdays">
+            <span>Po</span><span>Út</span><span>St</span><span>Čt</span><span>Pá</span><span>So</span><span>Ne</span>
+          </div>
+          <div id="cal-grid" class="cal-grid"></div>
+          <div id="cal-day-detail" class="cal-day-detail hidden">
+            <div class="cal-day-header">
+              <h4 id="cal-day-title"></h4>
+              <button type="button" id="cal-day-close" class="btn btn-secondary btn-sm">Zavřít</button>
+            </div>
+            <div id="cal-day-timeline" class="cal-timeline"></div>
+          </div>
+        </div>
+        <div id="admin-kadernice" class="admin-section hidden">
+          <div class="kadernice-layout">
+            <aside class="staff-sidebar settings-card">
+              <h4>Personál</h4>
+              <div id="staff-list" class="staff-list"></div>
+              <button type="button" id="btn-staff-add" class="btn btn-secondary btn-sm btn-block">+ Přidat kadeřnici</button>
+            </aside>
+            <div id="staff-detail" class="staff-detail hidden">
+              <div class="staff-detail-header">
+                <h3 id="staff-detail-name"></h3>
+                <label class="checkbox staff-active-label">
+                  <input type="checkbox" id="staff-aktivni"> Aktivní (přijímá rezervace, může se přihlásit)
+                </label>
+              </div>
+
+              <div class="settings-stack">
+              <section class="settings-card staff-block">
+                <div class="settings-card-head"><h4>Přihlášení do systému</h4></div>
+                <div class="settings-card-body">
+                <p id="staff-ucet-status" class="hint"></p>
+                <label>Přihlašovací jméno<input type="text" id="staff-prihlasovaci-jmeno" placeholder="eva" autocomplete="off"></label>
+                <label>Nové heslo (min. 6 znaků)<input type="password" id="staff-heslo" placeholder="Prázdné = beze změny" autocomplete="new-password"></label>
+                <button type="button" id="btn-staff-deaktivovat" class="btn btn-danger btn-sm hidden">Deaktivovat účet</button>
+                <p class="hint">Při odchodu zaměstnance účet deaktivujte — historie rezervací a audit zůstanou, přihlášení nebude možné.</p>
+                </div>
+              </section>
+
+              <section class="settings-card staff-block">
+                <div class="settings-card-head"><h4>Platby</h4></div>
+                <div class="settings-card-body">
+                <label class="full">Číslo účtu pro QR platby
+                  <input type="text" id="staff-cislo-uctu" placeholder="123456789/0100">
+                </label>
+                <p class="hint">Předvyplní se při odeslání žádosti o platbu u rezervací této kadeřnice.</p>
+                </div>
+              </section>
+
+              <section class="settings-card staff-block">
+                <div class="settings-card-head"><h4>Pracovní doba kadeřnice</h4></div>
+                <div class="settings-card-body">
+                <p class="hint">Otevírací doba salonu se počítá ze sjednocení rozvrhů personálu. Aktuálně: <span id="salon-hours-hint">—</span></p>
+                <table class="rozvrh-table">
+                  <thead><tr><th>Den</th><th>Od</th><th>Do</th><th>Volno</th></tr></thead>
+                  <tbody id="staff-rozvrh"></tbody>
+                </table>
+                <button type="button" id="btn-staff-save-rozvrh" class="btn btn-primary btn-sm">Uložit kadeřnici</button>
+                <p id="staff-rozvrh-msg" class="status-msg"></p>
+                </div>
+              </section>
+
+              <section class="settings-card staff-block">
+                <div class="settings-card-head"><h4>Volno / dovolená / nemoc</h4></div>
+                <div class="settings-card-body">
+                <div id="staff-absence-list" class="absence-list"></div>
+                <form id="form-staff-absence" class="form-grid staff-absence-form">
+                  <label>Typ
+                    <select id="absence-typ">
+                      <option value="dovolena">Dovolená</option>
+                      <option value="volno">Volno</option>
+                      <option value="nemoc">Nemoc</option>
+                    </select>
+                  </label>
+                  <label>Od<input type="date" id="absence-od" required></label>
+                  <label>Do<input type="date" id="absence-do" required></label>
+                  <label class="full">Poznámka<input type="text" id="absence-poznamka" placeholder="Volitelné"></label>
+                  <button type="submit" class="btn btn-secondary btn-sm">Přidat volno</button>
+                </form>
+                </div>
+              </section>
+
+              <section class="settings-card staff-block">
+                <div class="settings-card-head"><h4>Nová rezervace (osobně / telefon)</h4></div>
+                <div class="settings-card-body">
+                <form id="form-staff-rezervace" class="form-grid">
+                  <label class="full">Služby
+                    <div id="staff-sluzby" class="staff-sluzby"></div>
+                  </label>
+                  <label>Datum<input type="date" id="staff-rez-datum" required></label>
+                  <label>Čas<input type="time" id="staff-rez-cas" required></label>
+                  <label>Jméno zákazníka<input type="text" id="staff-rez-nick" required></label>
+                  <label>E-mail<input type="email" id="staff-rez-email" placeholder="Volitelné"></label>
+                  <label class="full">Poznámka<textarea id="staff-rez-poznamka" rows="2"></textarea></label>
+                  <label class="full">Interní poznámka<textarea id="staff-rez-interni" rows="2"></textarea></label>
+                  <button type="submit" class="btn btn-primary">Vytvořit rezervaci</button>
+                </form>
+                <p id="staff-rez-msg" class="status-msg"></p>
+                </div>
+              </section>
+              </div>
+            </div>
+            <p id="staff-empty" class="hint staff-empty">Vyberte kadeřnici vlevo, nebo přidejte novou.</p>
+          </div>
+        </div>
+        <div id="admin-statistiky" class="admin-section hidden">
+          <div id="stats-box"></div>
+        </div>
+        <div id="admin-noshow" class="admin-section hidden">
+          <h3>NO-show — seznam hříšníků</h3>
+          <p class="hint">Kontakt se v seznamu objeví <strong>ihned po 1. NO-show</strong> v tomto salonu. Při <strong>2+ NO-show</strong> je veden jako problematický, po <strong>3 NO-show</strong> se automaticky zablokuje. Ručně můžete <strong>ZABLOKOVAT</strong> nebo <strong>ODBLOKOVAT</strong> kdykoli.</p>
+          <div class="noshow-toolbar">
+            <input type="search" id="noshow-search" placeholder="Hledat e-mail nebo jméno…">
+            <button type="button" id="noshow-search-btn" class="btn btn-secondary btn-sm">Hledat</button>
+          </div>
+          <div id="noshow-archiv-list" class="noshow-archiv-list"></div>
+          <div id="noshow-pagination" class="noshow-pagination hidden"></div>
+        </div>
+        <div id="admin-nastaveni" class="admin-section hidden">
+          <form id="form-nastaveni" class="settings-stack">
+            <section class="settings-card">
+              <div class="settings-card-head">
+                <h3>Základní nastavení rezervací</h3>
+              </div>
+              <div class="settings-card-body form-grid">
+                <label>Interval (min)<select id="nast-interval"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="30">30</option></select></label>
+                <label>Min. předstih (h)<input type="number" id="nast-min-h" min="0"></label>
+                <label>Max. předstih (měs.)<input type="number" id="nast-max-m" min="1"></label>
+                <label>Storno do (h)<input type="number" id="nast-storno" min="0" placeholder="Prázdné = zakázáno"></label>
+                <label>Platnost odkazu na potvrzení (h)<input type="number" id="nast-potvrzeni-h" min="1" value="24"></label>
+              </div>
+            </section>
+
+            <section class="settings-card gdpr-section">
+              <div class="settings-card-head">
+                <h3>GDPR a ochrana údajů</h3>
+              </div>
+              <div class="settings-card-body">
+                <label>Verze Zásad ochrany osobních údajů<input type="text" id="nast-gdpr-verze" placeholder="1.0"></label>
+                <p class="hint">Po změně zásad zvyšte verzi a aktualizujte <code>ochrana-osobnich-udaju.html</code>. Doba uchování dat (12 měsíců) je stanovena provozovatelem platformy a nelze ji měnit.</p>
+                <div class="settings-subcard">
+                  <h5>Žádosti subjektů údajů (jen majitelka)</h5>
+                  <label>E-mail zákazníka<input type="email" id="gdpr-email" placeholder="zakaznik@example.com"></label>
+                  <div class="gdpr-admin-actions">
+                    <button type="button" id="btn-gdpr-export" class="btn btn-secondary btn-sm">Export údajů (JSON)</button>
+                    <button type="button" id="btn-gdpr-vymaz" class="btn btn-danger btn-sm">Výmaz na žádost</button>
+                  </div>
+                  <p id="gdpr-admin-msg" class="status-msg"></p>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-card notif-section">
+              <div class="settings-card-head">
+                <h3>E-mailové notifikace</h3>
+                <p class="settings-card-desc">Můžete nastavit až <strong>4 různé e-maily</strong> — připomínku, poděkování/recenzi, NO-show a žádost o platbu s QR kódem.</p>
+              </div>
+              <div class="settings-card-body">
+                <div class="settings-subcard notif-timing-hint">
+                  <p><strong>Kdy se e-mail odešle?</strong></p>
+                  <ul>
+                    <li><strong>+24</strong> = 24 hodin <em>před</em> začátkem rezervace (připomínka)</li>
+                    <li><strong>+2</strong> = 2 hodiny <em>před</em> termínem (krátká připomínka)</li>
+                    <li><strong>-2</strong> = 2 hodiny <em>po skončení</em> služby (poděkování, recenze…)</li>
+                    <li><strong>Notifikace 3</strong> = jen ručně u rezervace (NO-show) — bez automatického času</li>
+                    <li><strong>Notifikace 4</strong> = žádost o platbu s QR kódem — ručně tlačítkem u rezervace</li>
+                  </ul>
+                </div>
+                <div class="settings-subcard notif-tag-section">
+                  <h5>Jak psát text e-mailu — dynamické tagy</h5>
+                  <p class="hint">Do textu vložte „tag“ (slovo v dvojitých složených závorkách). Při odeslání se automaticky nahradí údaji zákazníka a rezervace. Text kolem tagů si složíte libovolně sami.</p>
+                  <p class="hint" id="notif-hint"></p>
+                  <div id="notif-tag-guide" class="notif-tag-guide"></div>
+                </div>
+                <div class="settings-subcard">
+                  <label class="full notif-recenze-url">Odkaz na recenze (Google, Facebook…)
+                    <input type="url" id="nast-recenze-url" placeholder="https://g.page/vas-salon/review">
+                  </label>
+                  <p class="hint">Do textu druhé notifikace vložte tag <code>{{ recenze_url }}</code> — zákazník uvidí tento odkaz.</p>
+                </div>
+                <div id="notifikace-list" class="notifikace-list"></div>
+              </div>
+            </section>
+
+            <footer class="settings-form-footer">
+              <p class="hint">E-mail odesílatele nastavte v administraci webu (⚙ → E-mail). Životní cyklus (e-maily, GDPR) řídí cron: <code>python manage.py rezervace_zivotni_cyklus</code></p>
+              <button type="submit" class="btn btn-primary">Uložit nastavení</button>
+            </footer>
+          </form>
+        </div>
+        <div id="admin-audit" class="admin-section hidden">
+          <h3>Audit log — kdo co změnil</h3>
+          <p class="hint">Každá změna v kalendáři, personálu, nastavení i na webu salonu. Záznamy se uchovávají 12 měsíců.</p>
+          <div id="audit-log-list"></div>
+          <div class="audit-pager">
+            <button type="button" id="audit-prev" class="btn btn-secondary btn-sm">← Starší</button>
+            <span id="audit-pager"></span>
+            <button type="button" id="audit-next" class="btn btn-secondary btn-sm">Novější →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="noshow-modal" class="modal hidden" role="dialog" aria-labelledby="noshow-modal-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-box">
+      <h3 id="noshow-modal-title">NO-show — zákazník nedorazil</h3>
+      <p id="noshow-modal-info" class="hint"></p>
+      <label class="checkbox"><input type="checkbox" id="noshow-send-email" checked> Odeslat upozornění (3. e-mail z nastavení)</label>
+      <label class="checkbox"><input type="checkbox" id="noshow-block-email"> Zablokovat e-mail v tomto salonu pro online rezervace</label>
+      <div class="modal-actions">
+        <button type="button" id="noshow-cancel" class="btn btn-secondary">Zrušit</button>
+        <button type="button" id="noshow-confirm" class="btn btn-danger">Potvrdit NO-show</button>
+      </div>
+      <p id="noshow-modal-msg" class="status-msg"></p>
+    </div>
+  </div>
+
+  <div id="platba-modal" class="modal hidden" role="dialog" aria-labelledby="platba-modal-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-box">
+      <h3 id="platba-modal-title">Požádat o platbu na účet</h3>
+      <p id="platba-modal-info" class="hint"></p>
+      <label>Částka (Kč)<input type="text" id="platba-castka" inputmode="decimal" placeholder="850"></label>
+      <label>Číslo účtu<input type="text" id="platba-ucet" placeholder="123456789/0100"></label>
+      <label>Variabilní symbol<input type="text" id="platba-vs" inputmode="numeric" placeholder="20260705"></label>
+      <div class="modal-actions">
+        <button type="button" id="platba-cancel" class="btn btn-secondary">Zrušit</button>
+        <button type="button" id="platba-confirm" class="btn btn-primary">Odeslat e-mail</button>
+      </div>
+      <p id="platba-modal-msg" class="status-msg"></p>
+    </div>
+  </div>
+
+  <div id="platba-qr-modal" class="modal hidden platba-qr-modal" role="dialog" aria-labelledby="platba-qr-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-box platba-qr-box">
+      <h3 id="platba-qr-title">QR platba — ukažte zákazníkovi</h3>
+      <p class="hint">E-mail byl odeslán. Zákazník může zaplatit i naskenováním tohoto kódu z vašeho displeje.</p>
+      <div class="platba-qr-wrap">
+        <img id="platba-qr-image" src="" alt="QR platba">
+      </div>
+      <div id="platba-qr-info" class="platba-qr-info"></div>
+      <div class="modal-actions">
+        <button type="button" id="platba-qr-close" class="btn btn-primary">Zavřít</button>
+      </div>
+    </div>
+  </div>
+
+  <aside class="creator-bar" aria-label="Informace o tvůrci webu">
+  <p class="creator-bar-inner">
+    Web &amp; rezervace · <a href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">ULOV KLIENTY</a>
+    <span class="sep" aria-hidden="true">·</span> Jiří Hakl
+    <span class="sep" aria-hidden="true">·</span> <a href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">ulovklienty.cz</a>
+    <span class="sep" aria-hidden="true">·</span> <a href="https://www.ulovsalon.cz" target="_blank" rel="noopener noreferrer">ulovsalon.cz</a>
+  </p>
+</aside>
+<script src="rezervace.js?v=21"></script>
+</body>
+</html>

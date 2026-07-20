@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000/api';
+﻿const API_BASE = 'http://localhost:8000/api';
 const SALON_ID = 2;
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;

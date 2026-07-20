@@ -1,0 +1,270 @@
+.brief-klient .contact-card{
+  max-width: 920px;
+  margin: 0 auto;
+}
+.brief-form__row{
+  margin-bottom: var(--s24);
+}
+.brief-form__row > label:first-child{
+  display: block;
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.brief-form__row input[type="text"],
+.brief-form__row input[type="email"],
+.brief-form__row textarea{
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(11,42,60,.18);
+  background: #fff;
+  color: #1a2332;
+  line-height: 1.5;
+}
+.brief-form__row textarea{
+  resize: vertical;
+  min-height: 120px;
+}
+.brief-form__row textarea.brief-form__textarea--tall{ min-height: 160px; }
+.brief-form__row textarea.brief-form__textarea--xlarge{ min-height: 240px; }
+.brief-form__fieldset{
+  border: 1px solid rgba(11,42,60,.12);
+  border-radius: var(--radius);
+  padding: var(--s16) var(--s20);
+  margin: 0 0 var(--s24);
+}
+.brief-form__fieldset legend{
+  font-weight: 700;
+  color: var(--navy);
+  padding: 0 8px;
+}
+.brief-form__fieldset-intro{
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4a5568;
+}
+.brief-form__row-hint{
+  margin: -4px 0 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #718096;
+  font-weight: 400;
+}
+.brief-form__radios{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.brief-form__radios label{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #1a2332;
+  cursor: pointer;
+}
+.brief-form__radios input[type="radio"],
+.brief-form__checks input[type="checkbox"]{
+  margin-top: 0.2em;
+  flex-shrink: 0;
+  /* Globální CSS má input { width:100% } — u radio/checkbox to rozhází layout */
+  width: auto !important;
+  max-width: none;
+  min-width: 1.1em;
+  min-height: 1.1em;
+  accent-color: var(--navy);
+}
+.brief-form__checks{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.brief-form__checks label{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #1a2332;
+  cursor: pointer;
+}
+.brief-form__checks label a{ word-break: break-word; }
+.brief-form__checks input:disabled{ cursor: not-allowed; opacity: 0.55; }
+.brief-form__hp{
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.brief-example{
+  max-width: 920px;
+  margin: 0 auto;
+  padding: var(--s24);
+  background: rgba(11,42,60,.04);
+  border-radius: var(--radius);
+  border: 1px solid rgba(11,42,60,.1);
+  font-size: 15px;
+  line-height: 1.65;
+  color: #1a2332;
+  word-break: break-word;
+}
+.brief-example__block{
+  padding-bottom: var(--s20);
+  margin-bottom: var(--s20);
+  border-bottom: 1px solid rgba(11,42,60,.1);
+}
+.brief-example__block:last-child{
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+.brief-example__block h3{
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.brief-example__block p{
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4a5568;
+}
+.brief-hero .hero-bubble__grid{
+  grid-template-columns: 1fr;
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: left;
+}
+.brief-hero .hero-bubble__lead{
+  max-width: none;
+}
+.brief-hero__goal{
+  margin: 0 0 var(--s20);
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(234,242,246,.92);
+  max-width: none;
+}
+@media (max-width: 900px){
+  .brief-hero.hero-bubble .hero-bubble__grid{ text-align: left; }
+  .brief-hero .hero-bubble__lead{ margin-left: 0; margin-right: 0; }
+  .brief-hero .hero-bubble__cta{ justify-content: flex-start; flex-wrap: wrap; }
+}
+.brief-hero__toc{
+  margin: var(--s16) 0 var(--s24);
+  padding-left: 1.25em;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.brief-hero__toc a{
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.brief-hero__toc a:hover{ color: #fff; }
+.brief-popis h3{
+  margin: var(--s28) 0 var(--s12);
+  font-size: 18px;
+  color: var(--navy);
+}
+.brief-popis h3:first-child{ margin-top: 0; }
+.brief-popis p{
+  margin: 0 0 0.85em;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4a5568;
+}
+.brief-popis__btn-row{
+  margin: 6px 0 1rem;
+}
+.brief-popis__btn-row .btn{
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
+}
+.brief-doplnkove ul{
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #4a5568;
+}
+.brief-doplnkove li{ margin-bottom: 0.65em; }
+.brief-doplnkove__item-with-btn .brief-doplnkove__linkbtn{
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  border-radius: 6px;
+  border: 1px solid rgba(11,42,60,.16);
+  background: rgba(11,42,60,.04);
+  color: var(--navy);
+  text-decoration: none;
+  box-shadow: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+.brief-doplnkove__item-with-btn .brief-doplnkove__linkbtn:hover{
+  background: rgba(11,42,60,.07);
+  border-color: rgba(11,42,60,.22);
+  color: var(--navy);
+}
+.brief-doplnkove__home-row{
+  margin-top: 1.5rem;
+}
+.brief-form__uschovna-btn,
+.brief-form__colorhunt-row{
+  margin: 0 0 14px;
+}
+.brief-form__uschovna-btn .btn,
+.brief-form__colorhunt-row .btn{
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
+}
+/* Podklady pro web: větší CAPTCHA obrázek než na LP */
+.brief-klient .brief-form__captcha-img{
+  width: 100px;
+  height: 100px;
+  min-width: 100px;
+  min-height: 100px;
+}
+@media (min-width: 640px){
+  .brief-klient .brief-form__captcha-img{
+    width: 120px;
+    height: 120px;
+    min-width: 120px;
+    min-height: 120px;
+  }
+}
+.brief-klient .brief-form__captcha-input{
+  width: 96px;
+  font-size: 22px;
+}
+.brief-form.is-locked .brief-form__row input,
+.brief-form.is-locked .brief-form__row textarea,
+.brief-form.is-locked fieldset,
+.brief-form.is-locked .lp-form-captcha__input,
+.brief-form.is-locked .lp-form-captcha__refresh,
+.brief-form.is-locked button[type="submit"]{
+  opacity: 0.6;
+  pointer-events: none;

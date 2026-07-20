@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #080808;
   --surface: #141414;
   --surface-2: #1c1c1c;
@@ -610,4 +610,11 @@ body.modal-open { overflow: hidden; }
 @media (max-width: 640px) {
   .rez-main { padding: 1rem; }
   .form-row, .form-grid, .dual-forms { grid-template-columns: 1fr; }
+}
+
+/* Creator credit bar */
+body > .creator-bar {
+  --creator-bar-bg: var(--primary-dark);
+  --creator-bar-muted: rgba(255, 255, 255, 0.72);
+  --creator-bar-link-hover: #fff;
 }

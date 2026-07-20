@@ -1,4 +1,4 @@
-/* Studio Krása — rezervace (brand salon 2, světlý spa styl) */
+﻿/* Studio Krása — rezervace (brand salon 2, světlý spa styl) */
 :root {
   --primary: #3d7a6e;
   --primary-dark: #2a5a50;
@@ -651,4 +651,11 @@ body.modal-open { overflow: hidden; }
   .kadernice-layout { grid-template-columns: 1fr; }
   .rez-main { padding: 1rem; }
   .form-row, .form-grid, .dual-forms { grid-template-columns: 1fr; }
+}
+
+/* Creator credit bar */
+body > .creator-bar {
+  --creator-bar-bg: var(--primary-dark);
+  --creator-bar-muted: rgba(255, 255, 255, 0.72);
+  --creator-bar-link-hover: #fff;
 }
