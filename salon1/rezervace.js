@@ -1,4 +1,4 @@
-﻿const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
+const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 1;
 
 let info = null;
@@ -556,10 +556,6 @@ function closePlatbaQrModal() {
 
 let noshowPage = 1;
 let noshowQuery = '';
-
-let noshowPage = 1;
-let noshowQuery = '';
-let auditPage = 1;
 
 function applyStaffUI() {
   const badge = $('#admin-actor-badge');

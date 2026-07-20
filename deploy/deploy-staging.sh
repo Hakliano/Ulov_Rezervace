@@ -103,6 +103,21 @@ find www-staging -type f \( -name '*.js' -o -name '*.html' \) -print0 \
     -e 's|https://ulovklienty\.cz/|https://www.staging.ulovklienty.cz/|g' \
   || true
 
+# Windows UTF-8 BOM rozbije <script> v prohlížeči (SyntaxError → věčné „Načítám…“)
+python3 - <<'PY'
+from pathlib import Path
+bom = b"\xef\xbb\xbf"
+n = 0
+for p in Path("www-staging").rglob("*"):
+    if p.suffix.lower() not in {".js", ".html", ".css"}:
+        continue
+    data = p.read_bytes()
+    if data.startswith(bom):
+        p.write_bytes(data[3:])
+        n += 1
+print(f"stripped UTF-8 BOM from {n} files")
+PY
+
 echo "### Start staging containers"
 # Síť LIVE musí existovat
 docker network inspect ulov_default >/dev/null

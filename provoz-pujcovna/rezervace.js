@@ -1,4 +1,4 @@
-﻿const host = location.hostname;
+const host = location.hostname;
 const isLocal = host === 'localhost' || host === '127.0.0.1';
 const API_BASE = isLocal ? `http://${host}:8000/api` : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 16;
