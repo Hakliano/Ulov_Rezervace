@@ -127,3 +127,12 @@ Stručně: žádný produkční `rsync --delete` / hard reset bez zálohy a chec
 | `deploy/restore.sh` | Obnova DB/config (www obnovovat z `www_*.tar.gz` dle sekce 5) |
 | `NASAZENI_PRODUKCE.md` | Hlavní runbook — odkazuje sem |
 | `.cursor/rules/deploy-safety.mdc` | Pravidlo pro agenta |
+
+---
+
+## 8. Docker DNS — kolize `api` (incident 2026-07-20)
+
+Staging API **nesmí** na síti `ulov_default` sdílet service name `api` s LIVE.
+Důsledek: nginx střídá LIVE/staging upstream → na demo* střídavě 200 a 400 (DisallowedHost) bez CORS.
+
+Správně: služba `staging-api`, kontejner `ulov-staging-api`, nginx `proxy_pass` na `ulov-staging-api:8000`.

@@ -107,14 +107,14 @@ echo "### Start staging containers"
 # Síť LIVE musí existovat
 docker network inspect ulov_default >/dev/null
 
-docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build api db redis
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis
 
 echo "### Migrate + seed (základní data, oddělená DB)"
-docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T api \
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py migrate --noinput
-docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T api \
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_salons 2>/dev/null || true
-docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T api \
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_vertical_demos 2>/dev/null || true
 
 echo "### Reload LIVE nginx (staging vhost + mount www-staging)"
