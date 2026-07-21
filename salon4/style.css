@@ -11,7 +11,7 @@
   --text: #3d2314;
   --muted: #7a6558;
   --border: rgba(61, 35, 20, 0.12);
-  --shell-w: 420px;
+  --shell-w: 525px; /* 420 × 1.25 */
   --font-display: 'Libre Baskerville', Georgia, serif;
   --font-body: 'Cormorant Garamond', Georgia, serif;
   --font-script: 'Caveat', cursive;
@@ -23,7 +23,7 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: 22.5px; /* 18 × 1.25 */
   background:
     radial-gradient(ellipse at 30% 20%, rgba(196, 165, 116, 0.25), transparent 50%),
     radial-gradient(ellipse at 70% 80%, rgba(114, 47, 55, 0.08), transparent 45%),
@@ -42,7 +42,7 @@ a:hover { color: var(--wine); }
 .cafe-desktop {
   display: none;
 }
-@media (min-width: 520px) {
+@media (min-width: 650px) {
   .cafe-desktop {
     display: block;
     position: fixed;
@@ -73,7 +73,7 @@ a:hover { color: var(--wine); }
   overflow-x: hidden;
 }
 
-@media (min-width: 520px) {
+@media (min-width: 650px) {
   .mobile-shell {
     margin: 1.5rem auto 3rem;
     min-height: calc(100vh - 4.5rem);
@@ -96,8 +96,8 @@ a:hover { color: var(--wine); }
 }
 
 .ticket-hole {
-  width: 48px;
-  height: 8px;
+  width: 60px;
+  height: 10px;
   background: #d9cfc0;
   border-radius: 999px;
   margin: 0 auto 0.75rem;
@@ -156,8 +156,8 @@ a:hover { color: var(--wine); }
   background: var(--burgundy);
   color: var(--cream);
   border: none;
-  width: 36px;
-  height: 36px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   font-size: 1rem;
   cursor: pointer;
@@ -173,7 +173,7 @@ a:hover { color: var(--wine); }
 .hero-frame {
   width: 100%;
   aspect-ratio: 4/3;
-  max-height: 200px;
+  max-height: 250px;
   border-radius: 4px;
   background:
     linear-gradient(145deg, var(--cream-dark), var(--latte)),
@@ -294,8 +294,8 @@ a:hover { color: var(--wine); }
 
 .team-photo {
   flex-shrink: 0;
-  width: 88px;
-  height: 110px;
+  width: 110px;
+  height: 138px;
   border-radius: 2px;
   overflow: hidden;
   border: 2px solid var(--espresso);
@@ -470,8 +470,8 @@ a:hover { color: var(--wine); }
   background: var(--burgundy);
   color: #fff;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   cursor: pointer;
   font-size: 1.1rem;
@@ -483,8 +483,8 @@ a:hover { color: var(--wine); }
   bottom: 1.25rem;
   right: calc(50% - var(--shell-w) / 2 + 1rem);
   z-index: 90;
-  width: 44px;
-  height: 44px;
+  width: 55px;
+  height: 55px;
   border-radius: 50%;
   background: var(--burgundy);
   color: var(--cream);
@@ -493,7 +493,7 @@ a:hover { color: var(--wine); }
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(114, 47, 55, 0.35);
 }
-@media (max-width: 519px) {
+@media (max-width: 649px) {
   .admin-fab { right: 1.25rem; }
 }
 
@@ -552,13 +552,13 @@ a:hover { color: var(--wine); }
 .tab-panel.active { display: block; }
 .upload-box { margin-bottom: 1.25rem; }
 .upload-box h4 { font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--burgundy); }
-.hero-preview { height: 100px; background: var(--cream-dark); margin-bottom: 0.5rem; overflow: hidden; border: 1px solid var(--border); }
+.hero-preview { height: 125px; background: var(--cream-dark); margin-bottom: 0.5rem; overflow: hidden; border: 1px solid var(--border); }
 .hero-preview img { width: 100%; height: 100%; object-fit: cover; }
 .btn-upload { cursor: pointer; display: inline-block; }
 .bunny-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; }
 .gallery-edit { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; }
-.gallery-edit-item { display: grid; grid-template-columns: 56px 1fr auto; gap: 0.4rem; align-items: center; padding: 0.4rem; border: 1px solid var(--border); }
-.gallery-edit-item img { width: 56px; height: 42px; object-fit: cover; }
+.gallery-edit-item { display: grid; grid-template-columns: 70px 1fr auto; gap: 0.4rem; align-items: center; padding: 0.4rem; border: 1px solid var(--border); }
+.gallery-edit-item img { width: 70px; height: 52px; object-fit: cover; }
 .btn-delete-img { background: #fde8e8; color: var(--burgundy); border: none; padding: 0.3rem 0.5rem; font-size: 0.72rem; cursor: pointer; }
 .edit-row { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0.4rem 0; border-bottom: 1px dotted var(--border); }
 .edit-row input { flex: 1; min-width: 70px; }
@@ -574,7 +574,7 @@ a:hover { color: var(--wine); }
 .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--espresso); }
 .admin-body .checkbox { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; color: var(--text); }
 
-@media (max-width: 400px) {
+@media (max-width: 500px) {
   .cafe-nav { display: none; flex-direction: column; width: 100%; padding-top: 0.5rem; }
   .cafe-nav.open { display: flex; }
   .cafe-menu-btn { display: block; }
@@ -585,7 +585,7 @@ a:hover { color: var(--wine); }
   --creator-bar-border: var(--border);
 }
 
-@media (min-width: 520px) {
+@media (min-width: 650px) {
   .mobile-shell > .creator-bar {
     border-radius: 0 0 28px 28px;
   }
