@@ -3,136 +3,126 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studio Krása</title>
+  <title>Wellness Gold</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=1">
   <link rel="stylesheet" href="../shared/creator-footer.css?v=2">
 </head>
 <body>
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="#" class="nav-logo" id="nav-logo">Studio</a>
-      <div class="nav-links">
-        <a href="#o-nas">O nás</a>
-        <a href="#galerie">Galerie</a>
-        <a href="#personel">Personál</a>
-        <a href="#cenik">Ceník</a>
-        <a href="#novinky">Novinky</a>
-        <a href="#kontakt" class="nav-cta">Kontakt</a>
-        <a href="rezervace.html" class="nav-rezervace">Rezervovat →</a>
-      </div>
-      <button class="nav-toggle" id="nav-toggle" aria-label="Menu">☰</button>
-    </div>
-  </nav>
+  <div class="stone-grain" aria-hidden="true"></div>
 
-  <header class="hero" id="hero">
-    <div class="hero-bg" id="hero-bg"></div>
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <p class="hero-tag">Relax · Krása · Péče</p>
-      <h1 id="salon-name">Studio</h1>
-      <p class="hero-desc" id="salon-desc"></p>
-      <a href="rezervace.html" class="btn btn-primary">Rezervovat termín</a>
-    </div>
-    <div class="hero-scroll">↓</div>
+  <header class="mast" id="nav">
+    <a href="#" class="mast-brand" id="nav-logo">Wellness Gold</a>
+    <nav class="mast-nav nav-links">
+      <a href="#o-nas">O nás</a>
+      <a href="#galerie">Galerie</a>
+      <a href="#personel">Tým</a>
+      <a href="#cenik">Rituály</a>
+      <a href="#novinky">Novinky</a>
+      <a href="#kontakt">Kontakt</a>
+      <a href="rezervace.html" class="mast-rez">Rezervovat</a>
+    </nav>
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menu">☰</button>
   </header>
 
   <div id="loading" class="loading">
     <div class="spinner"></div>
-    <p>Načítám studio…</p>
+    <p>Načítám wellness…</p>
   </div>
 
-  <main id="content" class="hidden">
-    <section id="o-nas" class="section about">
-      <div class="container about-split">
-        <div class="section-header">
-          <span class="section-label">O studiu</span>
-          <h2>Prostor pro vaši pohodu</h2>
-          <p class="about-text" id="about-text"></p>
-        </div>
-        <div class="about-deco"></div>
+  <div id="content" class="page hidden">
+    <!-- Full-bleed hero: brand + one line + CTA over edge-to-edge image -->
+    <section class="hero" id="uvod" aria-label="Úvod">
+      <div class="hero-plane" id="hero-bg" role="img" aria-label="Wellness Gold"></div>
+      <div class="hero-veil" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <h1 id="salon-name">Wellness Gold</h1>
+        <p class="hero-line">Ticho, teplo a zlatý klid.</p>
+        <p class="hero-lead" id="salon-desc"></p>
+        <a href="rezervace.html" class="hero-cta">Rezervovat termín</a>
       </div>
     </section>
 
-    <section id="galerie" class="section gallery-section">
-      <div class="container">
-        <div class="section-header center">
-          <span class="section-label">Galerie</span>
-          <h2>Atmosféra studia</h2>
-        </div>
+    <!-- Vertical gold vein of rituals -->
+    <div class="vein-rail" aria-hidden="true"></div>
+
+    <section id="o-nas" class="ritual ritual-about">
+      <div class="ritual-mark"><span>I</span></div>
+      <div class="ritual-body">
+        <p class="ritual-kicker">O nás</p>
+        <h2>Prostor regenerace</h2>
+        <p id="about-text"></p>
+      </div>
+    </section>
+
+    <section id="galerie" class="ritual ritual-gallery">
+      <div class="ritual-mark"><span>II</span></div>
+      <div class="ritual-body">
+        <p class="ritual-kicker">Galerie</p>
+        <h2>Kámen a světlo</h2>
         <div class="gallery" id="gallery"></div>
       </div>
     </section>
 
-    <section id="personel" class="section team-section">
-      <div class="container">
-        <div class="section-header center">
-          <span class="section-label">Personál</span>
-          <h2>Náš tým</h2>
-        </div>
-        <div class="team-grid" id="personel-list"></div>
+    <section id="personel" class="ritual ritual-team">
+      <div class="ritual-mark"><span>III</span></div>
+      <div class="ritual-body">
+        <p class="ritual-kicker">Tým</p>
+        <h2>Průvodci klidem</h2>
+        <div class="team-rail" id="personel-list"></div>
       </div>
     </section>
 
-    <section id="cenik" class="section pricing">
-      <div class="container">
-        <div class="section-header center">
-          <span class="section-label">Ceník</span>
-          <h2>Naše služby</h2>
-        </div>
-        <div class="price-grid" id="cenik-list"></div>
+    <section id="cenik" class="ritual ritual-price">
+      <div class="ritual-mark"><span>IV</span></div>
+      <div class="ritual-body">
+        <p class="ritual-kicker">Ceník</p>
+        <h2>Rituály péče</h2>
+        <div class="price-ledger" id="cenik-list"></div>
       </div>
     </section>
 
-    <section id="novinky" class="section news">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label">Novinky</span>
-          <h2>Aktuality ze studia</h2>
-        </div>
-        <div class="news-list" id="novinky-list"></div>
+    <section id="novinky" class="ritual ritual-news">
+      <div class="ritual-mark"><span>V</span></div>
+      <div class="ritual-body">
+        <p class="ritual-kicker">Novinky</p>
+        <h2>Zápisky z lázně</h2>
+        <div class="news-ledger" id="novinky-list"></div>
       </div>
     </section>
 
-    <section id="kontakt" class="section contact">
-      <div class="container contact-grid">
-        <div class="contact-info">
-          <div class="section-header">
-            <span class="section-label">Kontakt</span>
-            <h2>Kde nás najdete</h2>
+    <section id="kontakt" class="ritual ritual-contact">
+      <div class="ritual-mark"><span>VI</span></div>
+      <div class="ritual-body">
+        <p class="ritual-kicker">Kontakt</p>
+        <h2>Navštivte nás</h2>
+        <div class="contact-stage">
+          <div class="contact-info">
+            <ul class="contact-list">
+              <li><span>Adresa</span><strong id="salon-address"></strong></li>
+              <li><span>Telefon</span><a id="salon-phone" href="#"></a></li>
+              <li><span>E-mail</span><a id="salon-email" href="#"></a></li>
+            </ul>
+            <div class="hours-block" id="oteviraci-doba">
+              <h3>Otevírací doba</h3>
+              <p class="hours-note">Vypočteno z pracovní doby personálu</p>
+              <table><tbody></tbody></table>
+            </div>
           </div>
-          <ul class="contact-list">
-            <li>
-              <span class="contact-icon">📍</span>
-              <div><strong>Adresa</strong><span id="salon-address"></span></div>
-            </li>
-            <li>
-              <span class="contact-icon">📞</span>
-              <div><strong>Telefon</strong><a id="salon-phone" href="#"></a></div>
-            </li>
-            <li>
-              <span class="contact-icon">✉️</span>
-              <div><strong>E-mail</strong><a id="salon-email" href="#"></a></div>
-            </li>
-          </ul>
-        </div>
-        <div class="hours-card" id="oteviraci-doba">
-          <h3>Otevírací doba</h3>
-          <p class="hours-note">Vypočteno z pracovní doby personálu</p>
-          <table><tbody></tbody></table>
+          <div class="map-wrap" id="map-wrap">
+            <iframe id="salon-map" title="Mapa salonu" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          </div>
         </div>
       </div>
     </section>
-  </main>
 
-  <footer class="footer">
-    <div class="container">
-      <p id="footer-name">Studio</p>
-      <p class="footer-copy">© 2026 · Studio Krása</p>
-    </div>
-  </footer>
+    <footer class="site-foot">
+      <p id="footer-name">Wellness Gold</p>
+      <p class="footer-copy">© 2026 · Wellness Gold</p>
+    </footer>
+  </div>
 
   <aside class="creator-bar" aria-label="Informace o tvůrci webu">
     <div class="creator-bar-inner">
@@ -255,7 +245,6 @@
           <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
         </div>
 
-
         <div class="admin-footer">
           <button type="button" id="btn-save" class="btn btn-primary btn-block">Uložit textová data</button>
           <div id="status-msg" class="status-msg"></div>
@@ -269,6 +258,6 @@
     <img id="lightbox-img" src="" alt="">
   </div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=1"></script>
 </body>
 </html>

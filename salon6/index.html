@@ -3,136 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studio Krása</title>
+  <title>Salon Klid</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3">
   <link rel="stylesheet" href="../shared/creator-footer.css?v=2">
 </head>
 <body>
-  <nav class="nav" id="nav">
-    <div class="nav-inner">
-      <a href="#" class="nav-logo" id="nav-logo">Studio</a>
-      <div class="nav-links">
-        <a href="#o-nas">O nás</a>
-        <a href="#galerie">Galerie</a>
-        <a href="#personel">Personál</a>
-        <a href="#cenik">Ceník</a>
-        <a href="#novinky">Novinky</a>
-        <a href="#kontakt" class="nav-cta">Kontakt</a>
-        <a href="rezervace.html" class="nav-rezervace">Rezervovat →</a>
-      </div>
-      <button class="nav-toggle" id="nav-toggle" aria-label="Menu">☰</button>
-    </div>
-  </nav>
+  <aside class="breath-rail" aria-label="Navigace">
+    <a href="#uvod" class="breath-mark" id="nav-logo">Klid</a>
+    <div class="breath-pulse" aria-hidden="true"></div>
+    <nav class="breath-nav">
+      <a href="#o-nas" title="O nás"><span>01</span></a>
+      <a href="#cenik" title="Terapie"><span>02</span></a>
+      <a href="#personel" title="Terapeuti"><span>03</span></a>
+      <a href="#galerie" title="Galerie"><span>04</span></a>
+      <a href="#novinky" title="Novinky"><span>05</span></a>
+      <a href="#kontakt" title="Kontakt"><span>06</span></a>
+    </nav>
+    <a href="rezervace.html" class="breath-cta">Rezervovat</a>
+  </aside>
 
-  <header class="hero" id="hero">
-    <div class="hero-bg" id="hero-bg"></div>
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <p class="hero-tag">Relax · Krása · Péče</p>
-      <h1 id="salon-name">Studio</h1>
-      <p class="hero-desc" id="salon-desc"></p>
-      <a href="rezervace.html" class="btn btn-primary">Rezervovat termín</a>
-    </div>
-    <div class="hero-scroll">↓</div>
+  <header class="mobile-bar" id="nav">
+    <a href="#uvod" class="mobile-brand">Salon Klid</a>
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menu">☰</button>
+    <nav class="nav-links">
+      <a href="#o-nas">O nás</a>
+      <a href="#cenik">Terapie</a>
+      <a href="#personel">Terapeuti</a>
+      <a href="#galerie">Galerie</a>
+      <a href="#novinky">Novinky</a>
+      <a href="#kontakt">Kontakt</a>
+      <a href="rezervace.html" class="topbar-rez">Rezervovat</a>
+    </nav>
   </header>
 
   <div id="loading" class="loading">
     <div class="spinner"></div>
-    <p>Načítám studio…</p>
+    <p>Načítám salon…</p>
   </div>
 
-  <main id="content" class="hidden">
-    <section id="o-nas" class="section about">
-      <div class="container about-split">
-        <div class="section-header">
-          <span class="section-label">O studiu</span>
-          <h2>Prostor pro vaši pohodu</h2>
-          <p class="about-text" id="about-text"></p>
-        </div>
-        <div class="about-deco"></div>
+  <div id="content" class="page hidden">
+    <section class="hero" id="uvod" aria-label="Úvod">
+      <div class="hero-plane" id="hero-bg" role="img" aria-label="Salon Klid"></div>
+      <div class="hero-veil" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <h1 id="salon-name">Salon Klid</h1>
+        <p class="hero-line">Kde tělo zpomalí.</p>
+        <p class="hero-lead" id="salon-desc"></p>
+        <a href="rezervace.html" class="hero-cta">Rezervovat termín</a>
       </div>
     </section>
 
-    <section id="galerie" class="section gallery-section">
-      <div class="container">
-        <div class="section-header center">
-          <span class="section-label">Galerie</span>
-          <h2>Atmosféra studia</h2>
-        </div>
-        <div class="gallery" id="gallery"></div>
+    <section id="o-nas" class="band band-about">
+      <p class="band-index">01 — Prostor</p>
+      <div class="about-flow">
+        <h2>Ticho, které<br>uvolní tělo.</h2>
+        <p id="about-text"></p>
       </div>
     </section>
 
-    <section id="personel" class="section team-section">
-      <div class="container">
-        <div class="section-header center">
-          <span class="section-label">Personál</span>
-          <h2>Náš tým</h2>
-        </div>
-        <div class="team-grid" id="personel-list"></div>
+    <section id="cenik" class="band band-rail">
+      <div class="rail-head">
+        <p class="band-index">02 — Terapie</p>
+        <h2 class="band-title">Sekvence péče</h2>
+        <p class="band-lead">Posuňte se po trati ošetření — od klasiky po baňkování.</p>
       </div>
+      <div class="treatment-rail" id="cenik-list" tabindex="0" aria-label="Ceník služeb"></div>
     </section>
 
-    <section id="cenik" class="section pricing">
-      <div class="container">
-        <div class="section-header center">
-          <span class="section-label">Ceník</span>
-          <h2>Naše služby</h2>
-        </div>
-        <div class="price-grid" id="cenik-list"></div>
-      </div>
+    <section id="personel" class="band band-team">
+      <p class="band-index">03 — Terapeuti</p>
+      <h2 class="band-title">Ruce, které naslouchají</h2>
+      <div class="therapist-row" id="personel-list"></div>
     </section>
 
-    <section id="novinky" class="section news">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label">Novinky</span>
-          <h2>Aktuality ze studia</h2>
-        </div>
-        <div class="news-list" id="novinky-list"></div>
-      </div>
+    <section id="galerie" class="band band-gallery">
+      <p class="band-index">04 — Prostor ve fotkách</p>
+      <h2 class="band-title">Galerie</h2>
+      <div class="gallery" id="gallery"></div>
     </section>
 
-    <section id="kontakt" class="section contact">
-      <div class="container contact-grid">
+    <section id="novinky" class="band band-news">
+      <p class="band-index">05 — Pulz</p>
+      <h2 class="band-title">Novinky</h2>
+      <div class="pulse-list" id="novinky-list"></div>
+    </section>
+
+    <section id="kontakt" class="band band-contact">
+      <p class="band-index">06 — Přijďte</p>
+      <div class="contact-grid">
         <div class="contact-info">
-          <div class="section-header">
-            <span class="section-label">Kontakt</span>
-            <h2>Kde nás najdete</h2>
-          </div>
+          <h2 class="band-title">Kontakt</h2>
           <ul class="contact-list">
-            <li>
-              <span class="contact-icon">📍</span>
-              <div><strong>Adresa</strong><span id="salon-address"></span></div>
-            </li>
-            <li>
-              <span class="contact-icon">📞</span>
-              <div><strong>Telefon</strong><a id="salon-phone" href="#"></a></div>
-            </li>
-            <li>
-              <span class="contact-icon">✉️</span>
-              <div><strong>E-mail</strong><a id="salon-email" href="#"></a></div>
-            </li>
+            <li><span>Adresa</span><strong id="salon-address"></strong></li>
+            <li><span>Telefon</span><a id="salon-phone" href="#"></a></li>
+            <li><span>E-mail</span><a id="salon-email" href="#"></a></li>
           </ul>
         </div>
-        <div class="hours-card" id="oteviraci-doba">
+        <div class="hours-block" id="oteviraci-doba">
           <h3>Otevírací doba</h3>
-          <p class="hours-note">Vypočteno z pracovní doby personálu</p>
+          <p class="hours-note">Vypočteno z pracovní doby terapeutů</p>
           <table><tbody></tbody></table>
+        </div>
+        <div class="map-wrap" id="map-wrap">
+          <iframe id="salon-map" title="Mapa salonu" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
         </div>
       </div>
     </section>
-  </main>
 
-  <footer class="footer">
-    <div class="container">
-      <p id="footer-name">Studio</p>
-      <p class="footer-copy">© 2026 · Studio Krása</p>
-    </div>
-  </footer>
+    <footer class="footer">
+      <p id="footer-name">Salon Klid</p>
+      <p class="footer-copy">© 2026 · masážní studio</p>
+    </footer>
+  </div>
 
   <aside class="creator-bar" aria-label="Informace o tvůrci webu">
     <div class="creator-bar-inner">
@@ -240,7 +225,7 @@
         </div>
 
         <div class="tab-panel" data-panel="personel">
-          <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Personál. Fotku nahrajte tlačítkem níže.</p>
+          <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Terapeuti. Fotku nahrajte tlačítkem níže.</p>
           <div id="personel-edit"></div>
           <button type="button" id="btn-add-personel" class="btn btn-secondary btn-sm">+ Přidat člena týmu</button>
         </div>
@@ -255,7 +240,6 @@
           <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
         </div>
 
-
         <div class="admin-footer">
           <button type="button" id="btn-save" class="btn btn-primary btn-block">Uložit textová data</button>
           <div id="status-msg" class="status-msg"></div>
@@ -269,6 +253,6 @@
     <img id="lightbox-img" src="" alt="">
   </div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

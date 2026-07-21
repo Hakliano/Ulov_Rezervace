@@ -1,5 +1,8 @@
-const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
-const SALON_ID = 2;
+const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname))
+  ? 'http://localhost:8000/api'
+  : 'https://api.ulovklienty.cz/api';
+const SALON_ID = 5;
+const FALLBACK_HERO = 'https://haklweb.b-cdn.net/webs/salon-5/hero/a86632471e4342d79e715318d313f7e1.webp';
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;
 
@@ -25,7 +28,7 @@ function staffHeaders(extra = {}) {
 
 async function fetchPersonel() {
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/personel/`);
-  if (!res.ok) throw new Error('Nepodaøilo se naèíst personál.');
+  if (!res.ok) throw new Error('Nepodařilo se načíst personál.');
   return res.json();
 }
 
@@ -82,7 +85,7 @@ function personelEditCard(z) {
   const id = z.id || '';
   return `<div class="personel-edit-card" data-id="${id}">
     <div class="personel-edit-head">
-      <strong>${esc(z.jmeno || 'Nový èlen týmu')}</strong>
+      <strong>${esc(z.jmeno || 'Nový člen týmu')}</strong>
       <label class="checkbox"><input type="checkbox" class="p-web" ${z.zobrazit_na_webu !== false ? 'checked' : ''}> Na webu</label>
     </div>
     <label>Jméno<input type="text" class="p-jmeno" value="${esc(z.jmeno)}"></label>
@@ -90,16 +93,16 @@ function personelEditCard(z) {
     <label>Popis<textarea class="p-popis" rows="3">${esc(z.popis || '')}</textarea></label>
     <div class="p-foto-preview">${z.fotka ? `<img src="${esc(z.fotka)}" alt="">` : '<span class="placeholder">Bez fotky</span>'}</div>
     <label class="btn btn-secondary btn-upload btn-sm">Nahrát fotku<input type="file" class="p-foto-upload" accept="image/*" hidden></label>
-    <p class="admin-hint">Pracovní doba urèuje dostupnost v rezervacích i otevírací dobu salonu na webu (souèet všech zamìstnancù).</p>
+    <p class="admin-hint">Pracovní doba určuje dostupnost v rezervacích i otevírací dobu salonu na webu (součet všech zaměstnanců).</p>
     <table class="rozvrh-table admin-rozvrh">
       <thead><tr><th>Den</th><th>Od</th><th>Do</th><th>Volno</th></tr></thead>
       <tbody>${personelRozvrhRows(z.rozvrh)}</tbody>
     </table>
     <div class="personel-edit-actions">
       <button type="button" class="btn btn-primary btn-sm btn-save-personel">Uložit</button>
-      ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat úèet</button>' : ''}
+      ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat účet</button>' : ''}
     </div>
-    ${id && z.aktivni === false ? '<p class="admin-hint error">Úèet deaktivován — zamìstnanec se nemùže pøihlásit. Obnovte zaškrtnutím „Aktivní“ v rezervacích › Kadeønice.</p>' : ''}
+    ${id && z.aktivni === false ? '<p class="admin-hint error">Účet deaktivován — zaměstnanec se nemůže přihlásit. Obnovte zaškrtnutím „Aktivní“ v rezervacích → Kadeřnice.</p>' : ''}
   </div>`;
 }
 
@@ -189,7 +192,7 @@ async function savePersonelCard(card) {
 
 async function deletePersonelCard(card) {
   const id = card.dataset.id;
-  if (!id || !confirm('Deaktivovat úèet tohoto èlena týmu?\n\nÚèet se nesmaže — zùstane historie a audit. Zamìstnanec se už nepøihlásí.')) return;
+  if (!id || !confirm('Deaktivovat účet tohoto člena týmu?\n\nÚčet se nesmaže — zůstane historie a audit. Zaměstnanec se už nepřihlásí.')) return;
   await apiRezervace(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${id}/deaktivovat/`, { method: 'POST' });
   await loadPersonelAdmin();
   renderPersonelPublic(await fetchPersonel());
@@ -200,7 +203,7 @@ async function uploadPersonelPhoto(e, card) {
   const file = e.target.files[0];
   const id = card.dataset.id;
   if (!file || !id) {
-    alert('Nejdøíve uložte èlena týmu, pak nahrajte fotku.');
+    alert('Nejdříve uložte člena týmu, pak nahrajte fotku.');
     e.target.value = '';
     return;
   }
@@ -233,7 +236,7 @@ async function uploadPersonelPhoto(e, card) {
 
 async function fetchSalon() {
   const res = await fetch(`${API_BASE}/salon/${SALON_ID}/`);
-  if (!res.ok) throw new Error('Nepodaøilo se naèíst data salonu.');
+  if (!res.ok) throw new Error('Nepodařilo se načíst data salonu.');
   return res.json();
 }
 
@@ -270,7 +273,7 @@ function renderOteviraciDoba(list) {
   if (!tbody) return;
   tbody.innerHTML = (list || []).map(d => {
     const cas = d.zavreno
-      ? '<span class="zavreno">Zavøeno</span>'
+      ? '<span class="zavreno">Zavřeno</span>'
       : `${formatTime(d.od)} – ${formatTime(d.do)}`;
     return `<tr><td>${d.den_nazev}</td><td>${cas}</td></tr>`;
   }).join('');
@@ -298,9 +301,22 @@ function renderSalon(data) {
   emailEl.textContent = data.email;
   emailEl.href = `mailto:${data.email}`;
 
+  const mapEl = document.getElementById('salon-map');
+  const mapWrap = document.getElementById('map-wrap');
+  if (mapEl && mapWrap) {
+    if (data.address) {
+      mapEl.src = `https://maps.google.com/maps?q=${encodeURIComponent(data.address)}&z=16&output=embed&hl=cs`;
+      mapWrap.classList.remove('hidden');
+    } else {
+      mapEl.removeAttribute('src');
+      mapWrap.classList.add('hidden');
+    }
+  }
+
   const heroBg = document.getElementById('hero-bg');
-  if (data.hero_image) {
-    heroBg.style.backgroundImage = `url('${data.hero_image}')`;
+  const heroUrl = data.hero_image || FALLBACK_HERO;
+  if (heroUrl) {
+    heroBg.style.backgroundImage = `url('${heroUrl}')`;
     heroBg.classList.add('has-image');
   } else {
     heroBg.style.backgroundImage = '';
@@ -329,7 +345,7 @@ function renderSalon(data) {
   document.getElementById('cenik-list').innerHTML = data.cenik.map(item =>
     `<div class="price-card">
       <span class="price-name">${esc(item.nazev)}</span>
-      <span class="price-value">${item.cena} Kè</span>
+      <span class="price-value">${item.cena} Kč</span>
     </div>`
   ).join('');
 
@@ -423,7 +439,7 @@ async function handleLogin(e) {
   const login = document.getElementById('staff-login').value.trim();
   const password = document.getElementById('staff-password').value;
   const msg = document.getElementById('login-status-msg');
-  msg.textContent = 'Ovìøuji…';
+  msg.textContent = 'Ověřuji…';
   msg.className = 'status-msg';
 
   try {
@@ -446,8 +462,8 @@ async function handleLogin(e) {
   } catch (err) {
     const raw = err.message || '';
     msg.textContent = /failed to fetch|networkerror|load failed/i.test(raw)
-      ? 'Nepodaøilo se spojit s API. Zkontrolujte internet a zkuste obnovit stránku (Ctrl+F5).'
-      : (raw || 'Nesprávné pøihlašovací jméno nebo heslo.');
+      ? 'Nepodařilo se spojit s API. Zkontrolujte internet a zkuste obnovit stránku (Ctrl+F5).'
+      : (raw || 'Nesprávné přihlašovací jméno nebo heslo.');
     msg.className = 'status-msg error';
     console.error(err);
   }
@@ -494,7 +510,7 @@ function showEditForm() {
   const hint = document.getElementById('bunny-hint');
   hint.textContent = bunnyConfigured
     ? 'Obrázky se nahrávají na Bunny.net CDN.'
-    : '? Bunny.net není nastaven – vyplòte backend/.env (viz README).';
+    : '⚠ Bunny.net není nastaven – vyplňte backend/.env (viz README).';
 
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = d.cenik.map(item => cenikEditRow(item)).join('');
@@ -509,7 +525,88 @@ function showEditForm() {
   };
 
   if (staffToken && isMajitel()) loadPersonelAdmin().catch(console.error);
+  renderDelkyEdit();
 }
+
+function renderDelkyEdit() {
+  const root = document.getElementById('delky-edit');
+  if (!root) return;
+  const items = salonData?.cenik || [];
+  if (!items.length) {
+    root.innerHTML = '<p class="admin-hint">Zatím nemáte žádné služby. Nejdřív je přidejte v záložce Ceník.</p>';
+    return;
+  }
+  root.innerHTML = items.map((item) => `
+    <div class="delky-row" data-id="${item.id}">
+      <span class="delky-name">${esc(item.nazev)}</span>
+      <label class="delky-field">
+        <span class="delky-label">Délka</span>
+        <input type="number" class="delky-minut" min="5" max="720" step="5"
+          value="${parseInt(item.delka_minut, 10) || 30}" aria-label="Délka služby ${esc(item.nazev)} v minutách">
+        <span class="delky-unit">min</span>
+      </label>
+    </div>
+  `).join('');
+}
+
+async function saveDelky() {
+  const msg = document.getElementById('delky-save-msg');
+  if (!msg) return;
+  if (!staffToken || !isMajitel()) {
+    msg.textContent = 'Pro uložení se přihlaste jako majitel / správce salonu.';
+    msg.className = 'status-msg error';
+    return;
+  }
+  const byId = {};
+  document.querySelectorAll('#delky-edit .delky-row').forEach((row) => {
+    const id = parseInt(row.dataset.id, 10);
+    let min = parseInt(row.querySelector('.delky-minut').value, 10);
+    if (!Number.isFinite(min)) min = 30;
+    if (min < 5) min = 5;
+    if (min > 720) min = 720;
+    byId[id] = min;
+  });
+  const cenik = (salonData.cenik || []).map((item, i) => ({
+    id: item.id,
+    nazev: item.nazev,
+    cena: item.cena,
+    poradi: item.poradi ?? i,
+    delka_minut: byId[item.id] != null ? byId[item.id] : (item.delka_minut || 30),
+    rezerva_minut: item.rezerva_minut || 0,
+    aktivni: item.aktivni !== false,
+  }));
+  try {
+    const res = await fetch(`${API_BASE}/salon/${SALON_ID}/`, {
+      method: 'PUT',
+      headers: staffHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        name: salonData.name,
+        description: salonData.description || '',
+        address: salonData.address || '',
+        phone: salonData.phone || '',
+        email: salonData.email || '',
+        cenik,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || JSON.stringify(err) || res.statusText);
+    }
+    salonData = await fetchSalon();
+    renderSalon(salonData);
+    renderDelkyEdit();
+    const cenikEdit = document.getElementById('cenik-edit');
+    if (cenikEdit) {
+      cenikEdit.innerHTML = (salonData.cenik || []).map((item) => cenikEditRow(item)).join('');
+    }
+    msg.textContent = 'Délky služeb uloženy.';
+    msg.className = 'status-msg success';
+  } catch (err) {
+    msg.textContent = 'Chyba: ' + err.message;
+    msg.className = 'status-msg error';
+  }
+}
+
 
 function renderHeroPreview(url) {
   const el = document.getElementById('hero-preview');
@@ -581,7 +678,7 @@ async function handleGalleryUpload(e) {
     renderSalon(salonData);
     renderGalleryEdit(salonData.obrazky);
     const msg = document.getElementById('status-msg');
-    msg.textContent = 'Fotka pøidána do galerie.';
+    msg.textContent = 'Fotka přidána do galerie.';
     msg.className = 'status-msg success';
   } catch (err) {
     const msg = document.getElementById('status-msg');
@@ -614,7 +711,7 @@ async function deleteImage(imageId) {
 function cenikEditRow(item) {
   return `<div class="edit-row cenik-edit-item" data-id="${item.id || ''}">
     <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Služba">
-    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kè">
+    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kč">
   </div>`;
 }
 
@@ -661,7 +758,7 @@ async function handleNovinkaUpload(e) {
   const msg = document.getElementById('status-msg');
 
   if (!row.dataset.id) {
-    msg.textContent = 'Nejdøív uložte novinku (tlaèítko „Uložit textová data“), pak nahrajte obrázek.';
+    msg.textContent = 'Nejdřív uložte novinku (tlačítko „Uložit textová data“), pak nahrajte obrázek.';
     msg.className = 'status-msg error';
     input.value = '';
     return;
@@ -754,7 +851,7 @@ function collectFormData() {
 async function handleSave() {
   const msg = document.getElementById('status-msg');
   if (!staffToken || !isMajitel()) {
-    msg.textContent = 'Pro uložení se pøihlaste jako majitel salonu.';
+    msg.textContent = 'Pro uložení se přihlaste jako majitel salonu.';
     msg.className = 'status-msg error';
     return;
   }
@@ -772,7 +869,8 @@ async function handleSave() {
     salonData = await fetchSalon();
     renderSalon(salonData);
     refreshNovinkyEdit();
-    msg.textContent = 'Zmìny uloženy.';
+    renderDelkyEdit();
+    msg.textContent = 'Změny uloženy.';
     msg.className = 'status-msg success';
   } catch (err) {
     msg.textContent = 'Chyba: ' + err.message;
@@ -795,7 +893,7 @@ document.getElementById('btn-add-personel').addEventListener('click', () => {
   personelAdminData.push({
     jmeno: '', specializace: '', popis: '', fotka: '', zobrazit_na_webu: true,
     rozvrh: [0, 1, 2, 3, 4, 5, 6].map((den) => ({
-      den, den_nazev: ['Pondìlí', 'Úterý', 'Støeda', 'Ètvrtek', 'Pátek', 'Sobota', 'Nedìle'][den],
+      den, den_nazev: ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'][den],
       od: null, do: null, volno: true,
     })),
   });
@@ -819,7 +917,7 @@ async function loadEmailSettings() {
       headers: staffHeaders(),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Nelze naèíst');
+    if (!res.ok) throw new Error(data.detail || 'Nelze načíst');
     document.getElementById('smtp-host').value = data.smtp_host || 'smtp.forpsi.com';
     document.getElementById('smtp-port').value = data.smtp_port || 465;
     document.getElementById('smtp-ssl').checked = data.smtp_use_ssl !== false;
@@ -830,8 +928,8 @@ async function loadEmailSettings() {
       ? '•••••••• (nastaveno – nechte prázdné pro zachování)'
       : 'Heslo ke schránce';
     status.textContent = data.smtp_aktivni
-      ? `? Odesílání aktivní · Od: ${data.email_odesilatel}`
-      : '? Doplòte SMTP heslo pro odesílání potvrzení rezervací.';
+      ? `✓ Odesílání aktivní · Od: ${data.email_odesilatel}`
+      : '⚠ Doplňte SMTP heslo pro odesílání potvrzení rezervací.';
     status.className = data.smtp_aktivni ? 'admin-hint success' : 'admin-hint';
   } catch (err) {
     status.textContent = err.message;
@@ -914,6 +1012,7 @@ document.getElementById('btn-cancel').addEventListener('click', closeAdmin);
 document.getElementById('btn-web-logout')?.addEventListener('click', handleWebAdminLogout);
 document.getElementById('login-form').addEventListener('submit', handleLogin);
 document.getElementById('btn-save').addEventListener('click', handleSave);
+document.getElementById('btn-save-delky')?.addEventListener('click', saveDelky);
 document.getElementById('btn-save-email').addEventListener('click', saveEmailSettings);
 document.getElementById('btn-test-email').addEventListener('click', testEmailSettings);
 document.getElementById('upload-hero').addEventListener('change', handleHeroUpload);
@@ -931,6 +1030,6 @@ Promise.all([fetchSalon(), fetchBunnyStatus(), fetchPersonel()])
   })
   .catch(err => {
     document.getElementById('loading').innerHTML =
-      '<p>Obsah se nepodaøilo naèíst. Zkuste to prosím pozdìji.</p>';
+      '<p>Obsah se nepodařilo načíst. Zkuste to prosím později.</p>';
     console.error(err);
   });
