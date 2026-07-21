@@ -78,21 +78,7 @@ async function loadInfo() {
     sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)} – ${esc(z.specializace)}</option>`;
   });
 
-  $('#sluzby-list').innerHTML = info.sluzby.map(s => `
-    <label class="sluzba-card">
-      <input type="checkbox" value="${s.id}" data-delka="${s.delka_minut + s.rezerva_minut}">
-      <span class="sluzba-name">${esc(s.nazev)}</span>
-      <span class="sluzba-meta">${s.delka_minut} min · ${s.cena} Kè</span>
-    </label>
-  `).join('');
-
-  $$('#sluzby-list input').forEach(inp => {
-    inp.addEventListener('change', () => {
-      if (inp.checked) vybraneSluzby.add(parseInt(inp.value, 10));
-      else vybraneSluzby.delete(parseInt(inp.value, 10));
-      updateDelkaInfo();
-    });
-  });
+  renderTableButtons();
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -104,11 +90,56 @@ async function loadInfo() {
   $('#view-nova').classList.remove('hidden');
 }
 
+function tableNumber(s) {
+  const m = String(s.nazev || '').match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function renderTableButtons() {
+  const tables = [...(info.sluzby || [])]
+    .map((s) => ({ ...s, cislo: tableNumber(s) }))
+    .filter((s) => s.cislo != null)
+    .sort((a, b) => a.cislo - b.cislo);
+
+  $('#sluzby-list').innerHTML = tables.map((s) => `
+    <button
+      type="button"
+      class="table-btn"
+      role="option"
+      aria-selected="false"
+      data-id="${s.id}"
+      data-delka="${s.delka_minut + s.rezerva_minut}"
+      data-cislo="${s.cislo}"
+    >${s.cislo}</button>
+  `).join('');
+
+  $$('#sluzby-list .table-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id, 10);
+      vybraneSluzby.clear();
+      vybraneSluzby.add(id);
+      $$('#sluzby-list .table-btn').forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('selected', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      updateDelkaInfo();
+    });
+  });
+}
+
 function updateDelkaInfo() {
-  let total = 0;
-  $$('#sluzby-list input:checked').forEach(inp => { total += parseInt(inp.dataset.delka, 10); });
-  $('#delka-info').textContent = vybraneSluzby.size ? `Celková délka: cca ${total} min` : '';
-  $('#btn-krok2').disabled = vybraneSluzby.size === 0;
+  const selected = info?.sluzby?.find((s) => vybraneSluzby.has(s.id));
+  if (!selected) {
+    $('#delka-info').textContent = '';
+    $('#btn-krok2').disabled = true;
+    return;
+  }
+  const n = tableNumber(selected);
+  $('#delka-info').textContent = n != null
+    ? `Stůl ${n} · cca ${selected.delka_minut} min`
+    : `cca ${selected.delka_minut} min`;
+  $('#btn-krok2').disabled = false;
 }
 
 async function loadTerminy() {
@@ -151,9 +182,9 @@ async function loadTerminy() {
 }
 
 function updateSummary() {
-  const sluzby = info.sluzby.filter(s => vybraneSluzby.has(s.id)).map(s => s.nazev).join(', ');
+  const stul = info.sluzby.filter(s => vybraneSluzby.has(s.id)).map(s => s.nazev).join(', ');
   $('#summary').innerHTML = `
-    <p><strong>Služby:</strong> ${esc(sluzby)}</p>
+    <p><strong>Stůl:</strong> ${esc(stul)}</p>
     <p><strong>Termín:</strong> ${$('#input-datum').value} v ${vybranyCas}</p>
     <p><strong>Pracovník:</strong> ${esc($('#select-zamestnanec').selectedOptions[0].text)}</p>
   `;
@@ -1135,7 +1166,11 @@ $('#form-rezervace').addEventListener('submit', submitRezervace);
 $('#btn-nova-rezervace').addEventListener('click', () => {
   vybraneSluzby.clear();
   vybranyCas = null;
-  $$('#sluzby-list input').forEach(i => { i.checked = false; });
+  $$('#sluzby-list .table-btn').forEach((b) => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-selected', 'false');
+  });
+  updateDelkaInfo();
   setStep(1);
 });
 

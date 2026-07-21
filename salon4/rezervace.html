@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Cormorant+Garamond:wght@400;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="rezervace.css?v=2">
+  <link rel="stylesheet" href="rezervace.css?v=3">
   <link rel="stylesheet" href="../shared/creator-footer.css?v=2">
 </head>
 <body class="cafe-rez">
@@ -31,16 +31,26 @@
     <!-- Nová rezervace -->
     <section id="view-nova" class="view hidden">
       <div class="steps">
-        <div class="step active" data-step="1"><span>1</span> Služby</div>
+        <div class="step active" data-step="1"><span>1</span> Stůl</div>
         <div class="step" data-step="2"><span>2</span> Termín</div>
         <div class="step" data-step="3"><span>3</span> Údaje</div>
         <div class="step" data-step="4"><span>4</span> Hotovo</div>
       </div>
 
       <div id="panel-sluzby" class="panel">
-        <h2>Vyberte služby</h2>
-        <p class="hint">Můžete vybrat více služeb najednou.</p>
-        <div id="sluzby-list" class="sluzby-grid"></div>
+        <h2>Vyberte stůl</h2>
+        <p class="hint">Podívejte se na plánek kavárny a zvolte číslo stolu.</p>
+        <div class="floor-plan-preview">
+          <img
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/kavarna%20planek.png"
+            alt="Plánek stolů v kavárně"
+            width="800"
+            height="600"
+            loading="eager"
+            decoding="async"
+          >
+        </div>
+        <div id="sluzby-list" class="table-btns" role="listbox" aria-label="Čísla stolů"></div>
         <div class="panel-footer">
           <span id="delka-info" class="delka-info"></span>
           <button type="button" id="btn-krok2" class="btn btn-primary" disabled>Pokračovat</button>
@@ -448,6 +458,6 @@
     </div>
   </aside>
 
-  <script src="rezervace.js?v=17"></script>
+  <script src="rezervace.js?v=18"></script>
 </body>
 </html>
