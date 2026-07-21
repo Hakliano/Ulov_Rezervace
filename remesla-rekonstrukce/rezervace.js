@@ -823,7 +823,7 @@ function buildNotifCard(n, i) {
     activeCb.addEventListener('change', () => {
       card.classList.toggle('notif-inactive', !activeCb.checked);
     });
-    activeLabel.append(activeCb, document.createTextNode(' Odesílat automaticky (cron)'));
+    activeLabel.append(activeCb, document.createTextNode(' Odesílat automaticky'));
 
     const offsetLabel = document.createElement('label');
     offsetLabel.className = 'notif-offset-label';
@@ -1088,7 +1088,7 @@ async function saveStaffRozvrh() {
         rozvrh: collectStaffRozvrh(),
       }),
     });
-    msg.textContent = 'Údaje kadeřnice uloženy.';
+    msg.textContent = 'Údaje pracovníka uloženy.';
     msg.className = 'status-msg success';
     await loadStaff();
   } catch (err) {
@@ -1106,7 +1106,7 @@ async function deleteStaffAbsence(absenceId) {
 }
 
 async function addStaffMember() {
-  const jmeno = prompt('Jméno kadeřnice:');
+  const jmeno = prompt('Jméno pracovníka:');
   if (!jmeno?.trim()) return;
   const specializace = prompt('Specializace (volitelné):') || '';
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/`, {

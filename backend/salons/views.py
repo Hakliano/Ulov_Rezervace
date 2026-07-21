@@ -13,7 +13,7 @@ from rezervace.throttles import PoptavkaRateThrottle
 
 from .poptavka import odeslat_poptavku
 from .bunny import BunnyUploadError, delete_image, is_bunny_configured, upload_image
-from .models import Novinka, Salon, SalonObrazek
+from .models import CenikPolozka, Novinka, Salon, SalonObrazek
 from .permissions import AdminPasswordPermission, MajitelPermission
 from .serializers import NovinkaSerializer, SalonObrazekSerializer, SalonSerializer
 
@@ -99,6 +99,8 @@ class ImageUploadView(APIView):
         typ = _form_param(request, 'typ') or 'galerie'
         if typ == 'hero':
             folder = 'hero'
+        elif typ == 'cenik':
+            folder = 'cenik'
         elif typ == 'novinka':
             folder = 'novinky'
         elif typ == 'personel':
@@ -145,6 +147,37 @@ class ImageUploadView(APIView):
                 delete_image(old_url)
             log_audit(salon, audit_actor(request), 'web', f'{audit_actor(request)}: nahrání obrázku novinky')
             return Response(NovinkaSerializer(novinka).data)
+
+        if typ == 'cenik':
+            cenik_id = _form_param(request, 'cenik_id')
+            try:
+                cenik_id = int(cenik_id) if cenik_id else None
+            except (TypeError, ValueError):
+                cenik_id = None
+
+            if not cenik_id:
+                return Response(
+                    {'detail': 'Chybí ID služby. Nejdřív uložte ceník, pak nahrajte obrázek.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                cenik = CenikPolozka.objects.get(id=cenik_id, salon=salon)
+            except CenikPolozka.DoesNotExist:
+                return Response({'detail': 'Služba nenalezena.'}, status=status.HTTP_404_NOT_FOUND)
+
+            old_url = cenik.obrazek
+            cenik.obrazek = url
+            cenik.save(update_fields=['obrazek'])
+            if old_url and old_url != url:
+                delete_image(old_url)
+            log_audit(
+                salon,
+                audit_actor(request),
+                'web',
+                f'{audit_actor(request)}: nahrání obrázku služby ({cenik.nazev})',
+            )
+            return Response({'id': cenik.id, 'obrazek': cenik.obrazek, 'typ': 'cenik'})
 
         if typ == 'personel':
             zamestnanec_id = _form_param(request, 'zamestnanec_id')

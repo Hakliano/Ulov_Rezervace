@@ -162,7 +162,7 @@
       <div id="admin-panel" class="panel hidden">
         <div class="admin-toolbar">
           <button type="button" class="btn btn-secondary btn-sm" data-admin="kalendar">Kalendář</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-admin="kadernice">Kadeřnice</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="kadernice">Pracovníci</button>
           <button type="button" class="btn btn-secondary btn-sm" data-admin="statistiky">Statistiky</button>
           <button type="button" class="btn btn-secondary btn-sm" data-admin="noshow">NO-show archiv</button>
           <button type="button" class="btn btn-secondary btn-sm" data-admin="nastaveni">Nastavení</button>
@@ -193,7 +193,7 @@
             <aside class="staff-sidebar settings-card">
               <h4>Personál</h4>
               <div id="staff-list" class="staff-list"></div>
-              <button type="button" id="btn-staff-add" class="btn btn-secondary btn-sm btn-block">+ Přidat kadeřnici</button>
+              <button type="button" id="btn-staff-add" class="btn btn-secondary btn-sm btn-block">+ Přidat pracovníka</button>
             </aside>
             <div id="staff-detail" class="staff-detail hidden">
               <div class="staff-detail-header">
@@ -221,19 +221,19 @@
                 <label class="full">Číslo účtu pro QR platby
                   <input type="text" id="staff-cislo-uctu" placeholder="123456789/0100">
                 </label>
-                <p class="hint">Předvyplní se při odeslání žádosti o platbu u rezervací této kadeřnice.</p>
+                <p class="hint">Předvyplní se při odeslání žádosti o platbu u rezervací tohoto pracovníka.</p>
                 </div>
               </section>
 
               <section class="settings-card staff-block">
-                <div class="settings-card-head"><h4>Pracovní doba kadeřnice</h4></div>
+                <div class="settings-card-head"><h4>Pracovní doba</h4></div>
                 <div class="settings-card-body">
                 <p class="hint">Otevírací doba salonu se počítá ze sjednocení rozvrhů personálu. Aktuálně: <span id="salon-hours-hint">—</span></p>
                 <table class="rozvrh-table">
                   <thead><tr><th>Den</th><th>Od</th><th>Do</th><th>Volno</th></tr></thead>
                   <tbody id="staff-rozvrh"></tbody>
                 </table>
-                <button type="button" id="btn-staff-save-rozvrh" class="btn btn-primary btn-sm">Uložit kadeřnici</button>
+                <button type="button" id="btn-staff-save-rozvrh" class="btn btn-primary btn-sm">Uložit pracovníka</button>
                 <p id="staff-rozvrh-msg" class="status-msg"></p>
                 </div>
               </section>
@@ -278,7 +278,7 @@
               </section>
               </div>
             </div>
-            <p id="staff-empty" class="hint staff-empty">Vyberte kadeřnici vlevo, nebo přidejte novou.</p>
+            <p id="staff-empty" class="hint staff-empty">Vyberte pracovníka vlevo, nebo přidejte nového.</p>
           </div>
         </div>
         <div id="admin-statistiky" class="admin-section hidden">
@@ -315,7 +315,7 @@
               </div>
               <div class="settings-card-body">
                 <label>Verze Zásad ochrany osobních údajů<input type="text" id="nast-gdpr-verze" placeholder="1.0"></label>
-                <p class="hint">Po změně zásad zvyšte verzi a aktualizujte <code>ochrana-osobnich-udaju.html</code>. Doba uchování dat (12 měsíců) je stanovena provozovatelem platformy a nelze ji měnit.</p>
+                <p class="hint">Po změně zásad ochrany osobních údajů zvyšte verzi. Doba uchování dat (12 měsíců) je stanovena provozovatelem platformy a nelze ji měnit.</p>
                 <div class="settings-subcard">
                   <h5>Žádosti subjektů údajů (jen majitelka)</h5>
                   <label>E-mail zákazníka<input type="email" id="gdpr-email" placeholder="zakaznik@example.com"></label>
@@ -361,7 +361,7 @@
             </section>
 
             <footer class="settings-form-footer">
-              <p class="hint">E-mail odesílatele nastavte v administraci webu (⚙ → E-mail). Životní cyklus (e-maily, GDPR) řídí cron: <code>python manage.py rezervace_zivotni_cyklus</code></p>
+              <p class="hint">E-mail odesílatele nastavte v administraci webu (⚙ → E-mail).</p>
               <button type="submit" class="btn btn-primary">Uložit nastavení</button>
             </footer>
           </form>

@@ -9,7 +9,8 @@ class CenikPolozkaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CenikPolozka
-        fields = ['id', 'nazev', 'cena', 'poradi', 'delka_minut', 'rezerva_minut', 'aktivni']
+        fields = ['id', 'nazev', 'cena', 'obrazek', 'poradi', 'delka_minut', 'rezerva_minut', 'aktivni']
+        extra_kwargs = {'obrazek': {'required': False, 'allow_blank': True}}
 
 
 class NovinkaSerializer(serializers.ModelSerializer):
@@ -104,9 +105,12 @@ class SalonSerializer(serializers.ModelSerializer):
             if item_id:
                 try:
                     obj = CenikPolozka.objects.get(id=item_id, salon=salon)
+                    old_url = obj.obrazek
                     for key, val in item.items():
                         if key != 'id':
                             setattr(obj, key, val)
+                    if 'obrazek' in item and old_url and old_url != (item.get('obrazek') or ''):
+                        delete_image(old_url)
                     obj.save()
                     existing_ids.append(obj.id)
                 except CenikPolozka.DoesNotExist:
@@ -114,7 +118,11 @@ class SalonSerializer(serializers.ModelSerializer):
             else:
                 obj = CenikPolozka.objects.create(salon=salon, **item)
                 existing_ids.append(obj.id)
-        salon.cenik.exclude(id__in=existing_ids).delete()
+        to_delete = salon.cenik.exclude(id__in=existing_ids)
+        for cenik in to_delete:
+            if cenik.obrazek:
+                delete_image(cenik.obrazek)
+        to_delete.delete()
 
     def _sync_novinky(self, salon, items):
         existing_ids = []

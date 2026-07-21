@@ -23,6 +23,7 @@ class CenikPolozka(models.Model):
     )
     nazev = models.CharField('název služby', max_length=200)
     cena = models.DecimalField('cena (Kč)', max_digits=10, decimal_places=0)
+    obrazek = models.URLField('obrázek služby (URL)', blank=True, max_length=500)
     poradi = models.PositiveIntegerField('pořadí', default=0)
     delka_minut = models.PositiveIntegerField('délka služby (min)', default=30)
     rezerva_minut = models.PositiveIntegerField('časová rezerva po službě (min)', default=0)

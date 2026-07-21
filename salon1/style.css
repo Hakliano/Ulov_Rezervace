@@ -7,7 +7,7 @@
   --gold: #c9a962;
   --gold-dim: #8a7340;
   --line: rgba(201, 169, 98, 0.2);
-  --font-display: 'Bebas Neue', Impact, sans-serif;
+  --font-display: 'Syne', system-ui, sans-serif;
   --font-body: 'Syne', system-ui, sans-serif;
   --sidebar-w: 220px;
 }
@@ -912,4 +912,94 @@ a:hover { color: var(--text); }
   --creator-bar-bg: var(--surface);
   --creator-bar-border: var(--line);
   --creator-bar-link-hover: var(--gold);
+}
+
+.price-card-has-image {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.price-media {
+  width: 144px;
+  min-width: 144px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.price-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.price-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.cenik-img-preview {
+  margin-top: 0.5rem;
+  max-width: 180px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cenik-img-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cenik-img-preview .placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cenik-img-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.price-row-has-image {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.price-row-has-image .price-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.price-row-has-image .price-media {
+  width: 112px;
+  min-width: 112px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.price-row-has-image .price-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

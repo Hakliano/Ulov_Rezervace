@@ -346,3 +346,65 @@ a:hover { color: var(--primary); }
   --creator-bar-border: var(--border);
   --creator-bar-muted: var(--muted);
 }
+
+.price-card-has-image {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.price-media {
+  width: 144px;
+  min-width: 144px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.price-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.price-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.cenik-img-preview {
+  margin-top: 0.5rem;
+  max-width: 180px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border, #ddd);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cenik-img-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cenik-img-preview .placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.8rem;
+  color: var(--muted, #666);
+}
+
+.cenik-img-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}

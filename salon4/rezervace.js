@@ -150,21 +150,21 @@ async function loadTerminy() {
   if (z !== 'any') params.set('zamestnanec', z);
 
   $('#terminy-list').innerHTML = '';
-  $('#terminy-msg').textContent = 'Naèítám termíny…';
+  $('#terminy-msg').textContent = 'Načítám termíny…';
   vybranyCas = null;
   $('#btn-krok3').disabled = true;
 
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/volne-terminy/?${params}`);
     if (data.zavreno) {
-      $('#terminy-msg').textContent = data.duvod || 'Salon je tento den zavøený.';
+      $('#terminy-msg').textContent = data.duvod || 'Salon je tento den zavřený.';
       return;
     }
     if (!data.terminy.length) {
       $('#terminy-msg').textContent = data.duvod || 'Žádné volné termíny. Zkuste jiný den nebo pracovníka.';
       return;
     }
-    $('#terminy-msg').textContent = `${data.terminy.length} volných termínù`;
+    $('#terminy-msg').textContent = `${data.terminy.length} volných termínů`;
     $('#terminy-list').innerHTML = data.terminy.map(t => `
       <button type="button" class="termin-btn" data-cas="${t.cas}">${t.cas}</button>
     `).join('');
@@ -226,10 +226,10 @@ async function submitRezervace(e) {
         ? `Na <strong>${esc(payload.email)}</strong> jsme odeslali e-mail s odkazem pro potvrzení. Rezervace je platná až po kliknutí na odkaz.`
         : `Potvrzení bylo odesláno z adresy <strong>${esc(data.email_odesilatel || '')}</strong> na <strong>${esc(payload.email)}</strong>.`)
       : (cekaPotvrzeni && potvrzeniLink
-        ? `Potvrïte rezervaci kliknutím na odkaz: <a href="${esc(potvrzeniLink)}">${esc(potvrzeniLink)}</a>`
+        ? `Potvrďte rezervaci kliknutím na odkaz: <a href="${esc(potvrzeniLink)}">${esc(potvrzeniLink)}</a>`
         : `Odkaz pro zrušení rezervace: <a href="${esc(stornoLink)}">${esc(stornoLink)}</a>`);
     $('#hotovo-text').innerHTML = `
-      ${cekaPotvrzeni ? 'Rezervace <strong>èeká na potvrzení</strong>.' : `Rezervace <strong>${esc(data.stav_label)}</strong>.`}<br>
+      ${cekaPotvrzeni ? 'Rezervace <strong>čeká na potvrzení</strong>.' : `Rezervace <strong>${esc(data.stav_label)}</strong>.`}<br>
       Termín: ${formatDateTime(data.zacatek)}<br>
       ${emailNote}<br><br>
       ${cekaPotvrzeni ? '' : `<a href="${esc(stornoLink)}" class="storno-link">Zrušit tuto rezervaci</a>`}
@@ -293,7 +293,7 @@ async function handlePotvrzeni(token) {
       return;
     }
     $('#potvrzeni-info').innerHTML = `
-      <p>Prosím potvrïte rezervaci na tento termín:</p>
+      <p>Prosím potvrďte rezervaci na tento termín:</p>
       <p><strong>${formatDateTime(r.zacatek)}</strong></p>
       <p>${r.polozky.map(p => esc(p.nazev)).join(', ')}</p>
       ${r.zamestnanec_jmeno ? `<p>Pracovník: ${esc(r.zamestnanec_jmeno)}</p>` : ''}
@@ -308,7 +308,7 @@ async function handlePotvrzeni(token) {
           <p class="success">${esc(res.message)}</p>
           <p><strong>${formatDateTime(res.rezervace.zacatek)}</strong></p>
           <p>${res.rezervace.polozky.map(p => esc(p.nazev)).join(', ')}</p>
-          <p><a href="${API_BASE}/salon/${SALON_ID}/rezervace/${res.rezervace.id}/ics/">Stáhnout kalendáø (.ics)</a></p>
+          <p><a href="${API_BASE}/salon/${SALON_ID}/rezervace/${res.rezervace.id}/ics/">Stáhnout kalendář (.ics)</a></p>
         `;
         $('#potvrzeni-msg').textContent = 'Potvrzovací e-mail byl odeslán.';
         $('#potvrzeni-msg').className = 'status-msg success';
@@ -353,11 +353,11 @@ async function handleStorno(token) {
   }
 }
 
-const MONTH_NAMES = ['Leden', 'Únor', 'Bøezen', 'Duben', 'Kvìten', 'Èerven', 'Èervenec', 'Srpen', 'Záøí', 'Øíjen', 'Listopad', 'Prosinec'];
+const MONTH_NAMES = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'];
 const STAV_OPTS = [
-  ['ceka', 'Èeká'],
+  ['ceka', 'Čeká'],
   ['potvrzeno', 'Potvrzeno'],
-  ['dokonceno', 'Dokonèeno'],
+  ['dokonceno', 'Dokončeno'],
   ['no_show', 'No-show'],
   ['salon_storno', 'Salon storno'],
   ['zakaznik_storno', 'Zák. storno'],
@@ -436,12 +436,12 @@ function renderRezAkceButtons(r) {
   let html = '<div class="rez-akce">';
   if (canNoshow) {
     html += `
-      <button type="button" class="btn btn-primary btn-sm btn-rez-dokonceno" data-id="${r.id}">Rezervace probìhla</button>
+      <button type="button" class="btn btn-primary btn-sm btn-rez-dokonceno" data-id="${r.id}">Rezervace proběhla</button>
       <button type="button" class="btn btn-danger btn-sm btn-rez-noshow" data-id="${r.id}">NO-show</button>`;
   }
   if (canPlatba) {
     html += `
-      <button type="button" class="btn btn-secondary btn-sm btn-rez-platba" data-id="${r.id}">Požádat o platbu na úèet</button>`;
+      <button type="button" class="btn btn-secondary btn-sm btn-rez-platba" data-id="${r.id}">Požádat o platbu na účet</button>`;
   }
   html += '</div>';
   return html;
@@ -500,11 +500,11 @@ let pendingNoShowId = null;
 function openNoShowModal(rezId) {
   const r = adminCalData.find((x) => Number(x.id) === Number(rezId));
   if (!r) {
-    alert('Rezervaci se nepodaøilo naèíst. Obnovte stránku klávesou Ctrl+F5.');
+    alert('Rezervaci se nepodařilo načíst. Obnovte stránku klávesou Ctrl+F5.');
     return;
   }
   if (!['ceka', 'potvrzeno'].includes(r.stav)) {
-    alert('Tuto rezervaci už nelze oznaèit jako NO-show (je ve stavu: ' + (STAV_LABELS[r.stav] || r.stav) + ').');
+    alert('Tuto rezervaci už nelze označit jako NO-show (je ve stavu: ' + (STAV_LABELS[r.stav] || r.stav) + ').');
     return;
   }
   pendingNoShowId = rezId;
@@ -535,7 +535,7 @@ let pendingPlatbaId = null;
 function openPlatbaModal(rezId) {
   const r = adminCalData.find((x) => Number(x.id) === Number(rezId));
   if (!r) {
-    alert('Rezervaci se nepodaøilo naèíst. Obnovte stránku klávesou Ctrl+F5.');
+    alert('Rezervaci se nepodařilo načíst. Obnovte stránku klávesou Ctrl+F5.');
     return;
   }
   const email = r.kontaktni_email || r.email_host;
@@ -572,8 +572,8 @@ function showPlatbaQrOnScreen(data) {
   img.alt = 'QR platba';
   if (info) {
     info.innerHTML = `
-      <p><strong>${esc(data.castka || '')} Kè</strong></p>
-      <p>Úèet: ${esc(data.ucet || '')}</p>
+      <p><strong>${esc(data.castka || '')} Kč</strong></p>
+      <p>Účet: ${esc(data.ucet || '')}</p>
       <p>VS: ${esc(data.variabilni_symbol || '')}</p>`;
   }
   $('#platba-qr-modal')?.classList.remove('hidden');
@@ -620,7 +620,7 @@ async function loadAuditLog(page = 1) {
     </table>`;
   }
   const pag = $('#audit-pager');
-  if (pag) pag.textContent = `Strana ${data.stranka} / ${data.celkem_stranek} (${data.celkem} záznamù)`;
+  if (pag) pag.textContent = `Strana ${data.stranka} / ${data.celkem_stranek} (${data.celkem} záznamů)`;
   $('#audit-prev').disabled = data.stranka <= 1;
   $('#audit-next').disabled = data.stranka >= data.celkem_stranek;
 }
@@ -661,7 +661,7 @@ async function loadNoShowArchiv(page = 1) {
         <td>${btn}</td>
       </tr>`;
     }).join('')}</tbody></table>
-    <p class="hint">Zobrazeno ${data.vysledky.length} z ${data.celkem} kontaktù (strana ${data.stranka}/${data.celkem_stranek}). Øádky s 3+ NO-show jsou zvýraznìny èervenì, s 2 NO-show oranžovì.</p>`;
+    <p class="hint">Zobrazeno ${data.vysledky.length} z ${data.celkem} kontaktů (strana ${data.stranka}/${data.celkem_stranek}). Řádky s 3+ NO-show jsou zvýrazněny červeně, s 2 NO-show oranžově.</p>`;
 
   el.querySelectorAll('.btn-noshow-blok').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -700,9 +700,9 @@ async function loadNoShowArchiv(page = 1) {
   if (data.celkem_stranek > 1) {
     pag.classList.remove('hidden');
     pag.innerHTML = `
-      <button type="button" class="btn btn-secondary btn-sm" id="noshow-prev" ${data.stranka <= 1 ? 'disabled' : ''}>‹ Pøedchozí</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="noshow-prev" ${data.stranka <= 1 ? 'disabled' : ''}>‹ Předchozí</button>
       <span>Strana ${data.stranka} / ${data.celkem_stranek}</span>
-      <button type="button" class="btn btn-secondary btn-sm" id="noshow-next" ${data.stranka >= data.celkem_stranek ? 'disabled' : ''}>Další ›</button>`;
+      <button type="button" class="btn btn-secondary btn-sm" id="noshow-next" ${data.stranka >= data.celkem_stranek ? 'disabled' : ''}>Další →</button>`;
     $('#noshow-prev')?.addEventListener('click', () => loadNoShowArchiv(data.stranka - 1));
     $('#noshow-next')?.addEventListener('click', () => loadNoShowArchiv(data.stranka + 1));
   } else {
@@ -734,11 +734,11 @@ async function loadStats() {
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/statistiky/`);
   $('#stats-box').innerHTML = `
     <p>Celkem rezervací: <strong>${data.celkem_rezervaci}</strong></p>
-    <p>Dokonèeno: ${data.dokonceno} · Storno: ${data.storno} (${data.storno_procent}%)</p>
+    <p>Dokončeno: ${data.dokonceno} · Storno: ${data.storno} (${data.storno_procent}%)</p>
     <p>No-show: ${data.no_show}</p>
-    <h4>Nejprodávanìjší služby</h4>
+    <h4>Nejprodávanější služby</h4>
     <ul>${data.nejprodavanejsi_sluzby.map(s => `<li>${esc(s.sluzba__nazev)} (${s.pocet}×)</li>`).join('')}</ul>
-    <h4>Nejvytíženìjší zamìstnanci</h4>
+    <h4>Nejvytíženější zaměstnanci</h4>
     <ul>${data.nejvytizenejsi_zamestnanci.map(z => `<li>${esc(z.zamestnanec__jmeno)} (${z.pocet}×)</li>`).join('')}</ul>
   `;
 }
@@ -758,10 +758,10 @@ async function loadNastaveni() {
 const MAX_NOTIFIKACE = 4;
 
 const NOTIF_POPISY = [
-  'Pøipomínka pøed termínem (doporuèeno +24 h) — odesílá se automaticky',
-  'Podìkování po návštìvì a prosba o recenzi (doporuèeno -2 h po službì) — automaticky',
-  'Upozornìní na neuskuteènìnou rezervaci — pouze ruènì u NO-show, bez automatického èasu',
-  'Žádost o úhradu na úèet s QR kódem — pouze ruènì u rezervace (tlaèítko Požádat o platbu)',
+  'Připomínka před termínem (doporučeno +24 h) — odesílá se automaticky',
+  'Poděkování po návštěvě a prosba o recenzi (doporučeno -2 h po službě) — automaticky',
+  'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show, bez automatického času',
+  'Žádost o úhradu na účet s QR kódem — pouze ručně u rezervace (tlačítko Požádat o platbu)',
 ];
 
 function renderTagGuide(tagy) {
@@ -772,7 +772,7 @@ function renderTagGuide(tagy) {
   const table = document.createElement('table');
   table.className = 'tag-table';
   const thead = document.createElement('thead');
-  thead.innerHTML = '<tr><th>Tag (zkopírujte do textu)</th><th>Co se vypíše</th><th>Pøíklad</th></tr>';
+  thead.innerHTML = '<tr><th>Tag (zkopírujte do textu)</th><th>Co se vypíše</th><th>Příklad</th></tr>';
   table.appendChild(thead);
   const tbody = document.createElement('tbody');
   tagy.forEach((row) => {
@@ -839,8 +839,8 @@ function buildNotifCard(n, i) {
     const manualHint = document.createElement('p');
     manualHint.className = 'notif-manual-hint';
     manualHint.textContent = manualTyp === 'platba'
-      ? 'Tento e-mail se neodesílá automaticky. Personál ho odešle tlaèítkem „Požádat o platbu na úèet“ u rezervace — v e-mailu bude QR kód pro platbu.'
-      : 'Tento e-mail se neodesílá automaticky. Text si pøipravíte zde, odešle se až po stisknutí NO-show u konkrétní rezervace v kalendáøi.';
+      ? 'Tento e-mail se neodesílá automaticky. Personál ho odešle tlačítkem „Požádat o platbu na účet“ u rezervace — v e-mailu bude QR kód pro platbu.'
+      : 'Tento e-mail se neodesílá automaticky. Text si připravíte zde, odešle se až po stisknutí NO-show u konkrétní rezervace v kalendáři.';
     header.appendChild(manualHint);
   } else {
     const activeLabel = document.createElement('label');
@@ -852,24 +852,24 @@ function buildNotifCard(n, i) {
     activeCb.addEventListener('change', () => {
       card.classList.toggle('notif-inactive', !activeCb.checked);
     });
-    activeLabel.append(activeCb, document.createTextNode(' Odesílat automaticky (cron)'));
+    activeLabel.append(activeCb, document.createTextNode(' Odesílat automaticky'));
 
     const offsetLabel = document.createElement('label');
     offsetLabel.className = 'notif-offset-label';
-    offsetLabel.append(document.createTextNode('Èas odeslání '));
+    offsetLabel.append(document.createTextNode('Čas odeslání '));
     const offsetInput = document.createElement('input');
     offsetInput.type = 'text';
     offsetInput.className = 'notif-offset';
     offsetInput.value = n.offset || '+24';
     offsetInput.placeholder = '+24 nebo -2';
-    offsetInput.title = '+24 = pøed termínem, -2 = po skonèení rezervace';
+    offsetInput.title = '+24 = před termínem, -2 = po skončení rezervace';
     offsetLabel.appendChild(offsetInput);
     header.append(activeLabel, offsetLabel);
   }
 
   const predmetLabel = document.createElement('label');
   predmetLabel.className = 'notif-field';
-  predmetLabel.append(document.createTextNode('Pøedmìt e-mailu'));
+  predmetLabel.append(document.createTextNode('Předmět e-mailu'));
   const predmetInput = document.createElement('input');
   predmetInput.type = 'text';
   predmetInput.className = 'notif-predmet';
@@ -935,7 +935,7 @@ function renderSalonHoursHint() {
     return;
   }
   const parts = staffSalonHours.map((d) => {
-    if (d.zavreno) return `${d.den_nazev}: zavøeno`;
+    if (d.zavreno) return `${d.den_nazev}: zavřeno`;
     return `${d.den_nazev}: ${formatTimeInput(d.od)}–${formatTimeInput(d.do)}`;
   });
   $('#salon-hours-hint').textContent = parts.join(' · ');
@@ -963,7 +963,7 @@ function renderStaffList() {
   $('#staff-list').innerHTML = staffData.map((s) => `
     <button type="button" class="staff-list-btn ${s.id === selectedStaffId ? 'active' : ''} ${s.aktivni ? '' : 'staff-inactive'}" data-id="${s.id}">
       ${esc(s.jmeno)}
-      <small>${esc(s.specializace || 'bez specializace')}${s.role === 'majitel' ? ' · majitelka' : ''}${s.aktivni ? '' : ' · úèet deaktivován'}</small>
+      <small>${esc(s.specializace || 'bez specializace')}${s.role === 'majitel' ? ' · majitelka' : ''}${s.aktivni ? '' : ' · účet deaktivován'}</small>
     </button>
   `).join('');
   $$('#staff-list .staff-list-btn').forEach((btn) => {
@@ -988,16 +988,16 @@ function updateStaffUcetUI(staff) {
   const isMajitelka = staff.role === 'majitel';
   if (status) {
     if (isMajitelka) {
-      status.textContent = 'Úèet majitele — jen správa salonu, bez rezervací a rozvrhu. Pokud majitel také provádí služby, založte mu bìžný zamìstnanecký úèet.';
+      status.textContent = 'Účet majitele — jen správa salonu, bez rezervací a rozvrhu. Pokud majitel také provádí služby, založte mu běžný zaměstnanecký účet.';
       status.className = 'hint';
     } else if (!staff.aktivni) {
-      status.textContent = 'Úèet je deaktivován. Zamìstnanec se nemùže pøihlásit, historie rezervací a audit zùstávají zachované.';
+      status.textContent = 'Účet je deaktivován. Zaměstnanec se nemůže přihlásit, historie rezervací a audit zůstávají zachované.';
       status.className = 'hint error';
     } else if (staff.ma_prihlaseni) {
-      status.textContent = `Pøihlášení: ${staff.prihlasovaci_jmeno}`;
+      status.textContent = `Přihlášení: ${staff.prihlasovaci_jmeno}`;
       status.className = 'hint success';
     } else {
-      status.textContent = 'Úèet zatím nemá nastavené pøihlášení.';
+      status.textContent = 'Účet zatím nemá nastavené přihlášení.';
       status.className = 'hint';
     }
   }
@@ -1083,13 +1083,13 @@ function collectStaffRozvrh() {
 async function deactivateStaffAccount() {
   const staff = getSelectedStaff();
   if (!staff || staff.role === 'majitel') return;
-  if (!confirm(`Deaktivovat úèet zamìstnance ${staff.jmeno}?\n\nÚèet se nesmaže — zùstane historie rezervací a audit. Zamìstnanec se už nepøihlásí.`)) return;
+  if (!confirm(`Deaktivovat účet zaměstnance ${staff.jmeno}?\n\nÚčet se nesmaže — zůstane historie rezervací a audit. Zaměstnanec se už nepřihlásí.`)) return;
   const msg = $('#staff-rozvrh-msg');
-  msg.textContent = 'Deaktivuji úèet…';
+  msg.textContent = 'Deaktivuji účet…';
   msg.className = 'status-msg';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${staff.id}/deaktivovat/`, { method: 'POST' });
-    msg.textContent = 'Úèet byl deaktivován.';
+    msg.textContent = 'Účet byl deaktivován.';
     msg.className = 'status-msg success';
     await loadStaff();
   } catch (err) {
@@ -1117,7 +1117,7 @@ async function saveStaffRozvrh() {
         rozvrh: collectStaffRozvrh(),
       }),
     });
-    msg.textContent = 'Údaje kadeønice uloženy.';
+    msg.textContent = 'Údaje pracovníka uloženy.';
     msg.className = 'status-msg success';
     await loadStaff();
   } catch (err) {
@@ -1135,7 +1135,7 @@ async function deleteStaffAbsence(absenceId) {
 }
 
 async function addStaffMember() {
-  const jmeno = prompt('Jméno kadeønice:');
+  const jmeno = prompt('Jméno pracovníka:');
   if (!jmeno?.trim()) return;
   const specializace = prompt('Specializace (volitelné):') || '';
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/`, {
@@ -1206,7 +1206,7 @@ $('#form-prihlaseni').addEventListener('submit', async (e) => {
   const fallback = $('#heslo-fallback');
   fallback.classList.add('hidden');
   fallback.innerHTML = '';
-  msg.textContent = 'Pøihlašuji…';
+  msg.textContent = 'Přihlašuji…';
   msg.className = 'status-msg';
 
   try {
@@ -1233,7 +1233,7 @@ $('#btn-zapomenute-heslo').addEventListener('click', async () => {
   const fallback = $('#heslo-fallback');
   fallback.classList.add('hidden');
   if (!email) {
-    msg.textContent = 'Nejdøíve zadejte e-mail.';
+    msg.textContent = 'Nejdříve zadejte e-mail.';
     msg.className = 'status-msg error';
     return;
   }
@@ -1267,7 +1267,7 @@ $('#btn-odhlasit').addEventListener('click', () => {
 $('#form-admin-login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#admin-login-msg');
-  msg.textContent = 'Pøihlašuji…';
+  msg.textContent = 'Přihlašuji…';
   msg.className = 'status-msg';
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/staff/prihlaseni/`, {
@@ -1389,7 +1389,7 @@ $('#noshow-confirm').addEventListener('click', async () => {
     closeNoShowModal();
     await refreshCalDayAfterChange();
     let info = 'NO-show uložen.';
-    if (res.email_odeslan) info += ' Upozornìní odesláno.';
+    if (res.email_odeslan) info += ' Upozornění odesláno.';
     if (res.reputace?.blokovan_v_salonu) info += ' E-mail zablokován (3+ NO-show v tomto salonu).';
     else if (res.reputace?.problematicky) info += ` E-mail je problematický (${res.reputace.pocet}× NO-show v tomto salonu).`;
     else if (res.zakaznik_blokovan) info += ' E-mail zablokován v tomto salonu.';
@@ -1411,7 +1411,7 @@ $('#platba-confirm').addEventListener('click', async () => {
   const ucet = $('#platba-ucet').value.trim();
   const vs = $('#platba-vs').value.trim();
   if (!castka || !ucet || !vs) {
-    msg.textContent = 'Vyplòte èástku, èíslo úètu a variabilní symbol.';
+    msg.textContent = 'Vyplňte částku, číslo účtu a variabilní symbol.';
     msg.className = 'status-msg error';
     return;
   }
@@ -1465,7 +1465,7 @@ $('#btn-gdpr-vymaz')?.addEventListener('click', async () => {
     msg.className = 'status-msg error';
     return;
   }
-  if (!confirm(`Trvale vymazat osobní údaje zákazníka ${email}?\n\nRezervace zùstanou anonymizované pro statistiky.`)) return;
+  if (!confirm(`Trvale vymazat osobní údaje zákazníka ${email}?\n\nRezervace zůstanou anonymizované pro statistiky.`)) return;
   msg.textContent = 'Mažu…';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/gdpr/vymaz/`, {
@@ -1509,12 +1509,12 @@ $('#form-staff-rezervace').addEventListener('submit', async (e) => {
   const msg = $('#staff-rez-msg');
   const sluzby = [...$$('#staff-sluzby input:checked')].map((i) => parseInt(i.value, 10));
   if (!sluzby.length) {
-    msg.textContent = 'Vyberte alespoò jednu službu.';
+    msg.textContent = 'Vyberte alespoň jednu službu.';
     msg.className = 'status-msg error';
     return;
   }
   const cas = $('#staff-rez-cas').value.slice(0, 5);
-  msg.textContent = 'Vytváøím rezervaci…';
+  msg.textContent = 'Vytvářím rezervaci…';
   msg.className = 'status-msg';
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/vytvorit/`, {
@@ -1532,7 +1532,7 @@ $('#form-staff-rezervace').addEventListener('submit', async (e) => {
         stav: 'potvrzeno',
       }),
     });
-    msg.textContent = 'Rezervace vytvoøena.';
+    msg.textContent = 'Rezervace vytvořena.';
     msg.className = 'status-msg success';
     $('#form-staff-rezervace').reset();
     renderStaffSluzby();

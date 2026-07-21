@@ -102,7 +102,7 @@ function personelEditCard(z) {
       <button type="button" class="btn btn-primary btn-sm btn-save-personel">Uložit</button>
       ${id && z.role !== 'majitel' && z.aktivni !== false ? '<button type="button" class="btn btn-secondary btn-sm btn-del-personel">Deaktivovat účet</button>' : ''}
     </div>
-    ${id && z.aktivni === false ? '<p class="admin-hint error">Účet deaktivován — zaměstnanec se nemůže přihlásit. Obnovte zaškrtnutím „Aktivní“ v rezervacích → Kadeřnice.</p>' : ''}
+    ${id && z.aktivni === false ? '<p class="admin-hint error">Účet deaktivován — zaměstnanec se nemůže přihlásit. Obnovte zaškrtnutím „Aktivní“ v rezervacích → Pracovníci.</p>' : ''}
   </div>`;
 }
 
@@ -345,7 +345,8 @@ function renderSalon(data) {
   }
 
   document.getElementById('cenik-list').innerHTML = data.cenik.map((item, i) =>
-    `<article class="rail-stop" style="--i:${i}">
+    `<article class="rail-stop ${item.obrazek ? 'rail-stop-has-image' : ''}" style="--i:${i}">
+      ${item.obrazek ? `<figure class="rail-media"><img src="${esc(item.obrazek)}" alt="${esc(item.nazev)}" loading="lazy"></figure>` : ''}
       <span class="rail-num">${String(i + 1).padStart(2, '0')}</span>
       <h3 class="rail-name">${esc(item.nazev)}</h3>
       <p class="rail-price">${item.cena} Kč</p>
@@ -518,7 +519,7 @@ function showEditForm() {
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = d.cenik.map(item => cenikEditRow(item)).join('');
   document.getElementById('btn-add-cenik').onclick = () => {
-    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0 }));
+    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0, obrazek: '' }));
   };
 
   const novinkyEdit = document.getElementById('novinky-edit');
@@ -573,6 +574,7 @@ async function saveDelky() {
     id: item.id,
     nazev: item.nazev,
     cena: item.cena,
+    obrazek: item.obrazek || '',
     poradi: item.poradi ?? i,
     delka_minut: byId[item.id] != null ? byId[item.id] : (item.delka_minut || 30),
     rezerva_minut: item.rezerva_minut || 0,
@@ -600,7 +602,7 @@ async function saveDelky() {
     renderDelkyEdit();
     const cenikEdit = document.getElementById('cenik-edit');
     if (cenikEdit) {
-      cenikEdit.innerHTML = (salonData.cenik || []).map((item) => cenikEditRow(item)).join('');
+      refreshCenikEdit();
     }
     msg.textContent = 'Délky služeb uloženy.';
     msg.className = 'status-msg success';
@@ -712,10 +714,84 @@ async function deleteImage(imageId) {
 }
 
 function cenikEditRow(item) {
-  return `<div class="edit-row cenik-edit-item" data-id="${item.id || ''}">
-    <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Služba">
-    <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kč">
+  const url = item.obrazek || '';
+  return `<div class="edit-block cenik-edit-item" data-id="${item.id || ''}" data-obrazek="${attrEsc(url)}">
+    <div class="edit-row">
+      <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Služba">
+      <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kč">
+    </div>
+    <div class="cenik-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obrázku</span>'}</div>
+    <div class="cenik-img-actions">
+      <label class="btn btn-secondary btn-sm btn-upload">Nahrát obrázek<input type="file" class="upload-cenik" accept="image/*" hidden></label>
+      <button type="button" class="btn-remove-cenik-img btn-sm">Odebrat</button>
+    </div>
   </div>`;
+}
+
+function renderCenikPreview(row, url) {
+  const prev = row.querySelector('.cenik-img-preview');
+  if (!prev) return;
+  prev.innerHTML = url
+    ? `<img src="${esc(url)}" alt="">`
+    : '<span class="placeholder">Bez obrázku</span>';
+}
+
+function refreshCenikEdit() {
+  if (document.getElementById('edit-section').classList.contains('hidden')) return;
+  const cenikEdit = document.getElementById('cenik-edit');
+  cenikEdit.innerHTML = (salonData.cenik || []).map(item => cenikEditRow(item)).join('');
+  document.getElementById('btn-add-cenik').onclick = () => {
+    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0, obrazek: '' }));
+  };
+}
+
+
+async function handleCenikUpload(e) {
+  const input = e.target;
+  const file = input.files[0];
+  if (!file) return;
+  const row = input.closest('.cenik-edit-item');
+  const msg = document.getElementById('status-msg');
+  if (!row.dataset.id) {
+    msg.textContent = 'Nejdřív uložte službu, pak nahrajte obrázek.';
+    msg.className = 'status-msg error';
+    input.value = '';
+    return;
+  }
+  const form = new FormData();
+  form.append('file', file);
+  msg.textContent = 'Nahrávám obrázek služby…';
+  msg.className = 'status-msg';
+  try {
+    const res = await fetch(`${API_BASE}/salon/${SALON_ID}/upload/?typ=cenik&cenik_id=${row.dataset.id}`, {
+      method: 'POST',
+      headers: staffHeaders(),
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Nahrání selhalo');
+    salonData = await fetchSalon();
+    renderSalon(salonData);
+    refreshCenikEdit();
+    if (typeof renderDelkyEdit === 'function') renderDelkyEdit();
+    msg.textContent = 'Obrázek služby nahrán a uložen.';
+    msg.className = 'status-msg success';
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.className = 'status-msg error';
+  }
+  input.value = '';
+}
+
+function removeCenikImage(btn) {
+  const row = btn.closest('.cenik-edit-item');
+  row.dataset.obrazek = '';
+  row.dataset.obrazekRemoved = 'true';
+  renderCenikPreview(row, '');
+  if (row.dataset.id && salonData.cenik) {
+    const item = salonData.cenik.find(x => x.id === parseInt(row.dataset.id, 10));
+    if (item) item.obrazek = '';
+  }
 }
 
 function renderNovinkaPreview(row, url) {
@@ -787,6 +863,7 @@ async function handleNovinkaUpload(e) {
 
     salonData = await fetchSalon();
     renderSalon(salonData);
+    refreshCenikEdit();
     refreshNovinkyEdit();
     msg.textContent = 'Obrázek novinky nahrán a uložen.';
     msg.className = 'status-msg success';
@@ -817,6 +894,11 @@ function collectFormData() {
       poradi: i,
     };
     if (id) item.id = parseInt(id, 10);
+    if (el.dataset.obrazekRemoved === 'true') {
+      item.obrazek = '';
+    } else if (!id && el.dataset.obrazek) {
+      item.obrazek = el.dataset.obrazek;
+    }
     return item;
   });
 
@@ -871,6 +953,7 @@ async function handleSave() {
     }
     salonData = await fetchSalon();
     renderSalon(salonData);
+    refreshCenikEdit();
     refreshNovinkyEdit();
     renderDelkyEdit();
     msg.textContent = 'Změny uloženy.';
@@ -1004,9 +1087,11 @@ window.addEventListener('scroll', () => {
 });
 
 document.getElementById('edit-section').addEventListener('change', e => {
+  if (e.target.matches('.upload-cenik')) handleCenikUpload(e);
   if (e.target.matches('.upload-novinka')) handleNovinkaUpload(e);
 });
 document.getElementById('edit-section').addEventListener('click', e => {
+  if (e.target.matches('.btn-remove-cenik-img')) removeCenikImage(e.target);
   if (e.target.matches('.btn-remove-novinka-img')) removeNovinkaImage(e.target);
 });
 
