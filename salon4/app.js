@@ -327,12 +327,15 @@ function renderSalon(data) {
     gallerySection?.classList.add('hidden');
   }
 
-  document.getElementById('cenik-list').innerHTML = data.cenik.map(item =>
-    `<div class="price-card">
-      <span class="price-name">${esc(item.nazev)}</span>
-      <span class="price-value">${item.cena} Kè</span>
-    </div>`
-  ).join('');
+  const cenikList = document.getElementById('cenik-list');
+  if (cenikList) {
+    cenikList.innerHTML = (data.cenik || []).map(item =>
+      `<div class="price-card">
+        <span class="price-name">${esc(item.nazev)}</span>
+        <span class="price-value">${item.cena} Kč</span>
+      </div>`
+    ).join('');
+  }
 
   document.getElementById('novinky-list').innerHTML = data.novinky.map(n =>
     `<article class="news-card">
