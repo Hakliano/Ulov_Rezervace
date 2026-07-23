@@ -221,12 +221,19 @@ select:focus {
 }
 
 .hero-brand.compact {
-  padding: 8px 0 12px;
+  padding: 14px 0 16px;
 }
 
 .hero-brand.compact .brand-logo {
-  width: min(56vw, 220px);
-  max-height: 72px;
+  width: min(78vw, 380px);
+  max-height: 140px;
+}
+
+@media (min-width: 640px) {
+  .hero-brand.compact .brand-logo {
+    width: min(70vw, 440px);
+    max-height: 160px;
+  }
 }
 
 .app-panel {
