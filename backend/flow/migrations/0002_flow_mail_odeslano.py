@@ -6,7 +6,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('flow', '0001_initial_flow_user'),
-        ('salons', '0007_salon_banner'),
     ]
 
     operations = [
