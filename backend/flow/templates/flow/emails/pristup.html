@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLOW CRM</title>
+</head>
+<body style="margin:0;padding:0;background-color:#071526;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#071526;background-image:url('https://haklweb.b-cdn.net/ULOV_KLIENTA/geralt-particles-7055781_1280.jpg');background-size:cover;background-position:center;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background-color:#0b1f3a;border:1px solid #c9a227;border-radius:16px;">
+          <tr>
+            <td align="center" style="padding:28px 24px 8px;">
+              <img
+                src="https://haklweb.b-cdn.net/ULOV_KLIENTA/Flow_logo_rm-removebg-preview.png"
+                alt="FLOW CRM"
+                width="280"
+                style="display:block;width:280px;max-width:80%;height:auto;border:0;"
+              >
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:0 24px 8px;font-size:12px;letter-spacing:2px;color:#f3e6b8;text-transform:uppercase;">
+              CRM by ULOV KLIENTY
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 28px 0;font-size:16px;line-height:1.5;color:#f4f1ea;">
+              Dobrý den <strong style="color:#ffffff;">{{ zamestnanec.jmeno }}</strong>,
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 28px 0;font-size:15px;line-height:1.55;color:#b7c0ce;">
+              {% if reset %}
+              majitelka salonu <strong style="color:#f3e6b8;">{{ salon.name }}</strong> vám resetovala heslo do FLOW CRM.
+              {% else %}
+              byl vám vytvořen přístup do FLOW CRM – denního přehledu provozu salonu <strong style="color:#f3e6b8;">{{ salon.name }}</strong>.
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 28px 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#071526;border:1px solid rgba(201,162,39,0.35);border-radius:12px;">
+                <tr>
+                  <td style="padding:16px 18px;font-size:14px;line-height:1.6;color:#f4f1ea;">
+                    <div style="color:#c9a227;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Přihlášení</div>
+                    <div style="margin-bottom:14px;word-break:break-all;">{{ flow_user.email }}</div>
+                    <div style="color:#c9a227;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Dočasné heslo</div>
+                    <div style="font-size:18px;font-weight:bold;letter-spacing:1px;color:#ffffff;">{{ heslo }}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:24px 28px 8px;">
+              <a href="{{ flow_url }}" style="display:inline-block;background-color:#c9a227;color:#0b1f3a;text-decoration:none;font-weight:bold;font-size:15px;padding:14px 28px;border-radius:999px;">
+                Otevřít FLOW
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:0 28px 8px;">
+              <a href="{{ flow_url }}" style="color:#f3e6b8;font-size:12px;word-break:break-all;">{{ flow_url }}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 28px 28px;font-size:13px;line-height:1.5;color:#a8b3c4;">
+              Po přihlášení si heslo můžete změnit (min. 8 znaků, alespoň jedno písmeno a jedno číslo).
+              <br><br>
+              <span style="color:#c9a227;">{{ salon.name }}</span>
+              · FLOW CRM by ULOV KLIENTY
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

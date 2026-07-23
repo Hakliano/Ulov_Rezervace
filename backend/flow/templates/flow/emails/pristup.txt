@@ -1,7 +1,7 @@
 Dobrý den {{ zamestnanec.jmeno }},
 
-{% if reset %}majitelka salonu {{ salon.name }} vám resetovala heslo do FLOW.
-{% else %}byl vám vytvořen přístup do FLOW – denního přehledu provozu salonu {{ salon.name }}.
+{% if reset %}majitelka salonu {{ salon.name }} vám resetovala heslo do FLOW CRM.
+{% else %}byl vám vytvořen přístup do FLOW CRM – denního přehledu provozu salonu {{ salon.name }}.
 {% endif %}
 
 Přihlášení: {{ flow_user.email }}

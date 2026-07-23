@@ -11,22 +11,21 @@ def flow_base_url():
 def email_flow_pristup_sync(flow_user, heslo, reset=False):
     salon = flow_user.salon
     predmet = (
-        f'Nové heslo do FLOW – {salon.name}'
+        f'Nové heslo do FLOW CRM – {salon.name}'
         if reset
-        else f'Přístup do FLOW – {salon.name}'
+        else f'Přístup do FLOW CRM – {salon.name}'
     )
-    zprava = render_to_string(
-        'flow/emails/pristup.txt',
-        {
-            'flow_user': flow_user,
-            'zamestnanec': flow_user.zamestnanec,
-            'salon': salon,
-            'heslo': heslo,
-            'flow_url': flow_base_url(),
-            'reset': reset,
-        },
-    )
-    return _odeslat_pro_salon(salon, flow_user.email, predmet, zprava)
+    ctx = {
+        'flow_user': flow_user,
+        'zamestnanec': flow_user.zamestnanec,
+        'salon': salon,
+        'heslo': heslo,
+        'flow_url': flow_base_url(),
+        'reset': reset,
+    }
+    zprava = render_to_string('flow/emails/pristup.txt', ctx)
+    html = render_to_string('flow/emails/pristup.html', ctx)
+    return _odeslat_pro_salon(salon, flow_user.email, predmet, zprava, html_body=html)
 
 
 def email_flow_pristup(flow_user, heslo, reset=False):

@@ -86,8 +86,21 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
     # Lokální console backend: vždy vypiš mail do terminálu (i když má salon SMTP v DB).
     use_console = 'console' in (getattr(settings, 'EMAIL_BACKEND', '') or '').lower()
     if use_console or not cfg['smtp_ready']:
-        from django.core.mail import send_mail
-        send_mail(predmet, zprava, cfg['from_email'], [prijemce], fail_silently=False)
+        if html_body:
+            from django.core.mail import EmailMultiAlternatives
+
+            msg = EmailMultiAlternatives(
+                subject=predmet,
+                body=zprava,
+                from_email=cfg['from_email'],
+                to=[prijemce],
+            )
+            msg.attach_alternative(html_body, 'text/html')
+            msg.send()
+        else:
+            from django.core.mail import send_mail
+
+            send_mail(predmet, zprava, cfg['from_email'], [prijemce], fail_silently=False)
         return True
 
     connection = get_connection(
