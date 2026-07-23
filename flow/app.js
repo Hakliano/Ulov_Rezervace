@@ -841,7 +841,7 @@ function renderAbsenceKonflikt(items, absence = null) {
       try {
         await api(`/flow/rezervace/${id}/storno/`, {
           method: 'DELETE',
-          headers: { 'X-Absence-Duvod': duvodZakaznik },
+          body: JSON.stringify({ duvod: duvodZakaznik }),
         });
         const left = items.filter((r) => r.id !== id);
         renderAbsenceKonflikt(left, absence);

@@ -234,10 +234,11 @@ class FlowRezervaceStornoView(APIView):
         po = AdminRezervaceSerializer(rezervace).data
         _log_flow(user, rezervace, 'storno salonu', pred, po)
         try:
+            duvod = (request.data.get('duvod') or request.headers.get('X-Absence-Duvod') or '').strip()[:100]
             email_storno(
                 rezervace,
                 kdo='salon',
-                duvod=(request.headers.get('X-Absence-Duvod') or '').strip()[:100],
+                duvod=duvod,
             )
         except Exception:
             pass
