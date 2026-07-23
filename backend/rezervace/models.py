@@ -26,9 +26,9 @@ TYP_VYTVORENI = [
 ]
 
 TYP_ABSENCE = [
-    ('volno', 'Volno'),
     ('dovolena', 'Dovolená'),
     ('nemoc', 'Nemoc'),
+    ('technicke', 'Technické problémy'),
 ]
 
 DENY = OteviraciDoba.DENY

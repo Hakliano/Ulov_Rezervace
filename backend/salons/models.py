@@ -8,6 +8,10 @@ class Salon(models.Model):
     phone = models.CharField('telefon', max_length=50, blank=True)
     email = models.EmailField('e-mail', blank=True)
     hero_image = models.URLField('úvodní fotka (URL)', blank=True, max_length=500)
+    logo_url = models.URLField('logo (URL)', blank=True, max_length=500)
+    favicon_url = models.URLField('favicon (URL)', blank=True, max_length=500)
+    primary_color = models.CharField('primární barva (#RRGGBB)', max_length=7, blank=True)
+    accent_color = models.CharField('akcentová barva (#RRGGBB)', max_length=7, blank=True)
 
     class Meta:
         verbose_name = 'salon'

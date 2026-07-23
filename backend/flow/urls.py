@@ -1,6 +1,6 @@
 from django.urls import path
 
-from flow import views
+from flow import provoz_views, views
 
 urlpatterns = [
     path('salon/<int:pk>/flow/ucty/', views.FlowUctyListCreateView.as_view(), name='flow-ucty'),
@@ -23,4 +23,35 @@ urlpatterns = [
     path('flow/odhlaseni/', views.FlowOdhlaseniView.as_view(), name='flow-odhlaseni'),
     path('flow/me/', views.FlowMeView.as_view(), name='flow-me'),
     path('flow/zmena-hesla/', views.FlowZmenaHeslaView.as_view(), name='flow-zmena-hesla'),
+    path('flow/kalendar/', provoz_views.FlowKalendarView.as_view(), name='flow-kalendar'),
+    path(
+        'flow/rezervace/<int:rezervace_id>/dokonceno/',
+        provoz_views.FlowRezervaceDokoncenoView.as_view(),
+        name='flow-rezervace-dokonceno',
+    ),
+    path(
+        'flow/rezervace/<int:rezervace_id>/noshow/',
+        provoz_views.FlowRezervaceNoShowView.as_view(),
+        name='flow-rezervace-noshow',
+    ),
+    path(
+        'flow/rezervace/<int:rezervace_id>/storno/',
+        provoz_views.FlowRezervaceStornoView.as_view(),
+        name='flow-rezervace-storno',
+    ),
+    path(
+        'flow/rezervace/<int:rezervace_id>/platba/',
+        provoz_views.FlowRezervacePlatbaView.as_view(),
+        name='flow-rezervace-platba',
+    ),
+    path('flow/absence/', provoz_views.FlowAbsenceView.as_view(), name='flow-absence'),
+    path(
+        'flow/absence/<int:absence_id>/',
+        provoz_views.FlowAbsenceDetailView.as_view(),
+        name='flow-absence-detail',
+    ),
+    path('flow/rozvrh/', provoz_views.FlowRozvrhView.as_view(), name='flow-rozvrh'),
+    path('flow/sluzby/', provoz_views.FlowSluzbyView.as_view(), name='flow-sluzby'),
+    path('flow/volne-terminy/', provoz_views.FlowVolneTerminyView.as_view(), name='flow-volne-terminy'),
+    path('flow/rezervace/', provoz_views.FlowRezervaceCreateView.as_view(), name='flow-rezervace-create'),
 ]

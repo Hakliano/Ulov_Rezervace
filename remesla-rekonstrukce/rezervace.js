@@ -556,6 +556,15 @@ function closePlatbaQrModal() {
   document.body.classList.remove('modal-open');
 }
 
+function flowAppUrl() {
+  const h = location.hostname;
+  if (h.includes('staging')) return 'https://www.staging.ulovklienty.cz/flow/';
+  if (['localhost', '127.0.0.1', '::1'].includes(h)) {
+    return `${location.protocol}//${h}${location.port ? `:${location.port}` : ''}/flow/`;
+  }
+  return 'https://www.ulovklienty.cz/flow/';
+}
+
 function applyStaffUI() {
   const badge = $('#admin-actor-badge');
   if (badge && staffUser) {
@@ -563,11 +572,35 @@ function applyStaffUI() {
       ? `${staffUser.jmeno} · majitelka`
       : staffUser.jmeno;
   }
-  const majitelOnly = ['kadernice', 'noshow', 'nastaveni', 'audit'];
-  $$('[data-admin]').forEach((btn) => {
-    btn.classList.toggle('hidden', !isMajitel() && majitelOnly.includes(btn.dataset.admin));
+  const flowUrl = flowAppUrl();
+  ['admin-login-flow-link', 'btn-open-flow'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.href = flowUrl;
   });
-  if ($('#btn-staff-add')) $('#btn-staff-add').classList.toggle('hidden', !isMajitel());
+
+  // Fáze 4: personál denní práci jen ve FLOW; rezervace.html = majitelka.
+  const majitel = isMajitel();
+  const majitelOnly = ['kalendar', 'kadernice', 'statistiky', 'noshow', 'nastaveni', 'audit'];
+  $$('[data-admin]').forEach((btn) => {
+    btn.classList.toggle('hidden', !majitel && majitelOnly.includes(btn.dataset.admin));
+  });
+  if ($('#btn-staff-add')) $('#btn-staff-add').classList.toggle('hidden', !majitel);
+
+  const redirect = $('#admin-flow-redirect');
+  const sections = $$('.admin-section');
+  if (redirect) {
+    redirect.classList.toggle('hidden', majitel);
+  }
+  sections.forEach((sec) => {
+    if (sec.id === 'admin-flow-redirect') return;
+    if (!majitel) sec.classList.add('hidden');
+  });
+}
+
+function showMajitelDefaultView() {
+  $$('.admin-section').forEach((sec) => {
+    sec.classList.toggle('hidden', sec.id !== 'admin-kalendar');
+  });
 }
 
 function updateActorBadge() {
@@ -726,13 +759,14 @@ async function loadNastaveni() {
   renderNotifikace(data.notifikace || [], data.notifikace_tagy, data.notifikace_placeholders);
 }
 
-const MAX_NOTIFIKACE = 4;
+const MAX_NOTIFIKACE = 5;
 
 const NOTIF_POPISY = [
   'Připomínka před termínem (doporučeno +24 h) — odesílá se automaticky',
   'Poděkování po návštěvě a prosba o recenzi (doporučeno -2 h po službě) — automaticky',
   'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show, bez automatického času',
   'Žádost o úhradu na účet s QR kódem — pouze ručně u rezervace (tlačítko Požádat o platbu)',
+  'Storno rezervace — odešle se při zrušení rezervace salonem / ve FLOW (ne automaticky v čase)',
 ];
 
 function renderTagGuide(tagy) {
@@ -787,7 +821,7 @@ function renderNotifikace(notifikace, tagy, hint) {
 
 function buildNotifCard(n, i) {
   const isManual = i >= 2 || n.manual || n.offset === 'manual';
-  const manualTyp = n.manual_typ || (i === 3 ? 'platba' : 'noshow');
+  const manualTyp = n.manual_typ || (i === 4 ? 'storno' : i === 3 ? 'platba' : 'noshow');
   const card = document.createElement('div');
   card.className = 'notif-card';
   if (isManual) card.classList.add('notif-manual');
@@ -809,9 +843,13 @@ function buildNotifCard(n, i) {
   if (isManual) {
     const manualHint = document.createElement('p');
     manualHint.className = 'notif-manual-hint';
-    manualHint.textContent = manualTyp === 'platba'
-      ? 'Tento e-mail se neodesílá automaticky. Personál ho odešle tlačítkem „Požádat o platbu na účet“ u rezervace — v e-mailu bude QR kód pro platbu.'
-      : 'Tento e-mail se neodesílá automaticky. Text si připravíte zde, odešle se až po stisknutí NO-show u konkrétní rezervace v kalendáři.';
+    if (manualTyp === 'platba') {
+      manualHint.textContent = 'Tento e-mail se neodesílá automaticky. Personál ho odešle tlačítkem „Požádat o platbu na účet“ u rezervace — v e-mailu bude QR kód pro platbu.';
+    } else if (manualTyp === 'storno') {
+      manualHint.textContent = 'Tento e-mail se odešle zákazníkovi při stornu rezervace (admin / FLOW). Tag {{ kdo }} = salon nebo zákazník.';
+    } else {
+      manualHint.textContent = 'Tento e-mail se neodesílá automaticky. Text si připravíte zde, odešle se až po stisknutí NO-show u konkrétní rezervace v kalendáři.';
+    }
     header.appendChild(manualHint);
   } else {
     const activeLabel = document.createElement('label');
@@ -869,13 +907,13 @@ function collectNotifikace() {
   return [...$$('#notifikace-list .notif-card')].map((card, i) => {
     const manual = card.classList.contains('notif-manual') || i >= 2;
     if (manual) {
-      const manualTyp = card.dataset.manualTyp || (i === 3 ? 'platba' : 'noshow');
+      const manualTyp = card.dataset.manualTyp || (i === 4 ? 'storno' : i === 3 ? 'platba' : 'noshow');
       return {
         id: card.querySelector('.notif-id')?.value || undefined,
         manual: true,
         offset: 'manual',
         manual_typ: manualTyp,
-        aktivni: manualTyp === 'platba',
+        aktivni: manualTyp === 'platba' || manualTyp === 'storno',
         predmet: card.querySelector('.notif-predmet')?.value ?? '',
         text: card.querySelector('.notif-text')?.value ?? '',
       };
@@ -1387,10 +1425,13 @@ $('#form-admin-login').addEventListener('submit', async (e) => {
     $('#admin-login').classList.add('hidden');
     $('#admin-panel').classList.remove('hidden');
     applyStaffUI();
-    adminCalMonth = new Date();
-    adminCalMonth.setDate(1);
-    loadAdminKalendar();
-    if (isMajitel()) loadNastaveni();
+    if (isMajitel()) {
+      showMajitelDefaultView();
+      adminCalMonth = new Date();
+      adminCalMonth.setDate(1);
+      loadAdminKalendar();
+      loadNastaveni();
+    }
     msg.textContent = '';
   } catch (err) {
     staffToken = '';
@@ -1420,10 +1461,13 @@ async function restoreStaffSession() {
     $('#admin-login').classList.add('hidden');
     $('#admin-panel').classList.remove('hidden');
     applyStaffUI();
-    adminCalMonth = new Date();
-    adminCalMonth.setDate(1);
-    loadAdminKalendar();
-    if (isMajitel()) loadNastaveni();
+    if (isMajitel()) {
+      showMajitelDefaultView();
+      adminCalMonth = new Date();
+      adminCalMonth.setDate(1);
+      loadAdminKalendar();
+      loadNastaveni();
+    }
   } catch {
     staffToken = '';
     staffUser = null;
@@ -1435,9 +1479,13 @@ restoreStaffSession();
 
 $$('[data-admin]').forEach(btn => {
   btn.addEventListener('click', () => {
-    $$('.admin-section').forEach(s => s.classList.add('hidden'));
+    if (!isMajitel()) return;
+    $$('.admin-section').forEach((s) => {
+      if (s.id === 'admin-flow-redirect') return;
+      s.classList.add('hidden');
+    });
     const sec = $(`#admin-${btn.dataset.admin}`);
-    sec.classList.remove('hidden');
+    if (sec) sec.classList.remove('hidden');
     if (btn.dataset.admin === 'kalendar') loadAdminKalendar();
     if (btn.dataset.admin === 'kadernice') loadStaff();
     if (btn.dataset.admin === 'statistiky') loadStats();

@@ -1,7 +1,13 @@
 Dobrý den {{ rezervace.kontaktni_jmeno }},
 
-Vaše rezervace v salonu {{ salon.name }} byla zrušena ({{ kdo }}).
+velice se omlouváme, ale vaši rezervaci v salonu {{ salon.name }} bohužel musíme zrušit.
 
 Původní termín: {{ rezervace.zacatek|date:"d.m.Y" }} v {{ rezervace.zacatek|time:"H:i" }}
+{% if duvod %}
+Důvod zrušení: {{ duvod }}
+{% endif %}
+Je nám to líto za komplikace. Rádi vám pomůžeme vybrat náhradní termín — ozvěte se nám prosím.
 
+Děkujeme za pochopení.
+S pozdravem
 {{ salon.name }}

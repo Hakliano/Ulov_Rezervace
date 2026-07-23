@@ -284,11 +284,133 @@ async function refreshOteviraciDoba() {
   renderOteviraciDoba(salonData.oteviraci_doba);
 }
 
+
+function applySalonBrand(data) {
+  const root = document.documentElement;
+  if (data.primary_color) {
+    root.style.setProperty('--bg', data.primary_color);
+    root.style.setProperty('--surface', data.primary_color);
+  }
+  if (data.accent_color) {
+    root.style.setProperty('--gold', data.accent_color);
+    root.style.setProperty('--accent', data.accent_color);
+  }
+
+  let icon = document.querySelector('link[data-salon-favicon]');
+  if (data.favicon_url) {
+    if (!icon) {
+      icon = document.createElement('link');
+      icon.rel = 'icon';
+      icon.setAttribute('data-salon-favicon', '1');
+      document.head.appendChild(icon);
+    }
+    icon.href = data.favicon_url;
+  } else if (icon) {
+    icon.remove();
+  }
+
+  const nav = document.getElementById('nav-logo');
+  if (!nav) return;
+  if (data.logo_url) {
+    nav.innerHTML = `<img class="nav-logo-img" src="${esc(data.logo_url)}" alt="${esc(data.name || 'Logo')}">`;
+  } else {
+    const fallback = nav.dataset.fallbackText || data.name || '';
+    nav.textContent = fallback;
+  }
+}
+
+function renderBrandPreview(elId, url, emptyText) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = url
+    ? `<img src="${esc(url)}" alt="">`
+    : `<span class="placeholder">${emptyText}</span>`;
+}
+
+function syncColorInputs(kind, hex) {
+  const colorEl = document.getElementById(`edit-${kind}-color`);
+  const hexEl = document.getElementById(`edit-${kind}-color-hex`);
+  if (!colorEl || !hexEl) return;
+  const value = /^#[0-9A-Fa-f]{6}$/.test(hex || '') ? hex : colorEl.value;
+  colorEl.value = value;
+  hexEl.value = value.toUpperCase();
+}
+
+function wireColorPair(kind) {
+  const colorEl = document.getElementById(`edit-${kind}-color`);
+  const hexEl = document.getElementById(`edit-${kind}-color-hex`);
+  if (!colorEl || !hexEl || colorEl.dataset.wired) return;
+  colorEl.dataset.wired = '1';
+  colorEl.addEventListener('input', () => {
+    hexEl.value = colorEl.value.toUpperCase();
+  });
+  hexEl.addEventListener('change', () => {
+    let v = (hexEl.value || '').trim();
+    if (v && !v.startsWith('#')) v = `#${v}`;
+    if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+      colorEl.value = v;
+      hexEl.value = v.toUpperCase();
+    } else {
+      hexEl.value = colorEl.value.toUpperCase();
+    }
+  });
+}
+
+async function handleBrandUpload(e, typ) {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const data = await uploadImage(file, typ);
+    if (typ === 'logo') {
+      salonData.logo_url = data.url;
+      renderBrandPreview('logo-preview', data.url, 'Žádné logo');
+    } else {
+      salonData.favicon_url = data.url;
+      renderBrandPreview('favicon-preview', data.url, 'Žádný favicon');
+    }
+    renderSalon(salonData);
+    const msg = document.getElementById('status-msg');
+    msg.textContent = typ === 'logo' ? 'Logo nahráno.' : 'Favicon nahrán.';
+    msg.className = 'status-msg success';
+  } catch (err) {
+    const msg = document.getElementById('status-msg');
+    msg.textContent = err.message;
+    msg.className = 'status-msg error';
+  }
+  e.target.value = '';
+}
+
+async function clearBrandAsset(field) {
+  if (!staffToken || !isMajitel()) return;
+  const msg = document.getElementById('status-msg');
+  try {
+    const res = await fetch(`${API_BASE}/salon/${SALON_ID}/`, {
+      method: 'PUT',
+      headers: staffHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ [field]: '' }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || JSON.stringify(err));
+    }
+    salonData = await fetchSalon();
+    renderSalon(salonData);
+    showEditForm();
+    msg.textContent = field === 'logo_url' ? 'Logo odebráno.' : 'Favicon odebrán.';
+    msg.className = 'status-msg success';
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.className = 'status-msg error';
+  }
+}
+
 function renderSalon(data) {
   document.title = data.name;
   document.getElementById('salon-name').textContent = data.name;
   const shortBrand = (data.name || '').replace(/^Salon\s+/i, '').trim() || data.name;
-  document.getElementById('nav-logo').textContent = shortBrand;
+  const _nav = document.getElementById('nav-logo');
+  if (_nav) _nav.dataset.fallbackText = shortBrand;
+  applySalonBrand(data);
   document.getElementById('footer-name').textContent = data.name;
   document.getElementById('salon-desc').textContent = data.description;
   document.getElementById('about-text').textContent = data.description;
@@ -507,6 +629,11 @@ function showEditForm() {
   document.getElementById('edit-address').value = d.address;
   document.getElementById('edit-phone').value = d.phone;
   document.getElementById('edit-email').value = d.email;
+
+  syncColorInputs('primary', d.primary_color || '#080808');
+  syncColorInputs('accent', d.accent_color || '#c9a962');
+  renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
+  renderBrandPreview('favicon-preview', d.favicon_url, 'Žádný favicon');
 
   renderHeroPreview(d.hero_image);
   renderGalleryEdit(d.obrazky || []);
@@ -929,6 +1056,8 @@ function collectFormData() {
     address: document.getElementById('edit-address').value,
     phone: document.getElementById('edit-phone').value,
     email: document.getElementById('edit-email').value,
+    primary_color: document.getElementById('edit-primary-color')?.value || '',
+    accent_color: document.getElementById('edit-accent-color')?.value || '',
     cenik, novinky, obrazky,
   };
 }
@@ -1105,6 +1234,12 @@ document.getElementById('btn-save-email').addEventListener('click', saveEmailSet
 document.getElementById('btn-test-email').addEventListener('click', testEmailSettings);
 document.getElementById('upload-hero').addEventListener('change', handleHeroUpload);
 document.getElementById('upload-gallery').addEventListener('change', handleGalleryUpload);
+document.getElementById('upload-logo')?.addEventListener('change', (e) => handleBrandUpload(e, 'logo'));
+document.getElementById('upload-favicon')?.addEventListener('change', (e) => handleBrandUpload(e, 'favicon'));
+document.getElementById('btn-clear-logo')?.addEventListener('click', () => clearBrandAsset('logo_url'));
+document.getElementById('btn-clear-favicon')?.addEventListener('click', () => clearBrandAsset('favicon_url'));
+wireColorPair('primary');
+wireColorPair('accent');
 document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
 document.getElementById('lightbox').addEventListener('click', e => {
   if (e.target.id === 'lightbox') closeLightbox();

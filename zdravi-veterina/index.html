@@ -164,7 +164,7 @@
         <form id="login-form" class="login-form">
           <p class="admin-hint">Přihlášení majitelky pro úpravu obsahu webu.</p>
           <label for="staff-login">Přihlašovací jméno</label>
-          <input type="text" id="staff-login" placeholder="majitelka" autocomplete="username" required>
+          <input type="text" id="staff-login" autocomplete="username" required>
           <label for="staff-password">Heslo</label>
           <input type="password" id="staff-password" autocomplete="current-password" required>
           <div id="login-status-msg" class="status-msg"></div>
@@ -176,6 +176,7 @@
         <div class="admin-tabs">
           <button type="button" class="tab active" data-tab="zaklad">Základní</button>
           <button type="button" class="tab" data-tab="obrazky">Obrázky</button>
+          <button type="button" class="tab" data-tab="vizual">Vizuál</button>
           <button type="button" class="tab" data-tab="personel">Personál</button>
           <button type="button" class="tab" data-tab="cenik">Ceník</button>
           <button type="button" class="tab" data-tab="novinky">Novinky</button>
@@ -235,6 +236,38 @@
           </div>
         </div>
 
+
+        <div class="tab-panel" data-panel="vizual">
+          <p class="admin-hint">Logo, favicon a 2 barvy pro web salonu.</p>
+          <div class="upload-box">
+            <h4>Logo</h4>
+            <div class="hero-preview" id="logo-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát logo
+              <input type="file" id="upload-logo" accept="image/*" hidden>
+            </label>
+            <button type="button" id="btn-clear-logo" class="btn btn-secondary btn-sm">Odebrat logo</button>
+          </div>
+          <div class="upload-box">
+            <h4>Favicon</h4>
+            <div class="hero-preview" id="favicon-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát favicon
+              <input type="file" id="upload-favicon" accept="image/*" hidden>
+            </label>
+            <button type="button" id="btn-clear-favicon" class="btn btn-secondary btn-sm">Odebrat favicon</button>
+          </div>
+          <label for="edit-primary-color">Primární barva (pozadí / hlavní)</label>
+          <div class="color-row">
+            <input type="color" id="edit-primary-color" value="#080808">
+            <input type="text" id="edit-primary-color-hex" maxlength="7" placeholder="#080808">
+          </div>
+          <label for="edit-accent-color">Akcentová barva (zvýraznění)</label>
+          <div class="color-row">
+            <input type="color" id="edit-accent-color" value="#c9a962">
+            <input type="text" id="edit-accent-color-hex" maxlength="7" placeholder="#c9a962">
+          </div>
+        </div>
         <div class="tab-panel" data-panel="personel">
           <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Personál. Fotku nahrajte tlačítkem níže.</p>
           <div id="personel-edit"></div>

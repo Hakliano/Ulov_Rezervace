@@ -249,6 +249,7 @@ CORS_ALLOW_HEADERS = [
     'x-admin-actor',
     'x-staff-token',
     'x-flow-token',
+    'x-absence-duvod',
 ]
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 

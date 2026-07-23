@@ -12,6 +12,11 @@ def generate_heslo(length=12):
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
+def ma_kontaktni_email(rezervace):
+    """True jen když má rezervace reálný e-mail zákazníka (ne prázdný / whitespace)."""
+    return bool((getattr(rezervace, 'kontaktni_email', None) or '').strip())
+
+
 def _salon_smtp_env(salon_id, key, fallback=''):
     return os.environ.get(f'SALON_{salon_id}_{key}', fallback)
 
@@ -73,7 +78,9 @@ def get_email_config(salon):
 
 
 def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachments=None, inline_images=None):
+    prijemce = (prijemce or '').strip()
     if not prijemce:
+        # Bez adresáta = tiché přeskočení (žádná chyba, žádný audit „selhalo odeslání“)
         return False
 
     # Staging / test: všechny odchozí maily na jednu adresu (nikdy ostrým zákazníkům)
@@ -214,6 +221,8 @@ def _email_via_celery():
 
 
 def email_vyzva_k_potvrzeni_sync(rezervace):
+    if not ma_kontaktni_email(rezervace):
+        return False
     salon = rezervace.salon
     sluzby = ', '.join(p.sluzba.nazev for p in rezervace.polozky.all())
     try:
@@ -239,6 +248,8 @@ def email_vyzva_k_potvrzeni_sync(rezervace):
 
 
 def email_vyzva_k_potvrzeni(rezervace):
+    if not ma_kontaktni_email(rezervace):
+        return False
     if _email_via_celery():
         from rezervace.tasks import task_email_vyzva_k_potvrzeni
         task_email_vyzva_k_potvrzeni.delay(rezervace.pk)
@@ -247,6 +258,8 @@ def email_vyzva_k_potvrzeni(rezervace):
 
 
 def email_potvrzeni_sync(rezervace):
+    if not ma_kontaktni_email(rezervace):
+        return False
     salon = rezervace.salon
     sluzby = ', '.join(p.sluzba.nazev for p in rezervace.polozky.all())
     storno_url = _storno_url(rezervace)
@@ -268,6 +281,8 @@ def email_potvrzeni_sync(rezervace):
 
 
 def email_potvrzeni(rezervace):
+    if not ma_kontaktni_email(rezervace):
+        return False
     if _email_via_celery():
         from rezervace.tasks import task_email_potvrzeni
         task_email_potvrzeni.delay(rezervace.pk)
@@ -275,24 +290,49 @@ def email_potvrzeni(rezervace):
     return email_potvrzeni_sync(rezervace)
 
 
-def email_storno_sync(rezervace, kdo='zákazník'):
+def email_storno_sync(rezervace, kdo='zákazník', duvod=''):
     salon = rezervace.salon
-    zprava = render_to_string('rezervace/emails/storno.txt', {
-        'rezervace': rezervace,
-        'salon': salon,
-        'kdo': kdo,
-    })
-    _odeslat_pro_salon(salon, rezervace.kontaktni_email, f'Storno rezervace – {salon.name}', zprava)
+    kdo_label = 'salon' if kdo in ('salon', 'admin', 'flow') else 'zákazník'
+    predmet = f'Storno rezervace – {salon.name}'
+    zprava = None
+    duvod_txt = (duvod or '').strip() or kdo_label
+
+    try:
+        from rezervace.notifikace_defaults import MANUAL_TYP_STORNO, get_manual_notifikace
+        from rezervace.services.notifikace_email import render_sablonu
+
+        notif = get_manual_notifikace(salon.rezervacni_nastaveni.notifikace, MANUAL_TYP_STORNO)
+        if notif:
+            extra = {'kdo': kdo_label, 'duvod': duvod_txt}
+            predmet = render_sablonu(notif.get('predmet') or predmet, rezervace, extra)
+            zprava = render_sablonu(notif.get('text') or '', rezervace, extra)
+    except Exception:
+        zprava = None
+
+    if not zprava:
+        zprava = render_to_string('rezervace/emails/storno.txt', {
+            'rezervace': rezervace,
+            'salon': salon,
+            'kdo': kdo_label,
+            'duvod': duvod_txt,
+        })
+
+    if ma_kontaktni_email(rezervace):
+        _odeslat_pro_salon(salon, rezervace.kontaktni_email, predmet, zprava)
     if salon.email:
-        _odeslat_pro_salon(salon, salon.email, f'Storno rezervace – {rezervace.kontaktni_jmeno}', zprava)
+        _odeslat_pro_salon(
+            salon, salon.email,
+            f'Storno rezervace – {rezervace.kontaktni_jmeno}',
+            zprava,
+        )
 
 
-def email_storno(rezervace, kdo='zákazník'):
+def email_storno(rezervace, kdo='zákazník', duvod=''):
     if _email_via_celery():
         from rezervace.tasks import task_email_storno
-        task_email_storno.delay(rezervace.pk, kdo=kdo)
+        task_email_storno.delay(rezervace.pk, kdo=kdo, duvod=duvod)
         return True
-    email_storno_sync(rezervace, kdo=kdo)
+    email_storno_sync(rezervace, kdo=kdo, duvod=duvod)
     return True
 
 

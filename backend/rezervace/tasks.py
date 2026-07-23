@@ -48,13 +48,13 @@ def task_email_potvrzeni(self, rezervace_id):
 
 
 @shared_task(bind=True, max_retries=3, name='rezervace.email_storno')
-def task_email_storno(self, rezervace_id, kdo='zákazník'):
+def task_email_storno(self, rezervace_id, kdo='zákazník', duvod=''):
     def _inner():
         from rezervace.models import Rezervace
         from rezervace.services.emails import email_storno_sync
 
         rezervace = Rezervace.objects.get(pk=rezervace_id)
-        email_storno_sync(rezervace, kdo=kdo)
+        email_storno_sync(rezervace, kdo=kdo, duvod=duvod)
         return True
 
     return _run(self, _inner)

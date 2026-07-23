@@ -24,6 +24,7 @@ from rezervace.services.gdpr import (
     dekujici_notifikace,
     dekujici_notifikace_aktivni,
 )
+from rezervace.services.emails import ma_kontaktni_email
 from rezervace.services.notifikace_email import email_notifikace
 
 DEKUJICI_PO_HODINACH = 2
@@ -87,7 +88,10 @@ def _odeslat_planovane_emaily(now):
                 continue
 
             try:
-                email_notifikace(rezervace, notif)
+                if ma_kontaktni_email(rezervace):
+                    email_notifikace(rezervace, notif)
+                # Bez e-mailu: tiché přeskočení — ne audit chyba, ale označit jako vyřízeno
+                # (jinak by děkovný mail blokoval anonymizaci).
                 odeslane.append(nid)
                 rezervace.notifikace_odeslane = odeslane
                 update_fields = ['notifikace_odeslane']
@@ -97,7 +101,8 @@ def _odeslat_planovane_emaily(now):
                     update_fields.append('thank_you_sent_at')
 
                 rezervace.save(update_fields=update_fields)
-                odeslano += 1
+                if ma_kontaktni_email(rezervace):
+                    odeslano += 1
             except Exception:
                 pass
 

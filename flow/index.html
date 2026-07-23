@@ -10,17 +10,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
-  <div class="shell">
+  <div class="shell" id="shell">
     <header class="top">
       <p class="brand-line">CRM by ULOV KLIENTY</p>
       <button type="button" id="btn-logout" class="btn ghost hidden">Odhlásit</button>
     </header>
 
-    <div class="hero-brand">
+    <div class="hero-brand" id="hero-brand">
       <img
         class="brand-logo"
         src="https://haklweb.b-cdn.net/ULOV_KLIENTA/Flow_logo_rm-removebg-preview.png"
@@ -35,7 +35,7 @@
     <main>
       <section id="view-login" class="card">
         <h1>Přihlášení</h1>
-        <p class="lede">Denní provoz — rezervace, mail a dovolená na jednom místě.</p>
+        <p class="lede">Denní provoz — rezervace, platba a dovolená na jednom místě.</p>
         <form id="form-login" class="form">
           <label>E-mail
             <input type="email" id="login-email" required autocomplete="username">
@@ -48,31 +48,235 @@
         </form>
       </section>
 
-      <section id="view-home" class="card hidden">
-        <h1>Ahoj, <span id="home-name">—</span></h1>
-        <p class="lede"><span id="home-salon">—</span></p>
-        <p class="hint">Fáze 1: účet a přihlášení fungují. Kalendář, mail a Overview přijdou v dalších krocích.</p>
-        <div class="panel">
-          <p><strong>E-mail:</strong> <span id="home-email">—</span></p>
-          <p><strong>Overview:</strong> <span id="home-overview">—</span></p>
+      <section id="view-home" class="app-panel hidden">
+        <div class="app-head">
+          <div>
+            <h1 class="app-title">Ahoj, <span id="home-name">—</span></h1>
+            <p class="lede tight"><span id="home-salon">—</span></p>
+          </div>
         </div>
 
-        <details class="pwd-box">
-          <summary>Změnit heslo</summary>
-          <form id="form-password" class="form">
-            <label>Současné heslo
-              <input type="password" id="pwd-current" required autocomplete="current-password">
+        <button type="button" id="btn-nova-rez" class="btn cta-nova">
+          <span class="cta-plus" aria-hidden="true">＋</span>
+          Zadat rezervaci
+        </button>
+
+        <nav class="tabs" id="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="mujden">Můj den</button>
+          <button type="button" class="tab" data-tab="mesic">Kalendář</button>
+          <button type="button" class="tab" data-tab="rozvrh">Pracovní doba</button>
+          <button type="button" class="tab hidden" data-tab="overview" id="tab-overview">Overview</button>
+          <button type="button" class="tab" data-tab="absence">Dovolená</button>
+          <button type="button" class="tab" data-tab="ucet">Účet</button>
+        </nav>
+
+        <div id="pane-mujden" class="pane">
+          <div class="week-bar">
+            <button type="button" class="btn ghost sm" id="week-prev" aria-label="Předchozí týden">‹</button>
+            <p class="week-label" id="week-label">—</p>
+            <button type="button" class="btn ghost sm" id="week-next" aria-label="Další týden">›</button>
+            <button type="button" class="btn ghost sm" id="week-today">Dnes</button>
+          </div>
+          <p id="cal-msg" class="msg" hidden></p>
+          <div id="cal-list" class="list"></div>
+        </div>
+
+        <div id="pane-mesic" class="pane hidden">
+          <div class="week-bar">
+            <button type="button" class="btn ghost sm" id="month-prev">‹</button>
+            <p class="week-label" id="month-label">—</p>
+            <button type="button" class="btn ghost sm" id="month-next">›</button>
+            <button type="button" class="btn ghost sm" id="month-today">Dnes</button>
+          </div>
+          <p class="hint tiny">Kliknutím na den zobrazíte rezervace. Barva = pracovní den / volno / absence.</p>
+          <p id="month-msg" class="msg" hidden></p>
+          <div id="month-grid" class="month-grid" aria-label="Měsíční kalendář"></div>
+          <div id="month-day-detail" class="month-detail hidden">
+            <h3 class="list-h" id="month-day-title">Den</h3>
+            <div id="month-day-list" class="list"></div>
+          </div>
+        </div>
+
+        <div id="pane-rozvrh" class="pane hidden">
+          <p class="hint">Stejná pracovní doba jako na webu a v rezervacích. Úprava hned mění dostupné termíny.</p>
+          <div id="rozvrh-editor" class="rozvrh-editor"></div>
+          <button type="button" class="btn primary" id="btn-rozvrh-save">Uložit pracovní dobu</button>
+          <p id="rozvrh-msg" class="msg" hidden></p>
+        </div>
+
+        <div id="pane-overview" class="pane hidden">
+          <p class="hint">Jen čtení — vidíte kolegy, ale nemůžete jejich rezervace měnit.</p>
+          <div class="week-bar">
+            <button type="button" class="btn ghost sm" id="ov-week-prev">‹</button>
+            <p class="week-label" id="ov-week-label">—</p>
+            <button type="button" class="btn ghost sm" id="ov-week-next">›</button>
+            <button type="button" class="btn ghost sm" id="ov-week-today">Dnes</button>
+          </div>
+          <p id="ov-msg" class="msg" hidden></p>
+          <div id="ov-list" class="list"></div>
+        </div>
+
+        <div id="pane-absence" class="pane hidden">
+          <form id="form-absence" class="form abs-form">
+            <div class="row2">
+              <label>Od
+                <input type="date" id="abs-od" required>
+              </label>
+              <label>Do
+                <input type="date" id="abs-do" required>
+              </label>
+            </div>
+            <label>Typ
+              <select id="abs-typ">
+                <option value="dovolena">Dovolená</option>
+                <option value="nemoc">Nemoc</option>
+                <option value="technicke">Technické problémy</option>
+              </select>
             </label>
-            <label>Nové heslo (min. 8 znaků, písmeno + číslo)
-              <input type="password" id="pwd-new" required autocomplete="new-password" minlength="8">
+            <label>Poznámka
+              <input type="text" id="abs-poznamka" maxlength="200" placeholder="volitelné">
             </label>
-            <button type="submit" class="btn primary">Uložit heslo</button>
-            <p id="pwd-msg" class="msg" hidden></p>
+            <button type="submit" class="btn primary">Přidat absenci</button>
+            <p id="abs-msg" class="msg" hidden></p>
           </form>
-        </details>
+          <div id="abs-konflikt" class="abs-konflikt hidden"></div>
+          <div id="abs-list" class="list"></div>
+        </div>
+
+        <div id="pane-ucet" class="pane hidden">
+          <div class="panel">
+            <p><strong>E-mail:</strong> <span id="home-email">—</span></p>
+            <p><strong>Overview:</strong> <span id="home-overview">—</span></p>
+          </div>
+          <details class="pwd-box openable">
+            <summary>Změnit heslo</summary>
+            <form id="form-password" class="form">
+              <label>Současné heslo
+                <input type="password" id="pwd-current" required autocomplete="current-password">
+              </label>
+              <label>Nové heslo (min. 8 znaků, písmeno + číslo)
+                <input type="password" id="pwd-new" required autocomplete="new-password" minlength="8">
+              </label>
+              <button type="submit" class="btn primary">Uložit heslo</button>
+              <p id="pwd-msg" class="msg" hidden></p>
+            </form>
+          </details>
+        </div>
       </section>
     </main>
   </div>
-  <script src="app.js?v=3"></script>
+
+  <!-- Nová rezervace -->
+  <div id="nova-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="nova-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-head">
+        <h2 id="nova-title">Zadat rezervaci</h2>
+        <button type="button" class="btn ghost sm" id="nova-close" aria-label="Zavřít">✕</button>
+      </div>
+      <p class="hint">Rezervace se uloží na vás a hned se propíše do kalendáře (stejně jako v administraci).</p>
+      <form id="form-nova" class="form">
+        <fieldset class="nova-fieldset">
+          <legend>Služby</legend>
+          <div id="nova-sluzby" class="sluzby-list"></div>
+        </fieldset>
+        <div class="row2">
+          <label>Datum
+            <input type="date" id="nova-datum" required>
+          </label>
+          <label>Způsob
+            <select id="nova-typ">
+              <option value="telefon">Telefonicky</option>
+              <option value="osobne">Osobně</option>
+              <option value="zamestnanec">Zaměstnancem</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <p class="field-label">Čas</p>
+          <p id="nova-terminy-msg" class="hint tiny">Nejdřív vyberte služby a datum.</p>
+          <div id="nova-terminy" class="terminy-list"></div>
+          <input type="hidden" id="nova-cas">
+        </div>
+        <div class="row2">
+          <label>Jméno zákazníka
+            <input type="text" id="nova-nick" required autocomplete="name">
+          </label>
+          <label>E-mail
+            <input type="email" id="nova-email" autocomplete="email" placeholder="zakaznik@email.cz">
+          </label>
+        </div>
+        <label class="check nova-no-email">
+          <input type="checkbox" id="nova-no-email">
+          Nemá e-mail
+        </label>
+        <label>Poznámka zákazníka
+          <input type="text" id="nova-pozn" maxlength="500">
+        </label>
+        <label>Interní poznámka
+          <input type="text" id="nova-interni" maxlength="500">
+        </label>
+        <p id="nova-msg" class="msg" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" id="nova-cancel">Zrušit</button>
+          <button type="submit" class="btn primary">Uložit rezervaci</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- NO-show modal -->
+  <div id="noshow-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2>NO-show</h2>
+      <p id="noshow-info" class="hint"></p>
+      <label class="check">
+        <input type="checkbox" id="noshow-send-email">
+        Odeslat upozornění zákazníkovi e-mailem
+      </label>
+      <p class="hint tiny">Blokaci e-mailu řeší jen majitelka v systému rezervací.</p>
+      <p id="noshow-msg" class="msg" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="noshow-cancel">Zrušit</button>
+        <button type="button" class="btn primary" id="noshow-confirm">Potvrdit NO-show</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Platba modal -->
+  <div id="platba-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2>Žádost o platbu</h2>
+      <p id="platba-info" class="hint"></p>
+      <form id="form-platba" class="form">
+        <label>Částka (Kč)
+          <input type="text" id="platba-castka" required inputmode="decimal">
+        </label>
+        <label>Číslo účtu
+          <input type="text" id="platba-ucet" required>
+        </label>
+        <label>Variabilní symbol
+          <input type="text" id="platba-vs" required>
+        </label>
+        <p id="platba-msg" class="msg" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" id="platba-cancel">Zrušit</button>
+          <button type="submit" class="btn primary">Odeslat QR e-mail</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="platba-qr-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2>QR platba odeslána</h2>
+      <p id="platba-qr-info" class="hint"></p>
+      <img id="platba-qr-image" class="qr-img" alt="QR platba">
+      <div class="modal-actions">
+        <button type="button" class="btn primary" id="platba-qr-close">Zavřít</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=11"></script>
 </body>
 </html>

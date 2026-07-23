@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.utils import timezone
 
-from rezervace.services.emails import _odeslat_pro_salon, _storno_url
+from rezervace.services.emails import _odeslat_pro_salon, _storno_url, ma_kontaktni_email
 
 
 def _email_via_celery():
@@ -52,6 +52,8 @@ def render_sablonu(text, rezervace, extra_ctx=None):
 
 
 def email_notifikace_sync(rezervace, notifikace, extra_ctx=None):
+    if not ma_kontaktni_email(rezervace):
+        return False
     salon = rezervace.salon
     predmet = render_sablonu(notifikace['predmet'], rezervace, extra_ctx)
     zprava = render_sablonu(notifikace['text'], rezervace, extra_ctx)
@@ -59,6 +61,8 @@ def email_notifikace_sync(rezervace, notifikace, extra_ctx=None):
 
 
 def email_notifikace(rezervace, notifikace, extra_ctx=None):
+    if not ma_kontaktni_email(rezervace):
+        return False
     if _email_via_celery():
         from rezervace.tasks import task_email_notifikace
         task_email_notifikace.delay(rezervace.pk, notifikace, extra_ctx)
@@ -69,6 +73,8 @@ def email_notifikace(rezervace, notifikace, extra_ctx=None):
 def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
     from rezervace.services.platba_qr import generuj_platbu_qr
 
+    if not ma_kontaktni_email(rezervace):
+        return False
     salon = rezervace.salon
     if platba_data is None:
         platba_data = generuj_platbu_qr(ucet, castka, variabilni_symbol, zprava=salon.name)
@@ -99,6 +105,8 @@ def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol,
 
 
 def email_platba_qr(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
+    if not ma_kontaktni_email(rezervace):
+        return False
     if _email_via_celery():
         from rezervace.tasks import task_email_platba_qr
         # QR se znovu vygeneruje ve workeru (PNG není vhodné do Redis fronty).

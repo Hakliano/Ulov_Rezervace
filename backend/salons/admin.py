@@ -29,5 +29,8 @@ class ObrazekInline(admin.TabularInline):
 @admin.register(Salon)
 class SalonAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'phone', 'email']
-    fields = ['name', 'description', 'address', 'phone', 'email', 'hero_image']
+    fields = [
+        'name', 'description', 'address', 'phone', 'email', 'hero_image',
+        'logo_url', 'favicon_url', 'primary_color', 'accent_color',
+    ]
     inlines = [CenikInline, NovinkaInline, OteviraciDobaInline, ObrazekInline]

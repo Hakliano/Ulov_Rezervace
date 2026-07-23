@@ -42,6 +42,19 @@ class SalonObrazekSerializer(serializers.ModelSerializer):
         }
 
 
+def _normalize_hex_color(value):
+    if value is None:
+        return ''
+    raw = str(value).strip()
+    if not raw:
+        return ''
+    if not raw.startswith('#'):
+        raw = f'#{raw}'
+    if len(raw) != 7 or any(c not in '0123456789abcdefABCDEF' for c in raw[1:]):
+        raise serializers.ValidationError('Barva musí být ve formátu #RRGGBB.')
+    return raw.upper()
+
+
 class SalonSerializer(serializers.ModelSerializer):
     cenik = CenikPolozkaSerializer(many=True, required=False)
     novinky = NovinkaSerializer(many=True, required=False)
@@ -52,12 +65,19 @@ class SalonSerializer(serializers.ModelSerializer):
         model = Salon
         fields = [
             'id', 'name', 'description', 'address', 'phone', 'email',
-            'hero_image', 'cenik', 'novinky', 'oteviraci_doba', 'obrazky',
+            'hero_image', 'logo_url', 'favicon_url', 'primary_color', 'accent_color',
+            'cenik', 'novinky', 'oteviraci_doba', 'obrazky',
         ]
 
     def get_oteviraci_doba(self, obj):
         from rezervace.services.oteviraci_doba import vypocti_oteviraci_dobu_tydne
         return OteviraciDobaSerializer(vypocti_oteviraci_dobu_tydne(obj), many=True).data
+
+    def validate_primary_color(self, value):
+        return _normalize_hex_color(value)
+
+    def validate_accent_color(self, value):
+        return _normalize_hex_color(value)
 
     def update(self, instance, validated_data):
         cenik_data = validated_data.pop('cenik', None)
@@ -67,12 +87,25 @@ class SalonSerializer(serializers.ModelSerializer):
 
         old_email = instance.email
 
-        # hero_image se mění jen přes /upload/ – při ukládání textů neposílat
+        # hero / logo / favicon URL jen přes /upload/; přes PUT lze jen vymazat
         validated_data.pop('hero_image', None)
+        cleared_assets = []
+        for field in ('logo_url', 'favicon_url'):
+            if field not in validated_data:
+                continue
+            if validated_data[field]:
+                validated_data.pop(field)
+            else:
+                old = getattr(instance, field) or ''
+                if old:
+                    cleared_assets.append(old)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+
+        for old_url in cleared_assets:
+            delete_image(old_url)
 
         self._sync_rezervacni_email(instance, old_email=old_email)
 

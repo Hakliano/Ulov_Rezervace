@@ -99,6 +99,10 @@ class ImageUploadView(APIView):
         typ = _form_param(request, 'typ') or 'galerie'
         if typ == 'hero':
             folder = 'hero'
+        elif typ == 'logo':
+            folder = 'logo'
+        elif typ == 'favicon':
+            folder = 'favicon'
         elif typ == 'cenik':
             folder = 'cenik'
         elif typ == 'novinka':
@@ -121,6 +125,24 @@ class ImageUploadView(APIView):
                 delete_image(old_url)
             log_audit(salon, audit_actor(request), 'web', f'{audit_actor(request)}: změna úvodního obrázku')
             return Response({'url': url, 'typ': 'hero'})
+
+        if typ == 'logo':
+            old_url = salon.logo_url
+            salon.logo_url = url
+            salon.save(update_fields=['logo_url'])
+            if old_url and old_url != url:
+                delete_image(old_url)
+            log_audit(salon, audit_actor(request), 'web', f'{audit_actor(request)}: změna loga')
+            return Response({'url': url, 'typ': 'logo'})
+
+        if typ == 'favicon':
+            old_url = salon.favicon_url
+            salon.favicon_url = url
+            salon.save(update_fields=['favicon_url'])
+            if old_url and old_url != url:
+                delete_image(old_url)
+            log_audit(salon, audit_actor(request), 'web', f'{audit_actor(request)}: změna faviconu')
+            return Response({'url': url, 'typ': 'favicon'})
 
         if typ == 'novinka':
             novinka_id = _form_param(request, 'novinka_id')

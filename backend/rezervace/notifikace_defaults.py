@@ -4,16 +4,18 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-MAX_NOTIFIKACE = 4
+MAX_NOTIFIKACE = 5
 MANUAL_OFFSET = 'manual'
 MANUAL_TYP_NOSHOW = 'noshow'
 MANUAL_TYP_PLATBA = 'platba'
+MANUAL_TYP_STORNO = 'storno'
 
 DEFAULT_PREDMET_PRED = 'Připomínka rezervace – {{ salon.name }}'
 DEFAULT_PREDMET_PO = 'Děkujeme za návštěvu – {{ salon.name }}'
 DEFAULT_PREDMET_RECENZE = 'Jak se vám u nás líbilo? – {{ salon.name }}'
 DEFAULT_PREDMET_NO_SHOW = 'Neuskutečněná rezervace – {{ salon.name }}'
 DEFAULT_PREDMET_PLATBA = 'Žádost o úhradu – {{ salon.name }}'
+DEFAULT_PREDMET_STORNO = 'Omlouváme se – zrušení rezervace ({{ salon.name }})'
 
 DEFAULT_TEXT_PRED = """Dobrý den {{ jmeno }},
 
@@ -78,6 +80,22 @@ Platbu můžete provést naskenováním QR kódu v příloze e-mailu, nebo banko
 Děkujeme.
 {{ salon.name }}"""
 
+DEFAULT_TEXT_STORNO = """Dobrý den {{ jmeno }},
+
+velice se omlouváme, ale vaši rezervaci v salonu {{ salon.name }} bohužel musíme zrušit.
+
+Původní termín: {{ termin }}
+Služby: {{ sluzby }}
+{% if zamestnanec %}Pracovník: {{ zamestnanec }}{% endif %}
+{% if duvod %}
+Důvod zrušení: {{ duvod }}
+{% endif %}
+Je nám líto za komplikace, které vám tím vznikají. Rádi vám pomůžeme vybrat jiný termín — ozvěte se nám prosím na {{ telefon }}{% if adresa %}, nebo nás navštivte na adrese {{ adresa }}{% endif %}.
+
+Děkujeme za pochopení.
+S pozdravem
+{{ salon.name }}"""
+
 NOTIFIKACE_TAGY = [
     {'tag': '{{ jmeno }}', 'popis': 'Jméno zákazníka', 'priklad': 'Petra Nováková'},
     {'tag': '{{ salon.name }}', 'popis': 'Název salonu', 'priklad': 'Salon Elegance'},
@@ -93,6 +111,8 @@ NOTIFIKACE_TAGY = [
     {'tag': '{{ castka }}', 'popis': 'Částka k úhradě (platba)', 'priklad': '850'},
     {'tag': '{{ ucet }}', 'popis': 'Číslo účtu (platba)', 'priklad': '123456789/0100'},
     {'tag': '{{ variabilni_symbol }}', 'popis': 'Variabilní symbol (platba)', 'priklad': '20260705'},
+    {'tag': '{{ kdo }}', 'popis': 'Kdo rezervaci zrušil (salon / zákazník)', 'priklad': 'salon'},
+    {'tag': '{{ duvod }}', 'popis': 'Důvod storna (např. dovolená / nemoc / technické problémy)', 'priklad': 'Dovolená'},
 ]
 
 PLACEHOLDER_HINT = (
@@ -112,6 +132,11 @@ VychoZI_NOTIFIKACE = [
         'manual_typ': MANUAL_TYP_PLATBA,
         'predmet': DEFAULT_PREDMET_PLATBA, 'text': DEFAULT_TEXT_PLATBA,
     },
+    {
+        'offset': MANUAL_OFFSET, 'aktivni': True, 'manual': True,
+        'manual_typ': MANUAL_TYP_STORNO,
+        'predmet': DEFAULT_PREDMET_STORNO, 'text': DEFAULT_TEXT_STORNO,
+    },
 ]
 
 
@@ -125,6 +150,7 @@ def nova_notifikace(offset='+24', aktivni=False, predmet=None, text=None, manual
         defaults = {
             MANUAL_TYP_NOSHOW: (DEFAULT_PREDMET_NO_SHOW, DEFAULT_TEXT_NO_SHOW),
             MANUAL_TYP_PLATBA: (DEFAULT_PREDMET_PLATBA, DEFAULT_TEXT_PLATBA),
+            MANUAL_TYP_STORNO: (DEFAULT_PREDMET_STORNO, DEFAULT_TEXT_STORNO),
         }
         dp, dt = defaults.get(mt, defaults[MANUAL_TYP_NOSHOW])
         return {
@@ -255,6 +281,7 @@ def _vynut_manualni_sloty(result):
     sloty = [
         (2, MANUAL_TYP_NOSHOW, DEFAULT_PREDMET_NO_SHOW),
         (3, MANUAL_TYP_PLATBA, DEFAULT_PREDMET_PLATBA),
+        (4, MANUAL_TYP_STORNO, DEFAULT_PREDMET_STORNO),
     ]
     for idx, typ, default_predmet in sloty:
         if len(result) <= idx:
@@ -274,6 +301,11 @@ def _vynut_manualni_sloty(result):
             if not n.get('text') or 'QR kód' not in (n.get('text') or ''):
                 if 'castka' not in (n.get('text') or ''):
                     n['text'] = vychozi[idx]['text']
+        if typ == MANUAL_TYP_STORNO and idx < len(vychozi):
+            if not n.get('text') or 'připomínáme vaši rezervaci' in (n.get('text') or ''):
+                n['text'] = vychozi[idx]['text']
+            if not n.get('predmet') or n.get('predmet') == DEFAULT_PREDMET_PRED:
+                n['predmet'] = DEFAULT_PREDMET_STORNO
     return result
 
 
@@ -307,7 +339,16 @@ def get_manual_notifikace(notifikace_list, typ=MANUAL_TYP_NOSHOW):
     for i, notif in enumerate(items):
         if not je_manualni(notif):
             continue
-        mt = notif.get('manual_typ') or (MANUAL_TYP_NOSHOW if i == 2 else MANUAL_TYP_PLATBA if i == 3 else MANUAL_TYP_NOSHOW)
+        mt = notif.get('manual_typ')
+        if not mt:
+            if i == 2:
+                mt = MANUAL_TYP_NOSHOW
+            elif i == 3:
+                mt = MANUAL_TYP_PLATBA
+            elif i == 4:
+                mt = MANUAL_TYP_STORNO
+            else:
+                mt = MANUAL_TYP_NOSHOW
         if mt == typ:
             return notif
     return None
