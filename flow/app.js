@@ -170,6 +170,25 @@ function setTab(name) {
   if (name === 'absence') loadAbsence();
 }
 
+function applyFlowBanner(salon) {
+  const el = $('#flow-banner');
+  if (!el) return;
+  const text = (salon?.banner_text || '').trim();
+  const enabled = !!salon?.banner_enabled;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const od = salon?.banner_od ? new Date(`${salon.banner_od}T00:00:00`) : null;
+  const doDate = salon?.banner_do ? new Date(`${salon.banner_do}T00:00:00`) : null;
+  const inRange = (!od || today >= od) && (!doDate || today <= doDate);
+  if (enabled && text && inRange) {
+    el.textContent = text;
+    el.classList.remove('hidden');
+  } else {
+    el.textContent = '';
+    el.classList.add('hidden');
+  }
+}
+
 function showLoggedIn(user) {
   currentUser = user;
   $('#view-login').classList.add('hidden');
@@ -181,6 +200,7 @@ function showLoggedIn(user) {
   $('#home-salon').textContent = user.salon?.name || '—';
   $('#home-email').textContent = user.email || '—';
   $('#home-overview').textContent = user.visible_overview ? 'zapnuto' : 'vypnuto';
+  applyFlowBanner(user.salon);
   const ovTab = $('#tab-overview');
   if (user.visible_overview) ovTab.classList.remove('hidden');
   else ovTab.classList.add('hidden');
@@ -189,6 +209,7 @@ function showLoggedIn(user) {
 
 function showLogin() {
   currentUser = null;
+  applyFlowBanner(null);
   $('#view-login').classList.remove('hidden');
   $('#view-home').classList.add('hidden');
   $('#btn-logout').classList.add('hidden');

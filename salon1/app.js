@@ -336,7 +336,6 @@ function renderSalon(data) {
   document.title = data.name;
   document.getElementById('salon-name').textContent = data.name;
   applySalonBrand(data);
-  applySalonBanner(data);
   document.getElementById('footer-name').textContent = data.name;
   document.getElementById('salon-desc').textContent = data.description;
   document.getElementById('about-text').textContent = data.description;

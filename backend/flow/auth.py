@@ -61,6 +61,10 @@ def flow_user_do_dict(user):
             'id': user.salon_id,
             'name': user.salon.name,
             'hero_image': user.salon.hero_image or '',
+            'banner_text': user.salon.banner_text or '',
+            'banner_od': user.salon.banner_od.isoformat() if user.salon.banner_od else None,
+            'banner_do': user.salon.banner_do.isoformat() if user.salon.banner_do else None,
+            'banner_enabled': bool(user.salon.banner_enabled),
         },
         'zamestnanec': {
             'id': user.zamestnanec_id,

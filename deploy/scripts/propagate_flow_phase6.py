@@ -15,7 +15,7 @@ BANNER_TAB_SALON4 = (
 
 BANNER_PANEL = """
         <div class="tab-panel" data-panel="banner">
-          <p class="admin-hint">Krátký pruh nad úvodem webu (akce, dovolená, upozornění). Prázdné datum = bez omezení.</p>
+          <p class="admin-hint">Krátká zpráva pro personál ve FLOW (po přihlášení). Na veřejném webu se nezobrazuje. Prázdné datum = bez omezení.</p>
           <label class="checkbox">
             <input type="checkbox" id="edit-banner-enabled"> Banner zapnutý
           </label>

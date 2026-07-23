@@ -236,6 +236,19 @@ select:focus {
   }
 }
 
+.flow-banner {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(201, 162, 39, 0.16);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  color: var(--gold-soft);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
 .app-panel {
   background: var(--card);
   backdrop-filter: blur(10px);
