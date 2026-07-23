@@ -310,10 +310,16 @@ function applySalonBrand(data) {
   if (data.primary_color) {
     root.style.setProperty('--bg', data.primary_color);
     root.style.setProperty('--surface', data.primary_color);
+  } else {
+    root.style.removeProperty('--bg');
+    root.style.removeProperty('--surface');
   }
   if (data.accent_color) {
     root.style.setProperty('--gold', data.accent_color);
     root.style.setProperty('--accent', data.accent_color);
+  } else {
+    root.style.removeProperty('--gold');
+    root.style.removeProperty('--accent');
   }
 
   let icon = document.querySelector('link[data-salon-favicon]');
@@ -649,6 +655,11 @@ function showEditForm() {
   document.getElementById('edit-phone').value = d.phone;
   document.getElementById('edit-email').value = d.email;
 
+  window.__brandColorsLoaded = {
+    primary: (d.primary_color || '').trim(),
+    accent: (d.accent_color || '').trim(),
+  };
+  // type=color musí mít hodnotu; placeholder se neukládá, pokud DB byla prázdná
   syncColorInputs('primary', d.primary_color || '#080808');
   syncColorInputs('accent', d.accent_color || '#c9a962');
   renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
@@ -1084,8 +1095,18 @@ function collectFormData() {
     address: document.getElementById('edit-address').value,
     phone: document.getElementById('edit-phone').value,
     email: document.getElementById('edit-email').value,
-    primary_color: document.getElementById('edit-primary-color')?.value || '',
-    accent_color: document.getElementById('edit-accent-color')?.value || '',
+    primary_color: (() => {
+      const v = (document.getElementById('edit-primary-color')?.value || '').trim();
+      const loaded = (window.__brandColorsLoaded?.primary || '').trim();
+      if (!loaded && v.toLowerCase() === '#080808') return '';
+      return v;
+    })(),
+    accent_color: (() => {
+      const v = (document.getElementById('edit-accent-color')?.value || '').trim();
+      const loaded = (window.__brandColorsLoaded?.accent || '').trim();
+      if (!loaded && v.toLowerCase() === '#c9a962') return '';
+      return v;
+    })(),
     banner_enabled: !!document.getElementById('edit-banner-enabled')?.checked,
     banner_text: document.getElementById('edit-banner-text')?.value.trim() || '',
     banner_od: document.getElementById('edit-banner-od')?.value || null,
