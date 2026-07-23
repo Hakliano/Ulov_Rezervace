@@ -18,6 +18,7 @@ from rezervace.serializers import (
     dopln_rozvrh_7_dni,
 )
 from rezervace.services.audit import log_audit, log_rezervace_audit
+from rezervace.services.availability import volni_zamestnanci
 from rezervace.services.emails import email_storno
 
 
@@ -40,6 +41,34 @@ def _own_rezervace_or_403(user, rezervace):
     if rezervace.zamestnanec_id != user.zamestnanec_id:
         return Response({'detail': 'Můžete spravovat jen vlastní rezervace.'}, status=403)
     return None
+
+
+def _dostupni_kolegove(salon, rezervace, exclude_zamestnanec_id=None):
+    """Kolegové volní ve stejném termínu (bez majitelky / bez sebe)."""
+    if not rezervace.zacatek or not rezervace.konec:
+        return []
+    datum = timezone.localtime(rezervace.zacatek).date()
+    volni = volni_zamestnanci(
+        salon,
+        datum,
+        rezervace.zacatek,
+        rezervace.konec,
+        exclude_id=rezervace.id,
+    )
+    out = []
+    for z in volni:
+        if exclude_zamestnanec_id and z.id == exclude_zamestnanec_id:
+            continue
+        out.append({'id': z.id, 'jmeno': z.jmeno})
+    return out
+
+
+def _konflikt_payload(rezervace, exclude_zamestnanec_id=None):
+    data = AdminRezervaceSerializer(rezervace).data
+    data['dostupni_kolegove'] = _dostupni_kolegove(
+        rezervace.salon, rezervace, exclude_zamestnanec_id=exclude_zamestnanec_id,
+    )
+    return data
 
 
 def _parse_range(request):
@@ -245,6 +274,59 @@ class FlowRezervaceStornoView(APIView):
         return Response({'ok': True, 'rezervace': po})
 
 
+class FlowRezervacePrevestView(APIView):
+    """Převod vlastní rezervace na volného kolegu (typicky při absenci)."""
+
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, rezervace_id):
+        user = _flow_user(request)
+        rezervace = get_object_or_404(
+            Rezervace.objects.select_related('salon', 'zamestnanec'),
+            pk=rezervace_id,
+            salon_id=user.salon_id,
+        )
+        denied = _own_rezervace_or_403(user, rezervace)
+        if denied:
+            return denied
+        if rezervace.stav not in ('ceka', 'potvrzeno'):
+            return Response({'detail': 'Tuto rezervaci nelze převést.'}, status=400)
+
+        try:
+            cil_id = int(request.data.get('zamestnanec_id'))
+        except (TypeError, ValueError):
+            return Response({'detail': 'Vyberte kolegu.'}, status=400)
+
+        if cil_id == user.zamestnanec_id:
+            return Response({'detail': 'Nelze převést na sebe.'}, status=400)
+
+        kolegove = _dostupni_kolegove(
+            user.salon, rezervace, exclude_zamestnanec_id=user.zamestnanec_id,
+        )
+        if not any(k['id'] == cil_id for k in kolegove):
+            return Response(
+                {'detail': 'Vybraný kolega v tomto termínu není volný.'},
+                status=400,
+            )
+
+        cil = get_object_or_404(
+            Zamestnanec, pk=cil_id, salon_id=user.salon_id, aktivni=True,
+        )
+        pred = AdminRezervaceSerializer(rezervace).data
+        rezervace.zamestnanec = cil
+        rezervace.save(update_fields=['zamestnanec', 'aktualizovano'])
+        po = AdminRezervaceSerializer(rezervace).data
+        _log_flow(
+            user,
+            rezervace,
+            f'převod na {cil.jmeno} (absence)',
+            pred,
+            po,
+        )
+        return Response({'ok': True, 'rezervace': po})
+
+
 class FlowRezervacePlatbaView(APIView):
     authentication_classes = []
     permission_classes = [FlowPermission]
@@ -318,11 +400,15 @@ class FlowAbsenceView(APIView):
             stav__in=('ceka', 'potvrzeno'),
             zacatek__date__gte=od,
             zacatek__date__lte=do,
-        ).prefetch_related('polozky__sluzba').order_by('zacatek')
+        ).select_related('salon', 'zamestnanec').prefetch_related('polozky__sluzba').order_by('zacatek')
+        konflikt_data = [
+            _konflikt_payload(r, exclude_zamestnanec_id=user.zamestnanec_id)
+            for r in konflikty
+        ]
         return Response({
             'absence': ZamestnanecAbsenceSerializer(absence).data,
-            'konfliktni_rezervace': AdminRezervaceSerializer(konflikty, many=True).data,
-            'pocet_konfliktu': konflikty.count(),
+            'konfliktni_rezervace': konflikt_data,
+            'pocet_konfliktu': len(konflikt_data),
         }, status=status.HTTP_201_CREATED)
 
 

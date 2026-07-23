@@ -40,6 +40,11 @@ urlpatterns = [
         name='flow-rezervace-storno',
     ),
     path(
+        'flow/rezervace/<int:rezervace_id>/prevest/',
+        provoz_views.FlowRezervacePrevestView.as_view(),
+        name='flow-rezervace-prevest',
+    ),
+    path(
         'flow/rezervace/<int:rezervace_id>/platba/',
         provoz_views.FlowRezervacePlatbaView.as_view(),
         name='flow-rezervace-platba',

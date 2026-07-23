@@ -811,7 +811,7 @@ function renderAbsenceKonflikt(items, absence = null) {
   }
   box.innerHTML = `
     <h3>Pozor: ${items.length} aktivní rezervace při „${esc(typLabel)}“</h3>
-    <p class="hint">Nové termíny se zablokují kvůli ${esc(duvodText)}, ale tyto už existují. Kontaktujte zákazníka (s omluvou) a případně stornujte — dostane zdvořilý storno e-mail.</p>
+    <p class="hint">Nové termíny se zablokují kvůli ${esc(duvodText)}. U každé rezervace můžete převést na volného kolegu, nebo stornovat s omluvou.</p>
     <div class="list" id="abs-konflikt-list"></div>
   `;
   const list = $('#abs-konflikt-list');
@@ -821,6 +821,23 @@ function renderAbsenceKonflikt(items, absence = null) {
     const kontakt = email
       ? `<p class="kontakt-line">Kontakt: <a href="mailto:${esc(email)}">${esc(email)}</a></p>`
       : `<p class="kontakt-line">Kontakt: <em>bez e-mailu — domluvte se telefonicky / osobně</em></p>`;
+    const kolegove = r.dostupni_kolegove || [];
+    let prevest = '';
+    if (kolegove.length) {
+      const opts = kolegove.map((k) =>
+        `<option value="${k.id}">${esc(k.jmeno)}</option>`
+      ).join('');
+      prevest = `
+        <div class="prevest-row">
+          <select data-abs-kolega="${r.id}" aria-label="Kolega">
+            <option value="">— kolega —</option>
+            ${opts}
+          </select>
+          <button type="button" class="btn tiny" data-abs-prevest="${r.id}">Převést</button>
+        </div>`;
+    } else {
+      prevest = `<p class="hint tiny">Žádný volný kolega v tomto termínu.</p>`;
+    }
     return `<article class="item" data-id="${r.id}">
       <div class="item-top">
         <time>${esc(formatDateTime(r.zacatek))}</time>
@@ -829,11 +846,39 @@ function renderAbsenceKonflikt(items, absence = null) {
       <p class="item-title">${esc(jmeno)}</p>
       <p class="meta">${esc(sluzbyText(r))}</p>
       ${kontakt}
+      ${prevest}
       <div class="actions">
         <button type="button" class="btn tiny danger" data-abs-storno="${r.id}">Stornovat s omluvou</button>
       </div>
     </article>`;
   }).join('');
+
+  list.querySelectorAll('[data-abs-prevest]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = Number(btn.dataset.absPrevest);
+      const sel = list.querySelector(`select[data-abs-kolega="${id}"]`);
+      const kolegaId = Number(sel?.value || 0);
+      if (!kolegaId) {
+        showMsg($('#abs-msg'), 'Vyberte kolegu.', false);
+        return;
+      }
+      const jmeno = sel.options[sel.selectedIndex]?.textContent || 'kolegu';
+      if (!confirm(`Převést rezervaci na ${jmeno}?`)) return;
+      try {
+        await api(`/flow/rezervace/${id}/prevest/`, {
+          method: 'POST',
+          body: JSON.stringify({ zamestnanec_id: kolegaId }),
+        });
+        const left = items.filter((r) => r.id !== id);
+        renderAbsenceKonflikt(left, absence);
+        showMsg($('#abs-msg'), `Rezervace převedena na ${jmeno}.`, true);
+        loadAbsence();
+      } catch (err) {
+        showMsg($('#abs-msg'), err.message, false);
+      }
+    });
+  });
+
   list.querySelectorAll('[data-abs-storno]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const id = Number(btn.dataset.absStorno);
