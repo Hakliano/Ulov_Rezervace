@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Partner hub — ULOV</title>
   <meta name="robots" content="noindex,nofollow">
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <div class="wrap">
@@ -29,9 +29,12 @@
     <section id="view-app" class="hidden">
       <div class="salon-pick card">
         <label>Salon
-          <select id="salon-select"></select>
+          <select id="salon-select">
+            <option value="">— načítám salony… —</option>
+          </select>
         </label>
         <button type="button" id="btn-open-salon" class="btn primary">Otevřít</button>
+        <p id="salon-pick-msg" class="msg" hidden></p>
       </div>
 
       <nav id="tabs" class="tabs hidden" role="tablist">
@@ -48,7 +51,7 @@
 
       <p id="app-msg" class="msg" hidden></p>
 
-      <div id="pane-web" class="pane card">
+      <div id="pane-web" class="pane card hidden">
         <h2>Web – základní</h2>
         <form id="form-web" class="form grid2">
           <label>Název <input id="w-name" required></label>
@@ -153,6 +156,6 @@
       </div>
     </section>
   </div>
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

@@ -71,9 +71,23 @@ async function boot() {
 }
 
 async function loadSalony() {
-  const list = await api('/partner/salony/');
   const sel = $('#salon-select');
-  sel.innerHTML = list.map((s) => `<option value="${s.id}">#${s.id} — ${s.name}</option>`).join('');
+  const msg = $('#salon-pick-msg');
+  setMsg(msg, '', true);
+  sel.innerHTML = '<option value="">— načítám salony… —</option>';
+  try {
+    const list = await api('/partner/salony/');
+    if (!Array.isArray(list) || !list.length) {
+      sel.innerHTML = '<option value="">— žádné salony v DB —</option>';
+      setMsg(msg, 'API nevrátilo žádný salon. Zkontrolujte staging DB / seed.', false);
+      return;
+    }
+    sel.innerHTML = list.map((s) => `<option value="${s.id}">#${s.id} — ${escapeHtml(s.name || '')}</option>`).join('');
+    setMsg(msg, `Načteno salonů: ${list.length}. Vyber a klikni Otevřít.`, true);
+  } catch (err) {
+    sel.innerHTML = '<option value="">— chyba načtení —</option>';
+    setMsg(msg, `Nelze načíst salony: ${err.message}`, false);
+  }
 }
 
 function switchTab(name) {

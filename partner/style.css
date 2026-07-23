@@ -40,6 +40,10 @@ input, textarea, select {
   padding: 0.55rem 0.7rem;
   font: inherit;
 }
+select option {
+  background: #0d1218;
+  color: var(--ink);
+}
 .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem; }
 .btn {
   border: 0;
