@@ -702,6 +702,7 @@ $('#btn-logout')?.addEventListener('click', async () => {
 
 let mailCache = [];
 let mailOpenUid = null;
+let mailFolder = 'inbox'; // inbox | odeslane
 
 function formatMailDate(iso) {
   if (!iso) return '—';
@@ -714,6 +715,14 @@ function formatMailDate(iso) {
   } catch (_) {
     return iso;
   }
+}
+
+function setMailFolder(folder) {
+  mailFolder = folder === 'odeslane' ? 'odeslane' : 'inbox';
+  $$('.mail-folder').forEach((b) => b.classList.toggle('active', b.dataset.folder === mailFolder));
+  const replyBtn = $('#mail-reply');
+  if (replyBtn) replyBtn.classList.toggle('hidden', mailFolder === 'odeslane');
+  loadMailList();
 }
 
 function showMailListView() {
@@ -731,20 +740,42 @@ async function loadMailList() {
   const msg = $('#mail-msg');
   const list = $('#mail-list');
   showMailListView();
-  if (list) list.innerHTML = '<p class="empty">Načítám schránku…</p>';
+  if (list) {
+    list.innerHTML = mailFolder === 'odeslane'
+      ? '<p class="empty">Načítám odeslané…</p>'
+      : '<p class="empty">Načítám schránku…</p>';
+  }
   try {
-    const data = await api('/flow/mail/?limit=40');
+    const path = mailFolder === 'odeslane'
+      ? '/flow/mail/odeslane/?limit=40'
+      : '/flow/mail/?limit=40';
+    const data = await api(path);
     mailCache = data.items || [];
-    $('#mail-mailbox').textContent = data.mailbox
-      ? `Schránka · ${data.mailbox}`
-      : 'Schránka';
+    if (mailFolder === 'odeslane') {
+      $('#mail-mailbox').textContent = 'Odeslané z FLOW';
+    } else {
+      $('#mail-mailbox').textContent = data.mailbox
+        ? `Schránka · ${data.mailbox}`
+        : 'Schránka';
+    }
     if (!mailCache.length) {
-      list.innerHTML = '<p class="empty">Žádné zprávy ve schránce.</p>';
+      list.innerHTML = mailFolder === 'odeslane'
+        ? '<p class="empty">Zatím žádné odeslané z FLOW.</p>'
+        : '<p class="empty">Žádné zprávy ve schránce.</p>';
       showMsg(msg, '', true);
       msg.hidden = true;
       return;
     }
     list.innerHTML = mailCache.map((m) => {
+      if (mailFolder === 'odeslane') {
+        return `<article class="item mail-item" data-id="${m.id}">
+          <div class="item-top">
+            <time>${esc(formatMailDate(m.date))}</time>
+          </div>
+          <h3>${esc(m.subject)}</h3>
+          <p class="meta">Komu: ${esc(m.to)}${m.from_name ? ` · odeslal(a) ${esc(m.from_name)}` : ''}</p>
+        </article>`;
+      }
       const who = m.from_name || m.from_email || '—';
       const unseen = m.unseen ? ' unseen' : '';
       return `<article class="item mail-item${unseen}" data-uid="${m.uid}">
@@ -757,7 +788,10 @@ async function loadMailList() {
       </article>`;
     }).join('');
     list.querySelectorAll('.mail-item').forEach((el) => {
-      el.addEventListener('click', () => openMail(Number(el.dataset.uid)));
+      el.addEventListener('click', () => {
+        if (mailFolder === 'odeslane') openOdeslane(Number(el.dataset.id));
+        else openMail(Number(el.dataset.uid));
+      });
     });
     msg.hidden = true;
   } catch (err) {
@@ -771,6 +805,7 @@ async function openMail(uid) {
   try {
     const data = await api(`/flow/mail/${uid}/`);
     mailOpenUid = uid;
+    $('#mail-reply')?.classList.remove('hidden');
     $('#mail-subject').textContent = data.subject || '(bez předmětu)';
     const who = data.from_name || data.from_email || '—';
     $('#mail-meta').textContent = `${who}${data.from_email && data.from_name ? ` <${data.from_email}>` : ''} · ${formatMailDate(data.date)}`;
@@ -778,6 +813,22 @@ async function openMail(uid) {
     showMailDetailView();
     const item = mailCache.find((m) => m.uid === uid);
     if (item) item.unseen = false;
+    msg.hidden = true;
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
+}
+
+async function openOdeslane(id) {
+  const msg = $('#mail-msg');
+  try {
+    const data = await api(`/flow/mail/odeslane/${id}/`);
+    mailOpenUid = null;
+    $('#mail-reply')?.classList.add('hidden');
+    $('#mail-subject').textContent = data.subject || '(bez předmětu)';
+    $('#mail-meta').textContent = `Komu: ${data.to || '—'} · ${formatMailDate(data.date)}${data.from_name ? ` · ${data.from_name}` : ''}`;
+    $('#mail-body').textContent = data.body || '(prázdná zpráva)';
+    showMailDetailView();
     msg.hidden = true;
   } catch (err) {
     showMsg(msg, err.message, false);
@@ -806,7 +857,7 @@ function quoteForReply(detail) {
 }
 
 async function replyToOpenMail() {
-  if (!mailOpenUid) return;
+  if (!mailOpenUid || mailFolder === 'odeslane') return;
   try {
     const data = await api(`/flow/mail/${mailOpenUid}/`);
     let subj = data.subject || '';
@@ -846,6 +897,9 @@ $$('.tab').forEach((tab) => {
 
 $('#mail-refresh')?.addEventListener('click', () => loadMailList());
 $('#mail-compose')?.addEventListener('click', () => openMailCompose());
+$$('.mail-folder').forEach((btn) => {
+  btn.addEventListener('click', () => setMailFolder(btn.dataset.folder));
+});
 $('#mail-back')?.addEventListener('click', () => {
   showMailListView();
   loadMailList();
@@ -870,7 +924,7 @@ $('#form-mail')?.addEventListener('submit', async (e) => {
     showMsg(msg, 'Odesláno.', true);
     closeMailCompose();
     if ($('#pane-mail') && !$('#pane-mail').classList.contains('hidden')) {
-      loadMailList();
+      setMailFolder('odeslane');
     }
   } catch (err) {
     showMsg(msg, err.message, false);

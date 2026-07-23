@@ -786,6 +786,29 @@ select:focus {
   text-align: left;
 }
 
+.mail-folders {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.mail-folder {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted, #a8a29a);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.mail-folder.active {
+  border-color: var(--gold);
+  color: var(--gold-soft);
+  background: rgba(201, 162, 39, 0.12);
+}
+
 .mail-item {
   cursor: pointer;
 }

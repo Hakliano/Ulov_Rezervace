@@ -2,7 +2,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from flow.auth import get_flow_user_from_request
-from flow.mail_service import MailError, get_imap_config, get_message, list_messages, send_mail_message
+from flow.mail_service import (
+    MailError,
+    get_imap_config,
+    get_message,
+    get_odeslane,
+    list_messages,
+    list_odeslane,
+    send_mail_message,
+)
 from flow.permissions import FlowPermission
 
 
@@ -54,6 +62,27 @@ class FlowMailDetailView(APIView):
             return Response({'detail': 'Načtení zprávy selhalo.'}, status=502)
 
 
+class FlowMailOdeslaneListView(APIView):
+    permission_classes = [FlowPermission]
+
+    def get(self, request):
+        user = _user(request)
+        limit = int(request.query_params.get('limit') or 40)
+        offset = int(request.query_params.get('offset') or 0)
+        return Response(list_odeslane(user.salon, limit=limit, offset=offset))
+
+
+class FlowMailOdeslaneDetailView(APIView):
+    permission_classes = [FlowPermission]
+
+    def get(self, request, pk):
+        user = _user(request)
+        try:
+            return Response(get_odeslane(user.salon, pk))
+        except MailError as exc:
+            return Response({'detail': str(exc)}, status=400)
+
+
 class FlowMailOdeslatView(APIView):
     permission_classes = [FlowPermission]
 
@@ -67,6 +96,7 @@ class FlowMailOdeslatView(APIView):
                 subject=data.get('subject'),
                 body=data.get('body'),
                 reply_uid=data.get('reply_uid') or None,
+                flow_user=user,
             )
             return Response(result)
         except MailError as exc:

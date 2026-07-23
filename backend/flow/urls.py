@@ -61,6 +61,12 @@ urlpatterns = [
     path('flow/rezervace/', provoz_views.FlowRezervaceCreateView.as_view(), name='flow-rezervace-create'),
     path('flow/mail/stav/', mail_views.FlowMailStavView.as_view(), name='flow-mail-stav'),
     path('flow/mail/odeslat/', mail_views.FlowMailOdeslatView.as_view(), name='flow-mail-odeslat'),
+    path('flow/mail/odeslane/', mail_views.FlowMailOdeslaneListView.as_view(), name='flow-mail-odeslane'),
+    path(
+        'flow/mail/odeslane/<int:pk>/',
+        mail_views.FlowMailOdeslaneDetailView.as_view(),
+        name='flow-mail-odeslane-detail',
+    ),
     path('flow/mail/', mail_views.FlowMailListView.as_view(), name='flow-mail-list'),
     path('flow/mail/<int:uid>/', mail_views.FlowMailDetailView.as_view(), name='flow-mail-detail'),
 ]

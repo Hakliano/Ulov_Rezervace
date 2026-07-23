@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -150,6 +150,10 @@
             <p class="week-label" id="mail-mailbox">Schránka</p>
             <button type="button" class="btn ghost sm" id="mail-refresh">Obnovit</button>
             <button type="button" class="btn primary sm" id="mail-compose">Nový</button>
+          </div>
+          <div class="mail-folders" role="tablist">
+            <button type="button" class="mail-folder active" data-folder="inbox" id="mail-folder-inbox">Příchozí</button>
+            <button type="button" class="mail-folder" data-folder="odeslane" id="mail-folder-odeslane">Odeslané</button>
           </div>
           <p id="mail-msg" class="msg" hidden></p>
           <div id="mail-list" class="list mail-list"></div>
@@ -325,6 +329,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

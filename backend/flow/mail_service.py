@@ -234,7 +234,7 @@ def get_message(salon, uid, mark_seen=True):
         return summary
 
 
-def send_mail_message(salon, *, to, subject, body, reply_uid=None):
+def send_mail_message(salon, *, to, subject, body, reply_uid=None, flow_user=None):
     cfg = get_imap_config(salon)
     smtp = get_email_config(salon)
     if not smtp['smtp_ready']:
@@ -263,9 +263,76 @@ def send_mail_message(salon, *, to, subject, body, reply_uid=None):
     ok = odeslat_volny_email(salon, to, subject, body, headers=headers or None)
     if not ok:
         raise MailError('Odeslání selhalo.')
+
+    # Lokální kopie pro kontrolu v FLOW (bez IMAP Sent / Forpsi)
+    from flow.models import FlowMailOdeslano
+
+    telo = body if len(body) <= BODY_MAX_CHARS else body[:BODY_MAX_CHARS] + '\n\n… (zkráceno)'
+    record = FlowMailOdeslano.objects.create(
+        salon=salon,
+        odeslal=flow_user,
+        prijemce=to[:254],
+        predmet=subject[:300],
+        telo=telo,
+    )
     return {
         'ok': True,
         'to': to,
         'subject': subject,
         'mailbox': cfg['mailbox'],
+        'odeslano_id': record.id,
+    }
+
+
+def list_odeslane(salon, limit=LIST_LIMIT_DEFAULT, offset=0):
+    from flow.models import FlowMailOdeslano
+
+    limit = max(1, min(int(limit or LIST_LIMIT_DEFAULT), LIST_LIMIT_MAX))
+    offset = max(0, int(offset or 0))
+    qs = FlowMailOdeslano.objects.filter(salon=salon).select_related('odeslal', 'odeslal__zamestnanec')
+    total = qs.count()
+    items = []
+    for row in qs[offset: offset + limit]:
+        kdo = ''
+        if row.odeslal and row.odeslal.zamestnanec_id:
+            kdo = row.odeslal.zamestnanec.jmeno
+        items.append({
+            'id': row.id,
+            'to': row.prijemce,
+            'subject': row.predmet,
+            'date': row.vytvoreno.isoformat(),
+            'from_name': kdo or 'FLOW',
+            'unseen': False,
+        })
+    return {
+        'ready': True,
+        'folder': 'odeslane',
+        'total': total,
+        'limit': limit,
+        'offset': offset,
+        'items': items,
+    }
+
+
+def get_odeslane(salon, pk):
+    from flow.models import FlowMailOdeslano
+
+    try:
+        row = FlowMailOdeslano.objects.select_related('odeslal', 'odeslal__zamestnanec').get(
+            salon=salon, pk=pk
+        )
+    except FlowMailOdeslano.DoesNotExist as exc:
+        raise MailError('Zpráva nenalezena.') from exc
+    kdo = ''
+    if row.odeslal and row.odeslal.zamestnanec_id:
+        kdo = row.odeslal.zamestnanec.jmeno
+    return {
+        'id': row.id,
+        'to': row.prijemce,
+        'subject': row.predmet,
+        'body': row.telo,
+        'date': row.vytvoreno.isoformat(),
+        'from_name': kdo or 'FLOW',
+        'from_email': '',
+        'folder': 'odeslane',
     }

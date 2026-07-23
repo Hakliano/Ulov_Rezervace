@@ -58,3 +58,28 @@ class FlowSession(models.Model):
 
     def je_platna(self):
         return self.user.aktivni and timezone.now() < self.expirace
+
+
+class FlowMailOdeslano(models.Model):
+    """Lokální záznam e-mailů odeslaných z FLOW (kontrola bez Forpsi / IMAP Sent)."""
+
+    salon = models.ForeignKey(Salon, related_name='flow_mail_odeslane', on_delete=models.CASCADE)
+    odeslal = models.ForeignKey(
+        FlowUser,
+        related_name='odeslane_maily',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    prijemce = models.EmailField('příjemce')
+    predmet = models.CharField('předmět', max_length=300)
+    telo = models.TextField('text')
+    vytvoreno = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'FLOW odeslaný e-mail'
+        verbose_name_plural = 'FLOW odeslané e-maily'
+        ordering = ['-vytvoreno']
+
+    def __str__(self):
+        return f'{self.predmet} → {self.prijemce}'
