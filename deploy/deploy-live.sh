@@ -63,6 +63,12 @@ if [ -d flow ]; then
   rsync -a flow/ www/flow/
   echo "synced flow"
 fi
+if [ -d partner ]; then
+  bash deploy/pre-deploy-check.sh partner || true
+  mkdir -p www/partner
+  rsync -a partner/ www/partner/
+  echo "synced partner"
+fi
 
 echo "### 5) API / služby"
 docker compose up -d --build

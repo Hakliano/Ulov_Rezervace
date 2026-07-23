@@ -177,6 +177,7 @@
           <button type="button" class="btn btn-secondary btn-sm" data-admin="statistiky">Statistiky</button>
           <button type="button" class="btn btn-secondary btn-sm" data-admin="noshow">NO-show archiv</button>
           <button type="button" class="btn btn-secondary btn-sm" data-admin="nastaveni">Nastavení</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-admin="emaily">E-maily</button>
           <button type="button" class="btn btn-secondary btn-sm" data-admin="audit">Audit log</button>
           <span id="admin-actor-badge" class="admin-actor-badge"></span>
           <button type="button" id="btn-staff-logout" class="btn btn-secondary btn-sm">Odhlásit</button>
@@ -380,41 +381,50 @@
               </div>
             </section>
 
+            <footer class="settings-form-footer">
+              <p class="hint">Šablony e-mailů najdete v záložce <strong>E-maily</strong>. Odesílatele nastavte v administraci webu (⚙ → E-mail).</p>
+              <button type="submit" class="btn btn-primary">Uložit nastavení</button>
+            </footer>
+          </form>
+        </div>
+        <div id="admin-emaily" class="admin-section hidden">
+          <form id="form-emaily" class="settings-stack">
             <section class="settings-card notif-section">
               <div class="settings-card-head">
-                <h3>E-mailové notifikace</h3>
-                <p class="settings-card-desc">Můžete nastavit až <strong>4 různé e-maily</strong> — připomínku, poděkování/recenzi, NO-show a žádost o platbu s QR kódem.</p>
+                <h3>E-mailové šablony</h3>
+                <p class="settings-card-desc">Připomínka, poděkování, NO-show, QR platba/záloha, storno, <strong>potvrzení rezervace</strong> a <strong>záloha přijata</strong>.</p>
               </div>
               <div class="settings-card-body">
                 <div class="settings-subcard notif-timing-hint">
                   <p><strong>Kdy se e-mail odešle?</strong></p>
                   <ul>
                     <li><strong>+24</strong> = 24 hodin <em>před</em> začátkem rezervace (připomínka)</li>
-                    <li><strong>+2</strong> = 2 hodiny <em>před</em> termínem (krátká připomínka)</li>
                     <li><strong>-2</strong> = 2 hodiny <em>po skončení</em> služby (poděkování, recenze…)</li>
-                    <li><strong>Notifikace 3</strong> = jen ručně u rezervace (NO-show) — bez automatického času</li>
-                    <li><strong>Notifikace 4</strong> = žádost o platbu s QR kódem — ručně tlačítkem u rezervace</li>
+                    <li><strong>NO-show / QR platba / storno / záloha OK</strong> = ručně z FLOW nebo adminu</li>
+                    <li><strong>Potvrzení</strong> = automaticky při potvrzení rezervace (včetně bloku o možné záloze u rizikových služeb)</li>
                   </ul>
                 </div>
                 <div class="settings-subcard notif-tag-section">
-                  <h5>Jak psát text e-mailu — dynamické tagy</h5>
-                  <p class="hint">Do textu vložte „tag“ (slovo v dvojitých složených závorkách). Při odeslání se automaticky nahradí údaji zákazníka a rezervace. Text kolem tagů si složíte libovolně sami.</p>
-                  <p class="hint" id="notif-hint"></p>
-                  <div id="notif-tag-guide" class="notif-tag-guide"></div>
+                  <h5>Dynamická pole</h5>
+                  <button type="button" id="btn-toggle-tag-help" class="btn btn-secondary btn-sm">Ukázat nápovědu dynamických polí</button>
+                  <div id="notif-tag-help-panel" class="hidden" style="margin-top:0.75rem">
+                    <p class="hint">Do textu vložte tag ve dvojitých složených závorkách. Při odeslání se nahradí údaji rezervace.</p>
+                    <p class="hint" id="notif-hint"></p>
+                    <div id="notif-tag-guide" class="notif-tag-guide"></div>
+                  </div>
                 </div>
                 <div class="settings-subcard">
                   <label class="full notif-recenze-url">Odkaz na recenze (Google, Facebook…)
                     <input type="url" id="nast-recenze-url" placeholder="https://g.page/vas-salon/review">
                   </label>
-                  <p class="hint">Do textu druhé notifikace vložte tag <code>{{ recenze_url }}</code> — zákazník uvidí tento odkaz.</p>
+                  <p class="hint">Do textu druhé notifikace vložte tag <code>{{ recenze_url }}</code>.</p>
                 </div>
                 <div id="notifikace-list" class="notifikace-list"></div>
               </div>
             </section>
-
             <footer class="settings-form-footer">
-              <p class="hint">E-mail odesílatele nastavte v administraci webu (⚙ → E-mail).</p>
-              <button type="submit" class="btn btn-primary">Uložit nastavení</button>
+              <button type="submit" class="btn btn-primary">Uložit e-maily</button>
+              <p id="emaily-msg" class="status-msg"></p>
             </footer>
           </form>
         </div>

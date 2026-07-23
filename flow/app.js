@@ -26,6 +26,7 @@ let selectedDayYmd = null;
 let rezById = new Map();
 let noshowTargetId = null;
 let platbaTarget = null;
+let platbaIsZaloha = false;
 let sluzbyCache = null;
 let selectedCas = null;
 
@@ -224,20 +225,27 @@ function renderRezervaceList(container, items, { readonly = false, emptyText = '
     return;
   }
   container.innerHTML = items.map((r) => {
+    const badges = [];
+    if (r.je_rizikova && !r.zaloha_ok_at) badges.push('<span class="badge warn">riziková</span>');
+    if (r.zaloha_vyzadana_at && !r.zaloha_ok_at) badges.push('<span class="badge warn">čeká záloha</span>');
+    if (r.zaloha_ok_at) badges.push('<span class="badge ok">záloha OK</span>');
     const actions = (!readonly && canAct(r))
       ? `<div class="actions">
           <button type="button" class="btn tiny primary" data-act="done" data-id="${r.id}">Proběhla</button>
           <button type="button" class="btn tiny danger" data-act="noshow" data-id="${r.id}">NO-show</button>
           <button type="button" class="btn tiny ghost" data-act="platba" data-id="${r.id}">Platba QR</button>
+          ${r.je_rizikova || r.zaloha_vyzadana_at ? `<button type="button" class="btn tiny ghost" data-act="zaloha" data-id="${r.id}">Požádat o zálohu</button>` : ''}
+          ${r.zaloha_vyzadana_at && !r.zaloha_ok_at ? `<button type="button" class="btn tiny primary" data-act="zaloha-ok" data-id="${r.id}">Záloha OK</button>` : ''}
           <button type="button" class="btn tiny ghost" data-act="storno" data-id="${r.id}">Storno</button>
         </div>`
       : (readonly
         ? `<p class="meta">u ${esc(r.zamestnanec_jmeno || '—')}</p>`
         : '');
-    return `<article class="item stav-${esc(r.stav)}" data-id="${r.id}">
+    return `<article class="item stav-${esc(r.stav)}${r.je_rizikova && !r.zaloha_ok_at ? ' risky' : ''}" data-id="${r.id}">
       <div class="item-top">
         <time>${esc(formatDateTime(r.zacatek))}</time>
         <span class="badge">${esc(STAV_LABEL[r.stav] || r.stav)}</span>
+        ${badges.join(' ')}
       </div>
       <p class="item-title">${esc(r.kontaktni_jmeno || r.jmeno_host || 'Zákazník')}</p>
       <p class="meta">${esc(sluzbyText(r))}</p>
@@ -295,6 +303,7 @@ async function loadWeekList(overview) {
     });
     listEl.appendChild(holder);
     if (!overview) bindCalActions(holder, () => loadWeekList(false));
+    if (!overview) refreshRiskyInbox();
   } catch (err) {
     listEl.innerHTML = '';
     showMsg(msgEl, err.message, false);
@@ -315,17 +324,37 @@ function bindCalActions(root, onDone) {
           showMsg($('#cal-msg'), err.message, false);
         }
       } else if (act === 'storno') {
+        const r = findRezervace(id);
+        let duvod = '';
+        if (r?.zaloha_vyzadana_at && !r?.zaloha_ok_at) {
+          duvod = prompt('Důvod storna:', 'Nezaplacená zálohová platba') || 'Nezaplacená zálohová platba';
+        }
         if (!confirm('Stornovat rezervaci? Zákazník dostane e-mail.')) return;
         try {
-          await api(`/flow/rezervace/${id}/storno/`, { method: 'DELETE' });
+          await api(`/flow/rezervace/${id}/storno/`, {
+            method: 'DELETE',
+            body: JSON.stringify({ duvod }),
+          });
           onDone?.();
+          refreshRiskyInbox();
         } catch (err) {
           showMsg($('#cal-msg'), err.message, false);
         }
       } else if (act === 'noshow') {
         openNoshow(id);
       } else if (act === 'platba') {
-        openPlatba(id);
+        openPlatba(id, false);
+      } else if (act === 'zaloha') {
+        openPlatba(id, true);
+      } else if (act === 'zaloha-ok') {
+        if (!confirm('Potvrdit přijetí zálohy? Zákazník dostane e-mail.')) return;
+        try {
+          await api(`/flow/rezervace/${id}/zaloha-ok/`, { method: 'POST', body: '{}' });
+          onDone?.();
+          refreshRiskyInbox();
+        } catch (err) {
+          showMsg($('#cal-msg'), err.message, false);
+        }
       }
     });
   });
@@ -512,13 +541,16 @@ function closeNoshow() {
   $('#noshow-modal').classList.add('hidden');
 }
 
-async function openPlatba(id) {
+async function openPlatba(id, asZaloha = false) {
   const r = findRezervace(id);
   platbaTarget = r || { id };
+  platbaIsZaloha = !!asZaloha;
+  const title = $('#platba-modal h2');
+  if (title) title.textContent = asZaloha ? 'Žádost o zálohu' : 'Žádost o platbu';
   $('#platba-info').textContent = r
-    ? `${r.kontaktni_jmeno || 'Zákazník'} — ${formatDateTime(r.zacatek)}`
+    ? `${r.kontaktni_jmeno || 'Zákazník'} — ${formatDateTime(r.zacatek)}${asZaloha ? ' · záloha (lhůtu uveďte v e-mailové šabloně)' : ''}`
     : `Rezervace #${id}`;
-  $('#platba-castka').value = '';
+  $('#platba-castka').value = r?.zaloha_castka || '';
   $('#platba-ucet').value = r?.zamestnanec_cislo_uctu || '';
   $('#platba-vs').value = String(id);
   $('#platba-msg').hidden = true;
@@ -527,7 +559,35 @@ async function openPlatba(id) {
 
 function closePlatba() {
   platbaTarget = null;
+  platbaIsZaloha = false;
   $('#platba-modal').classList.add('hidden');
+}
+
+function refreshRiskyInbox() {
+  const box = $('#risky-inbox');
+  if (!box) return;
+  const risky = [...rezById.values()].filter((r) => (
+    r.je_rizikova
+    && !r.zaloha_ok_at
+    && ['ceka', 'potvrzeno'].includes(r.stav)
+    && new Date(r.zacatek) >= new Date(Date.now() - 86400000)
+  ));
+  if (!risky.length) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  box.classList.remove('hidden');
+  box.innerHTML = `<h3 class="list-h">Rizikové / ke kontrole (${risky.length})</h3>
+    <p class="hint tiny">Služby označené jako rizikové. Můžete požádat o zálohu, nebo nechat rezervaci běžet.</p>
+    <div id="risky-list" class="list"></div>`;
+  const holder = document.createElement('div');
+  renderRezervaceList(holder, risky, { emptyText: '' });
+  box.querySelector('#risky-list').appendChild(holder);
+  bindCalActions(holder, () => {
+    loadWeekList(false);
+    refreshRiskyInbox();
+  });
 }
 
 async function loadAbsence() {
@@ -1182,12 +1242,15 @@ $('#form-platba')?.addEventListener('submit', async (e) => {
         castka: $('#platba-castka').value.trim(),
         ucet: $('#platba-ucet').value.trim(),
         variabilni_symbol: $('#platba-vs').value.trim(),
+        zaloha: platbaIsZaloha,
       }),
     });
     closePlatba();
     $('#platba-qr-info').textContent = `${data.castka} Kč · účet ${data.ucet} · VS ${data.variabilni_symbol}`;
     $('#platba-qr-image').src = `data:image/png;base64,${data.qr_png_base64}`;
     $('#platba-qr-modal').classList.remove('hidden');
+    loadWeekList(false);
+    refreshRiskyInbox();
   } catch (err) {
     showMsg(msg, err.message, false);
   }

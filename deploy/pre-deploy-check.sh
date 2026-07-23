@@ -23,7 +23,7 @@ for d in "$@"; do
   missing=()
   [ -f "$d/index.html" ] || missing+=("index.html")
   # u root presentace stačí index; u salon/demo chceme i CSS/JS pokud jde o veřejný web
-  if [[ "$d" == salon* ]] || [[ "$d" == zdravi-* ]] || [[ "$d" == remesla-* ]] || [[ "$d" == provoz-* ]]; then
+  if [[ "$d" == salon* ]] || [[ "$d" == zdravi-* ]] || [[ "$d" == remesla-* ]] || [[ "$d" == provoz-* ]] || [[ "$d" == flow ]] || [[ "$d" == partner ]]; then
     [ -f "$d/style.css" ] || missing+=("style.css")
     [ -f "$d/app.js" ] || missing+=("app.js")
   fi

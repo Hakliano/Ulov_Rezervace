@@ -36,6 +36,11 @@ class CenikPolozka(models.Model):
     delka_minut = models.PositiveIntegerField('délka služby (min)', default=30)
     rezerva_minut = models.PositiveIntegerField('časová rezerva po službě (min)', default=0)
     aktivni = models.BooleanField('aktivní pro rezervace', default=True)
+    rizikovy = models.BooleanField(
+        'rizikový produkt (možná záloha)',
+        default=False,
+        help_text='Upozorní personál ve FLOW; do potvrzení se doplní text o možné záloze.',
+    )
 
     class Meta:
         verbose_name = 'položka ceníku'

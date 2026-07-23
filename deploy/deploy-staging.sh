@@ -99,6 +99,11 @@ if [ -d flow ]; then
   mkdir -p www-staging/flow
   rsync -a flow/ www-staging/flow/
 fi
+if [ -d partner ]; then
+  bash deploy/pre-deploy-check.sh partner || true
+  mkdir -p www-staging/partner
+  rsync -a partner/ www-staging/partner/
+fi
 
 # Frontendy musí volat staging API + dema pod staging hostem
 find www-staging -type f \( -name '*.js' -o -name '*.html' \) -print0 \

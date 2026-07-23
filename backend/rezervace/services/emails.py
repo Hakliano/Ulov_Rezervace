@@ -290,21 +290,43 @@ def email_potvrzeni_sync(rezervace):
     if not ma_kontaktni_email(rezervace):
         return False
     salon = rezervace.salon
-    sluzby = ', '.join(p.sluzba.nazev for p in rezervace.polozky.all())
-    storno_url = _storno_url(rezervace)
-    rezervace_url = _rezervace_web_url(salon)
+    predmet = f'Potvrzení rezervace – {salon.name}'
+    zprava = None
 
-    zprava = render_to_string('rezervace/emails/potvrzeni.txt', {
-        'rezervace': rezervace,
-        'salon': salon,
-        'sluzby': sluzby,
-        'storno_url': storno_url,
-        'rezervace_url': rezervace_url,
-    })
+    try:
+        from rezervace.notifikace_defaults import (
+            MANUAL_TYP_POTVRZENI,
+            get_manual_notifikace,
+            rezervace_je_rizikova,
+        )
+        from rezervace.services.notifikace_email import render_sablonu
+
+        notif = get_manual_notifikace(salon.rezervacni_nastaveni.notifikace, MANUAL_TYP_POTVRZENI)
+        if notif and notif.get('aktivni', True):
+            extra = {'rizikova': rezervace_je_rizikova(rezervace)}
+            predmet = render_sablonu(notif.get('predmet') or predmet, rezervace, extra)
+            zprava = render_sablonu(notif.get('text') or '', rezervace, extra)
+    except Exception:
+        zprava = None
+
+    if not zprava:
+        sluzby = ', '.join(p.sluzba.nazev for p in rezervace.polozky.all())
+        storno_url = _storno_url(rezervace)
+        rezervace_url = _rezervace_web_url(salon)
+        from rezervace.notifikace_defaults import rezervace_je_rizikova
+        zprava = render_to_string('rezervace/emails/potvrzeni.txt', {
+            'rezervace': rezervace,
+            'salon': salon,
+            'sluzby': sluzby,
+            'storno_url': storno_url,
+            'rezervace_url': rezervace_url,
+            'rizikova': rezervace_je_rizikova(rezervace),
+        })
+
     return _odeslat_pro_salon(
         salon,
         rezervace.kontaktni_email,
-        f'Potvrzení rezervace – {salon.name}',
+        predmet,
         zprava,
     )
 

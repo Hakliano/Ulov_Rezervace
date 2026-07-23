@@ -377,6 +377,7 @@ class AdminRezervaceSerializer(serializers.ModelSerializer):
     kontaktni_jmeno = serializers.CharField(read_only=True)
     email_host = serializers.SerializerMethodField()
     anonymizovano = serializers.SerializerMethodField()
+    je_rizikova = serializers.SerializerMethodField()
 
     class Meta:
         model = Rezervace
@@ -386,6 +387,7 @@ class AdminRezervaceSerializer(serializers.ModelSerializer):
             'poznamka_zakaznika', 'poznamka_interni',
             'typ_vytvoreni', 'polozky', 'skutecna_delka_minut', 'dokonceno_at',
             'thank_you_sent_at', 'anonymized_at', 'deleted_at', 'anonymizovano',
+            'je_rizikova', 'zaloha_vyzadana_at', 'zaloha_ok_at', 'zaloha_castka',
         ]
 
     def get_anonymizovano(self, obj):
@@ -397,6 +399,9 @@ class AdminRezervaceSerializer(serializers.ModelSerializer):
     def get_email_host(self, obj):
         return '' if obj.anonymized_at else obj.email_host
 
+    def get_je_rizikova(self, obj):
+        from rezervace.notifikace_defaults import rezervace_je_rizikova
+        return rezervace_je_rizikova(obj)
 
 class NoShowZaznamSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()

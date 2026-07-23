@@ -732,11 +732,16 @@ async function deleteImage(imageId) {
 
 function cenikEditRow(item) {
   const url = item.obrazek || '';
+  const riz = item.rizikovy ? 'checked' : '';
   return `<div class="edit-block cenik-edit-item" data-id="${item.id || ''}" data-obrazek="${attrEsc(url)}">
     <div class="edit-row">
       <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Služba">
       <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kč">
     </div>
+    <label class="checkbox" style="margin:0.4rem 0;display:flex;gap:0.4rem;align-items:center;font-size:0.85rem">
+      <input type="checkbox" class="cenik-rizikovy" ${riz}>
+      Rizikový produkt (možná záloha — upozorní FLOW)
+    </label>
     <div class="cenik-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obrázku</span>'}</div>
     <div class="cenik-img-actions">
       <label class="btn btn-secondary btn-sm btn-upload">Nahrát obrázek<input type="file" class="upload-cenik" accept="image/*" hidden></label>
@@ -908,6 +913,7 @@ function collectFormData() {
     const item = {
       nazev: el.querySelector('.cenik-nazev').value,
       cena: parseInt(el.querySelector('.cenik-cena').value, 10) || 0,
+      rizikovy: !!el.querySelector('.cenik-rizikovy')?.checked,
       poradi: i,
     };
     if (id) item.id = parseInt(id, 10);

@@ -4,11 +4,13 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-MAX_NOTIFIKACE = 5
+MAX_NOTIFIKACE = 7
 MANUAL_OFFSET = 'manual'
 MANUAL_TYP_NOSHOW = 'noshow'
 MANUAL_TYP_PLATBA = 'platba'
 MANUAL_TYP_STORNO = 'storno'
+MANUAL_TYP_POTVRZENI = 'potvrzeni'
+MANUAL_TYP_ZALOHA_OK = 'zaloha_ok'
 
 DEFAULT_PREDMET_PRED = 'Připomínka rezervace – {{ salon.name }}'
 DEFAULT_PREDMET_PO = 'Děkujeme za návštěvu – {{ salon.name }}'
@@ -16,6 +18,8 @@ DEFAULT_PREDMET_RECENZE = 'Jak se vám u nás líbilo? – {{ salon.name }}'
 DEFAULT_PREDMET_NO_SHOW = 'Neuskutečněná rezervace – {{ salon.name }}'
 DEFAULT_PREDMET_PLATBA = 'Žádost o úhradu – {{ salon.name }}'
 DEFAULT_PREDMET_STORNO = 'Omlouváme se – zrušení rezervace ({{ salon.name }})'
+DEFAULT_PREDMET_POTVRZENI = 'Potvrzení rezervace – {{ salon.name }}'
+DEFAULT_PREDMET_ZALOHA_OK = 'Záloha přijata – rezervace potvrzena ({{ salon.name }})'
 
 DEFAULT_TEXT_PRED = """Dobrý den {{ jmeno }},
 
@@ -96,6 +100,47 @@ Děkujeme za pochopení.
 S pozdravem
 {{ salon.name }}"""
 
+DEFAULT_TEXT_POTVRZENI = """Dobrý den {{ jmeno }},
+
+vaše rezervace v salonu {{ salon.name }} je potvrzena.
+
+Termín: {{ termin }}
+Služby: {{ sluzby }}
+{% if zamestnanec %}Pracovník: {{ zamestnanec }}{% endif %}
+
+Adresa: {{ adresa }}
+Telefon: {{ telefon }}
+
+{% if rizikova %}
+━━━━━━━━━━━━━━━━━━━━━━━━
+DŮLEŽITÉ — možná záloha
+Vaše rezervace je na službu, u které obsluha často vyžaduje zálohovou platbu.
+Prosím vyčkejte, zda vám obsluha vypíše zálohovou platbu (e-mail s QR kódem).
+Pokud zálohu nevyžaduje, je vše v pořádku a tato rezervace platí.
+Pokud zálohu vyžádá, uhradíte ji podle pokynů v daném e-mailu (typicky nejpozději několik hodin před službou).
+Dotazy řešte telefonicky: {{ telefon }}
+━━━━━━━━━━━━━━━━━━━━━━━━
+{% endif %}
+
+Zrušení rezervace: {{ storno_url }}
+
+Těšíme se na vás!
+{{ salon.name }}"""
+
+DEFAULT_TEXT_ZALOHA_OK = """Dobrý den {{ jmeno }},
+
+děkujeme — zálohovou platbu jsme zaregistrovali.
+
+Vaše rezervace v salonu {{ salon.name }} zůstává potvrzena.
+
+Termín: {{ termin }}
+Služby: {{ sluzby }}
+{% if zamestnanec %}Pracovník: {{ zamestnanec }}{% endif %}
+{% if castka %}Přijatá záloha: {{ castka }} Kč{% endif %}
+
+Těšíme se na vaši návštěvu!
+{{ salon.name }}"""
+
 NOTIFIKACE_TAGY = [
     {'tag': '{{ jmeno }}', 'popis': 'Jméno zákazníka', 'priklad': 'Petra Nováková'},
     {'tag': '{{ salon.name }}', 'popis': 'Název salonu', 'priklad': 'Salon Elegance'},
@@ -108,11 +153,12 @@ NOTIFIKACE_TAGY = [
     {'tag': '{{ telefon }}', 'popis': 'Telefon salonu', 'priklad': '+420 123 456 789'},
     {'tag': '{{ storno_url }}', 'popis': 'Odkaz pro zrušení rezervace', 'priklad': 'https://…/rezervace.html?storno=…'},
     {'tag': '{{ recenze_url }}', 'popis': 'Odkaz na recenze (nastavíte v Nastavení)', 'priklad': 'https://g.page/…/review'},
-    {'tag': '{{ castka }}', 'popis': 'Částka k úhradě (platba)', 'priklad': '850'},
+    {'tag': '{{ castka }}', 'popis': 'Částka k úhradě (platba / záloha)', 'priklad': '850'},
     {'tag': '{{ ucet }}', 'popis': 'Číslo účtu (platba)', 'priklad': '123456789/0100'},
     {'tag': '{{ variabilni_symbol }}', 'popis': 'Variabilní symbol (platba)', 'priklad': '20260705'},
     {'tag': '{{ kdo }}', 'popis': 'Kdo rezervaci zrušil (salon / zákazník)', 'priklad': 'salon'},
-    {'tag': '{{ duvod }}', 'popis': 'Důvod storna (např. dovolená / nemoc / technické problémy)', 'priklad': 'Dovolená'},
+    {'tag': '{{ duvod }}', 'popis': 'Důvod storna (např. dovolená / nezaplacená záloha)', 'priklad': 'Nezaplacená záloha'},
+    {'tag': '{% if rizikova %}…{% endif %}', 'popis': 'Blok jen u rizikové služby (záloha možná)', 'priklad': 'viz výchozí potvrzení'},
 ]
 
 PLACEHOLDER_HINT = (
@@ -137,6 +183,16 @@ VychoZI_NOTIFIKACE = [
         'manual_typ': MANUAL_TYP_STORNO,
         'predmet': DEFAULT_PREDMET_STORNO, 'text': DEFAULT_TEXT_STORNO,
     },
+    {
+        'offset': MANUAL_OFFSET, 'aktivni': True, 'manual': True,
+        'manual_typ': MANUAL_TYP_POTVRZENI,
+        'predmet': DEFAULT_PREDMET_POTVRZENI, 'text': DEFAULT_TEXT_POTVRZENI,
+    },
+    {
+        'offset': MANUAL_OFFSET, 'aktivni': True, 'manual': True,
+        'manual_typ': MANUAL_TYP_ZALOHA_OK,
+        'predmet': DEFAULT_PREDMET_ZALOHA_OK, 'text': DEFAULT_TEXT_ZALOHA_OK,
+    },
 ]
 
 
@@ -151,6 +207,8 @@ def nova_notifikace(offset='+24', aktivni=False, predmet=None, text=None, manual
             MANUAL_TYP_NOSHOW: (DEFAULT_PREDMET_NO_SHOW, DEFAULT_TEXT_NO_SHOW),
             MANUAL_TYP_PLATBA: (DEFAULT_PREDMET_PLATBA, DEFAULT_TEXT_PLATBA),
             MANUAL_TYP_STORNO: (DEFAULT_PREDMET_STORNO, DEFAULT_TEXT_STORNO),
+            MANUAL_TYP_POTVRZENI: (DEFAULT_PREDMET_POTVRZENI, DEFAULT_TEXT_POTVRZENI),
+            MANUAL_TYP_ZALOHA_OK: (DEFAULT_PREDMET_ZALOHA_OK, DEFAULT_TEXT_ZALOHA_OK),
         }
         dp, dt = defaults.get(mt, defaults[MANUAL_TYP_NOSHOW])
         return {
@@ -282,6 +340,8 @@ def _vynut_manualni_sloty(result):
         (2, MANUAL_TYP_NOSHOW, DEFAULT_PREDMET_NO_SHOW),
         (3, MANUAL_TYP_PLATBA, DEFAULT_PREDMET_PLATBA),
         (4, MANUAL_TYP_STORNO, DEFAULT_PREDMET_STORNO),
+        (5, MANUAL_TYP_POTVRZENI, DEFAULT_PREDMET_POTVRZENI),
+        (6, MANUAL_TYP_ZALOHA_OK, DEFAULT_PREDMET_ZALOHA_OK),
     ]
     for idx, typ, default_predmet in sloty:
         if len(result) <= idx:
@@ -306,6 +366,16 @@ def _vynut_manualni_sloty(result):
                 n['text'] = vychozi[idx]['text']
             if not n.get('predmet') or n.get('predmet') == DEFAULT_PREDMET_PRED:
                 n['predmet'] = DEFAULT_PREDMET_STORNO
+        if typ == MANUAL_TYP_POTVRZENI and idx < len(vychozi):
+            if not n.get('text') or 'připomínáme vaši rezervaci' in (n.get('text') or ''):
+                n['text'] = vychozi[idx]['text']
+            if not n.get('predmet') or n.get('predmet') == DEFAULT_PREDMET_PRED:
+                n['predmet'] = DEFAULT_PREDMET_POTVRZENI
+        if typ == MANUAL_TYP_ZALOHA_OK and idx < len(vychozi):
+            if not n.get('text') or 'připomínáme vaši rezervaci' in (n.get('text') or ''):
+                n['text'] = vychozi[idx]['text']
+            if not n.get('predmet') or n.get('predmet') == DEFAULT_PREDMET_PRED:
+                n['predmet'] = DEFAULT_PREDMET_ZALOHA_OK
     return result
 
 
@@ -347,6 +417,10 @@ def get_manual_notifikace(notifikace_list, typ=MANUAL_TYP_NOSHOW):
                 mt = MANUAL_TYP_PLATBA
             elif i == 4:
                 mt = MANUAL_TYP_STORNO
+            elif i == 5:
+                mt = MANUAL_TYP_POTVRZENI
+            elif i == 6:
+                mt = MANUAL_TYP_ZALOHA_OK
             else:
                 mt = MANUAL_TYP_NOSHOW
         if mt == typ:
@@ -383,3 +457,11 @@ def muze_odeslat_notifikaci(rezervace, offset_parsed):
     if offset_parsed > 0:
         return rezervace.stav == 'potvrzeno' and rezervace.zacatek > timezone.now()
     return rezervace.stav in ('ceka', 'potvrzeno', 'dokonceno', 'no_show')
+
+
+def rezervace_je_rizikova(rezervace):
+    """True pokud obsahuje aspoň jednu službu s rizikovy=True."""
+    for p in rezervace.polozky.select_related('sluzba').all():
+        if p.sluzba_id and getattr(p.sluzba, 'rizikovy', False):
+            return True
+    return False

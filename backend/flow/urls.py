@@ -49,6 +49,11 @@ urlpatterns = [
         provoz_views.FlowRezervacePlatbaView.as_view(),
         name='flow-rezervace-platba',
     ),
+    path(
+        'flow/rezervace/<int:rezervace_id>/zaloha-ok/',
+        provoz_views.FlowRezervaceZalohaOkView.as_view(),
+        name='flow-rezervace-zaloha-ok',
+    ),
     path('flow/absence/', provoz_views.FlowAbsenceView.as_view(), name='flow-absence'),
     path(
         'flow/absence/<int:absence_id>/',

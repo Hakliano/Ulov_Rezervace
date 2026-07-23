@@ -372,6 +372,28 @@ select:focus {
   white-space: nowrap;
 }
 
+.badge.warn {
+  background: #c45c26;
+  color: #fff;
+}
+
+.badge.ok {
+  background: #2f6b4f;
+  color: #fff;
+}
+
+.item.risky {
+  border-color: rgba(196, 92, 38, 0.55);
+}
+
+.risky-inbox {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(196, 92, 38, 0.45);
+  border-radius: 12px;
+  background: rgba(196, 92, 38, 0.12);
+}
+
 .item.stav-dokonceno .badge,
 .item.stav-no_show .badge,
 .item.stav-salon_storno .badge,

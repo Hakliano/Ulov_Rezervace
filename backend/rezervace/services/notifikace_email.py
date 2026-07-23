@@ -17,6 +17,7 @@ def _kontext_rezervace(rezervace):
         recenze_url = salon.rezervacni_nastaveni.recenze_url or ''
     except Exception:
         pass
+    from rezervace.notifikace_defaults import rezervace_je_rizikova
     return {
         'jmeno': rezervace.kontaktni_jmeno,
         'termin': zacatek.strftime('%d.%m.%Y v %H:%M'),
@@ -30,6 +31,7 @@ def _kontext_rezervace(rezervace):
         'rezervace': rezervace,
         'storno_url': _storno_url(rezervace),
         'recenze_url': recenze_url,
+        'rizikova': rezervace_je_rizikova(rezervace),
     }
 
 

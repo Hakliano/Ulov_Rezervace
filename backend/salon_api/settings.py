@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'salons',
     'rezervace',
     'flow',
+    'partner_hub',
 ]
 
 MIDDLEWARE = [

@@ -26,4 +26,5 @@ urlpatterns = [
     path('api/', include('salons.urls')),
     path('api/', include('rezervace.urls')),
     path('api/', include('flow.urls')),
+    path('api/', include('partner_hub.urls')),
 ]

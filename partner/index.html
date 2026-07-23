@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner hub — ULOV</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <strong>ULOV Partner hub</strong>
+      <span id="who" class="muted"></span>
+      <button type="button" id="btn-logout" class="btn ghost hidden">Odhlásit</button>
+    </header>
+
+    <section id="view-login" class="card">
+      <h1>Přihlášení (Django staff)</h1>
+      <p class="muted">Stejný účet jako Django /admin/. Po přihlášení nastavíte libovolný salon přes stejná API jako majitelka.</p>
+      <form id="form-login" class="form">
+        <label>Uživatel <input id="login-user" autocomplete="username" required></label>
+        <label>Heslo <input id="login-pass" type="password" autocomplete="current-password" required></label>
+        <button type="submit" class="btn primary">Přihlásit</button>
+        <p id="login-msg" class="msg" hidden></p>
+      </form>
+    </section>
+
+    <section id="view-app" class="hidden">
+      <div class="salon-pick card">
+        <label>Salon
+          <select id="salon-select"></select>
+        </label>
+        <button type="button" id="btn-open-salon" class="btn primary">Otevřít</button>
+      </div>
+
+      <nav id="tabs" class="tabs hidden" role="tablist">
+        <button type="button" class="tab active" data-tab="web">Web</button>
+        <button type="button" class="tab" data-tab="banner">Banner</button>
+        <button type="button" class="tab" data-tab="cenik">Ceník</button>
+        <button type="button" class="tab" data-tab="novinky">Novinky</button>
+        <button type="button" class="tab" data-tab="personal">Personál</button>
+        <button type="button" class="tab" data-tab="rezervace">Rezervace</button>
+        <button type="button" class="tab" data-tab="emaily">E-maily</button>
+        <button type="button" class="tab" data-tab="smtp">SMTP / IMAP</button>
+        <button type="button" class="tab" data-tab="odkazy">Odkazy</button>
+      </nav>
+
+      <p id="app-msg" class="msg" hidden></p>
+
+      <div id="pane-web" class="pane card">
+        <h2>Web – základní</h2>
+        <form id="form-web" class="form grid2">
+          <label>Název <input id="w-name" required></label>
+          <label>E-mail <input id="w-email" type="email"></label>
+          <label>Telefon <input id="w-phone"></label>
+          <label>Adresa <input id="w-address"></label>
+          <label class="full">Popis <textarea id="w-desc" rows="3"></textarea></label>
+          <label class="full">Logo URL (jen zobrazení; mazání = prázdné) <input id="w-logo"></label>
+          <label class="full">Favicon URL <input id="w-favicon"></label>
+          <label class="full">Hero URL (jen zobrazení) <input id="w-hero" readonly></label>
+          <button type="submit" class="btn primary">Uložit web</button>
+        </form>
+      </div>
+
+      <div id="pane-banner" class="pane card hidden">
+        <h2>Banner (FLOW)</h2>
+        <form id="form-banner" class="form grid2">
+          <label class="full">Text <input id="b-text" maxlength="300"></label>
+          <label>Od <input id="b-od" type="date"></label>
+          <label>Do <input id="b-do" type="date"></label>
+          <label class="check"><input id="b-on" type="checkbox"> Zapnuto</label>
+          <button type="submit" class="btn primary">Uložit banner</button>
+        </form>
+      </div>
+
+      <div id="pane-cenik" class="pane card hidden">
+        <h2>Ceník</h2>
+        <p class="muted">Včetně tickboxu rizikový produkt (měkká záloha).</p>
+        <div id="cenik-list"></div>
+        <button type="button" id="btn-add-cenik" class="btn ghost">+ Položka</button>
+        <button type="button" id="btn-save-cenik" class="btn primary">Uložit ceník</button>
+      </div>
+
+      <div id="pane-novinky" class="pane card hidden">
+        <h2>Novinky</h2>
+        <div id="novinky-list"></div>
+        <button type="button" id="btn-add-novinka" class="btn ghost">+ Novinka</button>
+        <button type="button" id="btn-save-novinky" class="btn primary">Uložit novinky</button>
+      </div>
+
+      <div id="pane-personal" class="pane card hidden">
+        <h2>Personál</h2>
+        <p class="muted">Přehled + číslo účtu pro QR. Plné FLOW provisioning / hesla v rezervace.html salonu.</p>
+        <div id="staff-list"></div>
+      </div>
+
+      <div id="pane-rezervace" class="pane card hidden">
+        <h2>Rezervace – pravidla</h2>
+        <form id="form-rez" class="form grid2">
+          <label>Interval (min) <input id="r-interval" type="number"></label>
+          <label>Min. předstih (h) <input id="r-min" type="number"></label>
+          <label>Max. předstih (měs.) <input id="r-max" type="number"></label>
+          <label>Storno do (h) <input id="r-storno" type="number"></label>
+          <label>Platnost potvrzení (h) <input id="r-potv" type="number"></label>
+          <label>GDPR verze <input id="r-gdpr"></label>
+          <label class="check"><input id="r-auto" type="checkbox"> Auto potvrzení</label>
+          <button type="submit" class="btn primary">Uložit pravidla</button>
+        </form>
+      </div>
+
+      <div id="pane-emaily" class="pane card hidden">
+        <h2>E-mailové šablony</h2>
+        <p class="muted">Stejná data jako záložka E-maily u majitelky.</p>
+        <label>Recenze URL <input id="e-recenze" type="url"></label>
+        <button type="button" id="btn-toggle-guide" class="btn ghost sm">Ukázat nápovědu dynamických polí</button>
+        <div id="e-tag-guide-wrap" class="hidden">
+          <pre id="e-tag-guide" class="mono muted"></pre>
+        </div>
+        <label class="full">Notifikace (JSON)
+          <textarea id="e-notif" rows="16" class="mono"></textarea>
+        </label>
+        <button type="button" id="btn-save-emaily" class="btn primary">Uložit e-maily</button>
+      </div>
+
+      <div id="pane-smtp" class="pane card hidden">
+        <h2>SMTP / IMAP</h2>
+        <form id="form-smtp" class="form grid2">
+          <label>SMTP host <input id="s-host"></label>
+          <label>SMTP port <input id="s-port" type="number"></label>
+          <label>SMTP user <input id="s-user"></label>
+          <label>SMTP heslo <input id="s-pass" type="password" placeholder="(beze změny = prázdné)"></label>
+          <label>Odesílatel jméno <input id="s-from-name"></label>
+          <label>Odesílatel e-mail <input id="s-from-email" type="email"></label>
+          <label class="full">Web rezervace URL <input id="s-web"></label>
+          <label class="check"><input id="s-ssl" type="checkbox"> SMTP SSL</label>
+          <label>IMAP host <input id="s-imap-host"></label>
+          <label>IMAP port <input id="s-imap-port" type="number"></label>
+          <label class="check"><input id="s-imap-ssl" type="checkbox"> IMAP SSL</label>
+          <label class="check"><input id="s-imap-on" type="checkbox"> IMAP zapnuto</label>
+          <button type="submit" class="btn primary">Uložit SMTP/IMAP</button>
+        </form>
+      </div>
+
+      <div id="pane-odkazy" class="pane card hidden">
+        <h2>Provozní odkazy</h2>
+        <ul class="muted">
+          <li>Web: <a id="link-web" href="#" target="_blank" rel="noopener"></a></li>
+          <li>Rezervace / majitelka: <a id="link-rez" href="#" target="_blank" rel="noopener"></a></li>
+          <li>FLOW: <a id="link-flow" href="#" target="_blank" rel="noopener">FLOW</a></li>
+          <li>Django admin: <a id="link-django" href="#" target="_blank" rel="noopener">/admin/</a></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+  <script src="app.js?v=1"></script>
+</body>
+</html>

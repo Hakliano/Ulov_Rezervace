@@ -343,6 +343,7 @@ class FlowRezervacePlatbaView(APIView):
         castka = request.data.get('castka')
         ucet = (request.data.get('ucet') or request.data.get('cislo_uctu') or '').strip()
         vs = request.data.get('variabilni_symbol') or request.data.get('vs')
+        je_zaloha = bool(request.data.get('zaloha') or request.data.get('is_zaloha'))
         if not castka or not ucet or vs is None or str(vs).strip() == '':
             return Response({'detail': 'Vyplňte částku, číslo účtu a variabilní symbol.'}, status=400)
 
@@ -350,7 +351,7 @@ class FlowRezervacePlatbaView(APIView):
             nastaveni = user.salon.rezervacni_nastaveni
             platba = get_manual_notifikace(nastaveni.notifikace, MANUAL_TYP_PLATBA)
             if not platba:
-                return Response({'detail': 'Chybí nastavení 4. e-mailu (platba).'}, status=400)
+                return Response({'detail': 'Chybí nastavení e-mailu (platba / záloha QR).'}, status=400)
             from rezervace.services.notifikace_email import email_platba_qr
             from rezervace.services.platba_qr import generuj_platbu_qr
             import base64
@@ -362,14 +363,67 @@ class FlowRezervacePlatbaView(APIView):
         except Exception as exc:
             return Response({'detail': f'E-mail se nepodařilo odeslat: {exc}'}, status=502)
 
-        _log_flow(user, rezervace, f'odeslání žádosti o platbu {castka} Kč')
+        if je_zaloha:
+            rezervace.zaloha_vyzadana_at = timezone.now()
+            try:
+                rezervace.zaloha_castka = float(str(castka).replace(',', '.').replace(' ', ''))
+            except (TypeError, ValueError):
+                rezervace.zaloha_castka = None
+            rezervace.save(update_fields=['zaloha_vyzadana_at', 'zaloha_castka', 'aktualizovano'])
+            _log_flow(user, rezervace, f'žádost o zálohu {castka} Kč')
+            msg = 'E-mail s QR zálohou odeslán.'
+        else:
+            _log_flow(user, rezervace, f'odeslání žádosti o platbu {castka} Kč')
+            msg = 'E-mail s QR platbou odeslán.'
+
         return Response({
             'ok': True,
-            'message': 'E-mail s QR platbou odeslán.',
+            'message': msg,
             'qr_png_base64': base64.b64encode(platba_data['qr_png']).decode('ascii'),
             'castka': platba_data['castka_display'],
             'ucet': platba_data['ucet'],
             'variabilni_symbol': platba_data['variabilni_symbol'],
+            'rezervace': AdminRezervaceSerializer(rezervace).data,
+        })
+
+
+class FlowRezervaceZalohaOkView(APIView):
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, rezervace_id):
+        user = _flow_user(request)
+        rezervace = get_object_or_404(Rezervace, pk=rezervace_id, salon_id=user.salon_id)
+        denied = _own_rezervace_or_403(user, rezervace)
+        if denied:
+            return denied
+
+        from rezervace.notifikace_defaults import MANUAL_TYP_ZALOHA_OK, get_manual_notifikace
+        from rezervace.services.notifikace_email import email_notifikace
+
+        rezervace.zaloha_ok_at = timezone.now()
+        if rezervace.stav == 'ceka':
+            rezervace.stav = 'potvrzeno'
+            rezervace.save(update_fields=['zaloha_ok_at', 'stav', 'aktualizovano'])
+        else:
+            rezervace.save(update_fields=['zaloha_ok_at', 'aktualizovano'])
+
+        try:
+            nastaveni = user.salon.rezervacni_nastaveni
+            notif = get_manual_notifikace(nastaveni.notifikace, MANUAL_TYP_ZALOHA_OK)
+            if notif and notif.get('aktivni', True):
+                extra = {}
+                if rezervace.zaloha_castka is not None:
+                    extra['castka'] = str(rezervace.zaloha_castka)
+                email_notifikace(rezervace, notif, extra_ctx=extra)
+        except Exception:
+            pass
+
+        _log_flow(user, rezervace, 'záloha OK – potvrzeno personálem')
+        return Response({
+            'ok': True,
+            'message': 'Záloha potvrzena.',
+            'rezervace': AdminRezervaceSerializer(rezervace).data,
         })
 
 

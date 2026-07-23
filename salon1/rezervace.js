@@ -760,14 +760,16 @@ async function loadNastaveni() {
   renderNotifikace(data.notifikace || [], data.notifikace_tagy, data.notifikace_placeholders);
 }
 
-const MAX_NOTIFIKACE = 5;
+const MAX_NOTIFIKACE = 7;
 
 const NOTIF_POPISY = [
   'Připomínka před termínem (doporučeno +24 h) — odesílá se automaticky',
   'Poděkování po návštěvě a prosba o recenzi (doporučeno -2 h po službě) — automaticky',
-  'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show, bez automatického času',
-  'Žádost o úhradu na účet s QR kódem — pouze ručně u rezervace (tlačítko Požádat o platbu)',
-  'Storno rezervace — odešle se při zrušení rezervace salonem / ve FLOW (ne automaticky v čase)',
+  'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show',
+  'Žádost o úhradu / zálohu s QR — FLOW: Platba QR nebo Požádat o zálohu',
+  'Storno rezervace — při zrušení salonem / ve FLOW',
+  'Potvrzení rezervace — automaticky při potvrzení (včetně textu o možné záloze u rizikových služeb)',
+  'Záloha přijata — odešle se tlačítkem Záloha OK ve FLOW',
 ];
 
 function renderTagGuide(tagy) {
@@ -822,7 +824,9 @@ function renderNotifikace(notifikace, tagy, hint) {
 
 function buildNotifCard(n, i) {
   const isManual = i >= 2 || n.manual || n.offset === 'manual';
-  const manualTyp = n.manual_typ || (i === 4 ? 'storno' : i === 3 ? 'platba' : 'noshow');
+  const manualTyp = n.manual_typ || (
+    i === 6 ? 'zaloha_ok' : i === 5 ? 'potvrzeni' : i === 4 ? 'storno' : i === 3 ? 'platba' : 'noshow'
+  );
   const card = document.createElement('div');
   card.className = 'notif-card';
   if (isManual) card.classList.add('notif-manual');
@@ -845,11 +849,15 @@ function buildNotifCard(n, i) {
     const manualHint = document.createElement('p');
     manualHint.className = 'notif-manual-hint';
     if (manualTyp === 'platba') {
-      manualHint.textContent = 'Tento e-mail se neodesílá automaticky. Personál ho odešle tlačítkem „Požádat o platbu na účet“ u rezervace — v e-mailu bude QR kód pro platbu.';
+      manualHint.textContent = 'Ručně: Platba QR nebo Požádat o zálohu ve FLOW — v e-mailu bude QR kód. U zálohy napište do textu i lhůtu (např. 12 h před službou).';
     } else if (manualTyp === 'storno') {
-      manualHint.textContent = 'Tento e-mail se odešle zákazníkovi při stornu rezervace (admin / FLOW). Tag {{ kdo }} = salon nebo zákazník.';
+      manualHint.textContent = 'Odešle se při stornu (admin / FLOW). Tag {{ kdo }} = salon nebo zákazník; {{ duvod }} = důvod.';
+    } else if (manualTyp === 'potvrzeni') {
+      manualHint.textContent = 'Odešle se automaticky při potvrzení rezervace. Blok {% if rizikova %}…{% endif %} se zobrazí jen u rizikových služeb.';
+    } else if (manualTyp === 'zaloha_ok') {
+      manualHint.textContent = 'Odešle se tlačítkem Záloha OK ve FLOW po kontrole banky.';
     } else {
-      manualHint.textContent = 'Tento e-mail se neodesílá automaticky. Text si připravíte zde, odešle se až po stisknutí NO-show u konkrétní rezervace v kalendáři.';
+      manualHint.textContent = 'Ručně: NO-show u rezervace v kalendáři / FLOW.';
     }
     header.appendChild(manualHint);
   } else {
@@ -1499,6 +1507,7 @@ $$('[data-admin]').forEach(btn => {
     if (btn.dataset.admin === 'statistiky') loadStats();
     if (btn.dataset.admin === 'noshow') loadNoShowArchiv();
     if (btn.dataset.admin === 'nastaveni') loadNastaveni();
+    if (btn.dataset.admin === 'emaily') loadNastaveni();
     if (btn.dataset.admin === 'audit') loadAuditLog();
   });
 });
@@ -1706,21 +1715,50 @@ $('#form-staff-rezervace').addEventListener('submit', async (e) => {
   }
 });
 
+
+$('#btn-toggle-tag-help')?.addEventListener('click', () => {
+  const panel = $('#notif-tag-help-panel');
+  const btn = $('#btn-toggle-tag-help');
+  if (!panel || !btn) return;
+  const open = panel.classList.toggle('hidden') === false;
+  btn.textContent = open ? 'Skrýt nápovědu' : 'Ukázat nápovědu dynamických polí';
+});
+
+$('#form-emaily')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#emaily-msg');
+  try {
+    const current = await api(`/salon/${SALON_ID}/rezervace/admin/nastaveni/`);
+    await api(`/salon/${SALON_ID}/rezervace/admin/nastaveni/`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...current,
+        recenze_url: $('#nast-recenze-url')?.value.trim() || '',
+        notifikace: collectNotifikace(),
+      }),
+    });
+    if (msg) { msg.textContent = 'E-maily uloženy.'; msg.className = 'status-msg success'; }
+    await loadNastaveni();
+  } catch (err) {
+    if (msg) { msg.textContent = err.message; msg.className = 'status-msg error'; }
+  }
+});
+
 $('#form-nastaveni').addEventListener('submit', async (e) => {
   e.preventDefault();
   const storno = $('#nast-storno').value;
   try {
+  const current = await api(`/salon/${SALON_ID}/rezervace/admin/nastaveni/`);
   await api(`/salon/${SALON_ID}/rezervace/admin/nastaveni/`, {
     method: 'PUT',
     body: JSON.stringify({
+      ...current,
       interval_minut: parseInt($('#nast-interval').value, 10),
       min_predstih_hodin: parseInt($('#nast-min-h').value, 10),
       max_predstih_mesicu: parseInt($('#nast-max-m').value, 10),
       storno_do_hodin: storno === '' ? null : parseInt(storno, 10),
       potvrzeni_platnost_hodin: parseInt($('#nast-potvrzeni-h').value, 10) || 24,
       gdpr_zasady_verze: $('#nast-gdpr-verze').value.trim() || '1.0',
-      recenze_url: $('#nast-recenze-url').value.trim(),
-      notifikace: collectNotifikace(),
     }),
   });
   alert('Nastavení uloženo.');

@@ -9,7 +9,10 @@ class CenikPolozkaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CenikPolozka
-        fields = ['id', 'nazev', 'cena', 'obrazek', 'poradi', 'delka_minut', 'rezerva_minut', 'aktivni']
+        fields = [
+            'id', 'nazev', 'cena', 'obrazek', 'poradi', 'delka_minut', 'rezerva_minut',
+            'aktivni', 'rizikovy',
+        ]
         extra_kwargs = {'obrazek': {'required': False, 'allow_blank': True}}
 
 
