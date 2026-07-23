@@ -306,22 +306,6 @@ function applySalonBanner(data) {
 }
 
 function applySalonBrand(data) {
-  const root = document.documentElement;
-  if (data.primary_color) {
-    root.style.setProperty('--bg', data.primary_color);
-    root.style.setProperty('--surface', data.primary_color);
-  } else {
-    root.style.removeProperty('--bg');
-    root.style.removeProperty('--surface');
-  }
-  if (data.accent_color) {
-    root.style.setProperty('--gold', data.accent_color);
-    root.style.setProperty('--accent', data.accent_color);
-  } else {
-    root.style.removeProperty('--gold');
-    root.style.removeProperty('--accent');
-  }
-
   let icon = document.querySelector('link[data-salon-favicon]');
   if (data.favicon_url) {
     if (!icon) {
@@ -353,34 +337,7 @@ function renderBrandPreview(elId, url, emptyText) {
     : `<span class="placeholder">${emptyText}</span>`;
 }
 
-function syncColorInputs(kind, hex) {
-  const colorEl = document.getElementById(`edit-${kind}-color`);
-  const hexEl = document.getElementById(`edit-${kind}-color-hex`);
-  if (!colorEl || !hexEl) return;
-  const value = /^#[0-9A-Fa-f]{6}$/.test(hex || '') ? hex : colorEl.value;
-  colorEl.value = value;
-  hexEl.value = value.toUpperCase();
-}
 
-function wireColorPair(kind) {
-  const colorEl = document.getElementById(`edit-${kind}-color`);
-  const hexEl = document.getElementById(`edit-${kind}-color-hex`);
-  if (!colorEl || !hexEl || colorEl.dataset.wired) return;
-  colorEl.dataset.wired = '1';
-  colorEl.addEventListener('input', () => {
-    hexEl.value = colorEl.value.toUpperCase();
-  });
-  hexEl.addEventListener('change', () => {
-    let v = (hexEl.value || '').trim();
-    if (v && !v.startsWith('#')) v = `#${v}`;
-    if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
-      colorEl.value = v;
-      hexEl.value = v.toUpperCase();
-    } else {
-      hexEl.value = colorEl.value.toUpperCase();
-    }
-  });
-}
 
 async function handleBrandUpload(e, typ) {
   const file = e.target.files[0];
@@ -654,15 +611,7 @@ function showEditForm() {
   document.getElementById('edit-address').value = d.address;
   document.getElementById('edit-phone').value = d.phone;
   document.getElementById('edit-email').value = d.email;
-
-  window.__brandColorsLoaded = {
-    primary: (d.primary_color || '').trim(),
-    accent: (d.accent_color || '').trim(),
-  };
-  // type=color musí mít hodnotu; placeholder se neukládá, pokud DB byla prázdná
-  syncColorInputs('primary', d.primary_color || '#080808');
-  syncColorInputs('accent', d.accent_color || '#c9a962');
-  renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
+renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
   renderBrandPreview('favicon-preview', d.favicon_url, 'Žádný favicon');
 
   const bannerEnabled = document.getElementById('edit-banner-enabled');
@@ -1095,18 +1044,8 @@ function collectFormData() {
     address: document.getElementById('edit-address').value,
     phone: document.getElementById('edit-phone').value,
     email: document.getElementById('edit-email').value,
-    primary_color: (() => {
-      const v = (document.getElementById('edit-primary-color')?.value || '').trim();
-      const loaded = (window.__brandColorsLoaded?.primary || '').trim();
-      if (!loaded && v.toLowerCase() === '#080808') return '';
-      return v;
-    })(),
-    accent_color: (() => {
-      const v = (document.getElementById('edit-accent-color')?.value || '').trim();
-      const loaded = (window.__brandColorsLoaded?.accent || '').trim();
-      if (!loaded && v.toLowerCase() === '#c9a962') return '';
-      return v;
-    })(),
+    primary_color: '',
+    accent_color: '',
     banner_enabled: !!document.getElementById('edit-banner-enabled')?.checked,
     banner_text: document.getElementById('edit-banner-text')?.value.trim() || '',
     banner_od: document.getElementById('edit-banner-od')?.value || null,
@@ -1295,8 +1234,6 @@ document.getElementById('upload-logo')?.addEventListener('change', (e) => handle
 document.getElementById('upload-favicon')?.addEventListener('change', (e) => handleBrandUpload(e, 'favicon'));
 document.getElementById('btn-clear-logo')?.addEventListener('click', () => clearBrandAsset('logo_url'));
 document.getElementById('btn-clear-favicon')?.addEventListener('click', () => clearBrandAsset('favicon_url'));
-wireColorPair('primary');
-wireColorPair('accent');
 document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
 document.getElementById('lightbox').addEventListener('click', e => {
   if (e.target.id === 'lightbox') closeLightbox();
