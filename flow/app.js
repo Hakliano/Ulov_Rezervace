@@ -168,6 +168,7 @@ function setTab(name) {
   if (name === 'rozvrh') loadRozvrh();
   if (name === 'overview') loadWeekList(true);
   if (name === 'absence') loadAbsence();
+  if (name === 'mail') loadMailList();
 }
 
 function applyFlowBanner(salon) {
@@ -699,6 +700,128 @@ $('#btn-logout')?.addEventListener('click', async () => {
   showLogin();
 });
 
+let mailCache = [];
+let mailOpenUid = null;
+
+function formatMailDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('cs-CZ', {
+      day: 'numeric', month: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  } catch (_) {
+    return iso;
+  }
+}
+
+function showMailListView() {
+  $('#mail-detail')?.classList.add('hidden');
+  $('#mail-list')?.classList.remove('hidden');
+  mailOpenUid = null;
+}
+
+function showMailDetailView() {
+  $('#mail-list')?.classList.add('hidden');
+  $('#mail-detail')?.classList.remove('hidden');
+}
+
+async function loadMailList() {
+  const msg = $('#mail-msg');
+  const list = $('#mail-list');
+  showMailListView();
+  if (list) list.innerHTML = '<p class="empty">Načítám schránku…</p>';
+  try {
+    const data = await api('/flow/mail/?limit=40');
+    mailCache = data.items || [];
+    $('#mail-mailbox').textContent = data.mailbox
+      ? `Schránka · ${data.mailbox}`
+      : 'Schránka';
+    if (!mailCache.length) {
+      list.innerHTML = '<p class="empty">Žádné zprávy ve schránce.</p>';
+      showMsg(msg, '', true);
+      msg.hidden = true;
+      return;
+    }
+    list.innerHTML = mailCache.map((m) => {
+      const who = m.from_name || m.from_email || '—';
+      const unseen = m.unseen ? ' unseen' : '';
+      return `<article class="item mail-item${unseen}" data-uid="${m.uid}">
+        <div class="item-top">
+          <time>${esc(formatMailDate(m.date))}</time>
+          ${m.unseen ? '<span class="badge">Nové</span>' : ''}
+        </div>
+        <h3>${esc(m.subject)}</h3>
+        <p class="meta">${esc(who)}${m.from_email && m.from_name ? ` · ${esc(m.from_email)}` : ''}</p>
+      </article>`;
+    }).join('');
+    list.querySelectorAll('.mail-item').forEach((el) => {
+      el.addEventListener('click', () => openMail(Number(el.dataset.uid)));
+    });
+    msg.hidden = true;
+  } catch (err) {
+    list.innerHTML = '';
+    showMsg(msg, err.message, false);
+  }
+}
+
+async function openMail(uid) {
+  const msg = $('#mail-msg');
+  try {
+    const data = await api(`/flow/mail/${uid}/`);
+    mailOpenUid = uid;
+    $('#mail-subject').textContent = data.subject || '(bez předmětu)';
+    const who = data.from_name || data.from_email || '—';
+    $('#mail-meta').textContent = `${who}${data.from_email && data.from_name ? ` <${data.from_email}>` : ''} · ${formatMailDate(data.date)}`;
+    $('#mail-body').textContent = data.body || '(prázdná zpráva)';
+    showMailDetailView();
+    const item = mailCache.find((m) => m.uid === uid);
+    if (item) item.unseen = false;
+    msg.hidden = true;
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
+}
+
+function openMailCompose({ to = '', subject = '', body = '', replyUid = '' } = {}) {
+  $('#mail-modal-title').textContent = replyUid ? 'Odpovědět' : 'Nový e-mail';
+  $('#mail-reply-uid').value = replyUid ? String(replyUid) : '';
+  $('#mail-to').value = to;
+  $('#mail-subject-input').value = subject;
+  $('#mail-body-input').value = body;
+  showMsg($('#mail-send-msg'), '', true);
+  $('#mail-send-msg').hidden = true;
+  $('#mail-modal').classList.remove('hidden');
+}
+
+function closeMailCompose() {
+  $('#mail-modal').classList.add('hidden');
+}
+
+function quoteForReply(detail) {
+  const lines = (detail.body || '').split('\n').map((l) => `> ${l}`).join('\n');
+  const who = detail.from_name || detail.from_email || 'odesílatel';
+  return `\n\n———\n${who} napsal(a):\n${lines}`;
+}
+
+async function replyToOpenMail() {
+  if (!mailOpenUid) return;
+  try {
+    const data = await api(`/flow/mail/${mailOpenUid}/`);
+    let subj = data.subject || '';
+    if (!/^re:/i.test(subj)) subj = `Re: ${subj}`;
+    openMailCompose({
+      to: data.from_email || '',
+      subject: subj,
+      body: quoteForReply(data),
+      replyUid: mailOpenUid,
+    });
+  } catch (err) {
+    showMsg($('#mail-msg'), err.message, false);
+  }
+}
+
 $('#form-password')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#pwd-msg');
@@ -719,6 +842,39 @@ $('#form-password')?.addEventListener('submit', async (e) => {
 
 $$('.tab').forEach((tab) => {
   tab.addEventListener('click', () => setTab(tab.dataset.tab));
+});
+
+$('#mail-refresh')?.addEventListener('click', () => loadMailList());
+$('#mail-compose')?.addEventListener('click', () => openMailCompose());
+$('#mail-back')?.addEventListener('click', () => {
+  showMailListView();
+  loadMailList();
+});
+$('#mail-reply')?.addEventListener('click', () => replyToOpenMail());
+$('#mail-modal-close')?.addEventListener('click', closeMailCompose);
+$('#mail-modal-cancel')?.addEventListener('click', closeMailCompose);
+$('#form-mail')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = $('#mail-send-msg');
+  const replyUid = $('#mail-reply-uid').value;
+  try {
+    await api('/flow/mail/odeslat/', {
+      method: 'POST',
+      body: JSON.stringify({
+        to: $('#mail-to').value.trim(),
+        subject: $('#mail-subject-input').value.trim(),
+        body: $('#mail-body-input').value,
+        reply_uid: replyUid ? Number(replyUid) : null,
+      }),
+    });
+    showMsg(msg, 'Odesláno.', true);
+    closeMailCompose();
+    if ($('#pane-mail') && !$('#pane-mail').classList.contains('hidden')) {
+      loadMailList();
+    }
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
 });
 
 $('#week-prev')?.addEventListener('click', () => { weekOffset -= 1; loadWeekList(false); });

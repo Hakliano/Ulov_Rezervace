@@ -77,7 +77,16 @@ def get_email_config(salon):
     }
 
 
-def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachments=None, inline_images=None):
+def _odeslat_pro_salon(
+    salon,
+    prijemce,
+    predmet,
+    zprava,
+    html_body=None,
+    attachments=None,
+    inline_images=None,
+    headers=None,
+):
     prijemce = (prijemce or '').strip()
     if not prijemce:
         # Bez adresáta = tiché přeskočení (žádná chyba, žádný audit „selhalo odeslání“)
@@ -90,6 +99,8 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
         prijemce = override
 
     cfg = get_email_config(salon)
+    extra_headers = headers or {}
+
     # Lokální console backend: vždy vypiš mail do terminálu (i když má salon SMTP v DB).
     use_console = 'console' in (getattr(settings, 'EMAIL_BACKEND', '') or '').lower()
     if use_console or not cfg['smtp_ready']:
@@ -101,13 +112,19 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
                 body=zprava,
                 from_email=cfg['from_email'],
                 to=[prijemce],
+                headers=extra_headers,
             )
             msg.attach_alternative(html_body, 'text/html')
             msg.send()
         else:
-            from django.core.mail import send_mail
-
-            send_mail(predmet, zprava, cfg['from_email'], [prijemce], fail_silently=False)
+            msg = EmailMessage(
+                subject=predmet,
+                body=zprava,
+                from_email=cfg['from_email'],
+                to=[prijemce],
+                headers=extra_headers,
+            )
+            msg.send()
         return True
 
     connection = get_connection(
@@ -131,6 +148,7 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
             from_email=cfg['from_email'],
             to=[prijemce],
             connection=connection,
+            headers=extra_headers,
         )
         msg.attach_alternative(html_body, 'text/html')
         msg.mixed_subtype = 'related'
@@ -153,6 +171,7 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
             from_email=cfg['from_email'],
             to=[prijemce],
             connection=connection,
+            headers=extra_headers,
         )
         msg.attach_alternative(html_body, 'text/html')
         for att in attachments or []:
@@ -166,11 +185,17 @@ def _odeslat_pro_salon(salon, prijemce, predmet, zprava, html_body=None, attachm
         from_email=cfg['from_email'],
         to=[prijemce],
         connection=connection,
+        headers=extra_headers,
     )
     for att in attachments or []:
         msg.attach(*att)
     msg.send()
     return True
+
+
+def odeslat_volny_email(salon, prijemce, predmet, zprava, headers=None):
+    """Volný textový e-mail (FLOW Mail). Staging override platí stejně jako u rezervací."""
+    return _odeslat_pro_salon(salon, prijemce, predmet, zprava, headers=headers)
 
 
 def _salon_dev_port(salon_id):

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from flow import provoz_views, views
+from flow import mail_views, provoz_views, views
 
 urlpatterns = [
     path('salon/<int:pk>/flow/ucty/', views.FlowUctyListCreateView.as_view(), name='flow-ucty'),
@@ -59,4 +59,8 @@ urlpatterns = [
     path('flow/sluzby/', provoz_views.FlowSluzbyView.as_view(), name='flow-sluzby'),
     path('flow/volne-terminy/', provoz_views.FlowVolneTerminyView.as_view(), name='flow-volne-terminy'),
     path('flow/rezervace/', provoz_views.FlowRezervaceCreateView.as_view(), name='flow-rezervace-create'),
+    path('flow/mail/stav/', mail_views.FlowMailStavView.as_view(), name='flow-mail-stav'),
+    path('flow/mail/odeslat/', mail_views.FlowMailOdeslatView.as_view(), name='flow-mail-odeslat'),
+    path('flow/mail/', mail_views.FlowMailListView.as_view(), name='flow-mail-list'),
+    path('flow/mail/<int:uid>/', mail_views.FlowMailDetailView.as_view(), name='flow-mail-detail'),
 ]

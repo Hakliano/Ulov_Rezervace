@@ -1066,9 +1066,24 @@ async function loadEmailSettings() {
     document.getElementById('smtp-password').placeholder = data.smtp_password_nastaveno
       ? '•••••••• (nastaveno – nechte prázdné pro zachování)'
       : 'Heslo ke schránce';
+    const imapEnabled = document.getElementById('imap-enabled');
+    const imapHost = document.getElementById('imap-host');
+    const imapPort = document.getElementById('imap-port');
+    const imapSsl = document.getElementById('imap-ssl');
+    const imapStatus = document.getElementById('imap-status');
+    if (imapEnabled) imapEnabled.checked = !!data.imap_enabled;
+    if (imapHost) imapHost.value = data.imap_host || 'imap.forpsi.com';
+    if (imapPort) imapPort.value = data.imap_port || 993;
+    if (imapSsl) imapSsl.checked = data.imap_use_ssl !== false;
+    if (imapStatus) {
+      imapStatus.textContent = data.imap_aktivni
+        ? '✓ FLOW Mail aktivní — personál vidí schránku po přihlášení.'
+        : 'FLOW Mail vypnutý — zapněte IMAP a uložte (vyžaduje SMTP heslo).';
+      imapStatus.className = data.imap_aktivni ? 'admin-hint success' : 'admin-hint';
+    }
     status.textContent = data.smtp_aktivni
-      ? `? Odesílání aktivní · Od: ${data.email_odesilatel}`
-      : '? Doplňte SMTP heslo pro odesílání potvrzení rezervací.';
+      ? `✓ Odesílání aktivní · Od: ${data.email_odesilatel}`
+      : 'Doplňte SMTP heslo pro odesílání potvrzení rezervací.';
     status.className = data.smtp_aktivni ? 'admin-hint success' : 'admin-hint';
   } catch (err) {
     status.textContent = err.message;
@@ -1086,6 +1101,10 @@ async function saveEmailSettings() {
     smtp_use_ssl: document.getElementById('smtp-ssl').checked,
     smtp_user: document.getElementById('smtp-user').value.trim(),
     web_rezervace_url: document.getElementById('web-rezervace-url').value.trim(),
+    imap_enabled: !!document.getElementById('imap-enabled')?.checked,
+    imap_host: document.getElementById('imap-host')?.value.trim() || 'imap.forpsi.com',
+    imap_port: parseInt(document.getElementById('imap-port')?.value, 10) || 993,
+    imap_use_ssl: document.getElementById('imap-ssl')?.checked !== false,
   };
   const pwd = document.getElementById('smtp-password').value;
   if (pwd) payload.smtp_password = pwd;

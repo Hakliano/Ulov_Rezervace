@@ -199,7 +199,19 @@
           <input type="password" id="smtp-password" placeholder="Nechte prázdné = beze změny">
           <label for="web-rezervace-url">URL stránky rezervací (odkazy v e-mailech)</label>
           <input type="url" id="web-rezervace-url" placeholder="https://vase-domena.cz/rezervace.html">
-          <p id="email-save-msg" class="status-msg"></p>
+          
+          <hr class="admin-sep">
+          <h4 class="admin-sub">FLOW Mail (IMAP)</h4>
+          <p class="admin-hint">Personál ve FLOW uvidí schránku (číst / odpovědět / nový). Stejné přihlášení jako SMTP.</p>
+          <label class="checkbox"><input type="checkbox" id="imap-enabled"> Zapnout schránku ve FLOW</label>
+          <label for="imap-host">IMAP server</label>
+          <input type="text" id="imap-host" placeholder="imap.forpsi.com">
+          <label for="imap-port">IMAP port</label>
+          <input type="number" id="imap-port" placeholder="993">
+          <label class="checkbox"><input type="checkbox" id="imap-ssl" checked> IMAP SSL (port 993)</label>
+          <p id="imap-status" class="admin-hint"></p>
+
+<p id="email-save-msg" class="status-msg"></p>
           <button type="button" id="btn-save-email" class="btn btn-primary btn-block">Uložit e-mail nastavení</button>
           <button type="button" id="btn-test-email" class="btn btn-secondary btn-block">Odeslat testovací e-mail</button>
         </div>

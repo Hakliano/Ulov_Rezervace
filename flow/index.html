@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -68,6 +68,7 @@
           <button type="button" class="tab" data-tab="rozvrh">Pracovní doba</button>
           <button type="button" class="tab hidden" data-tab="overview" id="tab-overview">Overview</button>
           <button type="button" class="tab" data-tab="absence">Dovolená</button>
+          <button type="button" class="tab" data-tab="mail" id="tab-mail">Mail</button>
           <button type="button" class="tab" data-tab="ucet">Účet</button>
         </nav>
 
@@ -142,6 +143,25 @@
           </form>
           <div id="abs-konflikt" class="abs-konflikt hidden"></div>
           <div id="abs-list" class="list"></div>
+        </div>
+
+        <div id="pane-mail" class="pane hidden">
+          <div class="week-bar mail-bar">
+            <p class="week-label" id="mail-mailbox">Schránka</p>
+            <button type="button" class="btn ghost sm" id="mail-refresh">Obnovit</button>
+            <button type="button" class="btn primary sm" id="mail-compose">Nový</button>
+          </div>
+          <p id="mail-msg" class="msg" hidden></p>
+          <div id="mail-list" class="list mail-list"></div>
+          <div id="mail-detail" class="mail-detail hidden">
+            <div class="mail-detail-head">
+              <button type="button" class="btn ghost sm" id="mail-back">← Zpět</button>
+              <button type="button" class="btn primary sm" id="mail-reply">Odpovědět</button>
+            </div>
+            <h2 class="mail-subject" id="mail-subject">—</h2>
+            <p class="meta" id="mail-meta">—</p>
+            <pre class="mail-body" id="mail-body"></pre>
+          </div>
         </div>
 
         <div id="pane-ucet" class="pane hidden">
@@ -267,6 +287,33 @@
     </div>
   </div>
 
+  <!-- Mail compose / reply -->
+  <div id="mail-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="mail-modal-title">
+    <div class="modal-card modal-wide">
+      <div class="modal-head">
+        <h2 id="mail-modal-title">Nový e-mail</h2>
+        <button type="button" class="btn ghost sm" id="mail-modal-close" aria-label="Zavřít">✕</button>
+      </div>
+      <form id="form-mail" class="form">
+        <input type="hidden" id="mail-reply-uid" value="">
+        <label>Komu
+          <input type="email" id="mail-to" required autocomplete="email">
+        </label>
+        <label>Předmět
+          <input type="text" id="mail-subject-input" required maxlength="200">
+        </label>
+        <label>Zpráva
+          <textarea id="mail-body-input" rows="8" required></textarea>
+        </label>
+        <p id="mail-send-msg" class="msg" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" id="mail-modal-cancel">Zrušit</button>
+          <button type="submit" class="btn primary">Odeslat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="platba-qr-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h2>QR platba odeslána</h2>
@@ -278,6 +325,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=14"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>

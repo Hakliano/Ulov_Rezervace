@@ -546,3 +546,14 @@ a:hover { color: var(--primary-dark); }
   line-height: 1.45;
 }
 
+.admin-sep {
+  margin: 1.25rem 0 1rem;
+  border: 0;
+  border-top: 1px solid var(--line, rgba(255,255,255,0.12));
+}
+.admin-sub {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gold, #c9a962);
+}

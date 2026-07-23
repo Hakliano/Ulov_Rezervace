@@ -67,6 +67,14 @@ class RezervacniNastaveni(models.Model):
     smtp_use_ssl = models.BooleanField('SMTP SSL', default=True)
     smtp_user = models.EmailField('SMTP přihlášení', blank=True)
     smtp_password = models.CharField('SMTP heslo', max_length=200, blank=True)
+    imap_host = models.CharField('IMAP server', max_length=200, blank=True, default='imap.forpsi.com')
+    imap_port = models.PositiveIntegerField('IMAP port', default=993)
+    imap_use_ssl = models.BooleanField('IMAP SSL', default=True)
+    imap_enabled = models.BooleanField(
+        'IMAP pro FLOW',
+        default=False,
+        help_text='Zapne schránku ve FLOW (čtení / odpověď). Přihlášení = stejné jako SMTP.',
+    )
     web_rezervace_url = models.URLField(
         'URL stránky rezervací',
         blank=True,

@@ -1088,6 +1088,10 @@ async function saveEmailSettings() {
     smtp_use_ssl: document.getElementById('smtp-ssl').checked,
     smtp_user: document.getElementById('smtp-user').value.trim(),
     web_rezervace_url: document.getElementById('web-rezervace-url').value.trim(),
+    imap_enabled: !!document.getElementById('imap-enabled')?.checked,
+    imap_host: document.getElementById('imap-host')?.value.trim() || 'imap.forpsi.com',
+    imap_port: parseInt(document.getElementById('imap-port')?.value, 10) || 993,
+    imap_use_ssl: document.getElementById('imap-ssl')?.checked !== false,
   };
   const pwd = document.getElementById('smtp-password').value;
   if (pwd) payload.smtp_password = pwd;

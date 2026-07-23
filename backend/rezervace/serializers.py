@@ -229,6 +229,7 @@ class EmailNastaveniSerializer(serializers.ModelSerializer):
             'smtp_password', 'smtp_password_nastaveno',
             'email_odesilatel', 'email_jmeno_odesilatele',
             'web_rezervace_url',
+            'imap_host', 'imap_port', 'imap_use_ssl', 'imap_enabled',
         ]
 
     def get_smtp_password_nastaveno(self, obj):

@@ -676,6 +676,9 @@ class AdminEmailNastaveniView(APIView):
         cfg = get_email_config(salon)
         data['email_odesilatel'] = cfg['from_email']
         data['smtp_aktivni'] = cfg['smtp_ready']
+        data['imap_aktivni'] = bool(
+            nast.imap_enabled and cfg['smtp_ready'] and (nast.imap_host or '').strip()
+        )
         return Response(data)
 
     def put(self, request, pk):
@@ -689,8 +692,12 @@ class AdminEmailNastaveniView(APIView):
         nast.email_jmeno_odesilatele = salon.name
         nast.save(update_fields=['email_odesilatel', 'email_jmeno_odesilatele'])
         data = EmailNastaveniSerializer(nast).data
-        data['email_odesilatel'] = get_email_config(salon)['from_email']
-        data['smtp_aktivni'] = get_email_config(salon)['smtp_ready']
+        cfg = get_email_config(salon)
+        data['email_odesilatel'] = cfg['from_email']
+        data['smtp_aktivni'] = cfg['smtp_ready']
+        data['imap_aktivni'] = bool(
+            nast.imap_enabled and cfg['smtp_ready'] and (nast.imap_host or '').strip()
+        )
         _audit(request, salon, 'email', 'změna nastavení e-mailu', pred=pred, po=data)
         return Response(data)
 
