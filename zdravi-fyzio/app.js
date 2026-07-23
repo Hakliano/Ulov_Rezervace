@@ -284,6 +284,26 @@ async function refreshOteviraciDoba() {
 }
 
 
+
+function applySalonBanner(data) {
+  const el = document.getElementById('site-banner');
+  if (!el) return;
+  const text = (data.banner_text || '').trim();
+  const enabled = !!data.banner_enabled;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const od = data.banner_od ? new Date(`${data.banner_od}T00:00:00`) : null;
+  const doDate = data.banner_do ? new Date(`${data.banner_do}T00:00:00`) : null;
+  const inRange = (!od || today >= od) && (!doDate || today <= doDate);
+  if (enabled && text && inRange) {
+    el.textContent = text;
+    el.classList.remove('hidden');
+  } else {
+    el.textContent = '';
+    el.classList.add('hidden');
+  }
+}
+
 function applySalonBrand(data) {
   const root = document.documentElement;
   if (data.primary_color) {
@@ -616,6 +636,15 @@ function showEditForm() {
   syncColorInputs('accent', d.accent_color || '#c9a962');
   renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
   renderBrandPreview('favicon-preview', d.favicon_url, 'Žádný favicon');
+
+  const bannerEnabled = document.getElementById('edit-banner-enabled');
+  const bannerText = document.getElementById('edit-banner-text');
+  const bannerOd = document.getElementById('edit-banner-od');
+  const bannerDo = document.getElementById('edit-banner-do');
+  if (bannerEnabled) bannerEnabled.checked = !!d.banner_enabled;
+  if (bannerText) bannerText.value = d.banner_text || '';
+  if (bannerOd) bannerOd.value = d.banner_od || '';
+  if (bannerDo) bannerDo.value = d.banner_do || '';
 
   renderHeroPreview(d.hero_image);
   renderGalleryEdit(d.obrazky || []);
@@ -957,6 +986,10 @@ function collectFormData() {
     email: document.getElementById('edit-email').value,
     primary_color: document.getElementById('edit-primary-color')?.value || '',
     accent_color: document.getElementById('edit-accent-color')?.value || '',
+    banner_enabled: !!document.getElementById('edit-banner-enabled')?.checked,
+    banner_text: document.getElementById('edit-banner-text')?.value.trim() || '',
+    banner_od: document.getElementById('edit-banner-od')?.value || null,
+    banner_do: document.getElementById('edit-banner-do')?.value || null,
     cenik, novinky, obrazky,
   };
 }

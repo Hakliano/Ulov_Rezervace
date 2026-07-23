@@ -32,5 +32,6 @@ class SalonAdmin(admin.ModelAdmin):
     fields = [
         'name', 'description', 'address', 'phone', 'email', 'hero_image',
         'logo_url', 'favicon_url', 'primary_color', 'accent_color',
+        'banner_text', 'banner_od', 'banner_do', 'banner_enabled',
     ]
     inlines = [CenikInline, NovinkaInline, OteviraciDobaInline, ObrazekInline]

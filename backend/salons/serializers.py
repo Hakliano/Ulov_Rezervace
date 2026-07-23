@@ -66,6 +66,7 @@ class SalonSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'address', 'phone', 'email',
             'hero_image', 'logo_url', 'favicon_url', 'primary_color', 'accent_color',
+            'banner_text', 'banner_od', 'banner_do', 'banner_enabled',
             'cenik', 'novinky', 'oteviraci_doba', 'obrazky',
         ]
 

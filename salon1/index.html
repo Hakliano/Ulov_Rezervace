@@ -35,6 +35,7 @@
   </div>
 
   <div id="content" class="page hidden">
+    <div id="site-banner" class="site-banner hidden" role="status"></div>
     <section id="uvod" class="hero">
       <div class="hero-text">
         <p class="hero-eyebrow">Praha · Kadeřnictví</p>
@@ -157,6 +158,7 @@
           <button type="button" class="tab active" data-tab="zaklad">Základní</button>
           <button type="button" class="tab" data-tab="obrazky">Obrázky</button>
           <button type="button" class="tab" data-tab="vizual">Vizuál</button>
+          <button type="button" class="tab" data-tab="banner">Banner</button>
           <button type="button" class="tab" data-tab="personel">Personál</button>
           <button type="button" class="tab" data-tab="cenik">Ceník</button>
           <button type="button" class="tab" data-tab="novinky">Novinky</button>
@@ -242,6 +244,18 @@
             <input type="color" id="edit-accent-color" value="#c9a962">
             <input type="text" id="edit-accent-color-hex" maxlength="7" placeholder="#c9a962">
           </div>
+        </div>
+        <div class="tab-panel" data-panel="banner">
+          <p class="admin-hint">Krátký pruh nad úvodem webu (akce, dovolená, upozornění). Prázdné datum = bez omezení.</p>
+          <label class="checkbox">
+            <input type="checkbox" id="edit-banner-enabled"> Banner zapnutý
+          </label>
+          <label for="edit-banner-text">Text</label>
+          <input type="text" id="edit-banner-text" maxlength="300" placeholder="Např. Letní dovolená 1.–15. 8. — objednávky od 16. 8.">
+          <label for="edit-banner-od">Zobrazit od</label>
+          <input type="date" id="edit-banner-od">
+          <label for="edit-banner-do">Zobrazit do</label>
+          <input type="date" id="edit-banner-do">
         </div>
         <div class="tab-panel" data-panel="personel">
           <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Personál. Fotku nahrajte tlačítkem níže.</p>

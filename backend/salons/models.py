@@ -12,6 +12,10 @@ class Salon(models.Model):
     favicon_url = models.URLField('favicon (URL)', blank=True, max_length=500)
     primary_color = models.CharField('primární barva (#RRGGBB)', max_length=7, blank=True)
     accent_color = models.CharField('akcentová barva (#RRGGBB)', max_length=7, blank=True)
+    banner_text = models.CharField('banner text', max_length=300, blank=True)
+    banner_od = models.DateField('banner od', null=True, blank=True)
+    banner_do = models.DateField('banner do', null=True, blank=True)
+    banner_enabled = models.BooleanField('banner zapnutý', default=False)
 
     class Meta:
         verbose_name = 'salon'

@@ -711,3 +711,14 @@ a:hover { color: var(--wine); }
   flex: 1;
 }
 
+.site-banner {
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1.1rem;
+  background: color-mix(in srgb, var(--gold, #c9a962) 18%, var(--surface, #111));
+  border: 1px solid var(--line, rgba(201,169,98,0.25));
+  border-left: 3px solid var(--gold, #c9a962);
+  color: var(--text, #f2ece4);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
