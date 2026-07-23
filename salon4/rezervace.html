@@ -269,9 +269,11 @@
                 <div class="settings-card-head"><h4>Platby</h4></div>
                 <div class="settings-card-body">
                 <label class="full">Číslo účtu pro QR platby
-                  <input type="text" id="staff-cislo-uctu" placeholder="123456789/0100">
+                  <input type="text" id="staff-cislo-uctu" placeholder="123456789/0100 nebo CZ… IBAN">
                 </label>
-                <p class="hint">Předvyplní se při odeslání žádosti o platbu u rezervací tohoto pracovníka.</p>
+                <p class="hint">Ukládá se k pracovníkovi do databáze a předvyplní se při žádosti o QR platbu. Samotné napsání nestačí — uložte tlačítkem.</p>
+                <button type="button" id="btn-staff-save-ucet" class="btn btn-primary btn-sm">Uložit číslo účtu</button>
+                <p id="staff-ucet-msg" class="status-msg"></p>
                 </div>
               </section>
 

@@ -1244,9 +1244,11 @@ async function deactivateStaffAccount() {
 async function saveStaffRozvrh() {
   const staff = getSelectedStaff();
   if (!staff || staff.role === 'majitel') return;
-  const msg = $('#staff-rozvrh-msg');
-  msg.textContent = 'Ukládám…';
-  msg.className = 'status-msg';
+  const msgs = [$('#staff-rozvrh-msg'), $('#staff-ucet-msg')].filter(Boolean);
+  msgs.forEach((msg) => {
+    msg.textContent = 'Ukládám…';
+    msg.className = 'status-msg';
+  });
   try {
     await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/${staff.id}/`, {
       method: 'PUT',
@@ -1260,12 +1262,16 @@ async function saveStaffRozvrh() {
         rozvrh: collectStaffRozvrh(),
       }),
     });
-    msg.textContent = 'Údaje pracovníka uloženy.';
-    msg.className = 'status-msg success';
+    msgs.forEach((msg) => {
+      msg.textContent = 'Údaje pracovníka uloženy.';
+      msg.className = 'status-msg success';
+    });
     await loadStaff();
   } catch (err) {
-    msg.textContent = err.message;
-    msg.className = 'status-msg error';
+    msgs.forEach((msg) => {
+      msg.textContent = err.message;
+      msg.className = 'status-msg error';
+    });
   }
 }
 
@@ -1634,7 +1640,8 @@ $('#btn-gdpr-vymaz')?.addEventListener('click', async () => {
 });
 
 $('#btn-staff-add').addEventListener('click', addStaffMember);
-$('#btn-staff-save-rozvrh').addEventListener('click', saveStaffRozvrh);
+$('#btn-staff-save-rozvrh')?.addEventListener('click', saveStaffRozvrh);
+$('#btn-staff-save-ucet')?.addEventListener('click', saveStaffRozvrh);
 
 $('#form-staff-absence').addEventListener('submit', async (e) => {
   e.preventDefault();
