@@ -89,8 +89,8 @@ def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol,
     html = (
         '<div style="font-family:sans-serif;line-height:1.5">'
         f'<pre style="white-space:pre-wrap;font-family:inherit">{zprava}</pre>'
-        '<p><strong>Naskenujte QR kód pro platbu:</strong></p>'
-        '<img src="cid:qrplatba" alt="QR platba" style="max-width:220px">'
+        '<p><strong>QR kód pro platbu je v příloze tohoto e-mailu</strong> '
+        '(soubor <code>qr_platba.png</code>).</p>'
         '</div>'
     )
     return _odeslat_pro_salon(
@@ -99,7 +99,6 @@ def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol,
         predmet,
         zprava,
         html_body=html,
-        inline_images=[('qrplatba', qr_png, 'qr_platba.png')],
         attachments=[('qr_platba.png', qr_png, 'image/png')],
     )
 

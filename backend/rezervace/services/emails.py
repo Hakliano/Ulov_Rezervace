@@ -142,6 +142,7 @@ def _odeslat_pro_salon(
     )
 
     if html_body and inline_images:
+        # Django 5.2+/6: mixed_subtype už neexistuje — CID obrázky převedeme na běžné přílohy
         from email.mime.image import MIMEImage
 
         from django.core.mail import EmailMultiAlternatives
@@ -155,11 +156,10 @@ def _odeslat_pro_salon(
             headers=extra_headers,
         )
         msg.attach_alternative(html_body, 'text/html')
-        msg.mixed_subtype = 'related'
         for cid, png_bytes, filename in inline_images:
             img = MIMEImage(png_bytes, _subtype='png')
             img.add_header('Content-ID', f'<{cid}>')
-            img.add_header('Content-Disposition', 'inline', filename=filename)
+            img.add_header('Content-Disposition', 'attachment', filename=filename)
             msg.attach(img)
         for att in attachments or []:
             msg.attach(*att)
