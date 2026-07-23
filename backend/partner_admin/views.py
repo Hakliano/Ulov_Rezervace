@@ -39,6 +39,20 @@ def _partner(salon):
     return partner
 
 
+def _zajisti_partner_nastaveni():
+    """Doplní PartnerNastaveni u salonů, které vznikly bez signalu (stub / seed)."""
+    existujici = PartnerNastaveni.objects.values_list('salon_id', flat=True)
+    chybejici = list(Salon.objects.exclude(id__in=existujici).only('id', 'email'))
+    if not chybejici:
+        return
+    PartnerNastaveni.objects.bulk_create(
+        [
+            PartnerNastaveni(salon_id=salon.id, fakturacni_email=salon.email or '')
+            for salon in chybejici
+        ]
+    )
+
+
 def _vychozi_upozorneni(salon, partner):
     predmet = f'Upozornění na platbu za služby — {salon.name}'
     text = (
@@ -182,6 +196,7 @@ def _export_querystring(filtry):
 @superadmin_required
 def dashboard(request):
     dnes = timezone.localdate()
+    _zajisti_partner_nastaveni()
     filtry = _nacti_filtry(request)
     salons = _aplikuj_filtry(_salon_queryset(dnes), filtry, dnes)
     salons = list(salons.order_by('platebni_priorita', 'partner_nastaveni__dalsi_splatnost', 'name'))
@@ -211,6 +226,7 @@ def dashboard(request):
 @superadmin_required
 def export_csv(request):
     dnes = timezone.localdate()
+    _zajisti_partner_nastaveni()
     filtry = _nacti_filtry(request)
     salons = _aplikuj_filtry(_salon_queryset(dnes), filtry, dnes).order_by(
         'platebni_priorita',
