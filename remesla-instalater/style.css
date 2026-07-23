@@ -386,11 +386,13 @@ a:hover { color: var(--primary-dark); }
 .hours-card {
   background: var(--surface); padding: 2rem; border-radius: 0;
   border-top: 4px solid var(--accent-warm);
+  color: var(--text); /* reset: .contact sets light text on dark bg */
 }
 .hours-card h3 { font-family: var(--font-display); text-transform: uppercase; font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary-dark); }
 .hours-card table { width: 100%; }
-.hours-card td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+.hours-card td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.92rem; color: var(--text); }
 .hours-card td:last-child { text-align: right; font-weight: 500; }
+.hours-card .hours-note { color: var(--muted); }
 .zavreno { color: var(--muted); font-style: italic; }
 
 /* Footer */
