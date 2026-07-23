@@ -24,6 +24,8 @@ let monthOffset = 0;
 let monthCache = { rezervace: [], absence: [], rozvrh: [] };
 let selectedDayYmd = null;
 let rezById = new Map();
+let riskyAlertItems = [];
+let mailUnseenCount = 0;
 let noshowTargetId = null;
 let platbaTarget = null;
 let platbaIsZaloha = false;
@@ -207,11 +209,19 @@ function showLoggedIn(user) {
   if (user.visible_overview) ovTab.classList.remove('hidden');
   else ovTab.classList.add('hidden');
   setTab('mujden');
+  refreshTopAlerts();
 }
 
 function showLogin() {
   currentUser = null;
+  riskyAlertItems = [];
+  mailUnseenCount = 0;
   applyFlowBanner(null);
+  const alerts = $('#flow-alerts');
+  if (alerts) {
+    alerts.classList.add('hidden');
+    alerts.innerHTML = '';
+  }
   $('#view-login').classList.remove('hidden');
   $('#view-home').classList.add('hidden');
   $('#btn-logout').classList.add('hidden');
@@ -336,7 +346,7 @@ function bindCalActions(root, onDone) {
             body: JSON.stringify({ duvod }),
           });
           onDone?.();
-          refreshRiskyInbox();
+          refreshTopAlerts();
         } catch (err) {
           showMsg($('#cal-msg'), err.message, false);
         }
@@ -351,7 +361,7 @@ function bindCalActions(root, onDone) {
         try {
           await api(`/flow/rezervace/${id}/zaloha-ok/`, { method: 'POST', body: '{}' });
           onDone?.();
-          refreshRiskyInbox();
+          refreshTopAlerts();
         } catch (err) {
           showMsg($('#cal-msg'), err.message, false);
         }
@@ -563,15 +573,100 @@ function closePlatba() {
   $('#platba-modal').classList.add('hidden');
 }
 
-function refreshRiskyInbox() {
-  const box = $('#risky-inbox');
-  if (!box) return;
-  const risky = [...rezById.values()].filter((r) => (
+function ymdPlusDays(days) {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function filterRiskyItems(items) {
+  return (items || []).filter((r) => (
     r.je_rizikova
     && !r.zaloha_ok_at
     && ['ceka', 'potvrzeno'].includes(r.stav)
-    && new Date(r.zacatek) >= new Date(Date.now() - 86400000)
   ));
+}
+
+function renderTopAlerts(riskyN, mailN, mailOk) {
+  const box = $('#flow-alerts');
+  if (!box) return;
+  const parts = [];
+  if (riskyN > 0) {
+    parts.push(`<div class="flow-alert warn">
+      <div class="flow-alert-text">
+        <strong>Rizikové rezervace: ${riskyN}</strong>
+        <span>Ke kontrole — můžete požádat o zálohu, nebo nechat běžet</span>
+      </div>
+      <button type="button" class="btn primary sm" id="alert-goto-risky">Zobrazit</button>
+    </div>`);
+  }
+  if (mailOk && mailN > 0) {
+    parts.push(`<div class="flow-alert mail">
+      <div class="flow-alert-text">
+        <strong>Nepřečtené e-maily: ${mailN}</strong>
+        <span>Schránka FLOW</span>
+      </div>
+      <button type="button" class="btn primary sm" id="alert-goto-mail">Otevřít mail</button>
+    </div>`);
+  }
+  if (!parts.length) {
+    box.classList.add('hidden');
+    box.innerHTML = '';
+    return;
+  }
+  box.classList.remove('hidden');
+  box.innerHTML = parts.join('');
+  $('#alert-goto-risky')?.addEventListener('click', () => {
+    setTab('mujden');
+    requestAnimationFrame(() => {
+      $('#risky-inbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  $('#alert-goto-mail')?.addEventListener('click', () => setTab('mail'));
+}
+
+async function refreshTopAlerts() {
+  if (!currentUser) return;
+  let risky = [];
+  let unseen = 0;
+  let mailOk = false;
+  try {
+    const q = new URLSearchParams({ od: ymdPlusDays(-1), do: ymdPlusDays(120) });
+    const data = await api(`/flow/kalendar/?${q}`);
+    rememberRez(data.rezervace);
+    risky = filterRiskyItems(data.rezervace);
+    riskyAlertItems = risky;
+  } catch {
+    risky = filterRiskyItems([...rezById.values()]);
+    riskyAlertItems = risky;
+  }
+  try {
+    const mail = await api('/flow/mail/?limit=40');
+    mailOk = true;
+    unseen = (mail.items || []).filter((m) => m.unseen).length;
+    mailUnseenCount = unseen;
+  } catch {
+    mailOk = false;
+    mailUnseenCount = 0;
+  }
+  renderTopAlerts(risky.length, unseen, mailOk);
+  refreshRiskyInbox();
+  const mailTab = $('#tab-mail');
+  if (mailTab) {
+    mailTab.textContent = (mailOk && unseen > 0) ? `Mail (${unseen})` : 'Mail';
+  }
+}
+
+function refreshRiskyInbox() {
+  const box = $('#risky-inbox');
+  if (!box) return;
+  const risky = riskyAlertItems.length
+    ? riskyAlertItems
+    : filterRiskyItems([...rezById.values()]);
   if (!risky.length) {
     box.classList.add('hidden');
     box.innerHTML = '';
@@ -586,7 +681,7 @@ function refreshRiskyInbox() {
   box.querySelector('#risky-list').appendChild(holder);
   bindCalActions(holder, () => {
     loadWeekList(false);
-    refreshRiskyInbox();
+    refreshTopAlerts();
   });
 }
 
@@ -1250,7 +1345,7 @@ $('#form-platba')?.addEventListener('submit', async (e) => {
     $('#platba-qr-image').src = `data:image/png;base64,${data.qr_png_base64}`;
     $('#platba-qr-modal').classList.remove('hidden');
     loadWeekList(false);
-    refreshRiskyInbox();
+    refreshTopAlerts();
   } catch (err) {
     showMsg(msg, err.message, false);
   }

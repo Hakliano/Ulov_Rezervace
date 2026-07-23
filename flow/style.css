@@ -249,6 +249,62 @@ select:focus {
   font-weight: 500;
 }
 
+.flow-alerts {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.flow-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.flow-alert.warn {
+  background: rgba(196, 92, 38, 0.18);
+  border-color: rgba(196, 92, 38, 0.55);
+  border-left: 4px solid #c45c26;
+}
+
+.flow-alert.mail {
+  background: rgba(70, 120, 180, 0.16);
+  border-color: rgba(90, 140, 200, 0.45);
+  border-left: 4px solid #5a8cc8;
+}
+
+.flow-alert-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.flow-alert-text strong {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.flow-alert-text span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.flow-alert .btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+  .flow-alert {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .app-panel {
   background: var(--card);
   backdrop-filter: blur(10px);
