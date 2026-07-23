@@ -57,6 +57,12 @@ if [ -d shared ]; then
   mkdir -p www/shared
   rsync -a shared/ www/shared/
 fi
+if [ -d flow ]; then
+  bash deploy/pre-deploy-check.sh flow || true
+  mkdir -p www/flow
+  rsync -a flow/ www/flow/
+  echo "synced flow"
+fi
 
 echo "### 5) API / služby"
 docker compose up -d --build

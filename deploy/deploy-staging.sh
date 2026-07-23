@@ -44,6 +44,7 @@ overrides = {
     "CSRF_TRUSTED_ORIGINS": "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz,https://api-staging.ulovklienty.cz",
     "SENTRY_ENVIRONMENT": "staging",
     "EMAIL_VIA_CELERY": "false",
+    "FLOW_BASE_URL": "https://www.staging.ulovklienty.cz/flow/",
 }
 # EMAIL_OVERRIDE_TO — zachovej pokud už je, jinak info@
 if "EMAIL_OVERRIDE_TO=" not in text:
@@ -92,6 +93,11 @@ fi
 if [ -d shared ]; then
   mkdir -p www-staging/shared
   rsync -a shared/ www-staging/shared/
+fi
+if [ -d flow ]; then
+  bash deploy/pre-deploy-check.sh flow || true
+  mkdir -p www-staging/flow
+  rsync -a flow/ www-staging/flow/
 fi
 
 # Frontendy musí volat staging API + dema pod staging hostem

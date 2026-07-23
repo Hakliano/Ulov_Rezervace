@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'salons',
     'rezervace',
+    'flow',
 ]
 
 MIDDLEWARE = [
@@ -194,6 +195,9 @@ EMAIL_VIA_CELERY = _env_bool('EMAIL_VIA_CELERY', False)
 if EMAIL_VIA_CELERY and not REDIS_URL:
     EMAIL_VIA_CELERY = False
 
+# Veřejná URL aplikace FLOW (pozvánky / reset hesla)
+FLOW_BASE_URL = os.environ.get('FLOW_BASE_URL', 'https://www.ulovklienty.cz/flow/').rstrip('/') + '/'
+
 if REDIS_URL:
     CACHES = {
         'default': {
@@ -244,6 +248,7 @@ CORS_ALLOW_HEADERS = [
     'x-admin-password',
     'x-admin-actor',
     'x-staff-token',
+    'x-flow-token',
 ]
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 

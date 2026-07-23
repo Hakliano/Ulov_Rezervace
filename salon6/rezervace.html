@@ -215,6 +215,34 @@
                 </div>
               </section>
 
+              <section class="settings-card staff-flow-block">
+                <div class="settings-card-head"><h4>Přístup do FLOW</h4></div>
+                <div class="settings-card-body">
+                  <p class="hint">FLOW je denní provoz personálu (kalendář, mail…). Nastavení systému zůstává zde v rezervacích.</p>
+                  <p id="staff-flow-status" class="hint">Načítám…</p>
+                  <div id="staff-flow-create" class="hidden">
+                    <label>E-mail pro FLOW (osobní e-mail pracovníka)
+                      <input type="email" id="staff-flow-email" placeholder="marie@email.cz" autocomplete="off">
+                    </label>
+                    <label class="checkbox">
+                      <input type="checkbox" id="staff-flow-overview"> Visible Overview (vidí celý provoz, bez úprav za druhé)
+                    </label>
+                    <button type="button" id="btn-flow-create" class="btn btn-primary btn-sm">Vytvořit přístup do FLOW</button>
+                  </div>
+                  <div id="staff-flow-manage" class="hidden">
+                    <label class="checkbox">
+                      <input type="checkbox" id="staff-flow-overview-edit"> Visible Overview
+                    </label>
+                    <div class="btn-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                      <button type="button" id="btn-flow-save-overview" class="btn btn-secondary btn-sm">Uložit Overview</button>
+                      <button type="button" id="btn-flow-reset" class="btn btn-secondary btn-sm">Reset hesla (e-mailem)</button>
+                      <button type="button" id="btn-flow-deactivate" class="btn btn-danger btn-sm">Deaktivovat FLOW</button>
+                    </div>
+                  </div>
+                  <p id="staff-flow-msg" class="status-msg"></p>
+                </div>
+              </section>
+
               <section class="settings-card staff-block">
                 <div class="settings-card-head"><h4>Platby</h4></div>
                 <div class="settings-card-body">

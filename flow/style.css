@@ -1,0 +1,205 @@
+:root {
+  --navy: #0b1f3a;
+  --navy-deep: #071526;
+  --gold: #c9a227;
+  --gold-bright: #e0b93a;
+  --gold-soft: #f3e6b8;
+  --ink: #f4f1ea;
+  --muted: #b7c0ce;
+  --card: rgba(11, 31, 58, 0.78);
+  --line: rgba(201, 162, 39, 0.32);
+  --accent: var(--gold);
+  --accent-ink: #0b1f3a;
+  --danger: #e07070;
+  --ok: #d4b84a;
+  --radius: 16px;
+  --font: "DM Sans", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--navy-deep);
+}
+
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(7, 21, 38, 0.55) 0%, rgba(7, 21, 38, 0.72) 45%, rgba(7, 21, 38, 0.88) 100%),
+    url("https://haklweb.b-cdn.net/ULOV_KLIENTA/geralt-particles-7055781_1280.jpg") center / cover no-repeat;
+}
+
+.shell {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 20px 16px 56px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+
+.brand-line {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+
+.hero-brand {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 0 18px;
+}
+
+.brand-logo {
+  display: block;
+  width: min(92vw, 480px);
+  height: auto;
+  max-height: 42vh;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
+}
+
+main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.card {
+  background: var(--card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 26px 22px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lede {
+  margin: 0 0 20px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.form { display: grid; gap: 14px; }
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--gold-soft);
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 10px;
+  font: inherit;
+  color: var(--ink);
+  background: rgba(7, 21, 38, 0.65);
+}
+
+input:focus {
+  outline: 2px solid rgba(201, 162, 39, 0.55);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+
+.btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+  color: var(--accent-ink);
+  box-shadow: 0 8px 24px rgba(201, 162, 39, 0.28);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--gold-soft);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+
+.msg { margin: 0; font-size: 0.9rem; }
+.msg.error { color: var(--danger); }
+.msg.ok { color: var(--ok); }
+.hidden { display: none !important; }
+
+.panel {
+  margin: 18px 0;
+  padding: 14px 16px;
+  background: rgba(7, 21, 38, 0.5);
+  border: 1px solid rgba(201, 162, 39, 0.18);
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.panel p { margin: 0.35em 0; }
+.panel strong { color: var(--gold); font-weight: 600; }
+
+.pwd-box {
+  margin-top: 20px;
+  border-top: 1px solid rgba(201, 162, 39, 0.22);
+  padding-top: 14px;
+}
+
+.pwd-box summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--gold-soft);
+}
+
+@media (min-width: 640px) {
+  .brand-logo {
+    width: min(88vw, 560px);
+    max-height: 46vh;
+  }
+  .hero-brand {
+    padding: 36px 0 24px;
+  }
+}

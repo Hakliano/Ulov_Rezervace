@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLOW CRM — by ULOV KLIENTY</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/png" href="https://haklweb.b-cdn.net/ULOV_KLIENTA/Flow_logo_rm-removebg-preview.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+  <div class="page-bg" aria-hidden="true"></div>
+  <div class="shell">
+    <header class="top">
+      <p class="brand-line">CRM by ULOV KLIENTY</p>
+      <button type="button" id="btn-logout" class="btn ghost hidden">Odhlásit</button>
+    </header>
+
+    <div class="hero-brand">
+      <img
+        class="brand-logo"
+        src="https://haklweb.b-cdn.net/ULOV_KLIENTA/Flow_logo_rm-removebg-preview.png"
+        alt="FLOW"
+        width="720"
+        height="240"
+        decoding="async"
+        fetchpriority="high"
+      >
+    </div>
+
+    <main>
+      <section id="view-login" class="card">
+        <h1>Přihlášení</h1>
+        <p class="lede">Denní provoz — rezervace, mail a dovolená na jednom místě.</p>
+        <form id="form-login" class="form">
+          <label>E-mail
+            <input type="email" id="login-email" required autocomplete="username">
+          </label>
+          <label>Heslo
+            <input type="password" id="login-password" required autocomplete="current-password">
+          </label>
+          <button type="submit" class="btn primary">Přihlásit</button>
+          <p id="login-msg" class="msg" hidden></p>
+        </form>
+      </section>
+
+      <section id="view-home" class="card hidden">
+        <h1>Ahoj, <span id="home-name">—</span></h1>
+        <p class="lede"><span id="home-salon">—</span></p>
+        <p class="hint">Fáze 1: účet a přihlášení fungují. Kalendář, mail a Overview přijdou v dalších krocích.</p>
+        <div class="panel">
+          <p><strong>E-mail:</strong> <span id="home-email">—</span></p>
+          <p><strong>Overview:</strong> <span id="home-overview">—</span></p>
+        </div>
+
+        <details class="pwd-box">
+          <summary>Změnit heslo</summary>
+          <form id="form-password" class="form">
+            <label>Současné heslo
+              <input type="password" id="pwd-current" required autocomplete="current-password">
+            </label>
+            <label>Nové heslo (min. 8 znaků, písmeno + číslo)
+              <input type="password" id="pwd-new" required autocomplete="new-password" minlength="8">
+            </label>
+            <button type="submit" class="btn primary">Uložit heslo</button>
+            <p id="pwd-msg" class="msg" hidden></p>
+          </form>
+        </details>
+      </section>
+    </main>
+  </div>
+  <script src="app.js?v=3"></script>
+</body>
+</html>

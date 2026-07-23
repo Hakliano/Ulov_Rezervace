@@ -1,0 +1,15 @@
+Dobrý den {{ zamestnanec.jmeno }},
+
+{% if reset %}majitelka salonu {{ salon.name }} vám resetovala heslo do FLOW.
+{% else %}byl vám vytvořen přístup do FLOW – denního přehledu provozu salonu {{ salon.name }}.
+{% endif %}
+
+Přihlášení: {{ flow_user.email }}
+Dočasné heslo: {{ heslo }}
+
+Otevřete FLOW zde:
+{{ flow_url }}
+
+Po přihlášení si heslo můžete změnit (min. 8 znaků, alespoň jedno písmeno a jedno číslo).
+
+{{ salon.name }} · FLOW CRM by ULOV KLIENTY
