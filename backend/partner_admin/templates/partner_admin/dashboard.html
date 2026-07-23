@@ -1,0 +1,154 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Přehled partnerů{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Centrální správa</p>
+      <h1>Partneři a platby</h1>
+      <p class="muted">Platební stav je informační. Nikdy automaticky neblokuje salon.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-secondary" href="{% url 'partner_admin:export_csv' %}{% if export_qs %}?{{ export_qs }}{% endif %}">
+        Export CSV
+      </a>
+    </div>
+  </div>
+
+  <section class="metrics">
+    <article><span>Salonů ve výpisu</span><strong>{{ souhrn.salonu }}</strong></article>
+    <article><span>Rezervací tento měsíc</span><strong>{{ souhrn.rezervaci_mesic }}</strong></article>
+    <article class="metric-danger"><span>Po splatnosti</span><strong>{{ souhrn.po_splatnosti }}</strong></article>
+    <article><span>BLOCKED</span><strong>{{ souhrn.blokovanych }}</strong></article>
+    <article><span>Nevyřešené chyby</span><strong>{{ souhrn.nevyresenych_chyb }}</strong></article>
+  </section>
+
+  <div class="quick-filters" aria-label="Rychlé filtry">
+    <a class="chip {% if filtry.platba == 'po_splatnosti' and not filtry.stav %}is-active{% endif %}"
+       href="?platba=po_splatnosti">Po splatnosti</a>
+    <a class="chip {% if filtry.stav == 'active' and not filtry.platba %}is-active{% endif %}"
+       href="?stav=active">ACTIVE</a>
+    <a class="chip {% if filtry.stav == 'blocked' and not filtry.platba %}is-active{% endif %}"
+       href="?stav=blocked">BLOCKED</a>
+    <a class="chip {% if filtry.platba == 'bez_vs' and not filtry.stav %}is-active{% endif %}"
+       href="?platba=bez_vs">Bez VS</a>
+    <a class="chip chip-reset" href="{% url 'partner_admin:dashboard' %}">Vše</a>
+  </div>
+
+  <form class="filters" method="get">
+    <label>
+      Hledat
+      <input type="search" name="q" value="{{ filtry.q }}" placeholder="Salon, doména, VS nebo e-mail">
+    </label>
+    <label>
+      Stav služby
+      <select name="stav">
+        <option value="">Všechny</option>
+        <option value="active" {% if filtry.stav == 'active' %}selected{% endif %}>ACTIVE</option>
+        <option value="blocked" {% if filtry.stav == 'blocked' %}selected{% endif %}>BLOCKED</option>
+      </select>
+    </label>
+    <label>
+      Platby
+      <select name="platba">
+        <option value="">Všechny</option>
+        <option value="po_splatnosti" {% if filtry.platba == 'po_splatnosti' %}selected{% endif %}>Po splatnosti</option>
+        <option value="v_poradku" {% if filtry.platba == 'v_poradku' %}selected{% endif %}>V pořádku</option>
+        <option value="nenastaveno" {% if filtry.platba == 'nenastaveno' %}selected{% endif %}>Nenastaveno</option>
+        <option value="bez_vs" {% if filtry.platba == 'bez_vs' %}selected{% endif %}>Bez VS</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">Filtrovat</button>
+    <a class="btn btn-quiet" href="{% url 'partner_admin:dashboard' %}">Zrušit filtry</a>
+  </form>
+
+  <section class="partner-list" aria-label="Seznam partnerů">
+    {% for salon in salony %}
+      {% with partner=salon.partner_nastaveni %}
+        <article class="partner-card {% if partner.je_po_splatnosti %}is-overdue{% endif %}">
+          <div class="partner-main">
+            <div>
+              <div class="badges">
+                <span class="badge badge-{{ partner.stav }}">{{ partner.get_stav_display }}</span>
+                {% if partner.je_po_splatnosti %}
+                  <span class="badge badge-overdue">NEZAPLACENO · +{{ partner.dni_po_splatnosti }} dní</span>
+                {% elif partner.dalsi_splatnost %}
+                  <span class="badge badge-neutral">NEZAPLACENO</span>
+                {% else %}
+                  <span class="badge badge-neutral">PLATBA NENASTAVENA</span>
+                {% endif %}
+              </div>
+              <h2><a href="{% url 'partner_admin:detail' salon.id %}">{{ salon.name }}</a></h2>
+              <p class="muted">{{ partner.domena|default:"Doména není nastavena" }}</p>
+            </div>
+            <a class="btn btn-secondary" href="{% url 'partner_admin:detail' salon.id %}">Spravovat</a>
+          </div>
+
+          <dl class="partner-data">
+            <div><dt>Tarif</dt><dd>{{ partner.tarif|default:"—" }}</dd></div>
+            <div><dt>Variabilní symbol</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
+            <div><dt>Částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč / {{ partner.get_periodicita_display|lower }}</dd></div>
+            <div>
+              <dt>Další splatnost</dt>
+              <dd {% if partner.je_po_splatnosti %}class="danger-text"{% endif %}>
+                {{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}
+                {% if partner.je_po_splatnosti %}
+                  <small>(+{{ partner.dni_po_splatnosti }} dní)</small>
+                {% endif %}
+              </dd>
+            </div>
+          </dl>
+
+          <div class="stat-row">
+            <span><strong>{{ salon.rezervace_celkem }}</strong> rezervací celkem</span>
+            <span><strong>{{ salon.rezervace_mesic }}</strong> tento měsíc</span>
+            <span><strong>{{ salon.rezervace_budouci }}</strong> budoucích</span>
+            <span><strong>{{ salon.no_show_celkem }}</strong> NO-show</span>
+          </div>
+        </article>
+      {% endwith %}
+    {% empty %}
+      <div class="empty">Filtru neodpovídá žádný salon.</div>
+    {% endfor %}
+  </section>
+
+  <section class="panel dashboard-errors">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Technický dohled</p>
+        <h2>Nevyřešené chyby</h2>
+      </div>
+      <span class="muted">Posledních 20</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Čas</th><th>Salon</th><th>Typ</th><th>Cesta</th><th></th></tr></thead>
+        <tbody>
+          {% for chyba in chyby %}
+            <tr>
+              <td>{{ chyba.cas|date:"d.m.Y H:i" }}</td>
+              <td>
+                {% if chyba.salon %}
+                  <a href="{% url 'partner_admin:detail' chyba.salon.id %}">{{ chyba.salon.name }}</a>
+                {% else %}
+                  Obecná chyba
+                {% endif %}
+              </td>
+              <td><strong>{{ chyba.typ_chyby }}</strong><br><small>{{ chyba.detail }}</small></td>
+              <td><code>{{ chyba.metoda }} {{ chyba.cesta }}</code></td>
+              <td>
+                <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
+                  {% csrf_token %}
+                  <button class="btn btn-quiet" type="submit">Vyřešit</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">Žádné nevyřešené technické chyby.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

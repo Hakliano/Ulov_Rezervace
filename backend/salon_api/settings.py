@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'rezervace',
     'flow',
     'partner_hub',
+    'partner_admin.apps.PartnerAdminConfig',
 ]
 
 MIDDLEWARE = [
@@ -73,6 +74,8 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'salon_api.security_middleware.SecurityHeadersMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'partner_admin.middleware.TechnickeChybyMiddleware',
+    'partner_admin.middleware.BlokovanyPartnerMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

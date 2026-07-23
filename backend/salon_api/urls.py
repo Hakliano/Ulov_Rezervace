@@ -23,6 +23,7 @@ urlpatterns = [
     path('health/', health, name='health'),
     path('health', health),
     path('admin/', admin.site.urls),
+    path('partner-admin/', include('partner_admin.urls')),
     path('api/', include('salons.urls')),
     path('api/', include('rezervace.urls')),
     path('api/', include('flow.urls')),
