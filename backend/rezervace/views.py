@@ -688,8 +688,10 @@ class AdminEmailNastaveniView(APIView):
         ser = EmailNastaveniSerializer(nast, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()
-        nast.email_odesilatel = salon.email
+        # Jméno Od: = salon; adresa Od: = SMTP schránka (ne kontaktní e-mail webu)
         nast.email_jmeno_odesilatele = salon.name
+        if nast.smtp_user:
+            nast.email_odesilatel = nast.smtp_user
         nast.save(update_fields=['email_odesilatel', 'email_jmeno_odesilatele'])
         data = EmailNastaveniSerializer(nast).data
         cfg = get_email_config(salon)

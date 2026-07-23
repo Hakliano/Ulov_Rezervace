@@ -28,8 +28,9 @@ def get_email_config(salon):
     except Exception:
         nast = None
 
-    from_addr = salon.email or (nast.email_odesilatel if nast else '')
     from_name = salon.name or (nast.email_jmeno_odesilatele if nast else '')
+    # Kontaktní e-mail webu (může být jiný než SMTP schránka)
+    kontakt_email = salon.email or (nast.email_odesilatel if nast else '')
 
     if nast and nast.smtp_user and nast.smtp_password:
         smtp_host = nast.smtp_host or 'smtp.forpsi.com'
@@ -39,6 +40,8 @@ def get_email_config(salon):
         use_ssl = nast.smtp_use_ssl
         use_tls = not use_ssl
         zdroj = 'admin'
+        # Forpsi / většina SMTP: From musí sedět na přihlášenou schránku
+        from_addr = smtp_user
     else:
         sid = salon.id
         smtp_host = _salon_smtp_env(sid, 'SMTP_HOST') or settings.EMAIL_HOST
@@ -56,6 +59,7 @@ def get_email_config(salon):
             use_ssl = settings.EMAIL_USE_SSL
             use_tls = settings.EMAIL_USE_TLS and not use_ssl
         zdroj = 'env' if smtp_user and smtp_password else 'none'
+        from_addr = smtp_user or kontakt_email
 
     if from_name and from_addr:
         from_email = f'{from_name} <{from_addr}>'

@@ -25,7 +25,11 @@ def email_flow_pristup_sync(flow_user, heslo, reset=False):
     }
     zprava = render_to_string('flow/emails/pristup.txt', ctx)
     html = render_to_string('flow/emails/pristup.html', ctx)
-    return _odeslat_pro_salon(salon, flow_user.email, predmet, zprava, html_body=html)
+    try:
+        return bool(_odeslat_pro_salon(salon, flow_user.email, predmet, zprava, html_body=html))
+    except Exception:
+        # Účet / heslo už může být uložené — nesmí spadnout celý request na 500
+        return False
 
 
 def email_flow_pristup(flow_user, heslo, reset=False):
