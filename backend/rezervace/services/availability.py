@@ -99,13 +99,16 @@ def _blokace_koliduje(salon, zamestnanec, start, end):
 
 def volni_zamestnanci(salon: Salon, datum, start, end, exclude_id=None):
     staff = Zamestnanec.objects.filter(salon=salon, aktivni=True).exclude(role=Zamestnanec.ROLE_MAJITEL)
+    # Rozvrh je v lokálním čase salonu — nebrat UTC wall-clock z DB.
+    start_local = timezone.localtime(start) if timezone.is_aware(start) else start
+    end_local = timezone.localtime(end) if timezone.is_aware(end) else end
     volni = []
     for z in staff:
         okno = zamestnanec_okno(z, datum)
         if not okno:
             continue
         od, do = okno
-        if start.time() < od or end.time() > do:
+        if start_local.time() < od or end_local.time() > do:
             continue
         if _obsazenost_zamestnance(z, salon, start, end, exclude_id):
             continue
@@ -172,11 +175,13 @@ def generuj_terminy(
                 okno_z = zamestnanec_okno(z, datum)
                 if okno_z:
                     z_od, z_do = okno_z
-                    if start.time() >= z_od and end.time() <= z_do:
+                    start_local = timezone.localtime(start) if timezone.is_aware(start) else start
+                    end_local = timezone.localtime(end) if timezone.is_aware(end) else end
+                    if start_local.time() >= z_od and end_local.time() <= z_do:
                         if not _obsazenost_zamestnance(z, salon, start, end, exclude_rezervace_id):
                             if not _blokace_koliduje(salon, z, start, end):
                                 terminy.append({
-                                    'cas': start.strftime('%H:%M'),
+                                    'cas': start_local.strftime('%H:%M'),
                                     'zamestnanec_id': z.id,
                                     'zamestnanec': z.jmeno,
                                 })
