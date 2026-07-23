@@ -4,10 +4,11 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-MAX_NOTIFIKACE = 7
+MAX_NOTIFIKACE = 8
 MANUAL_OFFSET = 'manual'
 MANUAL_TYP_NOSHOW = 'noshow'
 MANUAL_TYP_PLATBA = 'platba'
+MANUAL_TYP_ZALOHA = 'zaloha'
 MANUAL_TYP_STORNO = 'storno'
 MANUAL_TYP_POTVRZENI = 'potvrzeni'
 MANUAL_TYP_ZALOHA_OK = 'zaloha_ok'
@@ -17,6 +18,7 @@ DEFAULT_PREDMET_PO = 'Děkujeme za návštěvu – {{ salon.name }}'
 DEFAULT_PREDMET_RECENZE = 'Jak se vám u nás líbilo? – {{ salon.name }}'
 DEFAULT_PREDMET_NO_SHOW = 'Neuskutečněná rezervace – {{ salon.name }}'
 DEFAULT_PREDMET_PLATBA = 'Žádost o úhradu – {{ salon.name }}'
+DEFAULT_PREDMET_ZALOHA = 'Žádost o zálohu – {{ salon.name }}'
 DEFAULT_PREDMET_STORNO = 'Omlouváme se – zrušení rezervace ({{ salon.name }})'
 DEFAULT_PREDMET_POTVRZENI = 'Potvrzení rezervace – {{ salon.name }}'
 DEFAULT_PREDMET_ZALOHA_OK = 'Záloha přijata – rezervace potvrzena ({{ salon.name }})'
@@ -82,6 +84,25 @@ Variabilní symbol: {{ variabilni_symbol }}
 Platbu můžete provést naskenováním QR kódu v příloze e-mailu, nebo bankovním převodem dle údajů výše.
 
 Děkujeme.
+{{ salon.name }}"""
+
+DEFAULT_TEXT_ZALOHA = """Dobrý den {{ jmeno }},
+
+pro váš termín v salonu {{ salon.name }} vás prosíme o zálohovou platbu.
+
+Termín: {{ termin }}
+Služby: {{ sluzby }}
+{% if zamestnanec %}Pracovník: {{ zamestnanec }}{% endif %}
+
+Částka zálohy: {{ castka }} Kč
+Číslo účtu: {{ ucet }}
+Variabilní symbol: {{ variabilni_symbol }}
+
+Platbu proveďte naskenováním QR kódu v příloze e-mailu, nebo bankovním převodem dle údajů výše.
+Uhraďte prosím zálohu včas (lhůtu uveďte podle provozovny — typicky několik hodin před službou). Pokud záloha nedorazí, salon může rezervaci zrušit.
+
+Dotazy: {{ telefon }}
+
 {{ salon.name }}"""
 
 DEFAULT_TEXT_STORNO = """Dobrý den {{ jmeno }},
@@ -180,6 +201,11 @@ VychoZI_NOTIFIKACE = [
     },
     {
         'offset': MANUAL_OFFSET, 'aktivni': True, 'manual': True,
+        'manual_typ': MANUAL_TYP_ZALOHA,
+        'predmet': DEFAULT_PREDMET_ZALOHA, 'text': DEFAULT_TEXT_ZALOHA,
+    },
+    {
+        'offset': MANUAL_OFFSET, 'aktivni': True, 'manual': True,
         'manual_typ': MANUAL_TYP_STORNO,
         'predmet': DEFAULT_PREDMET_STORNO, 'text': DEFAULT_TEXT_STORNO,
     },
@@ -206,6 +232,7 @@ def nova_notifikace(offset='+24', aktivni=False, predmet=None, text=None, manual
         defaults = {
             MANUAL_TYP_NOSHOW: (DEFAULT_PREDMET_NO_SHOW, DEFAULT_TEXT_NO_SHOW),
             MANUAL_TYP_PLATBA: (DEFAULT_PREDMET_PLATBA, DEFAULT_TEXT_PLATBA),
+            MANUAL_TYP_ZALOHA: (DEFAULT_PREDMET_ZALOHA, DEFAULT_TEXT_ZALOHA),
             MANUAL_TYP_STORNO: (DEFAULT_PREDMET_STORNO, DEFAULT_TEXT_STORNO),
             MANUAL_TYP_POTVRZENI: (DEFAULT_PREDMET_POTVRZENI, DEFAULT_TEXT_POTVRZENI),
             MANUAL_TYP_ZALOHA_OK: (DEFAULT_PREDMET_ZALOHA_OK, DEFAULT_TEXT_ZALOHA_OK),
@@ -339,9 +366,10 @@ def _vynut_manualni_sloty(result):
     sloty = [
         (2, MANUAL_TYP_NOSHOW, DEFAULT_PREDMET_NO_SHOW),
         (3, MANUAL_TYP_PLATBA, DEFAULT_PREDMET_PLATBA),
-        (4, MANUAL_TYP_STORNO, DEFAULT_PREDMET_STORNO),
-        (5, MANUAL_TYP_POTVRZENI, DEFAULT_PREDMET_POTVRZENI),
-        (6, MANUAL_TYP_ZALOHA_OK, DEFAULT_PREDMET_ZALOHA_OK),
+        (4, MANUAL_TYP_ZALOHA, DEFAULT_PREDMET_ZALOHA),
+        (5, MANUAL_TYP_STORNO, DEFAULT_PREDMET_STORNO),
+        (6, MANUAL_TYP_POTVRZENI, DEFAULT_PREDMET_POTVRZENI),
+        (7, MANUAL_TYP_ZALOHA_OK, DEFAULT_PREDMET_ZALOHA_OK),
     ]
     for idx, typ, default_predmet in sloty:
         if len(result) <= idx:
@@ -361,6 +389,17 @@ def _vynut_manualni_sloty(result):
             if not n.get('text') or 'QR kód' not in (n.get('text') or ''):
                 if 'castka' not in (n.get('text') or ''):
                     n['text'] = vychozi[idx]['text']
+        if typ == MANUAL_TYP_ZALOHA and idx < len(vychozi):
+            text = n.get('text') or ''
+            # Stará šablona platby („děkujeme za návštěvu“) sem nepatří
+            if (
+                not text
+                or 'děkujeme za návštěvu' in text.lower()
+                or 'záloh' not in text.lower()
+            ):
+                n['text'] = vychozi[idx]['text']
+            if not n.get('predmet') or n.get('predmet') == DEFAULT_PREDMET_PLATBA:
+                n['predmet'] = DEFAULT_PREDMET_ZALOHA
         if typ == MANUAL_TYP_STORNO and idx < len(vychozi):
             if not n.get('text') or 'připomínáme vaši rezervaci' in (n.get('text') or ''):
                 n['text'] = vychozi[idx]['text']
@@ -379,8 +418,37 @@ def _vynut_manualni_sloty(result):
     return result
 
 
+def _zajisti_zaloha_slot(result):
+    """Stará data měla 7 slotů (platba = úhrada i záloha). Vloží samostatný slot zálohy."""
+    for n in result:
+        if je_manualni(n) and n.get('manual_typ') == MANUAL_TYP_ZALOHA:
+            return result
+    vzor = next(v for v in vychozi_notifikace() if v.get('manual_typ') == MANUAL_TYP_ZALOHA)
+    insert_at = min(4, len(result))
+    for i, n in enumerate(result):
+        mt = n.get('manual_typ')
+        if mt == MANUAL_TYP_PLATBA:
+            insert_at = i + 1
+        if mt == MANUAL_TYP_STORNO or (
+            mt is None and i == 4 and je_manualni(n)
+        ):
+            insert_at = i
+            break
+    result.insert(insert_at, {
+        'id': str(uuid.uuid4()),
+        'offset': MANUAL_OFFSET,
+        'manual': True,
+        'manual_typ': MANUAL_TYP_ZALOHA,
+        'aktivni': True,
+        'predmet': vzor['predmet'],
+        'text': vzor['text'],
+    })
+    return result
+
+
 def dopln_na_notifikace(notifikace):
     result = normalizuj_notifikace(notifikace)
+    result = _zajisti_zaloha_slot(result)
     vychozi = vychozi_notifikace()
     while len(result) < MAX_NOTIFIKACE:
         idx = len(result)
@@ -416,10 +484,12 @@ def get_manual_notifikace(notifikace_list, typ=MANUAL_TYP_NOSHOW):
             elif i == 3:
                 mt = MANUAL_TYP_PLATBA
             elif i == 4:
-                mt = MANUAL_TYP_STORNO
+                mt = MANUAL_TYP_ZALOHA
             elif i == 5:
-                mt = MANUAL_TYP_POTVRZENI
+                mt = MANUAL_TYP_STORNO
             elif i == 6:
+                mt = MANUAL_TYP_POTVRZENI
+            elif i == 7:
                 mt = MANUAL_TYP_ZALOHA_OK
             else:
                 mt = MANUAL_TYP_NOSHOW

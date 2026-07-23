@@ -788,13 +788,14 @@ async function loadNastaveni() {
   renderNotifikace(data.notifikace || [], data.notifikace_tagy, data.notifikace_placeholders);
 }
 
-const MAX_NOTIFIKACE = 7;
+const MAX_NOTIFIKACE = 8;
 
 const NOTIF_POPISY = [
   'Připomínka před termínem (doporučeno +24 h) — odesílá se automaticky',
   'Poděkování po návštěvě a prosba o recenzi (doporučeno -2 h po službě) — automaticky',
   'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show',
-  'Žádost o úhradu / zálohu s QR — FLOW: Platba QR nebo Požádat o zálohu',
+  'Žádost o úhradu po návštěvě (QR) — FLOW: Platba QR',
+  'Žádost o zálohu před termínem (QR) — FLOW: Požádat o zálohu',
   'Storno rezervace — při zrušení salonem / ve FLOW',
   'Potvrzení rezervace — automaticky při potvrzení (včetně textu o možné záloze u rizikových služeb)',
   'Záloha přijata — odešle se tlačítkem Záloha OK ve FLOW',
@@ -853,7 +854,12 @@ function renderNotifikace(notifikace, tagy, hint) {
 function buildNotifCard(n, i) {
   const isManual = i >= 2 || n.manual || n.offset === 'manual';
   const manualTyp = n.manual_typ || (
-    i === 6 ? 'zaloha_ok' : i === 5 ? 'potvrzeni' : i === 4 ? 'storno' : i === 3 ? 'platba' : 'noshow'
+    i === 7 ? 'zaloha_ok'
+      : i === 6 ? 'potvrzeni'
+        : i === 5 ? 'storno'
+          : i === 4 ? 'zaloha'
+            : i === 3 ? 'platba'
+              : 'noshow'
   );
   const card = document.createElement('div');
   card.className = 'notif-card';
@@ -877,7 +883,9 @@ function buildNotifCard(n, i) {
     const manualHint = document.createElement('p');
     manualHint.className = 'notif-manual-hint';
     if (manualTyp === 'platba') {
-      manualHint.textContent = 'Ručně: Platba QR nebo Požádat o zálohu ve FLOW — v e-mailu bude QR kód. U zálohy napište do textu i lhůtu (např. 12 h před službou).';
+      manualHint.textContent = 'Ručně: Platba QR ve FLOW po návštěvě — v e-mailu bude QR kód.';
+    } else if (manualTyp === 'zaloha') {
+      manualHint.textContent = 'Ručně: Požádat o zálohu ve FLOW — QR + částka. Do textu doplňte lhůtu (např. 12 h před službou).';
     } else if (manualTyp === 'storno') {
       manualHint.textContent = 'Odešle se při stornu (admin / FLOW). Tag {{ kdo }} = salon nebo zákazník; {{ duvod }} = důvod.';
     } else if (manualTyp === 'potvrzeni') {
@@ -944,13 +952,20 @@ function collectNotifikace() {
   return [...$$('#notifikace-list .notif-card')].map((card, i) => {
     const manual = card.classList.contains('notif-manual') || i >= 2;
     if (manual) {
-      const manualTyp = card.dataset.manualTyp || (i === 4 ? 'storno' : i === 3 ? 'platba' : 'noshow');
+      const manualTyp = card.dataset.manualTyp || (
+        i === 7 ? 'zaloha_ok'
+          : i === 6 ? 'potvrzeni'
+            : i === 5 ? 'storno'
+              : i === 4 ? 'zaloha'
+                : i === 3 ? 'platba'
+                  : 'noshow'
+      );
       return {
         id: card.querySelector('.notif-id')?.value || undefined,
         manual: true,
         offset: 'manual',
         manual_typ: manualTyp,
-        aktivni: manualTyp === 'platba' || manualTyp === 'storno',
+        aktivni: manualTyp !== 'noshow',
         predmet: card.querySelector('.notif-predmet')?.value ?? '',
         text: card.querySelector('.notif-text')?.value ?? '',
       };

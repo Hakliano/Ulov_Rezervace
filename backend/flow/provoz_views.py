@@ -9,7 +9,12 @@ from rest_framework.views import APIView
 from flow.auth import get_flow_user_from_request
 from flow.permissions import FlowPermission
 from rezervace.models import NoShowZaznam, Rezervace, RezervaceHistorie, Zamestnanec, ZamestnanecAbsence, ZamestnanecRozvrh
-from rezervace.notifikace_defaults import MANUAL_TYP_NOSHOW, MANUAL_TYP_PLATBA, get_manual_notifikace
+from rezervace.notifikace_defaults import (
+    MANUAL_TYP_NOSHOW,
+    MANUAL_TYP_PLATBA,
+    MANUAL_TYP_ZALOHA,
+    get_manual_notifikace,
+)
 from rezervace.serializers import (
     AdminRezervaceSerializer,
     NoShowZaznamSerializer,
@@ -349,9 +354,12 @@ class FlowRezervacePlatbaView(APIView):
 
         try:
             nastaveni = user.salon.rezervacni_nastaveni
-            platba = get_manual_notifikace(nastaveni.notifikace, MANUAL_TYP_PLATBA)
+            typ_mailu = MANUAL_TYP_ZALOHA if je_zaloha else MANUAL_TYP_PLATBA
+            platba = get_manual_notifikace(nastaveni.notifikace, typ_mailu)
             if not platba:
-                return Response({'detail': 'Chybí nastavení e-mailu (platba / záloha QR).'}, status=400)
+                return Response({
+                    'detail': 'Chybí nastavení e-mailu (záloha QR).' if je_zaloha else 'Chybí nastavení e-mailu (platba QR).',
+                }, status=400)
             from rezervace.services.notifikace_email import email_platba_qr
             from rezervace.services.platba_qr import generuj_platbu_qr
             import base64
