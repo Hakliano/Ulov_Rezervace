@@ -150,15 +150,136 @@
     $('#r-auto').checked = !!n.auto_potvrzeni;
   }
 
+  const MAX_NOTIFIKACE = 8;
+  const NOTIF_POPISY = [
+    'Připomínka před termínem (doporučeno +24 h) — odesílá se automaticky',
+    'Poděkování po návštěvě a prosba o recenzi (doporučeno -2 h po službě) — automaticky',
+    'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show',
+    'Žádost o úhradu po návštěvě (QR) — FLOW: Platba QR',
+    'Žádost o zálohu před termínem (QR) — FLOW: Požádat o zálohu',
+    'Storno rezervace — při zrušení salonem / ve FLOW',
+    'Potvrzení rezervace — automaticky při potvrzení (včetně textu o možné záloze u rizikových služeb)',
+    'Záloha přijata — odešle se tlačítkem Záloha OK ve FLOW',
+  ];
+
+  function manualTypForIndex(i, n) {
+    return n.manual_typ || (
+      i === 7 ? 'zaloha_ok'
+        : i === 6 ? 'potvrzeni'
+          : i === 5 ? 'storno'
+            : i === 4 ? 'zaloha'
+              : i === 3 ? 'platba'
+                : 'noshow'
+    );
+  }
+
+  function renderTagGuide(tagy) {
+    const el = $('#e-tag-guide');
+    if (!el) return;
+    el.replaceChildren();
+    if (!tagy?.length) return;
+    const table = document.createElement('table');
+    table.className = 'tag-table';
+    table.innerHTML = '<thead><tr><th>Tag</th><th>Co se vypíše</th><th>Příklad</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    tagy.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><code>${escapeHtml(row.tag || '')}</code></td><td>${escapeHtml(row.popis || '')}</td><td class="muted">${escapeHtml(row.priklad || '')}</td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    el.appendChild(table);
+  }
+
+  function buildNotifCard(n, i) {
+    const isManual = i >= 2 || n.manual || n.offset === 'manual';
+    const manualTyp = manualTypForIndex(i, n);
+    const card = document.createElement('article');
+    card.className = 'notif-card' + (isManual ? ' notif-manual' : '') + ((!n.aktivni && !isManual) ? ' notif-inactive' : '');
+    card.dataset.idx = String(i);
+    card.dataset.manualTyp = manualTyp;
+
+    let headerHtml = '';
+    if (isManual) {
+      const hints = {
+        platba: 'Ručně: Platba QR ve FLOW po návštěvě — v e-mailu bude QR kód.',
+        zaloha: 'Ručně: Požádat o zálohu ve FLOW — QR + částka.',
+        storno: 'Odešle se při stornu (admin / FLOW).',
+        potvrzeni: 'Odešle se automaticky při potvrzení rezervace.',
+        zaloha_ok: 'Odešle se tlačítkem Záloha OK ve FLOW.',
+        noshow: 'Ručně: NO-show u rezervace v kalendáři / FLOW.',
+      };
+      headerHtml = `<p class="notif-manual-hint">${escapeHtml(hints[manualTyp] || hints.noshow)}</p>`;
+    } else {
+      headerHtml = `
+        <label class="check"><span><input type="checkbox" class="notif-aktivni" ${n.aktivni ? 'checked' : ''}> Odesílat automaticky</span></label>
+        <label>Čas odeslání <input type="text" class="notif-offset" value="${escapeAttr(n.offset || '+24')}" placeholder="+24 nebo -2"></label>`;
+    }
+
+    card.innerHTML = `
+      <div class="notif-card-head">
+        <h3>Notifikace ${i + 1}</h3>
+        <p class="muted">${escapeHtml(NOTIF_POPISY[i] || '')}</p>
+      </div>
+      <div class="notif-header form-grid">${headerHtml}</div>
+      <label>Předmět e-mailu <input type="text" class="notif-predmet" value="${escapeAttr(n.predmet || '')}"></label>
+      <label class="full">Text e-mailu <textarea class="notif-text" rows="8">${escapeHtml(n.text || '')}</textarea></label>
+      <input type="hidden" class="notif-id" value="${escapeAttr(n.id || '')}">`;
+
+    if (!isManual) {
+      const cb = card.querySelector('.notif-aktivni');
+      cb?.addEventListener('change', () => {
+        card.classList.toggle('notif-inactive', !cb.checked);
+      });
+    }
+    return card;
+  }
+
+  function renderNotifikace(notifikace, tagy, hint) {
+    const hintEl = $('#notif-hint');
+    if (hintEl) hintEl.textContent = hint || '';
+    renderTagGuide(tagy);
+    const list = $('#notifikace-list');
+    if (!list) return;
+    list.replaceChildren();
+    const items = [...(notifikace || [])];
+    while (items.length < MAX_NOTIFIKACE) {
+      items.push({ id: '', offset: 'manual', manual: true, aktivni: false, predmet: '', text: '' });
+    }
+    items.slice(0, MAX_NOTIFIKACE).forEach((n, i) => list.appendChild(buildNotifCard(n, i)));
+  }
+
+  function collectNotifikace() {
+    return [...document.querySelectorAll('#notifikace-list .notif-card')].map((card, i) => {
+      const manual = card.classList.contains('notif-manual') || i >= 2;
+      const id = card.querySelector('.notif-id')?.value || undefined;
+      if (manual) {
+        const manualTyp = card.dataset.manualTyp || manualTypForIndex(i, {});
+        return {
+          id,
+          manual: true,
+          offset: 'manual',
+          manual_typ: manualTyp,
+          aktivni: manualTyp !== 'noshow',
+          predmet: card.querySelector('.notif-predmet')?.value ?? '',
+          text: card.querySelector('.notif-text')?.value ?? '',
+        };
+      }
+      return {
+        id,
+        manual: false,
+        offset: card.querySelector('.notif-offset')?.value || '+24',
+        aktivni: !!card.querySelector('.notif-aktivni')?.checked,
+        predmet: card.querySelector('.notif-predmet')?.value ?? '',
+        text: card.querySelector('.notif-text')?.value ?? '',
+      };
+    });
+  }
+
   function fillEmaily(n) {
     if (!$('#e-recenze')) return;
     $('#e-recenze').value = n.recenze_url || '';
-    $('#e-notif').value = JSON.stringify(n.notifikace || [], null, 2);
-    const guide = $('#e-tag-guide');
-    if (guide && n.notifikace_tagy) {
-      guide.textContent = (n.notifikace_tagy || []).map((t) => `${t.tag} — ${t.popis || ''}`).join('\n')
-        || (n.notifikace_placeholders || '');
-    }
+    renderNotifikace(n.notifikace || [], n.notifikace_tagy, n.notifikace_placeholders);
   }
 
   function fillSmtp(e) {
@@ -424,18 +545,12 @@
 
     $('#btn-save-emaily')?.addEventListener('click', async () => {
       try {
-        let notifikace;
-        try {
-          notifikace = JSON.parse($('#e-notif').value);
-        } catch {
-          throw new Error('Notifikace JSON není platný.');
-        }
         nastaveniCache = await api(`/salon/${salonId}/rezervace/admin/nastaveni/`, {
           method: 'PUT',
           body: JSON.stringify({
             ...nastaveniCache,
             recenze_url: $('#e-recenze').value.trim(),
-            notifikace,
+            notifikace: collectNotifikace(),
           }),
         });
         fillEmaily(nastaveniCache);

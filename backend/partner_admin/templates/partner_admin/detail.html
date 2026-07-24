@@ -431,14 +431,13 @@
   {% if active_tab == 'emaily' %}
   <section class="panel ops-pane" data-ops="emaily">
     <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>E-mailové šablony</h2></div></div>
-    <label>Recenze URL <input id="e-recenze" type="url"></label>
+    <label>Recenze URL <input id="e-recenze" type="url" placeholder="https://…"></label>
     <button type="button" id="btn-toggle-guide" class="btn btn-quiet top-gap">Ukázat nápovědu dynamických polí</button>
     <div id="e-tag-guide-wrap" class="hidden top-gap">
-      <pre id="e-tag-guide" class="mono muted"></pre>
+      <p id="notif-hint" class="muted"></p>
+      <div id="e-tag-guide"></div>
     </div>
-    <label class="full top-gap">Notifikace (JSON)
-      <textarea id="e-notif" rows="16" class="mono"></textarea>
-    </label>
+    <div id="notifikace-list" class="notifikace-list top-gap"></div>
     <div class="form-actions-row top-gap">
       <button type="button" id="btn-save-emaily" class="btn btn-primary">Uložit e-maily</button>
     </div>
