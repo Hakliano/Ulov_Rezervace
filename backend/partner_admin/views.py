@@ -11,6 +11,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from django.urls import reverse
+
+from partner_hub.models import create_partner_session
 from rezervace.models import Rezervace, SalonAuditLog, Zamestnanec
 from salons.models import Salon
 
@@ -29,6 +32,38 @@ superadmin_required = user_passes_test(
     lambda user: user.is_authenticated and user.is_active and user.is_superuser,
     login_url='/admin/login/',
 )
+
+DETAIL_TABS = {
+    'partner',
+    'parovani',
+    'platby',
+    'upozorneni',
+    'pristupy',
+    'stav',
+    'audit',
+    'chyby',
+    'web',
+    'banner',
+    'cenik',
+    'novinky',
+    'personal',
+    'rezervace',
+    'emaily',
+    'smtp',
+    'odkazy',
+}
+
+
+def _tab_z_request(request, default='partner'):
+    tab = (request.POST.get('tab') or request.GET.get('tab') or default).strip()
+    return tab if tab in DETAIL_TABS else default
+
+
+def _detail_redirect(salon_id, tab='partner'):
+    url = reverse('partner_admin:detail', args=[salon_id])
+    if tab and tab in DETAIL_TABS:
+        url = f'{url}?tab={tab}'
+    return redirect(url)
 
 
 def _partner(salon):
@@ -350,12 +385,15 @@ def detail_partnera(request, salon_id):
     if sablony:
         vychozi_predmet = sablony[0]['predmet']
         vychozi_text = sablony[0]['text']
+    api_session = create_partner_session(request.user, days=1)
     return render(
         request,
         'partner_admin/detail.html',
         {
             'salon': salon,
             'partner': partner,
+            'active_tab': _tab_z_request(request),
+            'partner_api_token': str(api_session.token),
             'dnes': dnes,
             'statistiky': statistiky,
             'nastaveni_form': PartnerNastaveniForm(instance=partner),
@@ -400,7 +438,7 @@ def ulozit_nastaveni(request, salon_id):
         messages.error(request, 'Nastavení se nepodařilo uložit: ' + '; '.join(
             error for errors in form.errors.values() for error in errors
         ))
-    return redirect('partner_admin:detail', salon_id=salon.id)
+    return _detail_redirect(salon.id, _tab_z_request(request, 'partner'))
 
 
 @superadmin_required
@@ -413,14 +451,14 @@ def blokovat(request, salon_id):
         messages.error(request, 'Salon nebyl zablokován: ' + '; '.join(
             error for errors in form.errors.values() for error in errors
         ))
-        return redirect('partner_admin:detail', salon_id=salon.id)
+        return _detail_redirect(salon.id, 'stav')
     if partner.stav != PartnerNastaveni.STAV_BLOCKED:
         partner.stav = PartnerNastaveni.STAV_BLOCKED
         partner.duvod_blokace = form.cleaned_data['duvod']
         partner.save()
         log_superadmin(salon, request.user, 'Salon ručně přepnut na BLOCKED.', po={'stav': 'blocked'})
     messages.warning(request, 'Salon je BLOCKED. Jeho API nyní vrací stav 423.')
-    return redirect('partner_admin:detail', salon_id=salon.id)
+    return _detail_redirect(salon.id, 'stav')
 
 
 @superadmin_required
@@ -433,7 +471,7 @@ def aktivovat(request, salon_id):
         partner.save()
         log_superadmin(salon, request.user, 'Salon ručně přepnut na ACTIVE.', po={'stav': 'active'})
     messages.success(request, 'Salon je ACTIVE.')
-    return redirect('partner_admin:detail', salon_id=salon.id)
+    return _detail_redirect(salon.id, 'stav')
 
 
 @superadmin_required
@@ -458,7 +496,7 @@ def potvrdit_platbu(request, salon_id):
             messages.error(request, f'Platbu nelze uložit: {exc}')
     else:
         messages.error(request, 'Zkontrolujte datum a částku platby.')
-    return redirect('partner_admin:detail', salon_id=salon.id)
+    return _detail_redirect(salon.id, 'parovani')
 
 
 @superadmin_required
@@ -468,12 +506,12 @@ def odeslat_upozorneni(request, salon_id):
     partner = _partner(salon)
     if not partner.fakturacni_email:
         messages.error(request, 'Doplňte fakturační e-mail.')
-        return redirect('partner_admin:detail', salon_id=salon.id)
+        return _detail_redirect(salon.id, 'upozorneni')
 
     form = UpozorneniForm(request.POST)
     if not form.is_valid():
         messages.error(request, 'Doplňte předmět a text upozornění.')
-        return redirect('partner_admin:detail', salon_id=salon.id)
+        return _detail_redirect(salon.id, 'upozorneni')
     predmet = form.cleaned_data['predmet']
     zprava = form.cleaned_data['text']
     splatnost = partner.dalsi_splatnost or timezone.localdate()
@@ -511,7 +549,7 @@ def odeslat_upozorneni(request, salon_id):
         messages.success(request, 'Upozornění bylo odesláno.')
     else:
         messages.error(request, f'Upozornění se nepodařilo odeslat: {chyba}')
-    return redirect('partner_admin:detail', salon_id=salon.id)
+    return _detail_redirect(salon.id, 'upozorneni')
 
 
 @superadmin_required
@@ -540,7 +578,7 @@ def reset_hesla(request, salon_id, zamestnanec_id):
         messages.success(request, f'Heslo účtu {majitel.prihlasovaci_jmeno} bylo resetováno.')
     else:
         messages.error(request, 'Heslo musí mít alespoň 10 znaků.')
-    return redirect('partner_admin:detail', salon_id=salon.id)
+    return _detail_redirect(salon.id, 'pristupy')
 
 
 @superadmin_required
@@ -551,4 +589,4 @@ def vyresit_chybu(request, chyba_id):
     chyba.save(update_fields=['vyreseno'])
     if not chyba.salon_id:
         return redirect('partner_admin:dashboard')
-    return redirect('partner_admin:detail', salon_id=chyba.salon_id)
+    return _detail_redirect(chyba.salon_id, 'chyby')

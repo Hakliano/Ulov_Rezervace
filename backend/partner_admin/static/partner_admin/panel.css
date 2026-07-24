@@ -171,6 +171,69 @@ dd { margin: .2rem 0 0; font-weight: 750; }
 .danger-text { color: var(--danger) !important; font-weight: 800; }
 .success-text { color: var(--success); font-weight: 800; }
 
+.detail-tabs {
+  display: grid;
+  gap: .75rem;
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.tab-group { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.tab-group-label {
+  min-width: 6.5rem;
+  color: var(--gold);
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.detail-tabs .tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: .35rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.detail-tabs .tab.is-active,
+.detail-tabs .tab:hover { border-color: var(--navy); background: #eef3f9; }
+.detail-tabs .tab.is-active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.ops-msg {
+  margin: 0 0 1rem;
+  padding: .85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.ops-msg.ok { color: var(--success); background: var(--success-bg); border-color: #bce3ca; }
+.ops-msg.err { color: var(--danger); background: var(--danger-bg); border-color: #f3bbb6; }
+.ops-blocks { display: grid; gap: .75rem; }
+.ops-block {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbfcfe;
+  display: grid;
+  gap: .65rem;
+}
+.ops-hr { border: 0; border-top: 1px solid var(--line); margin: .2rem 0; }
+.form-grid .full { grid-column: 1 / -1; }
+label.check { display: flex; align-items: center; }
+label.check span { display: inline-flex; gap: .5rem; align-items: center; color: var(--text); font-weight: 600; }
+label.check input { width: auto; min-height: 0; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; }
+.hidden { display: none !important; }
+.link-list { display: grid; gap: .55rem; padding-left: 1.1rem; }
+.link-list a { color: var(--navy); }
+
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 .panel { padding: 1.2rem; margin-bottom: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
 .detail-grid .panel { margin-bottom: 0; }

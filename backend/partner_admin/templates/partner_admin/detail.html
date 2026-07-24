@@ -1,4 +1,5 @@
 {% extends 'partner_admin/base.html' %}
+{% load static %}
 
 {% block title %}{{ salon.name }}{% endblock %}
 
@@ -14,7 +15,7 @@
         {% endif %}
       </div>
       <h1>{{ salon.name }}</h1>
-      <p class="muted">{{ partner.domena|default:"Vlastní doména není nastavena" }}</p>
+      <p class="muted">{{ partner.domena|default:"Vlastní doména není nastavena" }} · nastavuješ za majitelku tady</p>
     </div>
     <div class="head-actions">
       {% if partner.domena %}
@@ -23,6 +24,7 @@
       {% if partner.stav == 'blocked' %}
         <form method="post" action="{% url 'partner_admin:aktivovat' salon.id %}">
           {% csrf_token %}
+          <input type="hidden" name="tab" value="stav">
           <button class="btn btn-success" type="submit">Přepnout na ACTIVE</button>
         </form>
       {% endif %}
@@ -38,117 +40,210 @@
     <article><span>NO-show</span><strong>{{ statistiky.no_show }}</strong></article>
   </section>
 
-  <div class="detail-grid">
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">Partner</p>
-          <h2>Doména a platební nastavení</h2>
-        </div>
+  <nav class="detail-tabs" role="tablist" aria-label="Sekce partnera">
+    <div class="tab-group">
+      <span class="tab-group-label">ULOV</span>
+      <a class="tab{% if active_tab == 'partner' %} is-active{% endif %}" href="?tab=partner">Partner</a>
+      <a class="tab{% if active_tab == 'parovani' %} is-active{% endif %}" href="?tab=parovani">Párování plateb</a>
+      <a class="tab{% if active_tab == 'platby' %} is-active{% endif %}" href="?tab=platby">Historie plateb</a>
+      <a class="tab{% if active_tab == 'upozorneni' %} is-active{% endif %}" href="?tab=upozorneni">Upozornění</a>
+      <a class="tab{% if active_tab == 'pristupy' %} is-active{% endif %}" href="?tab=pristupy">Přístupy</a>
+      <a class="tab{% if active_tab == 'stav' %} is-active{% endif %}" href="?tab=stav">ACTIVE / BLOCKED</a>
+      <a class="tab{% if active_tab == 'audit' %} is-active{% endif %}" href="?tab=audit">Audit</a>
+      <a class="tab{% if active_tab == 'chyby' %} is-active{% endif %}" href="?tab=chyby">Chyby</a>
+    </div>
+    <div class="tab-group">
+      <span class="tab-group-label">Za majitelku</span>
+      <a class="tab{% if active_tab == 'web' %} is-active{% endif %}" href="?tab=web">Web</a>
+      <a class="tab{% if active_tab == 'banner' %} is-active{% endif %}" href="?tab=banner">Banner</a>
+      <a class="tab{% if active_tab == 'cenik' %} is-active{% endif %}" href="?tab=cenik">Ceník</a>
+      <a class="tab{% if active_tab == 'novinky' %} is-active{% endif %}" href="?tab=novinky">Novinky</a>
+      <a class="tab{% if active_tab == 'personal' %} is-active{% endif %}" href="?tab=personal">Personál + FLOW</a>
+      <a class="tab{% if active_tab == 'rezervace' %} is-active{% endif %}" href="?tab=rezervace">Rezervace</a>
+      <a class="tab{% if active_tab == 'emaily' %} is-active{% endif %}" href="?tab=emaily">E-maily</a>
+      <a class="tab{% if active_tab == 'smtp' %} is-active{% endif %}" href="?tab=smtp">SMTP / IMAP</a>
+      <a class="tab{% if active_tab == 'odkazy' %} is-active{% endif %}" href="?tab=odkazy">Odkazy</a>
+    </div>
+  </nav>
+
+  <p id="ops-msg" class="ops-msg" hidden></p>
+
+  {% if active_tab == 'partner' %}
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Partner</p>
+        <h2>Doména a platební nastavení</h2>
       </div>
-      <form class="form-grid" method="post" action="{% url 'partner_admin:ulozit_nastaveni' salon.id %}">
-        {% csrf_token %}
-        {% for field in nastaveni_form %}
-          <label>
-            {{ field.label }}
-            {{ field }}
-            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-          </label>
+    </div>
+    <form class="form-grid" method="post" action="{% url 'partner_admin:ulozit_nastaveni' salon.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="tab" value="partner">
+      {% for field in nastaveni_form %}
+        <label>
+          {{ field.label }}
+          {{ field }}
+          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        </label>
+      {% endfor %}
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Uložit nastavení</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'parovani' %}
+  <section class="panel {% if partner.je_po_splatnosti %}panel-danger{% endif %}">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Ruční párování</p>
+        <h2>Aktuální období</h2>
+      </div>
+      {% if partner.dalsi_splatnost %}
+        <span class="badge {% if partner.je_po_splatnosti %}badge-overdue{% else %}badge-neutral{% endif %}">
+          {% if partner.je_po_splatnosti %}
+            NEZAPLACENO · +{{ partner.dni_po_splatnosti }} dní
+          {% else %}
+            NEZAPLACENO
+          {% endif %}
+        </span>
+      {% else %}
+        <span class="badge badge-neutral">NENASTAVENO</span>
+      {% endif %}
+    </div>
+
+    {% if posledni_platba %}
+      <div class="paid-banner">
+        <strong>Poslední platba: ZAPLACENO</strong>
+        <span>
+          Splatnost {{ posledni_platba.splatnost|date:"d.m.Y" }} ·
+          přijato {{ posledni_platba.zaplaceno_dne|date:"d.m.Y" }} ·
+          {{ posledni_platba.prijata_castka|default:posledni_platba.ocekavana_castka|floatformat:2 }} Kč ·
+          VS {{ posledni_platba.variabilni_symbol|default:"—" }}
+        </span>
+      </div>
+    {% endif %}
+
+    <dl class="payment-summary">
+      <div><dt>Částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč</dd></div>
+      <div><dt>VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
+      <div><dt>Splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
+      <div>
+        <dt>Stav</dt>
+        <dd class="{% if partner.je_po_splatnosti %}danger-text{% endif %}">
+          {% if not partner.dalsi_splatnost %}
+            Nenastaveno
+          {% elif partner.je_po_splatnosti %}
+            Nezaplaceno · +{{ partner.dni_po_splatnosti }} dní po splatnosti
+          {% else %}
+            Nezaplaceno
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+    <form class="form-grid compact" method="post" action="{% url 'partner_admin:potvrdit_platbu' salon.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="tab" value="parovani">
+      {% for field in platba_form %}
+        <label>{{ field.label }}{{ field }}</label>
+      {% endfor %}
+      <div class="form-actions-row">
+        <button class="btn btn-success" type="submit">Označit jako ZAPLACENO</button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'platby' %}
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Historie plateb</h2>
+      <a class="btn btn-quiet" href="{% url 'partner_admin:export_platby_csv' salon.id %}">Export CSV</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stav</th><th>Splatnost</th><th>Přijato</th><th>Částka</th><th>VS</th><th>Označil</th></tr></thead>
+        <tbody>
+          {% for platba in platby %}
+            <tr>
+              <td><span class="badge badge-ok">ZAPLACENO</span></td>
+              <td>{{ platba.splatnost|date:"d.m.Y" }}</td>
+              <td>{{ platba.zaplaceno_dne|date:"d.m.Y" }}</td>
+              <td>{{ platba.prijata_castka|default:platba.ocekavana_castka|floatformat:2 }} Kč</td>
+              <td>{{ platba.variabilni_symbol|default:"—" }}</td>
+              <td>{{ platba.oznacil.username|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6">Zatím žádná zaplacená platba.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'upozorneni' %}
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Fakturace</p>
+        <h2>Odeslat upozornění</h2>
+      </div>
+    </div>
+    <form class="reminder-form" id="upozorneni-form" method="post" action="{% url 'partner_admin:odeslat_upozorneni' salon.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="tab" value="upozorneni">
+      {% if sablony_upozorneni %}
+        {{ sablony_upozorneni|json_script:"upozorneni-sablony" }}
+      {% endif %}
+      <div class="template-picks">
+        <span>Šablona:</span>
+        {% for sablona in sablony_upozorneni %}
+          <button class="chip template-chip" type="button" data-id="{{ sablona.id }}">{{ sablona.label }}</button>
+        {% empty %}
+          <span class="muted">Šablony upomínek jsou dostupné po nastavení splatnosti.</span>
         {% endfor %}
-        <div class="form-actions">
-          <button class="btn btn-primary" type="submit">Uložit nastavení</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="panel {% if partner.je_po_splatnosti %}panel-danger{% endif %}">
-      <div class="panel-head">
-        <div>
-          <p class="eyebrow">Ruční párování</p>
-          <h2>Aktuální období</h2>
-        </div>
-        {% if partner.dalsi_splatnost %}
-          <span class="badge {% if partner.je_po_splatnosti %}badge-overdue{% else %}badge-neutral{% endif %}">
-            {% if partner.je_po_splatnosti %}
-              NEZAPLACENO · +{{ partner.dni_po_splatnosti }} dní
-            {% else %}
-              NEZAPLACENO
-            {% endif %}
-          </span>
-        {% else %}
-          <span class="badge badge-neutral">NENASTAVENO</span>
-        {% endif %}
+        <button class="btn btn-secondary" type="button" id="clear-email-form">Napsat libovolný e-mail</button>
       </div>
-
-      {% if posledni_platba %}
-        <div class="paid-banner">
-          <strong>Poslední platba: ZAPLACENO</strong>
-          <span>
-            Splatnost {{ posledni_platba.splatnost|date:"d.m.Y" }} ·
-            přijato {{ posledni_platba.zaplaceno_dne|date:"d.m.Y" }} ·
-            {{ posledni_platba.prijata_castka|default:posledni_platba.ocekavana_castka|floatformat:2 }} Kč ·
-            VS {{ posledni_platba.variabilni_symbol|default:"—" }}
-          </span>
+      {% for field in upozorneni_form %}
+        <label>{{ field.label }}{{ field }}</label>
+      {% endfor %}
+      {% if email_jen_konzole %}
+        <div class="dev-warning">
+          <strong>E-mail není nastaven:</strong> zpráva se teď neodešle partnerovi,
+          jen se zapíše do logu serveru.
         </div>
       {% endif %}
-
-      <dl class="payment-summary">
-        <div><dt>Částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč</dd></div>
-        <div><dt>VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
-        <div><dt>Splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
-        <div>
-          <dt>Stav</dt>
-          <dd class="{% if partner.je_po_splatnosti %}danger-text{% endif %}">
-            {% if not partner.dalsi_splatnost %}
-              Nenastaveno
-            {% elif partner.je_po_splatnosti %}
-              Nezaplaceno · +{{ partner.dni_po_splatnosti }} dní po splatnosti
-            {% else %}
-              Nezaplaceno
-            {% endif %}
-          </dd>
-        </div>
-      </dl>
-      <form class="form-grid compact" method="post" action="{% url 'partner_admin:potvrdit_platbu' salon.id %}">
-        {% csrf_token %}
-        {% for field in platba_form %}
-          <label>{{ field.label }}{{ field }}</label>
-        {% endfor %}
-        <div class="form-actions-row">
-          <button class="btn btn-success" type="submit">Označit jako ZAPLACENO</button>
-          <button class="btn btn-secondary" type="button" id="clear-email-form">Napsat libovolný e-mail</button>
-        </div>
-      </form>
-      <form class="reminder-form top-gap" id="upozorneni-form" method="post" action="{% url 'partner_admin:odeslat_upozorneni' salon.id %}">
-        {% csrf_token %}
-        {% if sablony_upozorneni %}
-          {{ sablony_upozorneni|json_script:"upozorneni-sablony" }}
-        {% endif %}
-        <div class="template-picks">
-          <span>Šablona:</span>
-          {% for sablona in sablony_upozorneni %}
-            <button class="chip template-chip" type="button" data-id="{{ sablona.id }}">{{ sablona.label }}</button>
+      <button class="btn btn-warning" type="submit">
+        {% if email_jen_konzole %}Zkusit odeslat na{% else %}Poslat upozornění na{% endif %}
+        {{ partner.fakturacni_email|default:"chybějící e-mail" }}
+      </button>
+    </form>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Odeslaná upozornění</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Datum</th><th>Splatnost</th><th>Příjemce</th><th>Výsledek</th></tr></thead>
+        <tbody>
+          {% for item in upozorneni %}
+            <tr>
+              <td>{{ item.odeslano|date:"d.m.Y H:i" }}</td>
+              <td>{{ item.splatnost|date:"d.m.Y" }}</td>
+              <td>{{ item.prijemce }}</td>
+              <td>{% if item.uspesne %}<span class="success-text">Odesláno</span>{% else %}<span class="danger-text">Chyba</span>{% endif %}</td>
+            </tr>
           {% empty %}
-            <span class="muted">Šablony upomínek jsou dostupné po nastavení splatnosti.</span>
+            <tr><td colspan="4">Zatím nebylo odesláno žádné upozornění.</td></tr>
           {% endfor %}
-        </div>
-        {% for field in upozorneni_form %}
-          <label>{{ field.label }}{{ field }}</label>
-        {% endfor %}
-        {% if email_jen_konzole %}
-          <div class="dev-warning">
-            <strong>E-mail není nastaven:</strong> zpráva se teď neodešle partnerovi,
-            jen se zapíše do logu serveru.
-          </div>
-        {% endif %}
-        <button class="btn btn-warning" type="submit">
-          {% if email_jen_konzole %}Zkusit odeslat na{% else %}Poslat upozornění na{% endif %}
-          {{ partner.fakturacni_email|default:"chybějící e-mail" }}
-        </button>
-      </form>
-    </section>
-  </div>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
 
+  {% if active_tab == 'pristupy' %}
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -165,6 +260,7 @@
           </div>
           <form method="post" action="{% url 'partner_admin:reset_hesla' salon.id majitel.id %}">
             {% csrf_token %}
+            <input type="hidden" name="tab" value="pristupy">
             <label>
               Nové dočasné heslo
               <input type="password" name="nove_heslo" minlength="10" maxlength="128" required autocomplete="new-password">
@@ -177,7 +273,9 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
+  {% if active_tab == 'stav' %}
   <section class="panel danger-zone">
     <div class="panel-head">
       <div>
@@ -189,6 +287,7 @@
       <p>BLOCK okamžitě zablokuje API salonu. Platby tento stav nikdy nemění automaticky.</p>
       <form class="form-grid compact" method="post" action="{% url 'partner_admin:blokovat' salon.id %}">
         {% csrf_token %}
+        <input type="hidden" name="tab" value="stav">
         <label>Pro potvrzení napište BLOCK<input type="text" name="potvrzeni" required autocomplete="off"></label>
         <label>Interní důvod<input type="text" name="duvod" maxlength="300"></label>
         <button class="btn btn-danger" type="submit">Zablokovat salon</button>
@@ -197,60 +296,14 @@
       <p><strong>Salon je BLOCKED.</strong> {{ partner.duvod_blokace }}</p>
       <form method="post" action="{% url 'partner_admin:aktivovat' salon.id %}">
         {% csrf_token %}
+        <input type="hidden" name="tab" value="stav">
         <button class="btn btn-success" type="submit">Obnovit ACTIVE</button>
       </form>
     {% endif %}
   </section>
+  {% endif %}
 
-  <div class="detail-grid">
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Historie plateb</h2>
-        <a class="btn btn-quiet" href="{% url 'partner_admin:export_platby_csv' salon.id %}">Export CSV</a>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Stav</th><th>Splatnost</th><th>Přijato</th><th>Částka</th><th>VS</th><th>Označil</th></tr></thead>
-          <tbody>
-            {% for platba in platby %}
-              <tr>
-                <td><span class="badge badge-ok">ZAPLACENO</span></td>
-                <td>{{ platba.splatnost|date:"d.m.Y" }}</td>
-                <td>{{ platba.zaplaceno_dne|date:"d.m.Y" }}</td>
-                <td>{{ platba.prijata_castka|default:platba.ocekavana_castka|floatformat:2 }} Kč</td>
-                <td>{{ platba.variabilni_symbol|default:"—" }}</td>
-                <td>{{ platba.oznacil.username|default:"—" }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="6">Zatím žádná zaplacená platba.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head"><h2>Odeslaná upozornění</h2></div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Datum</th><th>Splatnost</th><th>Příjemce</th><th>Výsledek</th></tr></thead>
-          <tbody>
-            {% for item in upozorneni %}
-              <tr>
-                <td>{{ item.odeslano|date:"d.m.Y H:i" }}</td>
-                <td>{{ item.splatnost|date:"d.m.Y" }}</td>
-                <td>{{ item.prijemce }}</td>
-                <td>{% if item.uspesne %}<span class="success-text">Odesláno</span>{% else %}<span class="danger-text">Chyba</span>{% endif %}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="4">Zatím nebylo odesláno žádné upozornění.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
+  {% if active_tab == 'audit' %}
   <section class="panel">
     <div class="panel-head"><h2>Audit log</h2><span class="muted">Posledních 50 událostí</span></div>
     <div class="timeline">
@@ -264,7 +317,9 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
+  {% if active_tab == 'chyby' %}
   <section class="panel">
     <div class="panel-head"><h2>Technické chyby</h2><span class="muted">Bez request body, hesel a HTTP hlaviček</span></div>
     <div class="table-wrap">
@@ -281,6 +336,7 @@
                 {% if not chyba.vyreseno %}
                   <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
                     {% csrf_token %}
+                    <input type="hidden" name="tab" value="chyby">
                     <button class="btn btn-quiet" type="submit">Vyřešit</button>
                   </form>
                 {% endif %}
@@ -293,7 +349,138 @@
       </table>
     </div>
   </section>
+  {% endif %}
 
+  {% if active_tab == 'web' %}
+  <section class="panel ops-pane" data-ops="web">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Web – základní</h2></div></div>
+    <form id="form-web" class="form-grid">
+      <label>Název <input id="w-name" required></label>
+      <label>E-mail <input id="w-email" type="email"></label>
+      <label>Telefon <input id="w-phone"></label>
+      <label>Adresa <input id="w-address"></label>
+      <label class="full">Popis <textarea id="w-desc" rows="3"></textarea></label>
+      <label class="full">Logo URL (prázdné = smazat) <input id="w-logo"></label>
+      <label class="full">Favicon URL <input id="w-favicon"></label>
+      <label class="full">Hero URL (jen zobrazení) <input id="w-hero" readonly></label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Uložit web</button></div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'banner' %}
+  <section class="panel ops-pane" data-ops="banner">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Banner (FLOW)</h2></div></div>
+    <form id="form-banner" class="form-grid">
+      <label class="full">Text <input id="b-text" maxlength="300"></label>
+      <label>Od <input id="b-od" type="date"></label>
+      <label>Do <input id="b-do" type="date"></label>
+      <label class="check"><span><input id="b-on" type="checkbox"> Zapnuto</span></label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Uložit banner</button></div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'cenik' %}
+  <section class="panel ops-pane" data-ops="cenik">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Ceník</h2></div></div>
+    <p class="muted">Včetně rizikového produktu (měkká záloha).</p>
+    <div id="cenik-list" class="ops-blocks"></div>
+    <div class="form-actions-row top-gap">
+      <button type="button" id="btn-add-cenik" class="btn btn-secondary">+ Položka</button>
+      <button type="button" id="btn-save-cenik" class="btn btn-primary">Uložit ceník</button>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'novinky' %}
+  <section class="panel ops-pane" data-ops="novinky">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Novinky</h2></div></div>
+    <div id="novinky-list" class="ops-blocks"></div>
+    <div class="form-actions-row top-gap">
+      <button type="button" id="btn-add-novinka" class="btn btn-secondary">+ Novinka</button>
+      <button type="button" id="btn-save-novinky" class="btn btn-primary">Uložit novinky</button>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'personal' %}
+  <section class="panel ops-pane" data-ops="personal">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Personál + FLOW</h2></div></div>
+    <p class="muted">Číslo účtu pro QR, vytvoření FLOW přístupu, přehled všech rezervací, reset FLOW hesla.</p>
+    <div id="staff-list" class="ops-blocks"></div>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'rezervace' %}
+  <section class="panel ops-pane" data-ops="rezervace">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Rezervace – pravidla</h2></div></div>
+    <form id="form-rez" class="form-grid">
+      <label>Interval (min) <input id="r-interval" type="number"></label>
+      <label>Min. předstih (h) <input id="r-min" type="number"></label>
+      <label>Max. předstih (měs.) <input id="r-max" type="number"></label>
+      <label>Storno do (h) <input id="r-storno" type="number"></label>
+      <label>Platnost potvrzení (h) <input id="r-potv" type="number"></label>
+      <label>GDPR verze <input id="r-gdpr"></label>
+      <label class="check"><span><input id="r-auto" type="checkbox"> Auto potvrzení</span></label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Uložit pravidla</button></div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'emaily' %}
+  <section class="panel ops-pane" data-ops="emaily">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>E-mailové šablony</h2></div></div>
+    <label>Recenze URL <input id="e-recenze" type="url"></label>
+    <button type="button" id="btn-toggle-guide" class="btn btn-quiet top-gap">Ukázat nápovědu dynamických polí</button>
+    <div id="e-tag-guide-wrap" class="hidden top-gap">
+      <pre id="e-tag-guide" class="mono muted"></pre>
+    </div>
+    <label class="full top-gap">Notifikace (JSON)
+      <textarea id="e-notif" rows="16" class="mono"></textarea>
+    </label>
+    <div class="form-actions-row top-gap">
+      <button type="button" id="btn-save-emaily" class="btn btn-primary">Uložit e-maily</button>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'smtp' %}
+  <section class="panel ops-pane" data-ops="smtp">
+    <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>SMTP / IMAP</h2></div></div>
+    <form id="form-smtp" class="form-grid">
+      <label>SMTP host <input id="s-host"></label>
+      <label>SMTP port <input id="s-port" type="number"></label>
+      <label>SMTP user <input id="s-user"></label>
+      <label>SMTP heslo <input id="s-pass" type="password" placeholder="(beze změny = prázdné)"></label>
+      <label>Odesílatel jméno <input id="s-from-name"></label>
+      <label>Odesílatel e-mail <input id="s-from-email" type="email"></label>
+      <label class="full">Web rezervace URL <input id="s-web"></label>
+      <label class="check"><span><input id="s-ssl" type="checkbox"> SMTP SSL</span></label>
+      <label>IMAP host <input id="s-imap-host"></label>
+      <label>IMAP port <input id="s-imap-port" type="number"></label>
+      <label class="check"><span><input id="s-imap-ssl" type="checkbox"> IMAP SSL</span></label>
+      <label class="check"><span><input id="s-imap-on" type="checkbox"> IMAP zapnuto</span></label>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Uložit SMTP/IMAP</button></div>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'odkazy' %}
+  <section class="panel ops-pane" data-ops="odkazy">
+    <div class="panel-head"><div><p class="eyebrow">Provoz</p><h2>Odkazy na salon</h2></div></div>
+    <ul class="link-list muted">
+      <li>Web: <a id="link-web" href="#" target="_blank" rel="noopener"></a></li>
+      <li>Rezervace / majitelka: <a id="link-rez" href="#" target="_blank" rel="noopener"></a></li>
+      <li>FLOW: <a id="link-flow" href="#" target="_blank" rel="noopener">FLOW</a></li>
+      <li>Django admin: <a id="link-django" href="#" target="_blank" rel="noopener">/admin/</a></li>
+    </ul>
+  </section>
+  {% endif %}
+
+  {{ partner_api_token|json_script:"partner-api-token" }}
+  <script id="salon-ops-boot" type="application/json">{"salonId": {{ salon.id }}, "activeTab": "{{ active_tab }}"}</script>
+  <script src="{% static 'partner_admin/salon_ops.js' %}"></script>
   <script>
     (function () {
       var form = document.getElementById('upozorneni-form');
@@ -301,31 +488,21 @@
       var predmet = form.querySelector('[name="predmet"]');
       var text = form.querySelector('[name="text"]');
       var chips = form.querySelectorAll('.template-chip');
-
       function setActiveChip(active) {
-        chips.forEach(function (el) {
-          el.classList.toggle('is-active', el === active);
-        });
+        chips.forEach(function (el) { el.classList.toggle('is-active', el === active); });
       }
-
       function clearEmailForm() {
         if (predmet) predmet.value = '';
         if (text) text.value = '';
         setActiveChip(null);
         if (predmet) predmet.focus();
       }
-
       var clearBtn = document.getElementById('clear-email-form');
-      if (clearBtn) {
-        clearBtn.addEventListener('click', clearEmailForm);
-      }
-
+      if (clearBtn) clearBtn.addEventListener('click', clearEmailForm);
       var dataEl = document.getElementById('upozorneni-sablony');
       if (!dataEl) return;
       var sablony = {};
-      JSON.parse(dataEl.textContent).forEach(function (item) {
-        sablony[item.id] = item;
-      });
+      JSON.parse(dataEl.textContent).forEach(function (item) { sablony[item.id] = item; });
       chips.forEach(function (btn) {
         btn.addEventListener('click', function () {
           var item = sablony[btn.getAttribute('data-id')];

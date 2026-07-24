@@ -14,11 +14,16 @@ def _partner_ok(request):
     return get_partner_user(request) is not None
 
 
+def _django_superuser(request):
+    user = getattr(request, 'user', None)
+    return bool(user and user.is_authenticated and user.is_active and user.is_superuser)
+
+
 class StaffPermission(BasePermission):
     """Vyžaduje přihlášeného zaměstnance (token), partner hub, nebo legacy heslo salonu."""
 
     def has_permission(self, request, view):
-        if _partner_ok(request):
+        if _django_superuser(request) or _partner_ok(request):
             return True
         salon_id = view.kwargs.get('pk') or view.kwargs.get('salon_id')
         if get_staff_from_request(request, salon_id):
@@ -27,10 +32,10 @@ class StaffPermission(BasePermission):
 
 
 class MajitelPermission(BasePermission):
-    """Pouze majitel/majitelka salonu, partner hub, nebo legacy admin heslo."""
+    """Pouze majitel/majitelka salonu, partner hub, Django superuser, nebo legacy admin heslo."""
 
     def has_permission(self, request, view):
-        if _partner_ok(request):
+        if _django_superuser(request) or _partner_ok(request):
             return True
         salon_id = view.kwargs.get('pk') or view.kwargs.get('salon_id')
         staff = get_staff_from_request(request, salon_id)
@@ -40,12 +45,12 @@ class MajitelPermission(BasePermission):
 
 
 class AdminPasswordPermission(BasePermission):
-    """Čtení veřejné; zápis vyžaduje přihlášení personálu / partnera."""
+    """Čtení veřejné; zápis vyžaduje přihlášení personálu / partnera / superusera."""
 
     def has_permission(self, request, view):
         if request.method in ('GET', 'HEAD', 'OPTIONS'):
             return True
-        if _partner_ok(request):
+        if _django_superuser(request) or _partner_ok(request):
             return True
         salon_id = view.kwargs.get('pk')
         if get_staff_from_request(request, salon_id):
