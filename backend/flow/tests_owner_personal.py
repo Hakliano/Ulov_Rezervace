@@ -129,5 +129,6 @@ class FlowOwnerPersonalTests(TestCase):
         self.assertEqual(zam.prihlasovaci_jmeno.lower(), 'zuzana-i4@test.local')
         self.assertFalse(flow.json()['email_odeslan'])
         self.assertIn('docasne_heslo', flow.json())
-        self.assertIn(flow.json()['docasne_heslo'], flow.json()['detail'])
+        self.assertTrue(flow.json()['docasne_heslo'])
+        self.assertIn('detail', flow.json())
 

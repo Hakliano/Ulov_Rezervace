@@ -77,6 +77,36 @@ function showMsg(el, text, ok) {
   el.className = ok ? 'msg ok' : 'msg error';
 }
 
+/** Jednorázové zobrazení dočasného FLOW hesla majiteli (i po úspěšném e-mailu). */
+function showFlowAccessResult(el, data, fallbackDetail) {
+  if (!el) return;
+  const detail = data?.detail || fallbackDetail || 'Hotovo.';
+  const heslo = (data?.docasne_heslo || '').trim();
+  el.hidden = false;
+  el.className = 'msg ok';
+  if (!heslo) {
+    el.textContent = detail;
+    return;
+  }
+  el.innerHTML = `
+    <span>${esc(detail)}</span>
+    <span class="flow-temp-pass">
+      Dočasné heslo:
+      <code class="flow-temp-pass-val">${esc(heslo)}</code>
+      <button type="button" class="btn tiny ghost btn-copy-flow-pass">Kopírovat</button>
+    </span>
+  `;
+  el.querySelector('.btn-copy-flow-pass')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(heslo);
+      if (btn) btn.textContent = 'Zkopírováno';
+    } catch {
+      if (btn) btn.textContent = 'Nepodařilo se';
+    }
+  });
+}
+
 function esc(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -2317,8 +2347,8 @@ async function createOwnerStaffFlow(card, id) {
         visible_overview: !!card.querySelector('.op-flow-overview-new')?.checked,
       }),
     });
-    showMsg(msg, data.detail || 'FLOW přístup vytvořen.', true);
     await loadOwnerPersonal();
+    showFlowAccessResult(msg, data, 'FLOW přístup vytvořen.');
   } catch (err) {
     showMsg(msg, err.message, false);
   }
@@ -2406,7 +2436,7 @@ async function resetOwnerStaffFlow(id) {
   const msg = $('#owner-admin-msg');
   try {
     const data = await api(`/flow/owner/personal/${id}/flow/reset-hesla/`, { method: 'POST', body: '{}' });
-    showMsg(msg, data.detail || 'Heslo resetováno.', true);
+    showFlowAccessResult(msg, data, 'Heslo resetováno.');
   } catch (err) {
     showMsg(msg, err.message, false);
   }
@@ -2461,10 +2491,10 @@ $('#form-own-add-staff')?.addEventListener('submit', async (e) => {
         ? `Pracovník přidán. Přihlašovací údaje odeslány na ${flowEmail}.`
         : `Pracovník přidán. FLOW: ${flowEmail}`
     );
-    showMsg(msg, detail, true);
     $('#form-own-add-staff')?.classList.add('hidden');
     $('#form-own-add-staff')?.reset();
     await loadOwnerPersonal();
+    showFlowAccessResult(msg, { ...flowRes, detail }, detail);
   } catch (err) {
     showMsg(msg, err.message, false);
   }

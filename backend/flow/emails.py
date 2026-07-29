@@ -66,24 +66,27 @@ def email_flow_pristup(flow_user, heslo, reset=False):
 
 
 def flow_pristup_payload(heslo, email_ok, *, reset=False):
-    """Jednotná odpověď pro create/reset FLOW hesla."""
+    """Jednotná odpověď pro create/reset FLOW hesla.
+
+    Dočasné heslo se majiteli vždy vrací jednou (zkopírování / předání osobně),
+    i když e-mail úspěšně odešel.
+    """
     if email_ok:
-        return {
-            'email_odeslan': True,
-            'detail': (
-                'Nové heslo odesláno e-mailem.'
-                if reset
-                else 'Přístup vytvořen. Dočasné heslo bylo odesláno e-mailem.'
-            ),
-        }
-    return {
-        'email_odeslan': False,
-        'docasne_heslo': heslo,
-        'detail': (
-            f'Heslo připraveno (e-mail se neodeslal — Local/bez SMTP). Zkopírujte: {heslo}'
+        detail = (
+            'Nové heslo odesláno e-mailem.'
             if reset
-            else f'Přístup vytvořen (e-mail se neodeslal — Local/bez SMTP). Heslo: {heslo}'
-        ),
+            else 'Přístup vytvořen. Dočasné heslo bylo odesláno e-mailem.'
+        )
+    else:
+        detail = (
+            'Heslo připraveno (e-mail se neodeslal — Local/bez SMTP). Zkopírujte níže.'
+            if reset
+            else 'Přístup vytvořen (e-mail se neodeslal — Local/bez SMTP). Heslo zkopírujte níže.'
+        )
+    return {
+        'email_odeslan': bool(email_ok),
+        'docasne_heslo': heslo,
+        'detail': detail,
     }
 
 

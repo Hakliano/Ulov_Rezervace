@@ -243,6 +243,24 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .msg { margin: 0; font-size: 0.9rem; }
 .msg.error { color: var(--danger); }
 .msg.ok { color: var(--ok); }
+.flow-temp-pass {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+  color: var(--text);
+}
+.flow-temp-pass-val {
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: var(--text);
+}
 .hidden { display: none !important; }
 
 .panel {
