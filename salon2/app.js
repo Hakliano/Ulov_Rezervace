@@ -1,5 +1,18 @@
 ﻿const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 2;
+
+window.UlovOwnerFlowConfig = {
+  getSalonId: () => SALON_ID,
+  getApiBase: () => API_BASE,
+  getToken: () => staffToken,
+  isMajitel: () => isMajitel(),
+  getEmail: () => (
+    document.getElementById('staff-login')?.value
+    || staffUser?.prihlasovaci_jmeno
+    || staffUser?.email
+    || ''
+  ).trim(),
+};
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;
 
@@ -585,6 +598,7 @@ function showEditForm() {
   setWebAdminAuthUi(true);
   document.getElementById('login-section').classList.add('hidden');
   document.getElementById('edit-section').classList.remove('hidden');
+  window.UlovOwnerFlow?.onAdminShown?.();
   const d = salonData;
 
   document.getElementById('edit-name').value = d.name;
@@ -626,68 +640,6 @@ renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
 
   if (staffToken && isMajitel()) {
     loadPersonelAdmin().catch(console.error);
-    refreshFlowOnboard().catch(console.error);
-  }
-}
-
-function flowAppUrl() {
-  const h = location.hostname;
-  if (h.includes('staging')) return 'https://www.staging.ulovklienty.cz/flow/';
-  if (['localhost', '127.0.0.1', '::1'].includes(h)) {
-    return `${location.protocol}//${h}${location.port ? `:${location.port}` : ''}/flow/`;
-  }
-  return 'https://www.ulovklienty.cz/flow/';
-}
-
-async function refreshFlowOnboard() {
-  const hint = document.getElementById('flow-onboard-hint');
-  const btn = document.getElementById('btn-goto-flow');
-  if (!hint || !btn || !staffToken) return;
-  try {
-    const data = await apiRezervace(`/salon/${SALON_ID}/flow/aktivace/`);
-    if (data.aktivni) {
-      hint.textContent = `FLOW je aktivní${data.email ? ` (${data.email})` : ''}. Přihlášení stejným e-mailem a heslem jako sem.`;
-      btn.textContent = 'Otevřít FLOW';
-    } else {
-      hint.textContent = 'Web můžete mít i bez rezervací. Až budete chtít kalendář a personál v provozu, aktivujte FLOW — přihlášení stejným e-mailem a heslem.';
-      btn.textContent = 'Přejít do FLOW';
-    }
-  } catch (err) {
-    hint.textContent = err.message || 'Stav FLOW se nepodařilo načíst.';
-  }
-}
-
-async function handleGotoFlow() {
-  const msg = document.getElementById('flow-onboard-msg');
-  const btn = document.getElementById('btn-goto-flow');
-  if (!staffToken || !isMajitel()) return;
-  if (msg) {
-    msg.textContent = 'Připravuji FLOW…';
-    msg.className = 'status-msg';
-  }
-  if (btn) btn.disabled = true;
-  try {
-    const email = (document.getElementById('staff-login')?.value
-      || staffUser?.email
-      || staffUser?.prihlasovaci_jmeno
-      || '').trim();
-    const data = await apiRezervace(`/salon/${SALON_ID}/flow/aktivace/`, {
-      method: 'POST',
-      body: JSON.stringify(email ? { email } : {}),
-    });
-    if (msg) {
-      msg.textContent = data.detail || 'FLOW je připraven.';
-      msg.className = 'status-msg success';
-    }
-    await refreshFlowOnboard();
-    window.open(flowAppUrl(), '_blank', 'noopener');
-  } catch (err) {
-    if (msg) {
-      msg.textContent = err.message || 'Aktivace FLOW selhala.';
-      msg.className = 'status-msg error';
-    }
-  } finally {
-    if (btn) btn.disabled = false;
   }
 }
 
@@ -1186,34 +1138,6 @@ document.getElementById('edit-section').addEventListener('click', e => {
 document.getElementById('admin-toggle').addEventListener('click', openAdmin);
 document.getElementById('btn-cancel').addEventListener('click', closeAdmin);
 document.getElementById('btn-web-logout')?.addEventListener('click', handleWebAdminLogout);
-document.getElementById('btn-goto-flow')?.addEventListener('click', handleGotoFlow);
-
-document.getElementById('form-owner-password')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const msg = document.getElementById('owner-pwd-msg');
-  const current = document.getElementById('owner-pwd-current').value;
-  const next = document.getElementById('owner-pwd-new').value;
-  const next2 = document.getElementById('owner-pwd-new2').value;
-  msg.className = 'status-msg';
-  if (next !== next2) {
-    msg.textContent = 'Nová hesla se neshodují.';
-    msg.className = 'status-msg error';
-    return;
-  }
-  msg.textContent = 'Ukládám…';
-  try {
-    const data = await apiRezervace(`/salon/${SALON_ID}/rezervace/staff/zmena-hesla/`, {
-      method: 'POST',
-      body: JSON.stringify({ current_password: current, new_password: next }),
-    });
-    msg.textContent = data.detail || 'Heslo změněno.';
-    msg.className = 'status-msg success';
-    e.target.reset();
-  } catch (err) {
-    msg.textContent = err.message || 'Změna hesla se nepodařila.';
-    msg.className = 'status-msg error';
-  }
-});
 document.getElementById('login-form').addEventListener('submit', handleLogin);
 document.getElementById('btn-save').addEventListener('click', handleSave);
 document.getElementById('btn-save-email').addEventListener('click', saveEmailSettings);

@@ -392,10 +392,11 @@ Odhad: **50–100 salonů** na jednom 4-vCPU serveru je reálný cíl po Postgre
 1. **DB:** `INSERT` do `Salon` (nebo admin / management command `seed_salons` rozšířit)
 2. **Seed:** `python manage.py seed_rezervace` — nastavení, zaměstnanci (pokud prázdné)
 3. **Frontend:** deploy statiky s `SALON_ID=N` na Bunny `webs/salon-N/`
-4. **DNS:** doména salonu → CDN / nginx
-5. **SMTP:** vyplnit v admin webu nebo env `SALON_N_SMTP_*`
-6. **Cron:** běží globálně pro všechny salony
-7. **Test:** rezervace, e-mail, storno, NO-show, QR platba
+4. **Owner FLOW + heslo:** povinně napojit `shared/owner-flow-admin.js` — postup v [`shared/OWNER_FLOW_WIRING.md`](shared/OWNER_FLOW_WIRING.md)
+5. **DNS:** doména salonu → CDN / nginx
+6. **SMTP:** vyplnit v admin webu nebo env `SALON_N_SMTP_*`
+7. **Cron:** běží globálně pro všechny salony
+8. **Test:** rezervace, e-mail, storno, NO-show, QR platba; majitel → **Přejít do FLOW**
 
 **Budoucí zlepšení:** `Salon.slug`, `Salon.custom_domain`, onboarding API.
 

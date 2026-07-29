@@ -1,5 +1,18 @@
 ﻿const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 4;
+
+window.UlovOwnerFlowConfig = {
+  getSalonId: () => SALON_ID,
+  getApiBase: () => API_BASE,
+  getToken: () => staffToken,
+  isMajitel: () => isMajitel(),
+  getEmail: () => (
+    document.getElementById('staff-login')?.value
+    || staffUser?.prihlasovaci_jmeno
+    || staffUser?.email
+    || ''
+  ).trim(),
+};
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;
 
@@ -588,6 +601,7 @@ function showEditForm() {
   setWebAdminAuthUi(true);
   document.getElementById('login-section').classList.add('hidden');
   document.getElementById('edit-section').classList.remove('hidden');
+  window.UlovOwnerFlow?.onAdminShown?.();
   const d = salonData;
 
   document.getElementById('edit-name').value = d.name;
