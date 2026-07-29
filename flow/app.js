@@ -2202,7 +2202,9 @@ function buildOwnerPersonalCard(z) {
         </div>
         <label class="check-row tight"><input type="checkbox" class="op-flow-overview" ${ucet.visible_overview ? 'checked' : ''}> Vidí přehled všech rezervací</label>
         <button type="button" class="btn ghost sm op-flow-save">Uložit overview</button>
-        <button type="button" class="btn ghost sm op-flow-reset">Resetovat heslo FLOW</button>
+        <div class="owner-personal-actions" data-flow-reset-actions>
+          <button type="button" class="btn ghost sm op-flow-reset">Resetovat heslo FLOW</button>
+        </div>
       </div>
     ` : `
       <p class="hint tiny">Zatím bez FLOW přístupu.</p>
@@ -2210,7 +2212,9 @@ function buildOwnerPersonalCard(z) {
         <input type="email" class="op-flow-email" placeholder="pracovnik@salon.cz">
       </label>
       <label class="check-row tight"><input type="checkbox" class="op-flow-overview-new"> Vidí přehled všech rezervací</label>
-      <button type="button" class="btn primary sm op-flow-create">Vytvořit FLOW přístup</button>
+      <div class="owner-personal-actions" data-flow-create-actions>
+        <button type="button" class="btn primary sm op-flow-create">Vytvořit FLOW přístup</button>
+      </div>
     `}
     `}
   `;
@@ -2224,11 +2228,17 @@ function buildOwnerPersonalCard(z) {
       });
     });
     card.querySelector('.op-save')?.addEventListener('click', () => saveOwnerStaff(card, z.id));
-    card.querySelector('.op-flow-create')?.addEventListener('click', () => createOwnerStaffFlow(card, z.id));
+    card.querySelector('.op-flow-create')?.addEventListener('click', () => askCreateOwnerStaffFlow(card, z.id));
     card.querySelector('.op-flow-save')?.addEventListener('click', () => patchOwnerStaffFlow(card, z.id));
-    card.querySelector('.op-flow-allow')?.addEventListener('click', () => setOwnerStaffFlowAccess(z.id, true));
-    card.querySelector('.op-flow-block')?.addEventListener('click', () => setOwnerStaffFlowAccess(z.id, false));
-    card.querySelector('.op-flow-reset')?.addEventListener('click', () => resetOwnerStaffFlow(z.id));
+    card.querySelector('.op-flow-allow')?.addEventListener('click', (e) => {
+      askOwnerStaffFlowAccess(e.currentTarget.closest('.flow-access-btns'), z.id, true);
+    });
+    card.querySelector('.op-flow-block')?.addEventListener('click', (e) => {
+      askOwnerStaffFlowAccess(e.currentTarget.closest('.flow-access-btns'), z.id, false);
+    });
+    card.querySelector('.op-flow-reset')?.addEventListener('click', () => {
+      askResetOwnerStaffFlow(card.querySelector('[data-flow-reset-actions]'), z.id);
+    });
   }
   return card;
 }
@@ -2264,6 +2274,34 @@ async function saveOwnerStaff(card, id) {
   }
 }
 
+function askCreateOwnerStaffFlow(card, id) {
+  const msg = $('#owner-admin-msg');
+  const email = card.querySelector('.op-flow-email')?.value.trim();
+  if (!email) {
+    showMsg(msg, 'Zadejte e-mail pro FLOW.', false);
+    return;
+  }
+  const actions = card.querySelector('[data-flow-create-actions]');
+  if (!actions) {
+    createOwnerStaffFlow(card, id);
+    return;
+  }
+  const showAsk = () => {
+    actions.innerHTML = `
+      <p class="hint tiny">Vytvořit FLOW přístup pro <strong>${esc(email)}</strong>?</p>
+      <button type="button" class="btn primary sm op-flow-create-ok">Ano, vytvořit</button>
+      <button type="button" class="btn ghost sm op-flow-create-back">Zpět</button>
+    `;
+    actions.querySelector('.op-flow-create-back')?.addEventListener('click', showBtn);
+    actions.querySelector('.op-flow-create-ok')?.addEventListener('click', () => createOwnerStaffFlow(card, id));
+  };
+  const showBtn = () => {
+    actions.innerHTML = `<button type="button" class="btn primary sm op-flow-create">Vytvořit FLOW přístup</button>`;
+    actions.querySelector('.op-flow-create')?.addEventListener('click', () => askCreateOwnerStaffFlow(card, id));
+  };
+  showAsk();
+}
+
 async function createOwnerStaffFlow(card, id) {
   const msg = $('#owner-admin-msg');
   const email = card.querySelector('.op-flow-email')?.value.trim();
@@ -2271,7 +2309,6 @@ async function createOwnerStaffFlow(card, id) {
     showMsg(msg, 'Zadejte e-mail pro FLOW.', false);
     return;
   }
-  if (!confirm(`Vytvořit FLOW přístup pro ${email}?`)) return;
   try {
     const data = await api(`/flow/owner/personal/${id}/flow/`, {
       method: 'POST',
@@ -2303,12 +2340,36 @@ async function patchOwnerStaffFlow(card, id) {
   }
 }
 
+function askOwnerStaffFlowAccess(actionsEl, id, allow) {
+  if (!actionsEl) {
+    setOwnerStaffFlowAccess(id, allow);
+    return;
+  }
+  const original = actionsEl.innerHTML;
+  const showAsk = () => {
+    actionsEl.innerHTML = allow
+      ? `
+        <button type="button" class="btn primary sm op-flow-allow-ok">Ano, povolit</button>
+        <button type="button" class="btn ghost sm op-flow-access-back">Zpět</button>
+      `
+      : `
+        <button type="button" class="btn danger sm op-flow-block-ok">Ano, zablokovat</button>
+        <button type="button" class="btn ghost sm op-flow-access-back">Zpět</button>
+      `;
+    actionsEl.querySelector('.op-flow-access-back')?.addEventListener('click', showBtn);
+    actionsEl.querySelector('.op-flow-allow-ok')?.addEventListener('click', () => setOwnerStaffFlowAccess(id, true));
+    actionsEl.querySelector('.op-flow-block-ok')?.addEventListener('click', () => setOwnerStaffFlowAccess(id, false));
+  };
+  const showBtn = () => {
+    actionsEl.innerHTML = original;
+    actionsEl.querySelector('.op-flow-allow')?.addEventListener('click', () => askOwnerStaffFlowAccess(actionsEl, id, true));
+    actionsEl.querySelector('.op-flow-block')?.addEventListener('click', () => askOwnerStaffFlowAccess(actionsEl, id, false));
+  };
+  showAsk();
+}
+
 async function setOwnerStaffFlowAccess(id, allow) {
   const msg = $('#owner-admin-msg');
-  const confirmText = allow
-    ? 'Povolit tomuto pracovníkovi vstup do FLOW?'
-    : 'Zablokovat vstup do FLOW? (Na webu a v rezervacích zůstane aktivní.)';
-  if (!confirm(confirmText)) return;
   try {
     await api(`/flow/owner/personal/${id}/flow/patch/`, {
       method: 'PATCH',
@@ -2321,9 +2382,28 @@ async function setOwnerStaffFlowAccess(id, allow) {
   }
 }
 
+function askResetOwnerStaffFlow(actionsEl, id) {
+  if (!actionsEl) {
+    resetOwnerStaffFlow(id);
+    return;
+  }
+  const showAsk = () => {
+    actionsEl.innerHTML = `
+      <button type="button" class="btn danger sm op-flow-reset-ok">Ano, resetovat heslo</button>
+      <button type="button" class="btn ghost sm op-flow-reset-back">Zpět</button>
+    `;
+    actionsEl.querySelector('.op-flow-reset-back')?.addEventListener('click', showBtn);
+    actionsEl.querySelector('.op-flow-reset-ok')?.addEventListener('click', () => resetOwnerStaffFlow(id));
+  };
+  const showBtn = () => {
+    actionsEl.innerHTML = `<button type="button" class="btn ghost sm op-flow-reset">Resetovat heslo FLOW</button>`;
+    actionsEl.querySelector('.op-flow-reset')?.addEventListener('click', () => askResetOwnerStaffFlow(actionsEl, id));
+  };
+  showAsk();
+}
+
 async function resetOwnerStaffFlow(id) {
   const msg = $('#owner-admin-msg');
-  if (!confirm('Resetovat heslo FLOW?')) return;
   try {
     const data = await api(`/flow/owner/personal/${id}/flow/reset-hesla/`, { method: 'POST', body: '{}' });
     showMsg(msg, data.detail || 'Heslo resetováno.', true);
