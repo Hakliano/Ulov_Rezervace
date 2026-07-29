@@ -1354,21 +1354,21 @@ $$('.rez-tab').forEach(tab => {
   });
 });
 
-$('#btn-krok2').addEventListener('click', () => { setStep(2); loadTerminy(); });
-$('#btn-krok1').addEventListener('click', () => setStep(1));
-$('#btn-krok3').addEventListener('click', () => { setStep(3); updateSummary(); });
-$('#btn-krok2b').addEventListener('click', () => setStep(2));
-$('#input-datum').addEventListener('change', loadTerminy);
-$('#select-zamestnanec').addEventListener('change', loadTerminy);
-$('#form-rezervace').addEventListener('submit', submitRezervace);
-$('#btn-nova-rezervace').addEventListener('click', () => {
+$('#btn-krok2')?.addEventListener('click', () => { setStep(2); loadTerminy(); });
+$('#btn-krok1')?.addEventListener('click', () => setStep(1));
+$('#btn-krok3')?.addEventListener('click', () => { setStep(3); updateSummary(); });
+$('#btn-krok2b')?.addEventListener('click', () => setStep(2));
+$('#input-datum')?.addEventListener('change', loadTerminy);
+$('#select-zamestnanec')?.addEventListener('change', loadTerminy);
+$('#form-rezervace')?.addEventListener('submit', submitRezervace);
+$('#btn-nova-rezervace')?.addEventListener('click', () => {
   vybraneSluzby.clear();
   vybranyCas = null;
   $$('#sluzby-list input').forEach(i => { i.checked = false; });
   setStep(1);
 });
 
-$('#form-registrace').addEventListener('submit', async (e) => {
+$('#form-registrace')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#moje-login-msg');
   try {
@@ -1394,7 +1394,7 @@ $('#form-registrace').addEventListener('submit', async (e) => {
   }
 });
 
-$('#form-prihlaseni').addEventListener('submit', async (e) => {
+$('#form-prihlaseni')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#moje-login-msg');
   const fallback = $('#heslo-fallback');
@@ -1421,7 +1421,7 @@ $('#form-prihlaseni').addEventListener('submit', async (e) => {
   }
 });
 
-$('#btn-zapomenute-heslo').addEventListener('click', async () => {
+$('#btn-zapomenute-heslo')?.addEventListener('click', async () => {
   const email = $('#login-email').value.trim();
   const msg = $('#moje-login-msg');
   const fallback = $('#heslo-fallback');
@@ -1451,14 +1451,14 @@ $('#btn-zapomenute-heslo').addEventListener('click', async () => {
   }
 });
 
-$('#btn-odhlasit').addEventListener('click', () => {
+$('#btn-odhlasit')?.addEventListener('click', () => {
   sessionToken = null;
   localStorage.removeItem(`rez_token_${SALON_ID}`);
   $('#moje-seznam').classList.add('hidden');
   $('#moje-login').classList.remove('hidden');
 });
 
-$('#form-admin-login').addEventListener('submit', async (e) => {
+$('#form-admin-login')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#admin-login-msg');
   msg.textContent = 'Přihlašuji…';
@@ -1552,33 +1552,33 @@ $$('[data-admin]').forEach(btn => {
 $('#audit-prev')?.addEventListener('click', () => { if (auditPage > 1) loadAuditLog(auditPage - 1); });
 $('#audit-next')?.addEventListener('click', () => loadAuditLog(auditPage + 1));
 
-$('#cal-prev').addEventListener('click', () => {
+$('#cal-prev')?.addEventListener('click', () => {
   adminCalMonth.setMonth(adminCalMonth.getMonth() - 1);
   loadAdminKalendar();
 });
-$('#cal-next').addEventListener('click', () => {
+$('#cal-next')?.addEventListener('click', () => {
   adminCalMonth.setMonth(adminCalMonth.getMonth() + 1);
   loadAdminKalendar();
 });
-$('#cal-day-close').addEventListener('click', () => {
+$('#cal-day-close')?.addEventListener('click', () => {
   $('#cal-day-detail').classList.add('hidden');
   $$('#cal-grid .cal-cell').forEach((c) => c.classList.remove('selected'));
 });
 
-$('#noshow-cancel').addEventListener('click', closeNoShowModal);
-$('#noshow-modal .modal-backdrop').addEventListener('click', closeNoShowModal);
-$('#noshow-search-btn').addEventListener('click', () => {
+$('#noshow-cancel')?.addEventListener('click', closeNoShowModal);
+$('#noshow-modal .modal-backdrop')?.addEventListener('click', closeNoShowModal);
+$('#noshow-search-btn')?.addEventListener('click', () => {
   noshowQuery = $('#noshow-search').value.trim();
   loadNoShowArchiv(1);
 });
-$('#noshow-search').addEventListener('keydown', (e) => {
+$('#noshow-search')?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
     noshowQuery = $('#noshow-search').value.trim();
     loadNoShowArchiv(1);
   }
 });
-$('#noshow-confirm').addEventListener('click', async () => {
+$('#noshow-confirm')?.addEventListener('click', async () => {
   if (!pendingNoShowId) return;
   const msg = $('#noshow-modal-msg');
   msg.textContent = 'Ukládám…';
@@ -1605,11 +1605,11 @@ $('#noshow-confirm').addEventListener('click', async () => {
   }
 });
 
-$('#platba-cancel').addEventListener('click', closePlatbaModal);
-$('#platba-modal .modal-backdrop').addEventListener('click', closePlatbaModal);
-$('#platba-qr-close').addEventListener('click', closePlatbaQrModal);
-$('#platba-qr-modal .modal-backdrop').addEventListener('click', closePlatbaQrModal);
-$('#platba-confirm').addEventListener('click', async () => {
+$('#platba-cancel')?.addEventListener('click', closePlatbaModal);
+$('#platba-modal .modal-backdrop')?.addEventListener('click', closePlatbaModal);
+$('#platba-qr-close')?.addEventListener('click', closePlatbaQrModal);
+$('#platba-qr-modal .modal-backdrop')?.addEventListener('click', closePlatbaQrModal);
+$('#platba-confirm')?.addEventListener('click', async () => {
   if (!pendingPlatbaId) return;
   const msg = $('#platba-modal-msg');
   const castka = $('#platba-castka').value.trim();
@@ -1689,11 +1689,11 @@ $('#btn-gdpr-vymaz')?.addEventListener('click', async () => {
   }
 });
 
-$('#btn-staff-add').addEventListener('click', addStaffMember);
+$('#btn-staff-add')?.addEventListener('click', addStaffMember);
 $('#btn-staff-save-rozvrh')?.addEventListener('click', saveStaffRozvrh);
 $('#btn-staff-save-ucet')?.addEventListener('click', saveStaffRozvrh);
 
-$('#form-staff-absence').addEventListener('submit', async (e) => {
+$('#form-staff-absence')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedStaffId) return;
   try {
@@ -1713,7 +1713,7 @@ $('#form-staff-absence').addEventListener('submit', async (e) => {
   }
 });
 
-$('#form-staff-rezervace').addEventListener('submit', async (e) => {
+$('#form-staff-rezervace')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedStaffId) return;
   const msg = $('#staff-rez-msg');
@@ -1781,7 +1781,7 @@ $('#form-emaily')?.addEventListener('submit', async (e) => {
   }
 });
 
-$('#form-nastaveni').addEventListener('submit', async (e) => {
+$('#form-nastaveni')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const storno = $('#nast-storno').value;
   try {
