@@ -23,6 +23,7 @@ urlpatterns = [
     path('salon/<int:pk>/rezervace/staff/prihlaseni/', views.StaffPrihlaseniView.as_view(), name='staff-prihlaseni'),
     path('salon/<int:pk>/rezervace/staff/odhlaseni/', views.StaffOdhlaseniView.as_view(), name='staff-odhlaseni'),
     path('salon/<int:pk>/rezervace/staff/me/', views.StaffMeView.as_view(), name='staff-me'),
+    path('salon/<int:pk>/rezervace/staff/zmena-hesla/', views.StaffZmenaHeslaView.as_view(), name='staff-zmena-hesla'),
 
     path('salon/<int:pk>/rezervace/admin/nastaveni/', views.AdminNastaveniView.as_view(), name='admin-nastaveni'),
     path('salon/<int:pk>/rezervace/admin/zamestnanci/', views.AdminZamestnanciView.as_view(), name='admin-zamestnanci'),

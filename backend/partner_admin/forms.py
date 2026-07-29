@@ -15,6 +15,7 @@ class PartnerNastaveniForm(forms.ModelForm):
             'periodicita',
             'castka',
             'dalsi_splatnost',
+            'ulov_cislo_uctu',
         ]
         widgets = {
             # HTML5 type=date vyžaduje ISO YYYY-MM-DD; bez format se v CS locale
@@ -43,6 +44,11 @@ class PlatbaForm(forms.Form):
         widget=forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
     )
     poznamka = forms.CharField(label='Poznámka', max_length=300, required=False)
+    faktura_pdf = forms.FileField(
+        label='Faktura PDF (volitelné)',
+        required=False,
+        help_text='PDF se zobrazí majitelce ve FLOW ke stažení.',
+    )
 
 
 class UpozorneniForm(forms.Form):

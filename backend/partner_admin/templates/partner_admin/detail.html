@@ -142,11 +142,11 @@
         </dd>
       </div>
     </dl>
-    <form class="form-grid compact" method="post" action="{% url 'partner_admin:potvrdit_platbu' salon.id %}">
+    <form class="form-grid compact" method="post" action="{% url 'partner_admin:potvrdit_platbu' salon.id %}" enctype="multipart/form-data">
       {% csrf_token %}
       <input type="hidden" name="tab" value="parovani">
       {% for field in platba_form %}
-        <label>{{ field.label }}{{ field }}</label>
+        <label>{{ field.label }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</label>
       {% endfor %}
       <div class="form-actions-row">
         <button class="btn btn-success" type="submit">Označit jako ZAPLACENO</button>
@@ -163,7 +163,7 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Stav</th><th>Splatnost</th><th>Přijato</th><th>Částka</th><th>VS</th><th>Označil</th></tr></thead>
+        <thead><tr><th>Stav</th><th>Splatnost</th><th>Přijato</th><th>Částka</th><th>VS</th><th>Označil</th><th>Faktura</th></tr></thead>
         <tbody>
           {% for platba in platby %}
             <tr>
@@ -173,9 +173,10 @@
               <td>{{ platba.prijata_castka|default:platba.ocekavana_castka|floatformat:2 }} Kč</td>
               <td>{{ platba.variabilni_symbol|default:"—" }}</td>
               <td>{{ platba.oznacil.username|default:"—" }}</td>
+              <td>{% if platba.faktura_pdf %}<span class="badge badge-ok">PDF</span>{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6">Zatím žádná zaplacená platba.</td></tr>
+            <tr><td colspan="7">Zatím žádná zaplacená platba.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -251,6 +252,47 @@
         <h2>Majitelé a správci</h2>
       </div>
     </div>
+
+    <div class="panel nested-panel" style="margin-bottom:1.25rem">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Onboarding</p>
+          <h3>Přejít do FLOW</h3>
+        </div>
+      </div>
+      {% if owner_flow.aktivni %}
+        <p>
+          FLOW majitele je aktivní
+          {% if owner_flow.email %}(<strong>{{ owner_flow.email }}</strong>){% endif %}.
+          Přihlášení stejným heslem jako do web-adminu.
+        </p>
+        <p class="form-actions-row">
+          <a class="btn btn-primary" id="link-flow-pristupy" href="https://www.ulovklienty.cz/flow/" target="_blank" rel="noopener">Otevřít FLOW</a>
+        </p>
+      {% elif not owner_flow.ma_majitele %}
+        <p class="empty">Nejdřív založte účet majitele (role majitel).</p>
+      {% else %}
+        <p class="muted">
+          Web může běžet samostatně. Až partner chce rezervace / provozní den,
+          aktivujte FLOW — vznikne účet majitele se stejným heslem.
+        </p>
+        <form class="form-grid compact" method="post" action="{% url 'partner_admin:aktivovat_flow' salon.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="tab" value="pristupy">
+          <label>
+            E-mail majitele (login do FLOW)
+            <input type="email" name="email" value="{{ owner_flow.email }}" required placeholder="majitel@salon.cz">
+          </label>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Aktivovat FLOW</button>
+          </div>
+        </form>
+        {% if not owner_flow.ma_heslo %}
+          <p class="danger-text">Majitel zatím nemá heslo — nejdřív reset hesla níže.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
     <div class="account-list">
       {% for majitel in majitele %}
         <article class="account-card">

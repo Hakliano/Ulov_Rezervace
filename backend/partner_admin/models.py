@@ -57,6 +57,12 @@ class PartnerNastaveni(models.Model):
     )
     castka = models.DecimalField('částka', max_digits=10, decimal_places=2, default=Decimal('0.00'))
     dalsi_splatnost = models.DateField('další splatnost', null=True, blank=True, db_index=True)
+    ulov_cislo_uctu = models.CharField(
+        'účet ULOV (pro QR / převod)',
+        max_length=34,
+        blank=True,
+        help_text='Číslo účtu ULOV ve formátu číslo/kód banky nebo IBAN. Není to účet personálu.',
+    )
     blokovan_od = models.DateTimeField('blokován od', null=True, blank=True)
     duvod_blokace = models.CharField('důvod blokace', max_length=300, blank=True)
     aktualizovano = models.DateTimeField(auto_now=True)
@@ -120,6 +126,12 @@ class PlatbaPartnera(models.Model):
     prijata_castka = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     variabilni_symbol = models.CharField(max_length=10, blank=True)
     poznamka = models.CharField(max_length=300, blank=True)
+    faktura_pdf = models.FileField(
+        'faktura PDF',
+        upload_to='partner_faktury/%Y/%m/',
+        blank=True,
+        null=True,
+    )
     oznacil = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,

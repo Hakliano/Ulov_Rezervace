@@ -21,18 +21,14 @@ function salonDemoUrl(salonId, page) {
     const base = DEMO_URLS[salonId];
     return page === 'web' ? `${base}/` : `${base}/rezervace.html`;
   }
-
   const port = window.location.port;
   const useSalonPorts = port === '5510';
-
   if (useSalonPorts) {
     const p = SALON_PORTS[salonId];
     return page === 'web'
       ? `http://${host}:${p}/`
       : `http://${host}:${p}/rezervace.html`;
   }
-
-  // presentace/<vertical>/ → kořen repo → salonN/
   const base = `../../salon${salonId}`;
   return page === 'web' ? `${base}/index.html` : `${base}/rezervace.html`;
 }
@@ -230,8 +226,8 @@ form?.addEventListener('submit', async (e) => {
   const btn = document.getElementById('compareToggle');
   if (!block || !btn) return;
 
-  const labelExpand = 'Rozvinout celé srovnání';
-  const labelCollapse = 'Ukázat méně';
+  const labelExpand = 'Porovnat všechny funkce';
+  const labelCollapse = 'Skrýt srovnání';
 
   btn.addEventListener('click', () => {
     const expanded = block.classList.toggle('is-expanded');
@@ -244,12 +240,56 @@ form?.addEventListener('submit', async (e) => {
 })();
 
 (() => {
+  const btn = document.getElementById('growthBoardToggle');
+  const board = document.getElementById('program-rustu-prehled');
   const link = document.getElementById('highlightGrowthPhoto');
-  const photo = document.getElementById('program-rustu-prehled');
-  if (!link || !photo) return;
+  if (!board) return;
 
-  link.addEventListener('mouseenter', () => photo.classList.add('is-pulse'));
-  link.addEventListener('mouseleave', () => photo.classList.remove('is-pulse'));
+  const labelOpen = 'Program růstu — celý přehled';
+  const labelClose = 'Skrýt přehled Programu růstu';
+
+  function setOpen(open, { pulse = false, scroll = false } = {}) {
+    if (open) {
+      board.removeAttribute('hidden');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'true');
+        btn.textContent = labelClose;
+      }
+      if (pulse) {
+        board.classList.add('is-pulse');
+        window.setTimeout(() => board.classList.remove('is-pulse'), 1800);
+      }
+      if (scroll) {
+        board.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      board.setAttribute('hidden', '');
+      board.classList.remove('is-pulse');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.textContent = labelOpen;
+      }
+    }
+  }
+
+  btn?.addEventListener('click', () => {
+    const open = board.hasAttribute('hidden');
+    setOpen(open, { scroll: open });
+  });
+
+  link?.addEventListener('click', (e) => {
+    e.preventDefault();
+    setOpen(true, { pulse: true, scroll: true });
+  });
+
+  link?.addEventListener('mouseenter', () => {
+    if (!board.hasAttribute('hidden')) board.classList.add('is-pulse');
+  });
+  link?.addEventListener('mouseleave', () => board.classList.remove('is-pulse'));
+
+  if (window.location.hash === '#program-rustu' || window.location.hash === '#program-rustu-prehled') {
+    setOpen(true);
+  }
 })();
 
 (() => {

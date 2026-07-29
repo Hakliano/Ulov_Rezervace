@@ -26,6 +26,7 @@ from .forms import (
 )
 from .models import PartnerNastaveni, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
 from .services import log_superadmin, oznac_platbu
+from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
 
 superadmin_required = user_passes_test(
@@ -406,6 +407,7 @@ def detail_partnera(request, salon_id):
             'blokace_form': BlokaceForm(),
             'majitele': salon.zamestnanci.filter(role=Zamestnanec.ROLE_MAJITEL).order_by('jmeno'),
             'reset_form': ResetHeslaForm(),
+            'owner_flow': owner_flow_stav(salon),
             'platby': salon.partnerske_platby.select_related('oznacil')[:24],
             'posledni_platba': salon.partnerske_platby.select_related('oznacil').first(),
             'upozorneni': salon.upozorneni_plateb.select_related('odeslal')[:20],
@@ -478,7 +480,7 @@ def aktivovat(request, salon_id):
 @require_POST
 def potvrdit_platbu(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
-    form = PlatbaForm(request.POST)
+    form = PlatbaForm(request.POST, request.FILES)
     if form.is_valid():
         try:
             oznac_platbu(
@@ -487,6 +489,7 @@ def potvrdit_platbu(request, salon_id):
                 form.cleaned_data['zaplaceno_dne'],
                 form.cleaned_data['prijata_castka'],
                 form.cleaned_data['poznamka'],
+                faktura_pdf=form.cleaned_data.get('faktura_pdf'),
             )
             messages.success(
                 request,
@@ -495,7 +498,7 @@ def potvrdit_platbu(request, salon_id):
         except Exception as exc:
             messages.error(request, f'Platbu nelze uložit: {exc}')
     else:
-        messages.error(request, 'Zkontrolujte datum a částku platby.')
+        messages.error(request, 'Zkontrolujte datum, částku a případně PDF faktury.')
     return _detail_redirect(salon.id, 'parovani')
 
 
@@ -564,9 +567,18 @@ def reset_hesla(request, salon_id, zamestnanec_id):
     )
     form = ResetHeslaForm(request.POST)
     if form.is_valid():
-        majitel.set_password(form.cleaned_data['nove_heslo'])
+        nove = form.cleaned_data['nove_heslo']
+        majitel.set_password(nove)
         majitel.save(update_fields=['password_hash'])
         majitel.sessiony.all().delete()
+        from rezervace.services.staff_auth import sync_owner_heslo_do_flow
+        from flow.auth import zrusit_vsechny_sessiony as zrusit_flow_sessiony
+        from flow.models import FlowUser
+        sync_owner_heslo_do_flow(majitel, nove)
+        try:
+            zrusit_flow_sessiony(majitel.flow_ucet)
+        except FlowUser.DoesNotExist:
+            pass
         log_superadmin(
             salon,
             request.user,
@@ -578,6 +590,36 @@ def reset_hesla(request, salon_id, zamestnanec_id):
         messages.success(request, f'Heslo účtu {majitel.prihlasovaci_jmeno} bylo resetováno.')
     else:
         messages.error(request, 'Heslo musí mít alespoň 10 znaků.')
+    return _detail_redirect(salon.id, 'pristupy')
+
+
+@superadmin_required
+@require_POST
+def aktivovat_flow(request, salon_id):
+    """I7 — založí FLOW účet majitele (sdílené heslo + e-mail)."""
+    salon = get_object_or_404(Salon, pk=salon_id)
+    email = (request.POST.get('email') or '').strip() or None
+    try:
+        user, created = ensure_owner_flow_user(salon, email=email)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return _detail_redirect(salon.id, 'pristupy')
+    log_superadmin(
+        salon,
+        request.user,
+        'Aktivován FLOW přístup majitele.' if created else 'FLOW majitele už existoval — ověřeno.',
+        kategorie='ucty',
+        objekt_typ='FlowUser',
+        objekt_id=user.id,
+        po={'email': user.email, 'vytvoreno': created},
+    )
+    if created:
+        messages.success(
+            request,
+            f'FLOW aktivován pro {user.email}. Majitelka se přihlásí stejným heslem jako do webu.',
+        )
+    else:
+        messages.success(request, f'FLOW už je aktivní ({user.email}).')
     return _detail_redirect(salon.id, 'pristupy')
 
 

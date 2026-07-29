@@ -1,0 +1,111 @@
+{
+  "id": "provozovny",
+  "css_version": 103,
+  "js_version": 20,
+  "demo_head": {
+    "title": "Podívejte se, jak může vypadat právě vaše provozovna.",
+    "lead": "Váš design vymyslíme spolu na přání!",
+    "cta": "Klikněte a vyzkoušejte web i rezervaci."
+  },
+  "demos": [
+    {
+      "id": 1,
+      "thumb_class": "s1",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-15/hero/1fcce8a0c8b0491f9c1a624abaf10a81.webp",
+        "alt": "MotorBay",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "MotorBay",
+      "type": "Autoservis",
+      "desc": "Charcoal + orange, garážový styl.",
+      "web_href": "../../provoz-autoservis/index.html"
+    },
+    {
+      "id": 2,
+      "thumb_class": "s2",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-16/hero/fc4d1087983e4b5db069ee24b415669b.webp",
+        "alt": "RentGo",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "RentGo",
+      "type": "Půjčovna",
+      "desc": "Teal + limetka, katalog vybavení.",
+      "web_href": "../../provoz-pujcovna/index.html"
+    },
+    {
+      "id": 3,
+      "thumb_class": "s3",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-17/hero/3c9be38e01fa4b3688f5d91020dcdb99.webp",
+        "alt": "Ateliér 42",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "Ateliér 42",
+      "type": "Studio",
+      "desc": "Černobílé foto studio, portfolio.",
+      "web_href": "../../provoz-studio/index.html"
+    },
+    {
+      "id": 4,
+      "thumb_class": "s4",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-4/hero/763e389c1ded4703956050ade846a452.webp",
+        "alt": "Kavárna u dvou přátel",
+        "onerror": "this.remove()"
+      },
+      "badge": "Přátelé",
+      "name": "Kavárna u dvou přátel",
+      "type": "Kavárna",
+      "desc": "Rezervace stolů.",
+      "web_href": "../../salon4/index.html"
+    }
+  ],
+  "css_vars": {
+    "bg": "#eef2f8",
+    "bg2": "#e2e9f3",
+    "surface": "#ffffff",
+    "navy": "#1a2d4a",
+    "navy-dark": "#0f1f35",
+    "navy-mid": "#2a4068",
+    "text": "#1a2d4a",
+    "muted": "#5a6b82",
+    "gold": "#b8963e",
+    "gold-light": "#d4b76a",
+    "gold-pale": "#f5ecd4",
+    "line": "rgba(26, 45, 74, 0.12)",
+    "line-gold": "rgba(184, 150, 62, 0.35)",
+    "radius": "16px",
+    "shadow": "0 8px 28px rgba(15, 31, 53, 0.1)",
+    "font-display": "'DM Sans', system-ui, sans-serif",
+    "font-body": "'DM Sans', system-ui, sans-serif"
+  },
+  "body": {
+    "color": "var(--text)",
+    "line-height": "1.65",
+    "font-family": "var(--font-body)"
+  },
+  "hero_continuum": {
+    "background-color": "var(--navy-dark)",
+    "background-image": "linear-gradient(120deg, rgba(9, 18, 32, 0.92) 0%, rgba(15, 31, 53, 0.82) 48%, rgba(15, 31, 53, 0.72) 100%), url('https://haklweb.b-cdn.net/ULOV_KLIENTA/geralt-particles-7055781_1280.jpg')",
+    "background-size": "cover",
+    "background-position": "center top",
+    "background-repeat": "no-repeat"
+  },
+  "demo_mode": {
+    "type": "folders",
+    "folders": {
+      "1": "provoz-autoservis",
+      "2": "provoz-pujcovna",
+      "3": "provoz-studio",
+      "4": "salon4"
+    },
+    "live_urls": {
+      "4": "https://demo4.ulovklienty.cz"
+    }
+  }
+}

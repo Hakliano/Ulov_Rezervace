@@ -1,4 +1,4 @@
-const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname))
+﻿const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname))
   ? 'http://localhost:8000/api'
   : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 8;
@@ -553,7 +553,7 @@ async function handleLogin(e) {
   try {
     const data = await apiRezervace(`/salon/${SALON_ID}/rezervace/staff/prihlaseni/`, {
       method: 'POST',
-      body: JSON.stringify({ prihlasovaci_jmeno: login, password }),
+      body: JSON.stringify({ email: login, password }),
     });
     if (!data.staff?.je_majitel) {
       msg.textContent = 'Úprava webu je dostupná jen pro majitelku salonu.';
@@ -571,7 +571,7 @@ async function handleLogin(e) {
     const raw = err.message || '';
     msg.textContent = /failed to fetch|networkerror|load failed/i.test(raw)
       ? 'Nepodařilo se spojit s API. Zkontrolujte internet a zkuste obnovit stránku (Ctrl+F5).'
-      : (raw || 'Nesprávné přihlašovací jméno nebo heslo.');
+      : (raw || 'Nesprávný e-mail nebo heslo.');
     msg.className = 'status-msg error';
     console.error(err);
   }

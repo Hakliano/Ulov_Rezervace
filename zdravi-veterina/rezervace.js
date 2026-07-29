@@ -68,17 +68,39 @@ function setStep(n) {
   });
 }
 
+
+function staffUmiVybraneSluzby(z, selectedIds) {
+  if (!selectedIds.length) return true;
+  const assigned = (z.sluzby_ids || []).map(Number);
+  if (!assigned.length) return true;
+  return selectedIds.every((id) => assigned.includes(Number(id)));
+}
+
+function refreshStaffSelect() {
+  const sel = $('#select-zamestnanec');
+  if (!sel || !info) return;
+  const prev = sel.value;
+  const selectedIds = [...vybraneSluzby];
+  const eligible = (info.zamestnanci || []).filter((z) => staffUmiVybraneSluzby(z, selectedIds));
+  sel.innerHTML = '<option value="any">Je mi to jedno</option>';
+  eligible.forEach((z) => {
+    const spec = z.specializace ? ` – ${esc(z.specializace)}` : '';
+    sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)}${spec}</option>`;
+  });
+  if (prev !== 'any' && eligible.some((z) => String(z.id) === String(prev))) {
+    sel.value = prev;
+  } else {
+    sel.value = 'any';
+  }
+}
+
 async function loadInfo() {
   info = await api(`/salon/${SALON_ID}/rezervace/info/`);
   if (info.gdpr) gdprMeta = { ...gdprMeta, ...info.gdpr };
   $('#salon-name').textContent = `Rezervace – ${info.salon.name}`;
   document.title = `Rezervace – ${info.salon.name}`;
 
-  const sel = $('#select-zamestnanec');
-  sel.innerHTML = '<option value="any">Je mi to jedno</option>';
-  info.zamestnanci.forEach(z => {
-    sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)} – ${esc(z.specializace)}</option>`;
-  });
+  refreshStaffSelect();
 
   $('#sluzby-list').innerHTML = info.sluzby.map(s => `
     <label class="sluzba-card">
@@ -111,6 +133,8 @@ function updateDelkaInfo() {
   $$('#sluzby-list input:checked').forEach(inp => { total += parseInt(inp.dataset.delka, 10); });
   $('#delka-info').textContent = vybraneSluzby.size ? `Celková délka: cca ${total} min` : '';
   $('#btn-krok2').disabled = vybraneSluzby.size === 0;
+  refreshStaffSelect();
+
 }
 
 async function loadTerminy() {

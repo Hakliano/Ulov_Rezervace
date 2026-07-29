@@ -86,6 +86,7 @@ from rezervace.services.staff_auth import (
     odhlasit_staff,
     prihlasit_staff,
     staff_do_dict,
+    zmen_sdilene_heslo_owner,
 )
 
 
@@ -135,7 +136,9 @@ def vytvor_rezervaci(salon, data, typ_vytvoreni='online', stav=None, kdo='systé
         raise ValueError('Nelze rezervovat v minulosti.')
 
     zamestnanec_id = data.get('zamestnanec_id')
-    zamestnanec = prirad_zamestnance(salon, datum, start, end, zamestnanec_id)
+    zamestnanec = prirad_zamestnance(
+        salon, datum, start, end, zamestnanec_id, sluzby_ids=sluzby_ids,
+    )
     if not zamestnanec:
         raise ValueError('Termín není dostupný.')
 
@@ -284,9 +287,12 @@ class RezervaceInfoView(APIView):
             nast_data = None
 
         sluzby = CenikPolozka.objects.filter(salon=salon, aktivni=True).order_by('poradi')
-        zamestnanci = Zamestnanec.objects.filter(
-            salon=salon, aktivni=True,
-        ).exclude(role=Zamestnanec.ROLE_MAJITEL).order_by('poradi')
+        zamestnanci = (
+            Zamestnanec.objects.filter(salon=salon, aktivni=True)
+            .exclude(role=Zamestnanec.ROLE_MAJITEL)
+            .prefetch_related('prirazene_sluzby')
+            .order_by('poradi')
+        )
         from rezervace.services.emails import get_email_config
         email_cfg = get_email_config(salon)
 
@@ -633,10 +639,15 @@ class StaffPrihlaseniView(APIView):
 
     def post(self, request, pk):
         salon = get_salon(pk)
+        login = (
+            request.data.get('email')
+            or request.data.get('prihlasovaci_jmeno')
+            or ''
+        )
         try:
             session, staff = prihlasit_staff(
                 salon,
-                request.data.get('prihlasovaci_jmeno', ''),
+                login,
                 request.data.get('password', ''),
             )
         except ValueError as exc:
@@ -662,6 +673,32 @@ class StaffMeView(APIView):
         if not staff:
             return Response({'detail': 'Nepřihlášen.'}, status=401)
         return Response(staff_do_dict(staff))
+
+
+class StaffZmenaHeslaView(APIView):
+    """Owner mění sdílené heslo (web-admin + FLOW)."""
+
+    permission_classes = [MajitelPermission]
+
+    def post(self, request, pk):
+        staff = get_staff_from_request(request, pk)
+        if not staff:
+            return Response({'detail': 'Nepřihlášen.'}, status=401)
+        if not je_majitel(staff):
+            return Response({'detail': 'Jen majitel může měnit sdílené heslo.'}, status=403)
+        try:
+            zmen_sdilene_heslo_owner(
+                staff,
+                request.data.get('current_password', ''),
+                request.data.get('new_password', ''),
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=400)
+        return Response({
+            'ok': True,
+            'detail': 'Sdílené heslo bylo změněno. Platí pro webovou administraci i FLOW.',
+            'staff': staff_do_dict(staff),
+        })
 
 
 class AdminEmailNastaveniView(APIView):
@@ -850,7 +887,11 @@ class AdminZamestnanecAbsenceView(APIView):
         z = get_object_or_404(Zamestnanec, pk=zamestnanec_id, salon=salon)
         ser = ZamestnanecAbsenceSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        absence = ZamestnanecAbsence.objects.create(zamestnanec=z, **ser.validated_data)
+        absence = ZamestnanecAbsence.objects.create(
+            zamestnanec=z,
+            stav=ZamestnanecAbsence.STAV_SCHVALENO,
+            **ser.validated_data,
+        )
         po = ZamestnanecAbsenceSerializer(absence).data
         _audit(request, salon, 'absence', f'přidání absence ({z.jmeno})',
                objekt_typ='absence', objekt_id=absence.id, po=po)

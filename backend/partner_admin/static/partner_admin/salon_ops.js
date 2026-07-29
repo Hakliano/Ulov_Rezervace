@@ -300,23 +300,33 @@
   }
 
   function fillLinks() {
+    const host = location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    const isStaging = host.includes('staging');
+    const flowUrl = isLocal
+      ? `${location.protocol}//${host}:8080/flow/`
+      : (isStaging
+        ? 'https://www.staging.ulovklienty.cz/flow/'
+        : 'https://www.ulovklienty.cz/flow/');
+    if ($('#link-flow-pristupy')) $('#link-flow-pristupy').href = flowUrl;
     if (!$('#link-web')) return;
-    const isStaging = location.hostname.includes('staging');
-    const demoUrl = isStaging
-      ? `https://www.staging.ulovklienty.cz/salon${salonId}/`
-      : (salonId <= 8
-        ? `https://demo${salonId}.ulovklienty.cz/`
-        : `https://www.ulovklienty.cz/salon${salonId}/`);
+    const demoUrl = isLocal
+      ? `${location.protocol}//${host}:8080/salon${salonId}/`
+      : (isStaging
+        ? `https://www.staging.ulovklienty.cz/salon${salonId}/`
+        : (salonId <= 8
+          ? `https://demo${salonId}.ulovklienty.cz/`
+          : `https://www.ulovklienty.cz/salon${salonId}/`));
     $('#link-web').href = demoUrl;
     $('#link-web').textContent = demoUrl;
     $('#link-rez').href = `${demoUrl}rezervace.html`;
     $('#link-rez').textContent = `${demoUrl}rezervace.html`;
-    $('#link-flow').href = isStaging
-      ? 'https://www.staging.ulovklienty.cz/flow/'
-      : 'https://www.ulovklienty.cz/flow/';
-    $('#link-django').href = isStaging
-      ? 'https://api-staging.ulovklienty.cz/admin/'
-      : 'https://api.ulovklienty.cz/admin/';
+    $('#link-flow').href = flowUrl;
+    $('#link-django').href = isLocal
+      ? `${location.origin}/admin/`
+      : (isStaging
+        ? 'https://api-staging.ulovklienty.cz/admin/'
+        : 'https://api.ulovklienty.cz/admin/');
   }
 
   async function flowStatus(zamestnanecId) {

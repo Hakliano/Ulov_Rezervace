@@ -76,13 +76,19 @@ class RezervaceCreateSerializer(serializers.Serializer):
 
 class ZamestnanecSerializer(serializers.ModelSerializer):
     ma_prihlaseni = serializers.BooleanField(read_only=True)
+    sluzby_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = Zamestnanec
         fields = [
             'id', 'jmeno', 'specializace', 'popis', 'fotka', 'zobrazit_na_webu', 'aktivni',
             'poradi', 'cislo_uctu', 'prihlasovaci_jmeno', 'role', 'ma_prihlaseni',
+            'sluzby_ids',
         ]
+
+    def get_sluzby_ids(self, obj):
+        """Prázdné pole = umí všechny služby (zpětná kompatibilita)."""
+        return [row.sluzba_id for row in obj.prirazene_sluzby.all()]
 
 
 class ZamestnanecPublicSerializer(serializers.ModelSerializer):
@@ -106,10 +112,15 @@ class ZamestnanecRozvrhSerializer(serializers.ModelSerializer):
 
 class ZamestnanecAbsenceSerializer(serializers.ModelSerializer):
     typ_label = serializers.CharField(source='get_typ_display', read_only=True)
+    stav_label = serializers.CharField(source='get_stav_display', read_only=True)
 
     class Meta:
         model = ZamestnanecAbsence
-        fields = ['id', 'datum_od', 'datum_do', 'typ', 'typ_label', 'poznamka']
+        fields = [
+            'id', 'datum_od', 'datum_do', 'typ', 'typ_label',
+            'poznamka', 'stav', 'stav_label', 'vytvoreno',
+        ]
+        read_only_fields = ['stav', 'vytvoreno']
 
     def validate(self, data):
         od = data.get('datum_od') or (self.instance.datum_od if self.instance else None)
@@ -174,10 +185,18 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        import uuid
+
         rozvrh_data = validated_data.pop('rozvrh', [])
         heslo = validated_data.pop('heslo', '')
         validated_data.pop('role', None)
         salon = self.context['salon']
+        # unique_together (salon, prihlasovaci_jmeno) — prázdný login nelze u více lidí.
+        # Nevymýšlíme e-mail: jen technický interní klíč, dokud majitelka nezadá skutečný e-mail (FLOW).
+        login = (validated_data.get('prihlasovaci_jmeno') or '').strip()
+        if not login:
+            login = f's-{uuid.uuid4().hex[:12]}'
+            validated_data['prihlasovaci_jmeno'] = login
         z = Zamestnanec.objects.create(salon=salon, role=Zamestnanec.ROLE_ZAMESTNANEC, **validated_data)
         if heslo:
             from rezervace.services.staff_auth import nastav_heslo_staff

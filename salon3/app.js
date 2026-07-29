@@ -1,4 +1,4 @@
-const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
+﻿const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 3;
 const STAFF_WEB_TOKEN_KEY = `staff_token_web_${SALON_ID}`;
 const STAFF_WEB_USER_KEY = `staff_user_web_${SALON_ID}`;
@@ -537,7 +537,7 @@ async function handleLogin(e) {
   try {
     const data = await apiRezervace(`/salon/${SALON_ID}/rezervace/staff/prihlaseni/`, {
       method: 'POST',
-      body: JSON.stringify({ prihlasovaci_jmeno: login, password }),
+      body: JSON.stringify({ email: login, password }),
     });
     if (!data.staff?.je_majitel) {
       msg.textContent = 'Úprava webu je dostupná jen pro majitelku salonu.';
@@ -552,7 +552,7 @@ async function handleLogin(e) {
     showEditForm();
     msg.textContent = '';
   } catch (err) {
-    msg.textContent = err.message || 'Nesprávné přihlašovací jméno nebo heslo.';
+    msg.textContent = err.message || 'Nesprávný e-mail nebo heslo.';
     msg.className = 'status-msg error';
     console.error(err);
   }

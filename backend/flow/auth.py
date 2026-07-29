@@ -23,17 +23,36 @@ def get_flow_user_from_request(request):
     return session.user
 
 
+def _over_heslo_flow_user(user, password):
+    """Owner: heslo ze Zamestnanec (sdílené). Staff: heslo z FlowUser."""
+    zam = user.zamestnanec
+    if zam.role == 'majitel':
+        if not zam.password_hash or not zam.check_password(password):
+            return False
+        # Drží FlowUser hash v synci po starších datech / migracích.
+        if not user.check_password(password):
+            user.set_password(password)
+            user.save(update_fields=['password_hash', 'upraveno'])
+        return True
+    return user.check_password(password)
+
+
 def prihlasit_flow(email, password):
+    """Přihlášení jen e-mailem (globálně unikátní). Heslo ownera je sdílené se Zamestnanec."""
     email_n = (email or '').strip().lower()
     if not email_n or not password:
         raise ValueError('Vyplňte e-mail a heslo.')
+    if '@' not in email_n:
+        raise ValueError('Přihlášení je pouze e-mailem.')
     try:
-        user = FlowUser.objects.select_related('salon', 'zamestnanec').get(email__iexact=email_n)
+        user = FlowUser.objects.select_related('salon', 'zamestnanec').get(
+            email__iexact=email_n
+        )
     except FlowUser.DoesNotExist:
         raise ValueError('Nesprávný e-mail nebo heslo.')
     if not user.aktivni:
         raise ValueError('Účet je deaktivován. Kontaktujte majitelku.')
-    if not user.check_password(password):
+    if not _over_heslo_flow_user(user, password):
         raise ValueError('Nesprávný e-mail nebo heslo.')
     session = FlowSession.objects.create(
         user=user,
@@ -52,11 +71,29 @@ def zrusit_vsechny_sessiony(user):
 
 
 def flow_user_do_dict(user):
+    je_owner = user.zamestnanec.role == 'majitel'
+    ceka_volno = 0
+    po_splatnosti_dni = 0
+    if je_owner:
+        from partner_admin.models import PartnerNastaveni
+        from rezervace.models import ZamestnanecAbsence
+        ceka_volno = ZamestnanecAbsence.objects.filter(
+            zamestnanec__salon_id=user.salon_id,
+            stav=ZamestnanecAbsence.STAV_CEKA,
+        ).count()
+        try:
+            nast = PartnerNastaveni.objects.get(salon_id=user.salon_id)
+            if nast.je_po_splatnosti:
+                po_splatnosti_dni = nast.dni_po_splatnosti
+        except PartnerNastaveni.DoesNotExist:
+            po_splatnosti_dni = 0
     return {
         'id': user.id,
         'email': user.email,
         'visible_overview': user.visible_overview,
         'aktivni': user.aktivni,
+        'ceka_volno_pocet': ceka_volno,
+        'po_splatnosti_dni': po_splatnosti_dni,
         'salon': {
             'id': user.salon_id,
             'name': user.salon.name,
@@ -70,5 +107,9 @@ def flow_user_do_dict(user):
             'id': user.zamestnanec_id,
             'jmeno': user.zamestnanec.jmeno,
             'role': user.zamestnanec.role,
+            'role_ui': 'owner' if je_owner else 'staff',
+            'prihlasovaci_jmeno': user.zamestnanec.prihlasovaci_jmeno or '',
+            'je_majitel': je_owner,
+            'je_owner': je_owner,
         },
     }

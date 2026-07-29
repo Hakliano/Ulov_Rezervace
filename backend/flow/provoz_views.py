@@ -24,7 +24,7 @@ from rezervace.serializers import (
 )
 from rezervace.services.audit import log_audit, log_rezervace_audit
 from rezervace.services.availability import volni_zamestnanci
-from rezervace.services.emails import email_storno
+from rezervace.services.emails import email_storno, email_zmena_obsluhy
 
 
 def _flow_user(request):
@@ -43,6 +43,9 @@ def _log_flow(user, rezervace, popis, pred=None, po=None):
 def _own_rezervace_or_403(user, rezervace):
     if rezervace.salon_id != user.salon_id:
         return Response({'detail': 'Rezervace nepatří k vašemu salonu.'}, status=403)
+    # Majitel řeší kolize absencí za celý tým
+    if user.zamestnanec.role == 'majitel':
+        return None
     if rezervace.zamestnanec_id != user.zamestnanec_id:
         return Response({'detail': 'Můžete spravovat jen vlastní rezervace.'}, status=403)
     return None
@@ -53,12 +56,14 @@ def _dostupni_kolegove(salon, rezervace, exclude_zamestnanec_id=None):
     if not rezervace.zacatek or not rezervace.konec:
         return []
     datum = timezone.localtime(rezervace.zacatek).date()
+    sluzby_ids = list(rezervace.polozky.values_list('sluzba_id', flat=True))
     volni = volni_zamestnanci(
         salon,
         datum,
         rezervace.zacatek,
         rezervace.konec,
         exclude_id=rezervace.id,
+        sluzby_ids=sluzby_ids or None,
     )
     out = []
     for z in volni:
@@ -128,10 +133,14 @@ class FlowKalendarView(APIView):
 
         if overview:
             abs_qs = ZamestnanecAbsence.objects.filter(
-                zamestnanec__salon=salon
+                zamestnanec__salon=salon,
+            ).exclude(
+                stav=ZamestnanecAbsence.STAV_ZAMITNUTO,
             ).select_related('zamestnanec')
         else:
-            abs_qs = ZamestnanecAbsence.objects.filter(zamestnanec_id=user.zamestnanec_id)
+            abs_qs = ZamestnanecAbsence.objects.filter(
+                zamestnanec_id=user.zamestnanec_id,
+            ).exclude(stav=ZamestnanecAbsence.STAV_ZAMITNUTO)
         abs_qs = _filter_absence_qs(abs_qs, od, do)
 
         absence_data = []
@@ -303,11 +312,12 @@ class FlowRezervacePrevestView(APIView):
         except (TypeError, ValueError):
             return Response({'detail': 'Vyberte kolegu.'}, status=400)
 
-        if cil_id == user.zamestnanec_id:
-            return Response({'detail': 'Nelze převést na sebe.'}, status=400)
+        if cil_id == rezervace.zamestnanec_id:
+            return Response({'detail': 'Nelze převést na stejného pracovníka.'}, status=400)
 
+        exclude_id = rezervace.zamestnanec_id
         kolegove = _dostupni_kolegove(
-            user.salon, rezervace, exclude_zamestnanec_id=user.zamestnanec_id,
+            user.salon, rezervace, exclude_zamestnanec_id=exclude_id,
         )
         if not any(k['id'] == cil_id for k in kolegove):
             return Response(
@@ -319,6 +329,7 @@ class FlowRezervacePrevestView(APIView):
             Zamestnanec, pk=cil_id, salon_id=user.salon_id, aktivni=True,
         )
         pred = AdminRezervaceSerializer(rezervace).data
+        puvodni_jmeno = rezervace.zamestnanec.jmeno if rezervace.zamestnanec_id else ''
         rezervace.zamestnanec = cil
         rezervace.save(update_fields=['zamestnanec', 'aktualizovano'])
         po = AdminRezervaceSerializer(rezervace).data
@@ -329,6 +340,10 @@ class FlowRezervacePrevestView(APIView):
             pred,
             po,
         )
+        try:
+            email_zmena_obsluhy(rezervace, puvodni_jmeno, cil.jmeno)
+        except Exception:
+            pass
         return Response({'ok': True, 'rezervace': po})
 
 
@@ -444,14 +459,22 @@ class FlowAbsenceView(APIView):
         qs = ZamestnanecAbsence.objects.filter(zamestnanec_id=user.zamestnanec_id)
         od, do = _parse_range(request)
         qs = _filter_absence_qs(qs, od, do)
-        return Response(ZamestnanecAbsenceSerializer(qs.order_by('datum_od'), many=True).data)
+        return Response(ZamestnanecAbsenceSerializer(qs.order_by('-vytvoreno', 'datum_od'), many=True).data)
 
     def post(self, request):
         user = _flow_user(request)
         ser = ZamestnanecAbsenceSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
+        je_owner = user.zamestnanec.role == 'majitel'
+        # Staff = žádost (ceka). Majitel = hned schváleno (vlastní volno).
+        stav = (
+            ZamestnanecAbsence.STAV_SCHVALENO
+            if je_owner
+            else ZamestnanecAbsence.STAV_CEKA
+        )
         absence = ZamestnanecAbsence.objects.create(
             zamestnanec_id=user.zamestnanec_id,
+            stav=stav,
             **ser.validated_data,
         )
         od = ser.validated_data['datum_od']
@@ -467,10 +490,21 @@ class FlowAbsenceView(APIView):
             _konflikt_payload(r, exclude_zamestnanec_id=user.zamestnanec_id)
             for r in konflikty
         ]
+        if je_owner:
+            detail = 'Absence schválena.'
+        else:
+            detail = (
+                'Žádost odeslána majitelce ke schválení. '
+                'Kalendář se zablokuje až po schválení.'
+            )
+            if konflikt_data:
+                detail += f' Kolize rezervací ({len(konflikt_data)}) vyřeší majitelka při schválení.'
         return Response({
             'absence': ZamestnanecAbsenceSerializer(absence).data,
-            'konfliktni_rezervace': konflikt_data,
+            'konfliktni_rezervace': konflikt_data if je_owner else [],
             'pocet_konfliktu': len(konflikt_data),
+            'detail': detail,
+            'ceka_na_schvaleni': not je_owner,
         }, status=status.HTTP_201_CREATED)
 
 
@@ -483,6 +517,15 @@ class FlowAbsenceDetailView(APIView):
         absence = get_object_or_404(
             ZamestnanecAbsence, pk=absence_id, zamestnanec_id=user.zamestnanec_id
         )
+        # Staff může stáhnout jen čekající žádost; schválené maže majitel ve Správě
+        if (
+            user.zamestnanec.role != 'majitel'
+            and absence.stav == ZamestnanecAbsence.STAV_SCHVALENO
+        ):
+            return Response(
+                {'detail': 'Schválenou absenci může zrušit jen majitelka.'},
+                status=400,
+            )
         absence.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -503,7 +546,7 @@ class FlowSluzbyView(APIView):
 
 
 class FlowVolneTerminyView(APIView):
-    """Volné termíny jen pro přihlášeného pracovníka."""
+    """Volné termíny pro přihlášeného pracovníka (majitel může vybrat staff)."""
 
     authentication_classes = []
     permission_classes = [FlowPermission]
@@ -518,6 +561,21 @@ class FlowVolneTerminyView(APIView):
         if not datum_str or not sluzby_str:
             return Response({'detail': 'Parametry datum a sluzby jsou povinné.'}, status=400)
 
+        zam_id = user.zamestnanec_id
+        if user.zamestnanec.role == 'majitel':
+            raw = request.query_params.get('zamestnanec_id')
+            if not raw:
+                return Response({'detail': 'Vyberte pracovníka.'}, status=400)
+            try:
+                zam_id = int(raw)
+            except (TypeError, ValueError):
+                return Response({'detail': 'Neplatný pracovník.'}, status=400)
+            zam = get_object_or_404(Zamestnanec, pk=zam_id, salon_id=user.salon_id)
+            if zam.role == Zamestnanec.ROLE_MAJITEL:
+                return Response({'detail': 'Rezervaci nelze zadat na účet majitele.'}, status=400)
+            if not zam.aktivni:
+                return Response({'detail': 'Pracovník je neaktivní.'}, status=400)
+
         datum = datetime.strptime(datum_str, '%Y-%m-%d').date()
         if salon_je_zavreny(user.salon, datum):
             return Response({
@@ -529,7 +587,7 @@ class FlowVolneTerminyView(APIView):
         if not sluzby_ids:
             return Response({'detail': 'Vyberte alespoň jednu službu.'}, status=400)
 
-        terminy = generuj_terminy(user.salon, datum, sluzby_ids, user.zamestnanec_id)
+        terminy = generuj_terminy(user.salon, datum, sluzby_ids, zam_id)
         duvod = ''
         if not terminy:
             aktivni = CenikPolozka.objects.filter(
@@ -538,19 +596,19 @@ class FlowVolneTerminyView(APIView):
             if aktivni != len(sluzby_ids):
                 duvod = 'Vybraná služba není dostupná.'
             else:
-                duvod = 'Pro tento den u vás není volný žádný termín.'
+                duvod = 'Pro tento den u vybraného pracovníka není volný žádný termín.'
 
         return Response({
             'datum': datum_str,
             'zavreno': False,
             'terminy': terminy,
             'duvod': duvod,
-            'zamestnanec_id': user.zamestnanec_id,
+            'zamestnanec_id': zam_id,
         })
 
 
 class FlowRezervaceCreateView(APIView):
-    """Zadat rezervaci na sebe (telefon / osobně) — stejná logika jako admin."""
+    """Zadat rezervaci na sebe (telefon / osobně). Majitel může vybrat staff."""
 
     authentication_classes = []
     permission_classes = [FlowPermission]
@@ -561,7 +619,18 @@ class FlowRezervaceCreateView(APIView):
         from rezervace.views import vytvor_rezervaci
 
         payload = dict(request.data)
-        payload['zamestnanec_id'] = user.zamestnanec_id
+        zam_id = user.zamestnanec_id
+        if user.zamestnanec.role == 'majitel':
+            try:
+                zam_id = int(payload.get('zamestnanec_id'))
+            except (TypeError, ValueError):
+                return Response({'detail': 'Vyberte pracovníka.'}, status=400)
+            zam = get_object_or_404(Zamestnanec, pk=zam_id, salon_id=user.salon_id)
+            if zam.role == Zamestnanec.ROLE_MAJITEL:
+                return Response({'detail': 'Rezervaci nelze zadat na účet majitele.'}, status=400)
+            if not zam.aktivni:
+                return Response({'detail': 'Pracovník je neaktivní.'}, status=400)
+        payload['zamestnanec_id'] = zam_id
         if not payload.get('typ_vytvoreni'):
             payload['typ_vytvoreni'] = 'telefon'
         if not payload.get('stav'):
@@ -570,7 +639,7 @@ class FlowRezervaceCreateView(APIView):
         ser = AdminRezervaceCreateSerializer(data=payload)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
-        d['zamestnanec_id'] = user.zamestnanec_id
+        d['zamestnanec_id'] = zam_id
 
         try:
             rezervace = vytvor_rezervaci(
@@ -617,51 +686,8 @@ class FlowRozvrhView(APIView):
                 {'detail': 'Účet majitelky nemá pracovní rozvrh pro rezervace.'},
                 status=400,
             )
-
-        raw = request.data.get('rozvrh')
-        if not isinstance(raw, list) or len(raw) != 7:
-            return Response({'detail': 'Očekávám rozvrh pro všech 7 dní týdne.'}, status=400)
-
-        by_den = {}
-        for item in raw:
-            ser = ZamestnanecRozvrhSerializer(data=item)
-            ser.is_valid(raise_exception=True)
-            data = ser.validated_data
-            den = data['den']
-            if den in by_den:
-                return Response({'detail': f'Duplicitní den {den}.'}, status=400)
-            if data.get('volno'):
-                data['od'] = None
-                data['do'] = None
-            elif not data.get('od') or not data.get('do'):
-                return Response(
-                    {'detail': f'Den {den}: vyplňte od–do, nebo označte volno.'},
-                    status=400,
-                )
-            elif data['do'] <= data['od']:
-                return Response(
-                    {'detail': f'Den {den}: konec musí být později než začátek.'},
-                    status=400,
-                )
-            by_den[den] = data
-
-        if set(by_den.keys()) != set(range(7)):
-            return Response({'detail': 'Rozvrh musí obsahovat dny 0–6 (Po–Ne).'}, status=400)
-
-        pred = {'rozvrh': dopln_rozvrh_7_dni(z)}
-        z.rozvrh.all().delete()
-        for den in range(7):
-            ZamestnanecRozvrh.objects.create(zamestnanec=z, **by_den[den])
-        z.refresh_from_db()
-        po = {'rozvrh': dopln_rozvrh_7_dni(z)}
-        log_audit(
-            user.salon,
-            f'FLOW:{z.jmeno}',
-            'oteviraci_doba',
-            f'FLOW:{z.jmeno}: změna vlastní pracovní doby',
-            objekt_typ='zamestnanec',
-            objekt_id=z.id,
-            pred=pred,
-            po=po,
+        # I4: pracovní dobu mění jen majitel ve Správě → Personál
+        return Response(
+            {'detail': 'Pracovní dobu může měnit jen majitel ve Správě.'},
+            status=403,
         )
-        return Response(po)

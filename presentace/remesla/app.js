@@ -3,6 +3,8 @@ const DEMO_FOLDERS = {
   2: 'remesla-elektrikar',
   3: 'remesla-rekonstrukce',
 };
+const DEMO_LIVE_URLS = {
+};
 
 const host = window.location.hostname;
 const isLocal = host === 'localhost' || host === '127.0.0.1';
@@ -11,6 +13,10 @@ const API_BASE = isLocal
   : 'https://api.ulovklienty.cz/api';
 
 function salonDemoUrl(demoId, page) {
+  if (!isLocal && DEMO_LIVE_URLS[demoId]) {
+    const base = DEMO_LIVE_URLS[demoId].replace(/\/$/, '');
+    return page === 'web' ? `${base}/` : `${base}/rezervace.html`;
+  }
   const folder = DEMO_FOLDERS[demoId];
   if (!folder) return '#';
   if (!isLocal) {
@@ -24,7 +30,7 @@ function salonDemoUrl(demoId, page) {
 document.querySelectorAll('[data-demo]').forEach((link) => {
   const demoId = Number(link.dataset.demo);
   const page = link.dataset.page || 'web';
-  if (DEMO_FOLDERS[demoId]) {
+  if (DEMO_FOLDERS[demoId] || DEMO_LIVE_URLS[demoId]) {
     link.href = salonDemoUrl(demoId, page);
     link.target = '_blank';
     link.rel = 'noopener';
@@ -214,8 +220,8 @@ form?.addEventListener('submit', async (e) => {
   const btn = document.getElementById('compareToggle');
   if (!block || !btn) return;
 
-  const labelExpand = 'Rozvinout celé srovnání';
-  const labelCollapse = 'Ukázat méně';
+  const labelExpand = 'Porovnat všechny funkce';
+  const labelCollapse = 'Skrýt srovnání';
 
   btn.addEventListener('click', () => {
     const expanded = block.classList.toggle('is-expanded');
@@ -228,12 +234,56 @@ form?.addEventListener('submit', async (e) => {
 })();
 
 (() => {
+  const btn = document.getElementById('growthBoardToggle');
+  const board = document.getElementById('program-rustu-prehled');
   const link = document.getElementById('highlightGrowthPhoto');
-  const photo = document.getElementById('program-rustu-prehled');
-  if (!link || !photo) return;
+  if (!board) return;
 
-  link.addEventListener('mouseenter', () => photo.classList.add('is-pulse'));
-  link.addEventListener('mouseleave', () => photo.classList.remove('is-pulse'));
+  const labelOpen = 'Program růstu — celý přehled';
+  const labelClose = 'Skrýt přehled Programu růstu';
+
+  function setOpen(open, { pulse = false, scroll = false } = {}) {
+    if (open) {
+      board.removeAttribute('hidden');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'true');
+        btn.textContent = labelClose;
+      }
+      if (pulse) {
+        board.classList.add('is-pulse');
+        window.setTimeout(() => board.classList.remove('is-pulse'), 1800);
+      }
+      if (scroll) {
+        board.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      board.setAttribute('hidden', '');
+      board.classList.remove('is-pulse');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.textContent = labelOpen;
+      }
+    }
+  }
+
+  btn?.addEventListener('click', () => {
+    const open = board.hasAttribute('hidden');
+    setOpen(open, { scroll: open });
+  });
+
+  link?.addEventListener('click', (e) => {
+    e.preventDefault();
+    setOpen(true, { pulse: true, scroll: true });
+  });
+
+  link?.addEventListener('mouseenter', () => {
+    if (!board.hasAttribute('hidden')) board.classList.add('is-pulse');
+  });
+  link?.addEventListener('mouseleave', () => board.classList.remove('is-pulse'));
+
+  if (window.location.hash === '#program-rustu' || window.location.hash === '#program-rustu-prehled') {
+    setOpen(true);
+  }
 })();
 
 (() => {

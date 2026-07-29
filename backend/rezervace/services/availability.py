@@ -12,6 +12,7 @@ from rezervace.models import (
     Zamestnanec,
     ZamestnanecAbsence,
     ZamestnanecRozvrh,
+    ZamestnanecSluzba,
 )
 from rezervace.services.oteviraci_doba import vypocti_oteviraci_okno_dne
 from salons.models import CenikPolozka, Salon
@@ -46,7 +47,10 @@ def zamestnanec_dostupny(zamestnanec: Zamestnanec, datum) -> bool:
     if not zamestnanec.aktivni:
         return False
     if ZamestnanecAbsence.objects.filter(
-        zamestnanec=zamestnanec, datum_od__lte=datum, datum_do__gte=datum,
+        zamestnanec=zamestnanec,
+        stav=ZamestnanecAbsence.STAV_SCHVALENO,
+        datum_od__lte=datum,
+        datum_do__gte=datum,
     ).exists():
         return False
     den = datum.weekday()
@@ -97,13 +101,28 @@ def _blokace_koliduje(salon, zamestnanec, start, end):
     return qs.exists()
 
 
-def volni_zamestnanci(salon: Salon, datum, start, end, exclude_id=None):
+def zamestnanec_umi_sluzby(zamestnanec: Zamestnanec, sluzby_ids: Iterable[int] | None) -> bool:
+    """Prázdné přiřazení = umí vše. Jinak musí umět všechny požadované služby."""
+    if not sluzby_ids:
+        return True
+    ids = {int(x) for x in sluzby_ids}
+    assigned = set(
+        ZamestnanecSluzba.objects.filter(zamestnanec=zamestnanec).values_list('sluzba_id', flat=True),
+    )
+    if not assigned:
+        return True
+    return ids.issubset(assigned)
+
+
+def volni_zamestnanci(salon: Salon, datum, start, end, exclude_id=None, sluzby_ids=None):
     staff = Zamestnanec.objects.filter(salon=salon, aktivni=True).exclude(role=Zamestnanec.ROLE_MAJITEL)
     # Rozvrh je v lokálním čase salonu — nebrat UTC wall-clock z DB.
     start_local = timezone.localtime(start) if timezone.is_aware(start) else start
     end_local = timezone.localtime(end) if timezone.is_aware(end) else end
     volni = []
     for z in staff:
+        if not zamestnanec_umi_sluzby(z, sluzby_ids):
+            continue
         okno = zamestnanec_okno(z, datum)
         if not okno:
             continue
@@ -172,6 +191,8 @@ def generuj_terminy(
                     return []
                 if z.role == Zamestnanec.ROLE_MAJITEL:
                     return []
+                if not zamestnanec_umi_sluzby(z, sluzby_ids):
+                    return []
                 okno_z = zamestnanec_okno(z, datum)
                 if okno_z:
                     z_od, z_do = okno_z
@@ -186,7 +207,9 @@ def generuj_terminy(
                                     'zamestnanec': z.jmeno,
                                 })
             else:
-                volni = volni_zamestnanci(salon, datum, start, end, exclude_rezervace_id)
+                volni = volni_zamestnanci(
+                    salon, datum, start, end, exclude_rezervace_id, sluzby_ids=sluzby_ids,
+                )
                 if volni:
                     terminy.append({
                         'cas': start.strftime('%H:%M'),
@@ -200,12 +223,12 @@ def generuj_terminy(
     return terminy
 
 
-def prirad_zamestnance(salon, datum, start, end, preferovany_id=None):
+def prirad_zamestnance(salon, datum, start, end, preferovany_id=None, sluzby_ids=None):
     if preferovany_id:
-        volni = volni_zamestnanci(salon, datum, start, end)
+        volni = volni_zamestnanci(salon, datum, start, end, sluzby_ids=sluzby_ids)
         for z in volni:
             if z.id == preferovany_id:
                 return z
         return None
-    volni = volni_zamestnanci(salon, datum, start, end)
+    volni = volni_zamestnanci(salon, datum, start, end, sluzby_ids=sluzby_ids)
     return volni[0] if volni else None

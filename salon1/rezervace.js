@@ -66,17 +66,39 @@ function setStep(n) {
   });
 }
 
+
+function staffUmiVybraneSluzby(z, selectedIds) {
+  if (!selectedIds.length) return true;
+  const assigned = (z.sluzby_ids || []).map(Number);
+  if (!assigned.length) return true;
+  return selectedIds.every((id) => assigned.includes(Number(id)));
+}
+
+function refreshStaffSelect() {
+  const sel = $('#select-zamestnanec');
+  if (!sel || !info) return;
+  const prev = sel.value;
+  const selectedIds = [...vybraneSluzby];
+  const eligible = (info.zamestnanci || []).filter((z) => staffUmiVybraneSluzby(z, selectedIds));
+  sel.innerHTML = '<option value="any">Je mi to jedno</option>';
+  eligible.forEach((z) => {
+    const spec = z.specializace ? ` – ${esc(z.specializace)}` : '';
+    sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)}${spec}</option>`;
+  });
+  if (prev !== 'any' && eligible.some((z) => String(z.id) === String(prev))) {
+    sel.value = prev;
+  } else {
+    sel.value = 'any';
+  }
+}
+
 async function loadInfo() {
   info = await api(`/salon/${SALON_ID}/rezervace/info/`);
   if (info.gdpr) gdprMeta = { ...gdprMeta, ...info.gdpr };
   $('#salon-name').textContent = `Rezervace – ${info.salon.name}`;
   document.title = `Rezervace – ${info.salon.name}`;
 
-  const sel = $('#select-zamestnanec');
-  sel.innerHTML = '<option value="any">Je mi to jedno</option>';
-  info.zamestnanci.forEach(z => {
-    sel.innerHTML += `<option value="${z.id}">${esc(z.jmeno)} – ${esc(z.specializace)}</option>`;
-  });
+  refreshStaffSelect();
 
   $('#sluzby-list').innerHTML = info.sluzby.map(s => `
     <label class="sluzba-card">
@@ -109,6 +131,8 @@ function updateDelkaInfo() {
   $$('#sluzby-list input:checked').forEach(inp => { total += parseInt(inp.dataset.delka, 10); });
   $('#delka-info').textContent = vybraneSluzby.size ? `Celková délka: cca ${total} min` : '';
   $('#btn-krok2').disabled = vybraneSluzby.size === 0;
+  refreshStaffSelect();
+
 }
 
 async function loadTerminy() {
@@ -579,20 +603,26 @@ function applyStaffUI() {
     if (el) el.href = flowUrl;
   });
 
-  // Fáze 4: personál denní práci jen ve FLOW; rezervace.html = majitelka.
+  // I8: provozní nastavení jen ve FLOW; zde zůstávají statistik/noshow/audit.
+  const movedToFlow = ['kalendar', 'kadernice', 'nastaveni', 'emaily'];
+  const legacyKeep = ['statistiky', 'noshow', 'audit'];
   const majitel = isMajitel();
-  const majitelOnly = ['kalendar', 'kadernice', 'statistiky', 'noshow', 'nastaveni', 'audit'];
   $$('[data-admin]').forEach((btn) => {
-    btn.classList.toggle('hidden', !majitel && majitelOnly.includes(btn.dataset.admin));
+    const key = btn.dataset.admin;
+    if (movedToFlow.includes(key)) {
+      btn.classList.add('hidden');
+      btn.hidden = true;
+      return;
+    }
+    const show = majitel && legacyKeep.includes(key);
+    btn.classList.toggle('hidden', !show);
+    btn.hidden = !show;
   });
-  if ($('#btn-staff-add')) $('#btn-staff-add').classList.toggle('hidden', !majitel);
+  if ($('#btn-staff-add')) $('#btn-staff-add').classList.add('hidden');
 
   const redirect = $('#admin-flow-redirect');
-  const sections = $$('.admin-section');
-  if (redirect) {
-    redirect.classList.toggle('hidden', majitel);
-  }
-  sections.forEach((sec) => {
+  if (redirect) redirect.classList.remove('hidden');
+  $$('.admin-section').forEach((sec) => {
     if (sec.id === 'admin-flow-redirect') return;
     if (!majitel) sec.classList.add('hidden');
   });
@@ -600,7 +630,7 @@ function applyStaffUI() {
 
 function showMajitelDefaultView() {
   $$('.admin-section').forEach((sec) => {
-    sec.classList.toggle('hidden', sec.id !== 'admin-kalendar');
+    sec.classList.toggle('hidden', sec.id !== 'admin-flow-redirect');
   });
 }
 
@@ -1436,7 +1466,7 @@ $('#btn-odhlasit').addEventListener('click', () => {
   $('#moje-login').classList.remove('hidden');
 });
 
-$('#form-admin-login').addEventListener('submit', async (e) => {
+$('#form-admin-login')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#admin-login-msg');
   msg.textContent = 'Přihlašuji…';
@@ -1445,7 +1475,7 @@ $('#form-admin-login').addEventListener('submit', async (e) => {
     const data = await api(`/salon/${SALON_ID}/rezervace/staff/prihlaseni/`, {
       method: 'POST',
       body: JSON.stringify({
-        prihlasovaci_jmeno: $('#staff-login').value.trim(),
+        email: $('#staff-login').value.trim(),
         password: $('#staff-password').value,
       }),
     });
@@ -1458,10 +1488,6 @@ $('#form-admin-login').addEventListener('submit', async (e) => {
     applyStaffUI();
     if (isMajitel()) {
       showMajitelDefaultView();
-      adminCalMonth = new Date();
-      adminCalMonth.setDate(1);
-      loadAdminKalendar();
-      loadNastaveni();
     }
     msg.textContent = '';
   } catch (err) {
@@ -1494,10 +1520,6 @@ async function restoreStaffSession() {
     applyStaffUI();
     if (isMajitel()) {
       showMajitelDefaultView();
-      adminCalMonth = new Date();
-      adminCalMonth.setDate(1);
-      loadAdminKalendar();
-      loadNastaveni();
     }
   } catch {
     staffToken = '';
@@ -1506,7 +1528,8 @@ async function restoreStaffSession() {
     sessionStorage.removeItem(`staff_user_${SALON_ID}`);
   }
 }
-restoreStaffSession();
+/* I8b: no staff login on booking page */
+// restoreStaffSession();
 
 $$('[data-admin]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1530,33 +1553,33 @@ $$('[data-admin]').forEach(btn => {
 $('#audit-prev')?.addEventListener('click', () => { if (auditPage > 1) loadAuditLog(auditPage - 1); });
 $('#audit-next')?.addEventListener('click', () => loadAuditLog(auditPage + 1));
 
-$('#cal-prev').addEventListener('click', () => {
+$('#cal-prev')?.addEventListener('click', () => {
   adminCalMonth.setMonth(adminCalMonth.getMonth() - 1);
   loadAdminKalendar();
 });
-$('#cal-next').addEventListener('click', () => {
+$('#cal-next')?.addEventListener('click', () => {
   adminCalMonth.setMonth(adminCalMonth.getMonth() + 1);
   loadAdminKalendar();
 });
-$('#cal-day-close').addEventListener('click', () => {
+$('#cal-day-close')?.addEventListener('click', () => {
   $('#cal-day-detail').classList.add('hidden');
   $$('#cal-grid .cal-cell').forEach((c) => c.classList.remove('selected'));
 });
 
-$('#noshow-cancel').addEventListener('click', closeNoShowModal);
-$('#noshow-modal .modal-backdrop').addEventListener('click', closeNoShowModal);
-$('#noshow-search-btn').addEventListener('click', () => {
+$('#noshow-cancel')?.addEventListener('click', closeNoShowModal);
+$('#noshow-modal .modal-backdrop')?.addEventListener('click', closeNoShowModal);
+$('#noshow-search-btn')?.addEventListener('click', () => {
   noshowQuery = $('#noshow-search').value.trim();
   loadNoShowArchiv(1);
 });
-$('#noshow-search').addEventListener('keydown', (e) => {
+$('#noshow-search')?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
     noshowQuery = $('#noshow-search').value.trim();
     loadNoShowArchiv(1);
   }
 });
-$('#noshow-confirm').addEventListener('click', async () => {
+$('#noshow-confirm')?.addEventListener('click', async () => {
   if (!pendingNoShowId) return;
   const msg = $('#noshow-modal-msg');
   msg.textContent = 'Ukládám…';
@@ -1583,11 +1606,11 @@ $('#noshow-confirm').addEventListener('click', async () => {
   }
 });
 
-$('#platba-cancel').addEventListener('click', closePlatbaModal);
-$('#platba-modal .modal-backdrop').addEventListener('click', closePlatbaModal);
-$('#platba-qr-close').addEventListener('click', closePlatbaQrModal);
-$('#platba-qr-modal .modal-backdrop').addEventListener('click', closePlatbaQrModal);
-$('#platba-confirm').addEventListener('click', async () => {
+$('#platba-cancel')?.addEventListener('click', closePlatbaModal);
+$('#platba-modal .modal-backdrop')?.addEventListener('click', closePlatbaModal);
+$('#platba-qr-close')?.addEventListener('click', closePlatbaQrModal);
+$('#platba-qr-modal .modal-backdrop')?.addEventListener('click', closePlatbaQrModal);
+$('#platba-confirm')?.addEventListener('click', async () => {
   if (!pendingPlatbaId) return;
   const msg = $('#platba-modal-msg');
   const castka = $('#platba-castka').value.trim();
@@ -1667,11 +1690,11 @@ $('#btn-gdpr-vymaz')?.addEventListener('click', async () => {
   }
 });
 
-$('#btn-staff-add').addEventListener('click', addStaffMember);
+$('#btn-staff-add')?.addEventListener('click', addStaffMember);
 $('#btn-staff-save-rozvrh')?.addEventListener('click', saveStaffRozvrh);
 $('#btn-staff-save-ucet')?.addEventListener('click', saveStaffRozvrh);
 
-$('#form-staff-absence').addEventListener('submit', async (e) => {
+$('#form-staff-absence')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedStaffId) return;
   try {
@@ -1691,7 +1714,7 @@ $('#form-staff-absence').addEventListener('submit', async (e) => {
   }
 });
 
-$('#form-staff-rezervace').addEventListener('submit', async (e) => {
+$('#form-staff-rezervace')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedStaffId) return;
   const msg = $('#staff-rez-msg');
@@ -1759,7 +1782,7 @@ $('#form-emaily')?.addEventListener('submit', async (e) => {
   }
 });
 
-$('#form-nastaveni').addEventListener('submit', async (e) => {
+$('#form-nastaveni')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const storno = $('#nast-storno').value;
   try {

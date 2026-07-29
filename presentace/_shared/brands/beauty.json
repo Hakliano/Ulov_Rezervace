@@ -1,0 +1,144 @@
+{
+  "id": "beauty",
+  "css_version": 103,
+  "js_version": 20,
+  "demo_head": {
+    "title": "Podívejte se, jak může vypadat právě vaše provozovna.",
+    "lead": "Každý web připravujeme podle značky, služeb a stylu konkrétní provozovny.",
+    "cta": null
+  },
+  "demos": [
+    {
+      "id": 1,
+      "thumb_class": "s1",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-1/hero/fd30133f090d4c1eb7f4c70fda204bd3.webp",
+        "alt": "Tattoo Salon Black",
+        "onerror": null
+      },
+      "badge": "BLACK",
+      "name": "Tattoo Salon Black",
+      "type": "Tetovací studio",
+      "desc": "Tmavý, výrazný design.",
+      "web_href": "https://demo1.ulovklienty.cz/"
+    },
+    {
+      "id": 2,
+      "thumb_class": "s2",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-2/hero/0ccfe4cf835e4f7fb39d0b7bfc224d30.webp",
+        "alt": "Studio Krása",
+        "onerror": null
+      },
+      "badge": "Krása",
+      "name": "Studio Krása",
+      "type": "Kosmetika a manikúra",
+      "desc": "Jemný světlý design.",
+      "web_href": "https://demo2.ulovklienty.cz/"
+    },
+    {
+      "id": 3,
+      "thumb_class": "s3",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-3/hero/a10b45905f674e23a13ff2444c54d2aa.webp",
+        "alt": "CRAZY",
+        "onerror": null
+      },
+      "badge": "CRAZY",
+      "name": "CRAZY",
+      "type": "Moderní barber",
+      "desc": "Odvážný styl.",
+      "web_href": "https://demo3.ulovklienty.cz/"
+    },
+    {
+      "id": 5,
+      "thumb_class": "s5",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-5/hero/a86632471e4342d79e715318d313f7e1.webp",
+        "alt": "Wellness Gold",
+        "onerror": null
+      },
+      "badge": "Gold",
+      "name": "Wellness Gold",
+      "type": "Wellness a spa",
+      "desc": "Zlato-hnědý, elegantní.",
+      "web_href": "https://demo5.ulovklienty.cz/"
+    },
+    {
+      "id": 6,
+      "thumb_class": "s6",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-6/hero/530b5dcbe4194664b181b8064a5d957d.webp",
+        "alt": "Salon Klid",
+        "onerror": null
+      },
+      "badge": "Klid",
+      "name": "Salon Klid",
+      "type": "Masáže a terapie",
+      "desc": "Baby blue, přehledné.",
+      "web_href": "https://demo6.ulovklienty.cz/"
+    },
+    {
+      "id": 7,
+      "thumb_class": "s7",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-7/hero/dee6d74ea6a54a97bc36a4bd02fa7f21.webp",
+        "alt": "Silver kosmetika",
+        "onerror": null
+      },
+      "badge": "Silver",
+      "name": "Silver kosmetika",
+      "type": "Kosmetický salon",
+      "desc": "Šedo-stříbrný, blokový.",
+      "web_href": "https://demo7.ulovklienty.cz/"
+    },
+    {
+      "id": 8,
+      "thumb_class": "s8",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-8/hero/d918bb4e09f941419813b914b0246cf4.png",
+        "alt": "RELAX",
+        "onerror": null
+      },
+      "badge": "RELAX",
+      "name": "RELAX",
+      "type": "Sauny &amp; wellness",
+      "desc": "Navy &amp; červená, noční lázně.",
+      "web_href": "https://demo8.ulovklienty.cz/"
+    }
+  ],
+  "css_vars": {
+    "bg": "#f7f1f2",
+    "bg2": "#efe4e6",
+    "surface": "#ffffff",
+    "navy": "#4a3540",
+    "navy-dark": "#3a2830",
+    "navy-mid": "#6a4d58",
+    "text": "#3a2830",
+    "muted": "#7a6570",
+    "gold": "#c4878f",
+    "gold-light": "#d4a3a9",
+    "gold-pale": "#f3e4e6",
+    "line": "rgba(74, 53, 64, 0.12)",
+    "line-gold": "rgba(196, 135, 143, 0.35)",
+    "radius": "16px",
+    "shadow": "0 8px 28px rgba(58, 40, 48, 0.1)",
+    "font-display": "'DM Sans', system-ui, sans-serif",
+    "font-body": "'DM Sans', system-ui, sans-serif"
+  },
+  "body": {
+    "color": "var(--text)",
+    "line-height": "1.65",
+    "font-family": "var(--font-body)"
+  },
+  "hero_continuum": {
+    "background-color": "var(--navy-dark)",
+    "background-image": "linear-gradient(120deg, rgba(40, 28, 34, 0.92) 0%, rgba(58, 40, 48, 0.82) 48%, rgba(58, 40, 48, 0.72) 100%), url('https://haklweb.b-cdn.net/ULOV_KLIENTA/Gemini_Generated_Image_z28gd8z28gd8z28g.webp')",
+    "background-size": "cover",
+    "background-position": "center top",
+    "background-repeat": "no-repeat"
+  },
+  "demo_mode": {
+    "type": "salon_ports"
+  }
+}

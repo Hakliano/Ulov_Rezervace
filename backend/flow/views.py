@@ -25,6 +25,40 @@ from salons.models import Salon
 from salons.permissions import MajitelPermission
 
 
+class FlowAktivaceView(APIView):
+    """I7 — stav / aktivace FLOW účtu majitele (Přejít do FLOW)."""
+
+    permission_classes = [MajitelPermission]
+
+    def get(self, request, pk):
+        from rezervace.services.staff_auth import owner_flow_stav
+
+        salon = get_object_or_404(Salon, pk=pk)
+        data = owner_flow_stav(salon)
+        data['flow_path'] = '/flow/'
+        return Response(data)
+
+    def post(self, request, pk):
+        from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
+
+        salon = get_object_or_404(Salon, pk=pk)
+        email = (request.data.get('email') or '').strip() or None
+        try:
+            user, created = ensure_owner_flow_user(salon, email=email)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        stav = owner_flow_stav(salon)
+        stav['flow_path'] = '/flow/'
+        stav['vytvoreno'] = created
+        stav['detail'] = (
+            'FLOW přístup majitele je připraven. Přihlaste se stejným e-mailem a heslem jako do webu.'
+            if created
+            else 'FLOW přístup majitele už existuje.'
+        )
+        stav['email'] = user.email
+        return Response(stav, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
 class FlowUctyListCreateView(APIView):
     """Majitelka: seznam FLOW účtů / vytvoření přístupu."""
 
@@ -68,6 +102,31 @@ class FlowUctyListCreateView(APIView):
         )
         user.set_password(heslo)
         user.save()
+
+        if zam.role == 'majitel':
+            from rezervace.services.staff_auth import sync_owner_login_email
+            try:
+                sync_owner_login_email(zam, email)
+            except ValueError as exc:
+                user.delete()
+                return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            # Owner: stejný hash jako web-admin (sdílené heslo)
+            if zam.password_hash:
+                user.password_hash = zam.password_hash
+                user.save(update_fields=['password_hash', 'upraveno'])
+                return Response(
+                    {
+                        'ucet': FlowUserPublicSerializer(user).data,
+                        'email_odeslan': False,
+                        'detail': (
+                            'FLOW přístup majitele vytvořen. '
+                            'Přihlášení je e-mailem a stejným heslem jako do webové administrace.'
+                        ),
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+            zam.set_password(heslo)
+            zam.save(update_fields=['password_hash'])
 
         email_ok = email_flow_pristup(user, heslo, reset=False)
         return Response(
@@ -182,6 +241,16 @@ class FlowZmenaHeslaView(APIView):
         user = get_flow_user_from_request(request)
         if not user:
             return Response({'detail': 'Nejste přihlášeni.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if user.zamestnanec.role == 'majitel':
+            return Response(
+                {
+                    'detail': (
+                        'Sdílené heslo majitele se mění ve webové administraci salonu, '
+                        'ne ve FLOW.'
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         ser = FlowChangePasswordSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         if not user.check_password(ser.validated_data['current_password']):

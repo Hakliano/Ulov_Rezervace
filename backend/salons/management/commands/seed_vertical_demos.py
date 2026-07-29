@@ -108,10 +108,18 @@ class Command(BaseCommand):
                 },
             )
 
-            owner, _ = Zamestnanec.objects.get_or_create(
-                salon=salon, prihlasovaci_jmeno='majitelka',
-                defaults={'jmeno': 'Majitelka', 'role': Zamestnanec.ROLE_MAJITEL, 'zobrazit_na_webu': False, 'aktivni': True},
+            owner_login = f'majitel.salon{salon.pk}@ulov.local'
+            owner, created = Zamestnanec.objects.get_or_create(
+                salon=salon, role=Zamestnanec.ROLE_MAJITEL,
+                defaults={
+                    'jmeno': 'Majitelka',
+                    'prihlasovaci_jmeno': owner_login,
+                    'zobrazit_na_webu': False,
+                    'aktivni': True,
+                },
             )
+            if created or not owner.prihlasovaci_jmeno or '@' not in owner.prihlasovaci_jmeno:
+                owner.prihlasovaci_jmeno = owner_login
             owner.jmeno = 'Majitelka'
             owner.role = Zamestnanec.ROLE_MAJITEL
             owner.zobrazit_na_webu = False

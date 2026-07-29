@@ -183,7 +183,8 @@ NOTIFIKACE_TAGY = [
 ]
 
 PLACEHOLDER_HINT = (
-    'Do textu e-mailu vkládejte tagy z tabulky níže — systém je při odeslání nahradí skutečnými údaji.'
+    'Do textu e-mailu můžete vložit tagy — otevřete tabulku tagů tlačítkem níže; '
+    'systém je při odeslání nahradí skutečnými údaji.'
 )
 
 VychoZI_NOTIFIKACE = [

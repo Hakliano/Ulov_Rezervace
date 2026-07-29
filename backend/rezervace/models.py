@@ -31,6 +31,12 @@ TYP_ABSENCE = [
     ('technicke', 'Technické problémy'),
 ]
 
+STAV_ABSENCE = [
+    ('ceka', 'Čeká na schválení'),
+    ('schvaleno', 'Schváleno'),
+    ('zamitnuto', 'Zamítnuto'),
+]
+
 DENY = OteviraciDoba.DENY
 
 
@@ -156,7 +162,7 @@ class Zamestnanec(models.Model):
     aktivni = models.BooleanField('aktivní', default=True)
     poradi = models.PositiveIntegerField('pořadí', default=0)
     cislo_uctu = models.CharField('číslo účtu', max_length=34, blank=True)
-    prihlasovaci_jmeno = models.CharField('přihlašovací jméno', max_length=50, blank=True)
+    prihlasovaci_jmeno = models.CharField('přihlašovací e-mail / jméno', max_length=254, blank=True)
     password_hash = models.CharField('heslo (hash)', max_length=128, blank=True)
     role = models.CharField('role', max_length=20, choices=ROLE_CHOICES, default=ROLE_ZAMESTNANEC)
 
@@ -165,6 +171,13 @@ class Zamestnanec(models.Model):
         verbose_name_plural = 'zaměstnanci'
         ordering = ['poradi', 'id']
         unique_together = ['salon', 'prihlasovaci_jmeno']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['prihlasovaci_jmeno'],
+                condition=models.Q(role='majitel') & ~models.Q(prihlasovaci_jmeno=''),
+                name='unique_owner_prihlasovaci_email',
+            ),
+        ]
 
     def __str__(self):
         return self.jmeno
@@ -180,6 +193,25 @@ class Zamestnanec(models.Model):
         if not self.password_hash:
             return False
         return check_password(raw_password, self.password_hash)
+
+
+class ZamestnanecSluzba(models.Model):
+    """Přiřazení služby k personálu. Bez řádků = zaměstnanec umí všechny služby salonu."""
+
+    zamestnanec = models.ForeignKey(
+        Zamestnanec, related_name='prirazene_sluzby', on_delete=models.CASCADE,
+    )
+    sluzba = models.ForeignKey(
+        CenikPolozka, related_name='prirazeni_personalu', on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'přiřazení služby personálu'
+        verbose_name_plural = 'přiřazení služeb personálu'
+        unique_together = ['zamestnanec', 'sluzba']
+
+    def __str__(self):
+        return f'{self.zamestnanec.jmeno} → {self.sluzba.nazev}'
 
 
 class ZamestnanecSession(models.Model):
@@ -216,11 +248,19 @@ class ZamestnanecRozvrh(models.Model):
 
 
 class ZamestnanecAbsence(models.Model):
+    STAV_CEKA = 'ceka'
+    STAV_SCHVALENO = 'schvaleno'
+    STAV_ZAMITNUTO = 'zamitnuto'
+
     zamestnanec = models.ForeignKey(Zamestnanec, related_name='absence', on_delete=models.CASCADE)
     datum_od = models.DateField('od')
     datum_do = models.DateField('do')
     typ = models.CharField('typ', max_length=20, choices=TYP_ABSENCE, default='dovolena')
     poznamka = models.CharField('poznámka', max_length=200, blank=True)
+    stav = models.CharField(
+        'stav', max_length=20, choices=STAV_ABSENCE, default=STAV_SCHVALENO, db_index=True,
+    )
+    vytvoreno = models.DateTimeField('vytvořeno', auto_now_add=True)
 
     class Meta:
         verbose_name = 'absence zaměstnance'
@@ -228,7 +268,7 @@ class ZamestnanecAbsence(models.Model):
         ordering = ['datum_od']
 
     def __str__(self):
-        return f'{self.zamestnanec.jmeno}: {self.datum_od}–{self.datum_do} ({self.typ})'
+        return f'{self.zamestnanec.jmeno}: {self.datum_od}–{self.datum_do} ({self.typ}/{self.stav})'
 
 
 class Zakaznik(models.Model):

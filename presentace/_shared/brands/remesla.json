@@ -1,0 +1,93 @@
+{
+  "id": "remesla",
+  "css_version": 103,
+  "js_version": 20,
+  "demo_head": {
+    "title": "Podívejte se, jak může vypadat právě vaše provozovna.",
+    "lead": "Váš design vymyslíme spolu na přání!",
+    "cta": "Klikněte a vyzkoušejte web i rezervaci."
+  },
+  "demos": [
+    {
+      "id": 1,
+      "thumb_class": "s1",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-12/hero/e404e2f6635a4eb09e96457ab230f411.png",
+        "alt": "VodaPro",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "VodaPro",
+      "type": "Instalatér",
+      "desc": "Ocelová modř, utilitární layout.",
+      "web_href": "../../remesla-instalater/index.html"
+    },
+    {
+      "id": 2,
+      "thumb_class": "s2",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-13/hero/aa0ab9d0c899499a8a5a7d317a612fb0.webp",
+        "alt": "VOLT",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "VOLT",
+      "type": "Elektrikář",
+      "desc": "Černá + amber, industriální.",
+      "web_href": "../../remesla-elektrikar/index.html"
+    },
+    {
+      "id": 3,
+      "thumb_class": "s3",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-14/hero/1edcd75bcee74594aa92fefdffd95c6f.webp",
+        "alt": "Ateliér Domov",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "Ateliér Domov",
+      "type": "Rekonstrukce bytů",
+      "desc": "Editoriál, teplé dubové tóny.",
+      "web_href": "../../remesla-rekonstrukce/index.html"
+    }
+  ],
+  "css_vars": {
+    "bg": "#f3ebe3",
+    "bg2": "#e6d8cc",
+    "surface": "#ffffff",
+    "navy": "#3d2a1f",
+    "navy-dark": "#2a1c14",
+    "navy-mid": "#5c4030",
+    "text": "#3d2a1f",
+    "muted": "#7a6456",
+    "gold": "#a67c52",
+    "gold-light": "#c4a074",
+    "gold-pale": "#efe2d2",
+    "line": "rgba(61, 42, 31, 0.12)",
+    "line-gold": "rgba(166, 124, 82, 0.35)",
+    "radius": "16px",
+    "shadow": "0 8px 28px rgba(42, 28, 20, 0.12)",
+    "font-display": "'DM Sans', system-ui, sans-serif",
+    "font-body": "'DM Sans', system-ui, sans-serif"
+  },
+  "body": {
+    "color": "var(--text)",
+    "line-height": "1.65",
+    "font-family": "var(--font-body)"
+  },
+  "hero_continuum": {
+    "background-color": "var(--navy-dark)",
+    "background-image": "linear-gradient(120deg, rgba(28, 18, 12, 0.92) 0%, rgba(42, 28, 20, 0.82) 48%, rgba(42, 28, 20, 0.72) 100%), url('https://haklweb.b-cdn.net/ULOV_KLIENTA/bg_brown%20coffe.webp')",
+    "background-size": "cover",
+    "background-position": "center top",
+    "background-repeat": "no-repeat"
+  },
+  "demo_mode": {
+    "type": "folders",
+    "folders": {
+      "1": "remesla-instalater",
+      "2": "remesla-elektrikar",
+      "3": "remesla-rekonstrukce"
+    }
+  }
+}

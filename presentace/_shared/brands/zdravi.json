@@ -1,0 +1,99 @@
+{
+  "id": "zdravi",
+  "css_version": 103,
+  "js_version": 20,
+  "demo_head": {
+    "title": "Podívejte se, jak může vypadat právě vaše provozovna.",
+    "lead": "Váš design vymyslíme spolu na přání!",
+    "cta": "Klikněte a vyzkoušejte web i rezervaci."
+  },
+  "demos": [
+    {
+      "id": 1,
+      "thumb_class": "s1",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-9/hero/6f62a85e65d240539a2da8d2c68c79ed.webp",
+        "alt": "Movium",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "Movium",
+      "type": "Fyzioterapie",
+      "desc": "Sage klinika, boční navigace.",
+      "web_href": "../../zdravi-fyzio/index.html"
+    },
+    {
+      "id": 2,
+      "thumb_class": "s2",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-10/hero/13cc0049decf40628112240c86ab8fd7.webp",
+        "alt": "PawCare",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "PawCare",
+      "type": "Veterina",
+      "desc": "Teplý korál, bento mřížka služeb.",
+      "web_href": "../../zdravi-veterina/index.html"
+    },
+    {
+      "id": 3,
+      "thumb_class": "s3",
+      "img": {
+        "src": "https://haklweb.b-cdn.net/webs/salon-11/hero/a8b4349199cb45d9b91413d48c18dcc0.webp",
+        "alt": "Bělice",
+        "onerror": "this.remove()"
+      },
+      "badge": null,
+      "name": "Bělice",
+      "type": "Dentální hygiena",
+      "desc": "Čistý aqua, asymetrický hero.",
+      "web_href": "../../zdravi-dental/index.html"
+    }
+  ],
+  "css_vars": {
+    "bg": "#eaf5f7",
+    "bg2": "#d7ebf0",
+    "surface": "#ffffff",
+    "navy": "#1a4d58",
+    "navy-dark": "#0e3540",
+    "navy-mid": "#2a6572",
+    "text": "#1a4d58",
+    "muted": "#5a7a84",
+    "gold": "#3d9aad",
+    "gold-light": "#6bb8c8",
+    "gold-pale": "#d4eef3",
+    "line": "rgba(26, 77, 88, 0.12)",
+    "line-gold": "rgba(61, 154, 173, 0.35)",
+    "radius": "16px",
+    "shadow": "0 8px 28px rgba(14, 53, 64, 0.1)",
+    "font-display": "'DM Sans', system-ui, sans-serif",
+    "font-body": "'DM Sans', system-ui, sans-serif"
+  },
+  "body": {
+    "background-color": "#204C54",
+    "background-image": "url('https://haklweb.b-cdn.net/ULOV_KLIENTA/bg_zdravi.png')",
+    "background-size": "cover",
+    "background-position": "center top",
+    "background-repeat": "no-repeat",
+    "background-attachment": "fixed",
+    "color": "var(--text)",
+    "line-height": "1.65",
+    "font-family": "var(--font-body)"
+  },
+  "hero_continuum": {
+    "background-color": "#204C54",
+    "background-image": "linear-gradient(120deg, rgba(8, 32, 40, 0.88) 0%, rgba(14, 53, 64, 0.72) 48%, rgba(32, 76, 84, 0.55) 100%), url('https://haklweb.b-cdn.net/ULOV_KLIENTA/bg_zdravi.png')",
+    "background-size": "cover",
+    "background-position": "center top",
+    "background-repeat": "no-repeat"
+  },
+  "demo_mode": {
+    "type": "folders",
+    "folders": {
+      "1": "zdravi-fyzio",
+      "2": "zdravi-veterina",
+      "3": "zdravi-dental"
+    }
+  }
+}

@@ -168,9 +168,9 @@
 
       <div id="login-section" class="admin-body">
         <form id="login-form" class="login-form">
-          <p class="admin-hint">Přihlášení majitelky pro úpravu obsahu webu.</p>
-          <label for="staff-login">Přihlašovací jméno</label>
-          <input type="text" id="staff-login" autocomplete="username" required>
+          <p class="admin-hint">Přihlášení majitelky e-mailem (stejný účet jako do FLOW).</p>
+          <label for="staff-login">E-mail</label>
+          <input type="email" id="staff-login" autocomplete="username" required>
           <label for="staff-password">Heslo</label>
           <input type="password" id="staff-password" autocomplete="current-password" required>
           <div id="login-status-msg" class="status-msg"></div>
@@ -188,9 +188,19 @@
           <button type="button" class="tab" data-tab="cenik">Ceník</button>
           <button type="button" class="tab" data-tab="novinky">Novinky</button>
           <button type="button" class="tab" data-tab="email">E-mail</button>
+          <button type="button" class="tab" data-tab="heslo">Heslo</button>
         </div>
 
         <div class="tab-panel active" data-panel="zaklad">
+          <div id="flow-onboard-box" class="upload-box">
+            <h4>Provozní den — FLOW</h4>
+            <p class="admin-hint" id="flow-onboard-hint">
+              Web můžete mít i bez rezervací. Až budete chtít kalendář a personál v provozu,
+              aktivujte FLOW — přihlášení stejným e-mailem a heslem.
+            </p>
+            <p id="flow-onboard-msg" class="status-msg"></p>
+            <button type="button" id="btn-goto-flow" class="btn btn-primary btn-block">Přejít do FLOW</button>
+          </div>
           <label for="edit-name">Název</label>
           <input type="text" id="edit-name">
           <label for="edit-desc">Popis</label>
@@ -233,6 +243,24 @@
 <p id="email-save-msg" class="status-msg"></p>
           <button type="button" id="btn-save-email" class="btn btn-primary btn-block">Uložit e-mail nastavení</button>
           <button type="button" id="btn-test-email" class="btn btn-secondary btn-block">Odeslat testovací e-mail</button>
+        </div>
+
+        <div class="tab-panel" data-panel="heslo">
+          <p class="admin-hint">
+            Změna sdíleného hesla majitele. Stejné heslo platí pro webovou administraci i pro FLOW.
+            Nejde o reset — reset hesla zaměstnanců bude jen ve FLOW.
+          </p>
+          <form id="form-owner-password" class="login-form">
+            <label for="owner-pwd-current">Současné heslo</label>
+            <input type="password" id="owner-pwd-current" autocomplete="current-password" required>
+            <label for="owner-pwd-new">Nové heslo</label>
+            <input type="password" id="owner-pwd-new" autocomplete="new-password" required minlength="8">
+            <label for="owner-pwd-new2">Nové heslo znovu</label>
+            <input type="password" id="owner-pwd-new2" autocomplete="new-password" required minlength="8">
+            <p class="admin-hint">Min. 8 znaků, alespoň jedno písmeno a jedno číslo.</p>
+            <div id="owner-pwd-msg" class="status-msg"></div>
+            <button type="submit" class="btn btn-primary btn-block">Změnit sdílené heslo</button>
+          </form>
         </div>
 
         <div class="tab-panel" data-panel="obrazky">

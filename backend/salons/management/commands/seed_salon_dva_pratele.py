@@ -93,7 +93,7 @@ class Command(BaseCommand):
             jmeno='Správce salonu',
             specializace='',
             role='majitel',
-            prihlasovaci_jmeno='spravce',
+            prihlasovaci_jmeno=f'majitel.salon{salon.pk}@ulov.local',
             password_hash=make_password('spravce123'),
             zobrazit_na_webu=False,
             aktivni=True,

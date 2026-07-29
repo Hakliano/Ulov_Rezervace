@@ -14,6 +14,7 @@ from rezervace.models import (
     Zamestnanec,
     ZamestnanecAbsence,
     ZamestnanecRozvrh,
+    ZamestnanecSluzba,
 )
 
 
@@ -39,10 +40,15 @@ class ZamestnanecRozvrhInline(admin.TabularInline):
     extra = 0
 
 
+class ZamestnanecSluzbaInline(admin.TabularInline):
+    model = ZamestnanecSluzba
+    extra = 0
+
+
 @admin.register(Zamestnanec)
 class ZamestnanecAdmin(admin.ModelAdmin):
     list_display = ['jmeno', 'salon', 'specializace', 'aktivni']
-    inlines = [ZamestnanecRozvrhInline]
+    inlines = [ZamestnanecRozvrhInline, ZamestnanecSluzbaInline]
 
 
 admin.site.register(Zakaznik)

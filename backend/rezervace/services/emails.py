@@ -5,6 +5,7 @@ import string
 from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 
 def generate_heslo(length=12):
@@ -385,6 +386,31 @@ def email_storno(rezervace, kdo='zákazník', duvod=''):
         return True
     email_storno_sync(rezervace, kdo=kdo, duvod=duvod)
     return True
+
+
+def email_zmena_obsluhy_sync(rezervace, puvodni_jmeno, nove_jmeno):
+    """Informace zákazníkovi o převodu na jiného pracovníka (absence)."""
+    if not ma_kontaktni_email(rezervace):
+        return False
+    salon = rezervace.salon
+    zacatek = timezone.localtime(rezervace.zacatek).strftime('%d.%m.%Y %H:%M') if rezervace.zacatek else '—'
+    predmet = f'Změna obsluhy rezervace – {salon.name}'
+    zprava = (
+        f'Dobrý den,\n\n'
+        f'u Vaší rezervace {zacatek} došlo ke změně obsluhy.\n'
+        f'Původně: {puvodni_jmeno or "—"}\n'
+        f'Nově: {nove_jmeno or "—"}\n\n'
+        f'Termín zůstává stejný.\n\n'
+        f'{salon.name}\n'
+    )
+    try:
+        return bool(_odeslat_pro_salon(salon, rezervace.kontaktni_email, predmet, zprava))
+    except Exception:
+        return False
+
+
+def email_zmena_obsluhy(rezervace, puvodni_jmeno, nove_jmeno):
+    return email_zmena_obsluhy_sync(rezervace, puvodni_jmeno, nove_jmeno)
 
 
 def email_nove_heslo_sync(zakaznik, heslo):

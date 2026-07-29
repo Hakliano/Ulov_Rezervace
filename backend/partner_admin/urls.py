@@ -20,5 +20,6 @@ urlpatterns = [
         views.reset_hesla,
         name='reset_hesla',
     ),
+    path('salon/<int:salon_id>/flow/aktivovat/', views.aktivovat_flow, name='aktivovat_flow'),
     path('chyba/<int:chyba_id>/vyresit/', views.vyresit_chybu, name='vyresit_chybu'),
 ]

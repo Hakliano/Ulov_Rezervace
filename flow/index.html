@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -43,6 +43,7 @@
           <label>Heslo
             <input type="password" id="login-password" required autocomplete="current-password">
           </label>
+          <p class="hint">Majitel: stejný e-mail a heslo jako do webové administrace.</p>
           <button type="submit" class="btn primary">Přihlásit</button>
           <p id="login-msg" class="msg" hidden></p>
         </form>
@@ -54,7 +55,10 @@
         <div class="app-head">
           <div>
             <h1 class="app-title">Ahoj, <span id="home-name">—</span></h1>
-            <p class="lede tight"><span id="home-salon">—</span></p>
+            <p class="lede tight">
+              <span id="home-salon">—</span>
+              <span id="home-role-badge" class="role-badge hidden">Majitel</span>
+            </p>
           </div>
         </div>
 
@@ -70,6 +74,7 @@
           <button type="button" class="tab hidden" data-tab="overview" id="tab-overview">Overview</button>
           <button type="button" class="tab" data-tab="absence">Dovolená</button>
           <button type="button" class="tab" data-tab="mail" id="tab-mail">Mail</button>
+          <button type="button" class="tab hidden" data-tab="sprava" id="tab-sprava">Správa</button>
           <button type="button" class="tab" data-tab="ucet">Účet</button>
         </nav>
 
@@ -102,7 +107,7 @@
         </div>
 
         <div id="pane-rozvrh" class="pane hidden">
-          <p class="hint">Stejná pracovní doba jako na webu a v rezervacích. Úprava hned mění dostupné termíny.</p>
+          <p class="hint" id="rozvrh-hint">Stejná pracovní doba jako na webu a v rezervacích. Úprava hned mění dostupné termíny.</p>
           <div id="rozvrh-editor" class="rozvrh-editor"></div>
           <button type="button" class="btn primary" id="btn-rozvrh-save">Uložit pracovní dobu</button>
           <p id="rozvrh-msg" class="msg" hidden></p>
@@ -140,7 +145,7 @@
             <label>Poznámka
               <input type="text" id="abs-poznamka" maxlength="200" placeholder="volitelné">
             </label>
-            <button type="submit" class="btn primary">Přidat absenci</button>
+            <button type="submit" class="btn primary" id="abs-submit">Požádat o volno</button>
             <p id="abs-msg" class="msg" hidden></p>
           </form>
           <div id="abs-konflikt" class="abs-konflikt hidden"></div>
@@ -170,12 +175,269 @@
           </div>
         </div>
 
+        <div id="pane-sprava" class="pane hidden">
+          <div id="owner-admin-home">
+            <p class="hint">
+              Provozní nastavení salonu pro majitele — pravidla, personál, volno, platby,
+              NO-show / hříšníci, audit i statistiky. Veřejná stránka rezervací je jen pro zákazníky.
+            </p>
+            <div class="owner-admin-grid" id="owner-admin-grid">
+              <button type="button" class="owner-admin-card" data-owner-section="pravidla">
+                <h3>Rezervační pravidla</h3>
+                <p>Interval termínů, předstih, storno, potvrzení, odkaz na recenze.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="sablony">
+                <h3>E-mailové šablony</h3>
+                <p>Připomínky, storno, QR / záloha a další texty pro zákazníky.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="personal">
+                <h3>Personál a přístupy</h3>
+                <p>Čísla účtů, FLOW účty, reset hesla staff, blokace přihlášení.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="prirazeni">
+                <h3>Přiřazení služeb</h3>
+                <p>Kdo umí které služby — matice personál × ceník.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="volno" id="owner-card-volno">
+                <h3>Žádosti o volno <span id="owner-volno-badge" class="tab-badge hidden">0</span></h3>
+                <p>Schvalování dovolené / nemoci a řešení kolizí rezervací.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="platby" id="owner-card-platby">
+                <h3>Platby partnera</h3>
+                <p>Účet ULOV, variabilní symbol, splatnost, historie a faktury.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="hrisnici">
+                <h3>NO-show / hříšníci</h3>
+                <p>Archiv NO-show, blokace e-mailů pro online rezervace.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="audit">
+                <h3>Audit log</h3>
+                <p>Historie změn v salonu — kdo co upravil.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+              <button type="button" class="owner-admin-card" data-owner-section="statistiky">
+                <h3>Statistiky</h3>
+                <p>Počty rezervací, storna, NO-show, top služby a personál.</p>
+                <span class="owner-admin-status is-ready">Otevřít</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="owner-admin-detail" class="hidden">
+            <button type="button" class="btn ghost sm" id="owner-admin-back">← Zpět na Správu</button>
+            <p id="owner-admin-msg" class="msg" hidden></p>
+
+            <div id="owner-section-pravidla" class="owner-section hidden">
+              <h2 class="owner-section-title">Rezervační pravidla</h2>
+              <form id="form-owner-pravidla" class="form owner-form">
+                <label>Po jakých minutách se nabízejí termíny
+                  <span class="field-row">
+                    <select id="own-interval" required>
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                      <option value="15">15</option>
+                      <option value="30">30</option>
+                    </select>
+                    <span class="unit">minut</span>
+                  </span>
+                </label>
+                <label>Jak dlouho předem jde nejdřív rezervovat
+                  <span class="field-row">
+                    <input type="number" id="own-min-h" min="0" step="1" required>
+                    <span class="unit">hodin</span>
+                  </span>
+                </label>
+                <label>Jak daleko dopředu jde rezervovat
+                  <span class="field-row">
+                    <input type="number" id="own-max-m" min="1" step="1" required>
+                    <span class="unit">měsíců</span>
+                  </span>
+                </label>
+                <label>Do kdy si může zákazník rezervaci zrušit sám
+                  <span class="field-row">
+                    <input type="number" id="own-storno" min="0" step="1" placeholder="prázdné = bez limitu">
+                    <span class="unit">hodin před termínem</span>
+                  </span>
+                </label>
+                <label>Jak dlouho platí odkaz v e-mailu pro potvrzení rezervace
+                  <span class="field-row">
+                    <input type="number" id="own-potvrzeni-h" min="1" step="1" required>
+                    <span class="unit">hodin</span>
+                  </span>
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" id="own-auto-potvrzeni">
+                  <span>Potvrzovat automaticky rezervace zadané personálem<br>
+                    <small>Platí jen pro rezervace ze systému. Online rezervace od zákazníka vždy vyžadují potvrzení e-mailem.</small>
+                  </span>
+                </label>
+                <label>Kam posílat zákazníky pro recenzi
+                  <span class="field-row">
+                    <input type="url" id="own-recenze-url" placeholder="https://…">
+                    <span class="unit">URL</span>
+                  </span>
+                </label>
+                <button type="submit" class="btn primary">Uložit pravidla</button>
+              </form>
+            </div>
+
+            <div id="owner-section-sablony" class="owner-section hidden">
+              <h2 class="owner-section-title">E-mailové šablony</h2>
+              <p class="hint tiny" id="own-notif-hint"></p>
+              <details class="own-tag-details">
+                <summary class="btn ghost sm">Zobrazit tabulku tagů</summary>
+                <div id="own-notif-tag-guide" class="own-tag-guide" aria-label="Tabulka tagů"></div>
+              </details>
+              <div id="own-notif-list" class="own-notif-list"></div>
+              <button type="button" class="btn primary" id="btn-own-sablony-save">Uložit šablony</button>
+            </div>
+
+            <div id="owner-section-personal" class="owner-section hidden">
+              <h2 class="owner-section-title">Personál a přístupy</h2>
+              <p class="hint tiny">
+                Provozní údaje a FLOW přístupy. Fotky / texty na web a deaktivace zaměstnance zůstávají ve web-adminu.
+              </p>
+              <div class="owner-personal-toolbar">
+                <button type="button" class="btn primary sm" id="btn-own-add-staff">+ Přidat pracovníka</button>
+              </div>
+              <form id="form-own-add-staff" class="form own-add-staff-form hidden">
+                <h3 class="own-subh">Nový pracovník</h3>
+                <label>Jméno
+                  <input type="text" id="own-add-jmeno" required maxlength="100" autocomplete="off">
+                </label>
+                <label>Specializace
+                  <input type="text" id="own-add-spec" maxlength="200" autocomplete="off" placeholder="volitelné">
+                </label>
+                <label>E-mail pracovníka
+                  <input type="email" id="own-add-flow-email" required placeholder="jeji@email.cz" autocomplete="off">
+                </label>
+                <label class="check-row tight">
+                  <input type="checkbox" id="own-add-flow-overview">
+                  <span>Vidí přehled všech rezervací</span>
+                </label>
+                <div class="owner-personal-actions row">
+                  <button type="submit" class="btn primary sm">Uložit a vytvořit FLOW</button>
+                  <button type="button" class="btn ghost sm" id="btn-own-add-cancel">Zrušit</button>
+                </div>
+              </form>
+              <div id="own-personal-list" class="own-personal-list"></div>
+            </div>
+
+            <div id="owner-section-prirazeni" class="owner-section hidden">
+              <h2 class="owner-section-title">Přiřazení služeb k personálu</h2>
+              <p class="hint tiny" id="own-prirazeni-hint">
+                Bez zaškrtnutí u pracovníka = umí všechny služby. Po zaškrtnutí alespoň jedné umí jen označené.
+              </p>
+              <div id="own-prirazeni-wrap" class="own-prirazeni-wrap">
+                <p class="hint">Načítám…</p>
+              </div>
+              <button type="button" class="btn primary" id="btn-own-prirazeni-save">Uložit přiřazení</button>
+            </div>
+
+            <div id="owner-section-volno" class="owner-section hidden">
+              <h2 class="owner-section-title">Žádosti o volno</h2>
+              <p class="hint tiny">Schvalte nebo zamítněte žádosti personálu. Po schválení vyřešte kolize rezervací.</p>
+              <form id="form-own-add-volno" class="form own-add-staff-form">
+                <h3 class="own-subh">Zapsat absenci pracovníkovi</h3>
+                <label>Pracovník
+                  <select id="own-volno-zam" required>
+                    <option value="">— vyberte —</option>
+                  </select>
+                </label>
+                <div class="row2">
+                  <label>Od
+                    <input type="date" id="own-volno-od" required>
+                  </label>
+                  <label>Do
+                    <input type="date" id="own-volno-do" required>
+                  </label>
+                </div>
+                <label>Typ
+                  <select id="own-volno-typ">
+                    <option value="dovolena">Dovolená</option>
+                    <option value="nemoc">Nemoc</option>
+                    <option value="technicke">Technické problémy</option>
+                  </select>
+                </label>
+                <label>Poznámka
+                  <input type="text" id="own-volno-pozn" maxlength="200" placeholder="volitelné">
+                </label>
+                <button type="submit" class="btn primary sm">Uložit absenci</button>
+              </form>
+              <div id="own-volno-konflikt" class="abs-konflikt hidden"></div>
+              <div id="own-volno-list" class="own-volno-list"></div>
+            </div>
+
+            <div id="owner-section-platby" class="owner-section hidden">
+              <h2 class="owner-section-title">Platby partnera</h2>
+              <p class="hint tiny">
+                Přehled plateb ULOV. Údaje a faktury nastavuje provozovatel — zde jen ke čtení a stažení.
+              </p>
+              <div id="own-platby-overdue" class="own-platby-overdue hidden" role="alert"></div>
+              <div id="own-platby-summary" class="own-platby-summary"></div>
+              <div id="own-platby-qr" class="own-platby-qr hidden"></div>
+              <h3 class="own-subh">Historie plateb</h3>
+              <div id="own-platby-historie" class="own-platby-historie"></div>
+            </div>
+
+            <div id="owner-section-hrisnici" class="owner-section hidden">
+              <h2 class="owner-section-title">NO-show / hříšníci</h2>
+              <p class="hint tiny">
+                2× NO-show = problematický, 3× = automatická blokace online rezervací.
+                Můžete zablokovat / odblokovat ručně, nebo přidat e-mail přímo.
+              </p>
+              <form id="form-own-blok-email" class="form own-add-staff-form">
+                <h3 class="own-subh">Zablokovat e-mail</h3>
+                <label>E-mail
+                  <input type="email" id="own-blok-email" required placeholder="zakaznik@email.cz">
+                </label>
+                <button type="submit" class="btn primary sm">Zablokovat</button>
+              </form>
+              <div class="row2" style="margin:12px 0;gap:8px;align-items:end">
+                <label style="flex:1">Hledat
+                  <input type="search" id="own-hrisnici-q" placeholder="e-mail nebo jméno">
+                </label>
+                <button type="button" class="btn ghost sm" id="btn-own-hrisnici-search">Hledat</button>
+              </div>
+              <div id="own-hrisnici-list" class="own-platby-historie"></div>
+              <div class="row" style="gap:8px;margin-top:10px">
+                <button type="button" class="btn ghost sm" id="own-hrisnici-prev">←</button>
+                <span id="own-hrisnici-pager" class="hint tiny"></span>
+                <button type="button" class="btn ghost sm" id="own-hrisnici-next">→</button>
+              </div>
+            </div>
+
+            <div id="owner-section-audit" class="owner-section hidden">
+              <h2 class="owner-section-title">Audit log</h2>
+              <div id="own-audit-list" class="own-platby-historie"></div>
+              <div class="row" style="gap:8px;margin-top:10px">
+                <button type="button" class="btn ghost sm" id="own-audit-prev">←</button>
+                <span id="own-audit-pager" class="hint tiny"></span>
+                <button type="button" class="btn ghost sm" id="own-audit-next">→</button>
+              </div>
+            </div>
+
+            <div id="owner-section-statistiky" class="owner-section hidden">
+              <h2 class="owner-section-title">Statistiky</h2>
+              <div id="own-statistiky" class="own-platby-summary"></div>
+            </div>
+          </div>
+        </div>
+
         <div id="pane-ucet" class="pane hidden">
           <div class="panel">
             <p><strong>E-mail:</strong> <span id="home-email">—</span></p>
+            <p><strong>Role:</strong> <span id="home-role">—</span></p>
             <p><strong>Overview:</strong> <span id="home-overview">—</span></p>
           </div>
-          <details class="pwd-box openable">
+          <details class="pwd-box openable" id="pwd-box-staff">
             <summary>Změnit heslo</summary>
             <form id="form-password" class="form">
               <label>Současné heslo
@@ -188,6 +450,12 @@
               <p id="pwd-msg" class="msg" hidden></p>
             </form>
           </details>
+          <div class="panel hidden" id="pwd-box-owner">
+            <p class="hint">
+              Sdílené heslo majitele se mění ve webové administraci salonu
+              (záložka Heslo). Ve FLOW se nemění.
+            </p>
+          </div>
         </div>
       </section>
     </main>
@@ -200,8 +468,11 @@
         <h2 id="nova-title">Zadat rezervaci</h2>
         <button type="button" class="btn ghost sm" id="nova-close" aria-label="Zavřít">✕</button>
       </div>
-      <p class="hint">Rezervace se uloží na vás a hned se propíše do kalendáře (stejně jako v administraci).</p>
+      <p class="hint" id="nova-hint">Rezervace se uloží na vás a hned se propíše do kalendáře.</p>
       <form id="form-nova" class="form">
+        <label id="nova-staff-wrap" class="hidden">Pracovník
+          <select id="nova-staff"></select>
+        </label>
         <fieldset class="nova-fieldset">
           <legend>Služby</legend>
           <div id="nova-sluzby" class="sluzby-list"></div>
@@ -331,6 +602,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=44"></script>
+
 </body>
 </html>

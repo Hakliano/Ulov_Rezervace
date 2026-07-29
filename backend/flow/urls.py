@@ -1,8 +1,9 @@
 from django.urls import path
 
-from flow import mail_views, provoz_views, views
+from flow import mail_views, owner_views, provoz_views, views
 
 urlpatterns = [
+    path('salon/<int:pk>/flow/aktivace/', views.FlowAktivaceView.as_view(), name='flow-aktivace'),
     path('salon/<int:pk>/flow/ucty/', views.FlowUctyListCreateView.as_view(), name='flow-ucty'),
     path(
         'salon/<int:pk>/flow/ucty/<int:ucet_id>/',
@@ -23,6 +24,68 @@ urlpatterns = [
     path('flow/odhlaseni/', views.FlowOdhlaseniView.as_view(), name='flow-odhlaseni'),
     path('flow/me/', views.FlowMeView.as_view(), name='flow-me'),
     path('flow/zmena-hesla/', views.FlowZmenaHeslaView.as_view(), name='flow-zmena-hesla'),
+    path('flow/owner/nastaveni/', owner_views.FlowOwnerNastaveniView.as_view(), name='flow-owner-nastaveni'),
+    path('flow/owner/personal/', owner_views.FlowOwnerPersonalListCreateView.as_view(), name='flow-owner-personal'),
+    path(
+        'flow/owner/personal/<int:zamestnanec_id>/',
+        owner_views.FlowOwnerPersonalDetailView.as_view(),
+        name='flow-owner-personal-detail',
+    ),
+    path(
+        'flow/owner/personal/<int:zamestnanec_id>/flow/',
+        owner_views.FlowOwnerPersonalFlowCreateView.as_view(),
+        name='flow-owner-personal-flow-create',
+    ),
+    path(
+        'flow/owner/personal/<int:zamestnanec_id>/flow/patch/',
+        owner_views.FlowOwnerPersonalFlowPatchView.as_view(),
+        name='flow-owner-personal-flow-patch',
+    ),
+    path(
+        'flow/owner/personal/<int:zamestnanec_id>/flow/reset-hesla/',
+        owner_views.FlowOwnerPersonalFlowResetView.as_view(),
+        name='flow-owner-personal-flow-reset',
+    ),
+    path('flow/owner/absence/', owner_views.FlowOwnerAbsenceListView.as_view(), name='flow-owner-absence'),
+    path(
+        'flow/owner/absence/<int:absence_id>/schvalit/',
+        owner_views.FlowOwnerAbsenceSchvalitView.as_view(),
+        name='flow-owner-absence-schvalit',
+    ),
+    path(
+        'flow/owner/absence/<int:absence_id>/zamitnout/',
+        owner_views.FlowOwnerAbsenceZamitnoutView.as_view(),
+        name='flow-owner-absence-zamitnout',
+    ),
+    path(
+        'flow/owner/absence/<int:absence_id>/',
+        owner_views.FlowOwnerAbsenceDeleteView.as_view(),
+        name='flow-owner-absence-delete',
+    ),
+    path('flow/owner/platby/', owner_views.FlowOwnerPlatbyView.as_view(), name='flow-owner-platby'),
+    path(
+        'flow/owner/platby/<int:platba_id>/faktura/',
+        owner_views.FlowOwnerPlatbaFakturaView.as_view(),
+        name='flow-owner-platba-faktura',
+    ),
+    path('flow/owner/audit-log/', owner_views.FlowOwnerAuditLogView.as_view(), name='flow-owner-audit'),
+    path('flow/owner/no-show-archiv/', owner_views.FlowOwnerNoShowArchivView.as_view(), name='flow-owner-noshow'),
+    path(
+        'flow/owner/no-show-blokovat/',
+        owner_views.FlowOwnerNoShowBlokovatView.as_view(),
+        name='flow-owner-noshow-blok',
+    ),
+    path(
+        'flow/owner/no-show-odblokovat/',
+        owner_views.FlowOwnerNoShowOdblokovatView.as_view(),
+        name='flow-owner-noshow-odblok',
+    ),
+    path('flow/owner/statistiky/', owner_views.FlowOwnerStatistikyView.as_view(), name='flow-owner-statistiky'),
+    path(
+        'flow/owner/prirazeni-sluzeb/',
+        owner_views.FlowOwnerPrirazeniSluzebView.as_view(),
+        name='flow-owner-prirazeni-sluzeb',
+    ),
     path('flow/kalendar/', provoz_views.FlowKalendarView.as_view(), name='flow-kalendar'),
     path(
         'flow/rezervace/<int:rezervace_id>/dokonceno/',

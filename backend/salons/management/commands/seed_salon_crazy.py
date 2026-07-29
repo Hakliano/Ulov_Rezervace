@@ -97,7 +97,7 @@ class Command(BaseCommand):
             jmeno='Majitelka',
             specializace='',
             role='majitel',
-            prihlasovaci_jmeno='majitelka',
+            prihlasovaci_jmeno=f'majitel.salon{salon.pk}@ulov.local',
             password_hash=make_password('majitelka123'),
             zobrazit_na_webu=False,
             aktivni=True,
@@ -129,5 +129,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f'Salon CRAZY vytvořen (pk={salon.pk}). Kadeřnice: zoey / zoey123. '
-            f'Majitelka: majitelka / majitelka123. Frontend: http://localhost:5502'
+            f'Majitelka: majitel.salon{salon.pk}@ulov.local / majitelka123. '
+            f'Frontend: http://localhost:5502'
         ))

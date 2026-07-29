@@ -48,13 +48,13 @@ def log_superadmin(
 
 
 @transaction.atomic
-def oznac_platbu(salon, user, zaplaceno_dne, prijata_castka=None, poznamka=''):
+def oznac_platbu(salon, user, zaplaceno_dne, prijata_castka=None, poznamka='', faktura_pdf=None):
     nastaveni = PartnerNastaveni.objects.select_for_update().get(salon=salon)
     if not nastaveni.dalsi_splatnost:
         raise ValueError('Nejdříve nastavte datum další splatnosti.')
 
     splatnost = nastaveni.dalsi_splatnost
-    platba = PlatbaPartnera.objects.create(
+    platba = PlatbaPartnera(
         salon=salon,
         splatnost=splatnost,
         zaplaceno_dne=zaplaceno_dne,
@@ -64,6 +64,9 @@ def oznac_platbu(salon, user, zaplaceno_dne, prijata_castka=None, poznamka=''):
         poznamka=poznamka,
         oznacil=user,
     )
+    if faktura_pdf:
+        platba.faktura_pdf = faktura_pdf
+    platba.save()
     nastaveni.dalsi_splatnost = posun_splatnost(splatnost, nastaveni.periodicita)
     nastaveni.save(update_fields=['dalsi_splatnost', 'aktualizovano'])
     log_superadmin(
@@ -75,6 +78,7 @@ def oznac_platbu(salon, user, zaplaceno_dne, prijata_castka=None, poznamka=''):
             'zaplaceno_dne': zaplaceno_dne.isoformat(),
             'prijata_castka': str(prijata_castka if prijata_castka is not None else Decimal('0')),
             'dalsi_splatnost': nastaveni.dalsi_splatnost.isoformat(),
+            'ma_fakturu': bool(faktura_pdf),
         },
     )
     return platba
