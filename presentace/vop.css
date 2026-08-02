@@ -271,6 +271,101 @@ body {
   color: #1e3a5f;
 }
 
+/* —— Specifikace (tabulky / zaškrtávací pole) —— */
+.spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 12px;
+  font-size: 10pt;
+}
+
+.spec-table th,
+.spec-table td {
+  border: 1px solid #c5d8eb;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.spec-table th {
+  background: #f4f7fa;
+  color: #1e3a5f;
+  font-weight: 600;
+  font-size: 9.5pt;
+}
+
+.spec-table td.fill {
+  min-width: 55%;
+  height: 1.6em;
+}
+
+.spec-table .col-check {
+  width: 3.5rem;
+  text-align: center;
+}
+
+.box {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  border: 1.5px solid #1a1a1a;
+  vertical-align: -0.1em;
+  background: #fff;
+}
+
+.check-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.check-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0 0 8px;
+  font-size: 10pt;
+}
+
+.check-list .box { flex-shrink: 0; margin-top: 0.15em; }
+
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 1.25rem;
+}
+
+.note-block {
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-left: 3px solid #1e3a5f;
+  font-size: 9.5pt;
+  color: #333;
+  margin: 12px 0 0;
+}
+
+.notes-area {
+  min-height: 6.5rem;
+  border: 1px solid #c5d8eb;
+  background:
+    repeating-linear-gradient(
+      transparent,
+      transparent calc(1.55em - 1px),
+      #e2e8f0 calc(1.55em - 1px),
+      #e2e8f0 1.55em
+    );
+  background-origin: content-box;
+  padding: 0.35em 10px 0;
+}
+
+.doc-meta a {
+  color: #1e3a5f;
+  text-decoration: none;
+}
+
+.doc-meta a:hover { text-decoration: underline; }
+
 @media (max-width: 700px) {
   .toc ol { columns: 1; }
   .doc-meta { grid-template-columns: 1fr; }
@@ -278,6 +373,7 @@ body {
   .doc-sheet { padding: 1.25rem 1rem 2rem; box-shadow: none; }
   .sign-grid { grid-template-columns: 1fr; gap: 2.5rem; }
   .blank-line--wide { width: 55%; min-width: 8rem; }
+  .spec-table { font-size: 9.5pt; }
 }
 
 @media print {
@@ -306,5 +402,11 @@ body {
 
   .placeholder {
     border-style: solid;
+  }
+
+  .spec-table th {
+    background: #f4f7fa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
