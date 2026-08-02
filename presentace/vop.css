@@ -1,0 +1,241 @@
+/* ULOV KLIENTY — VOP (obrazovka + tisk A4) */
+
+@page {
+  size: A4;
+  margin: 20mm 18mm 22mm 18mm;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 11pt; }
+
+body {
+  font-family: "Segoe UI", "Source Sans 3", Calibri, Arial, sans-serif;
+  color: #1a1a1a;
+  line-height: 1.55;
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 12mm 16px 24mm;
+  background: #f0f2f5;
+}
+
+.doc-sheet {
+  background: #fff;
+  padding: 14mm 16mm 18mm;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+}
+
+.doc-header {
+  border-bottom: 2px solid #1e3a5f;
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+}
+
+.doc-brand {
+  font-size: 9pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5c6b7a;
+  margin: 0 0 6px;
+}
+
+.doc-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20pt;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+
+.doc-subtitle {
+  font-size: 10.5pt;
+  color: #444;
+  margin: 0;
+}
+
+.doc-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #f4f7fa;
+  border-radius: 4px;
+  font-size: 9.5pt;
+}
+
+.doc-meta div { margin: 0; }
+.doc-meta dt {
+  font-weight: 600;
+  color: #5c6b7a;
+  margin: 0;
+}
+.doc-meta dd { margin: 2px 0 0; }
+
+.toc {
+  margin: 0 0 28px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.toc h2 {
+  font-size: 11pt;
+  margin: 0 0 10px;
+  color: #1e3a5f;
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  columns: 2;
+  column-gap: 1.5rem;
+}
+
+.toc li {
+  margin: 0.25rem 0;
+  break-inside: avoid;
+  font-size: 9.5pt;
+}
+
+.toc a {
+  color: #1e3a5f;
+  text-decoration: none;
+}
+
+.toc a:hover { text-decoration: underline; }
+
+.article {
+  margin-bottom: 1.75rem;
+}
+
+.article h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13pt;
+  color: #1e3a5f;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #c5d8eb;
+}
+
+.article h3 {
+  font-size: 10.5pt;
+  margin: 14px 0 6px;
+  color: #243447;
+}
+
+.article p,
+.article li {
+  font-size: 10pt;
+  margin: 0 0 8px;
+}
+
+.article ul,
+.article ol {
+  margin: 0 0 10px;
+  padding-left: 1.25rem;
+}
+
+.article li { margin-bottom: 4px; }
+
+.placeholder {
+  padding: 12px 14px;
+  background: #fffbeb;
+  border: 1px dashed #d4a017;
+  border-radius: 4px;
+  font-size: 9.5pt;
+  color: #5c4a12;
+  margin: 8px 0 0;
+}
+
+.placeholder strong { color: #3d320c; }
+
+.party-box {
+  padding: 12px 14px;
+  background: #f4f7fa;
+  border-left: 3px solid #1e3a5f;
+  margin: 10px 0 14px;
+  font-size: 10pt;
+}
+
+.party-box p { margin: 0 0 6px; }
+.party-box p:last-child { margin-bottom: 0; }
+
+.footer-note {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  font-size: 8.5pt;
+  color: #777;
+  text-align: center;
+}
+
+.print-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  background: #1e3a5f;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.print-bar a {
+  color: #f0d78c;
+  text-decoration: none;
+  margin-right: 0.75rem;
+}
+
+.print-bar a:hover { text-decoration: underline; }
+
+.print-bar button {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f0d78c, #c9a227);
+  color: #1a1520;
+}
+
+.print-bar button:hover { filter: brightness(1.05); }
+
+@media (max-width: 700px) {
+  .toc ol { columns: 1; }
+  .doc-meta { grid-template-columns: 1fr; }
+  body { padding: 0 0 2rem; }
+  .doc-sheet { padding: 1.25rem 1rem 2rem; box-shadow: none; }
+}
+
+@media print {
+  body {
+    background: #fff;
+    padding: 0;
+    max-width: none;
+  }
+
+  .doc-sheet {
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .article {
+    break-inside: avoid;
+  }
+
+  .placeholder {
+    border-style: solid;
+  }
+}
