@@ -208,11 +208,76 @@ body {
 
 .print-bar button:hover { filter: brightness(1.05); }
 
+.party-and {
+  text-align: center;
+  font-weight: 600;
+  margin: 0.5rem 0 1rem;
+  color: #5c6b7a;
+}
+
+.party-fields p { margin: 0 0 8px; }
+.party-label {
+  margin-top: 10px !important;
+  font-style: italic;
+  color: #5c6b7a;
+}
+
+.blank-line {
+  display: inline-block;
+  min-width: 8rem;
+  border-bottom: 1px solid #1a1a1a;
+  vertical-align: baseline;
+  height: 1em;
+}
+
+.blank-line--wide { min-width: 14rem; max-width: 100%; width: 70%; }
+.blank-line--place { min-width: 10rem; }
+.blank-line--date { min-width: 6rem; }
+
+.sign-block {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+}
+
+.sign-place {
+  margin: 0 0 2rem;
+  font-size: 10pt;
+}
+
+.sign-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem 3rem;
+}
+
+.sign-role {
+  font-weight: 600;
+  margin: 0 0 2.5rem;
+  font-size: 10pt;
+}
+
+.sign-line {
+  border-bottom: 1px solid #1a1a1a;
+  margin: 0 0 8px;
+  min-height: 1.5rem;
+}
+
+.sign-name {
+  margin: 0;
+  font-size: 10pt;
+}
+
+.footer-note a {
+  color: #1e3a5f;
+}
+
 @media (max-width: 700px) {
   .toc ol { columns: 1; }
   .doc-meta { grid-template-columns: 1fr; }
   body { padding: 0 0 2rem; }
   .doc-sheet { padding: 1.25rem 1rem 2rem; box-shadow: none; }
+  .sign-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .blank-line--wide { width: 55%; min-width: 8rem; }
 }
 
 @media print {
@@ -232,6 +297,10 @@ body {
   }
 
   .article {
+    break-inside: avoid;
+  }
+
+  .sign-block {
     break-inside: avoid;
   }
 
