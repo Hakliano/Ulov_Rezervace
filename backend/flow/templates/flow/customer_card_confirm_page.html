@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Potvrzení zákaznické karty | ULOV KLIENTY</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0b1f3a; color: #f4f1ea; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 2rem 1.25rem; }
+    h1 { font-size: 1.45rem; color: #f0d78c; margin: 0 0 1rem; }
+    p { line-height: 1.55; color: rgba(244,241,234,.88); }
+    .card { background: #102844; border: 1px solid rgba(201,162,39,.4); border-radius: 12px; padding: 1.5rem; }
+    .btn {
+      display: inline-block; margin-top: 1.25rem; padding: .85rem 1.4rem;
+      background: #c9a227; color: #0b1f3a; font-weight: 700; border: 0;
+      border-radius: 999px; cursor: pointer; font-size: 1rem; text-decoration: none;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .msg { margin-top: 1rem; padding: .85rem 1rem; border-radius: 8px; background: rgba(255,255,255,.06); }
+    .ok { border-left: 3px solid #6fbf73; }
+    .err { border-left: 3px solid #e07070; }
+    .salon { color: #f0d78c; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Potvrzení zákaznické karty</h1>
+      {% if error %}
+        <div class="msg err">{{ error }}</div>
+      {% elif success %}
+        <div class="msg ok">
+          Děkujeme. Zákaznická karta provozovny
+          <span class="salon">{{ salon_name }}</span> je nyní aktivní.
+        </div>
+      {% else %}
+        <p>
+          Provozovna <span class="salon">{{ salon_name }}</span>, kterou jste navštívili,
+          žádá o potvrzení založení zákaznické karty ve svém systému FLOW.
+        </p>
+        <p>
+          Potvrzením umožníte této provozovně uchovávat historii vašich návštěv
+          a interní záznamy související s poskytovanými službami.
+        </p>
+        <p>
+          Tyto údaje nejsou sdíleny s jinými provozovnami ani jinými Partnery.
+        </p>
+        <form method="post" action="">
+          {% csrf_token %}
+          <button class="btn" type="submit">Souhlasím se založením zákaznické karty</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

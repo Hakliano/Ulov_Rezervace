@@ -83,3 +83,7 @@ class FlowMailOdeslano(models.Model):
 
     def __str__(self):
         return f'{self.predmet} → {self.prijemce}'
+
+
+# Izolovaný modul Karta zákazníka (feature/flow-customer-card)
+from flow.customer_card_models import CustomerCard, CustomerVisit  # noqa: E402,F401

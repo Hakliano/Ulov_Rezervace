@@ -150,10 +150,15 @@ class FlowKalendarView(APIView):
             item['zamestnanec_jmeno'] = a.zamestnanec.jmeno
             absence_data.append(item)
 
+        rezervace_data = list(AdminRezervaceSerializer(qs.order_by('zacatek'), many=True).data)
+        # feature/flow-customer-card — runtime odkaz, bez FK na rezervace
+        from flow.customer_card_services import attach_customer_card_links
+        attach_customer_card_links(salon.id, rezervace_data)
+
         return Response({
             'mode': mode,
             'visible_overview': user.visible_overview,
-            'rezervace': AdminRezervaceSerializer(qs.order_by('zacatek'), many=True).data,
+            'rezervace': rezervace_data,
             'absence': absence_data,
         })
 

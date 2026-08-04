@@ -1,6 +1,7 @@
 from django.urls import path
 
 from flow import mail_views, owner_views, provoz_views, views
+from flow import customer_card_views
 
 urlpatterns = [
     path('salon/<int:pk>/flow/aktivace/', views.FlowAktivaceView.as_view(), name='flow-aktivace'),
@@ -137,4 +138,35 @@ urlpatterns = [
     ),
     path('flow/mail/', mail_views.FlowMailListView.as_view(), name='flow-mail-list'),
     path('flow/mail/<int:uid>/', mail_views.FlowMailDetailView.as_view(), name='flow-mail-detail'),
+    # --- Karta zákazníka (feature/flow-customer-card) ---
+    path(
+        'flow/zakaznicke-karty/',
+        customer_card_views.CustomerCardListCreateView.as_view(),
+        name='flow-customer-cards',
+    ),
+    path(
+        'flow/zakaznicke-karty/lookup/',
+        customer_card_views.CustomerCardLookupView.as_view(),
+        name='flow-customer-card-lookup',
+    ),
+    path(
+        'flow/zakaznicke-karty/<int:card_id>/',
+        customer_card_views.CustomerCardDetailView.as_view(),
+        name='flow-customer-card-detail',
+    ),
+    path(
+        'flow/zakaznicke-karty/<int:card_id>/odeslat-potvrzeni/',
+        customer_card_views.CustomerCardSendConfirmView.as_view(),
+        name='flow-customer-card-send-confirm',
+    ),
+    path(
+        'flow/zakaznicke-karty/<int:card_id>/navstevy/',
+        customer_card_views.CustomerCardVisitCreateView.as_view(),
+        name='flow-customer-card-visits',
+    ),
+    path(
+        'flow/zakaznicka-karta/potvrdit/<str:token>/',
+        customer_card_views.CustomerCardConfirmPublicView.as_view(),
+        name='flow-customer-card-confirm',
+    ),
 ]

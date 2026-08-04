@@ -74,6 +74,7 @@
           <button type="button" class="tab hidden" data-tab="overview" id="tab-overview">Overview</button>
           <button type="button" class="tab" data-tab="absence">Dovolená</button>
           <button type="button" class="tab" data-tab="mail" id="tab-mail">Mail</button>
+          <button type="button" class="tab" data-tab="karty" id="tab-karty">Zákazníci</button>
           <button type="button" class="tab hidden" data-tab="sprava" id="tab-sprava">Správa</button>
           <button type="button" class="tab" data-tab="ucet">Účet</button>
         </nav>
@@ -172,6 +173,30 @@
             <h2 class="mail-subject" id="mail-subject">—</h2>
             <p class="meta" id="mail-meta">—</p>
             <pre class="mail-body" id="mail-body"></pre>
+          </div>
+        </div>
+
+        <!-- feature/flow-customer-card -->
+        <div id="pane-karty" class="pane hidden">
+          <div class="cc-layout">
+            <div class="cc-list-col">
+              <div class="row between wrap gap">
+                <h2 class="section-title">Zákaznické karty</h2>
+                <button type="button" class="btn primary" id="cc-btn-new">Nová karta</button>
+              </div>
+              <div class="row wrap gap" style="margin:.75rem 0">
+                <input type="search" id="cc-search" placeholder="Hledat e-mail / jméno" class="input grow">
+                <select id="cc-filter-stav" class="input">
+                  <option value="">Všechny stavy</option>
+                  <option value="ceka_na_potvrzeni">Čeká na potvrzení</option>
+                  <option value="aktivni">Aktivní</option>
+                </select>
+              </div>
+              <div id="cc-list" class="cc-list"></div>
+            </div>
+            <div class="cc-detail-col" id="cc-detail">
+              <p class="empty">Vyberte kartu nebo vytvořte novou.</p>
+            </div>
           </div>
         </div>
 
@@ -603,6 +628,7 @@
   </div>
 
   <script src="app.js?v=44"></script>
+  <script src="customer-card.js?v=1"></script>
 
 </body>
 </html>

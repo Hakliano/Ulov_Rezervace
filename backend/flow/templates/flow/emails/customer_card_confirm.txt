@@ -1,0 +1,8 @@
+{{ salon.name }} — potvrzení zákaznické karty
+
+Provozovna {{ salon.name }} žádá o potvrzení založení zákaznické karty ve FLOW.
+
+Potvrzením umožníte uchovávat historii návštěv. Údaje nejsou sdíleny s jinými provozovnami.
+
+Potvrďte zde:
+{{ confirm_url }}
