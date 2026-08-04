@@ -9,7 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="landing.css?v=12">
+  <link rel="stylesheet" href="landing.css?v=13">
+  <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
   <header class="lp-header">
@@ -142,11 +143,22 @@
         <a class="lp-footer-doc" href="dpa.html">Podmínky zpracování údajů (DPA)</a>
         <a class="lp-footer-doc" href="subzpracovatele.html">Seznam subzpracovatelů</a>
         <span class="lp-footer-sep" aria-hidden="true">·</span>
+        <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
+        <span class="lp-footer-sep" aria-hidden="true">·</span>
         <a href="tel:+420797756746">+420 797 756 746</a>
         <span class="lp-footer-sep" aria-hidden="true">·</span>
         <a href="mailto:info@ulovklienty.cz">info@ulovklienty.cz</a>
       </p>
     </div>
   </footer>
+
+  <script>
+    window.ULOV_COOKIE_CONSENT = {
+      /* Až budeš mít GA4, doplň Measurement ID, např. "G-XXXXXXXXXX" */
+      gaMeasurementId: "",
+      privacyUrl: "gdpr.html"
+    };
+  </script>
+  <script src="cookie-consent.js?v=1" defer></script>
 </body>
 </html>

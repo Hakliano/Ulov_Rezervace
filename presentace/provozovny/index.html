@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="style.css?v=103">
+  <link rel="stylesheet" href="../cookie-consent.css?v=1">
 </head>
 <body>
   <header class="site-header">
@@ -888,10 +889,15 @@
       <p class="site-footer-meta">
         Vytvořeno Jiřím Haklem ·
         <a href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">ulovklienty.cz</a>
+        · <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
       </p>
     </div>
   </footer>
 
   <script src="app.js?v=20"></script>
+  <script>
+    window.ULOV_COOKIE_CONSENT = { gaMeasurementId: "", privacyUrl: "../gdpr.html" };
+  </script>
+  <script src="../cookie-consent.js?v=1" defer></script>
 </body>
 </html>
