@@ -359,6 +359,15 @@ body {
   padding: 0.35em 10px 0;
 }
 
+.lead-note {
+  margin: 0 0 22px;
+  padding: 12px 14px;
+  background: #f4f7fa;
+  border-left: 3px solid #1e3a5f;
+  font-size: 10pt;
+  color: #243447;
+}
+
 .doc-meta a {
   color: #1e3a5f;
   text-decoration: none;
