@@ -37,6 +37,11 @@ let platbaIsZaloha = false;
 let sluzbyCache = null;
 let selectedCas = null;
 
+/** Interní navigace FLOW (záložky) — nezávislá na historii prohlížeče. */
+let flowNavStack = [];
+let flowNavCurrent = null;
+let flowNavSilent = false;
+
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
 }
@@ -201,10 +206,50 @@ function isOwnerUser(user = currentUser) {
   return z?.je_owner === true || z?.je_majitel === true || z?.role === 'majitel';
 }
 
+function updateFlowBackBtn() {
+  const btn = $('#btn-flow-back');
+  if (!btn) return;
+  const can = flowNavStack.length > 0;
+  btn.disabled = !can;
+  btn.setAttribute('aria-disabled', can ? 'false' : 'true');
+}
+
+function resetFlowNav(tab = 'mujden') {
+  flowNavStack = [];
+  flowNavCurrent = tab;
+  flowNavSilent = false;
+  updateFlowBackBtn();
+}
+
+function pushFlowNav(tab) {
+  if (flowNavSilent) return;
+  if (flowNavCurrent && flowNavCurrent !== tab) {
+    flowNavStack.push(flowNavCurrent);
+    if (flowNavStack.length > 40) flowNavStack.shift();
+  }
+  flowNavCurrent = tab;
+  updateFlowBackBtn();
+}
+
+function goFlowBack() {
+  const prev = flowNavStack.pop();
+  updateFlowBackBtn();
+  if (!prev) return;
+  flowNavSilent = true;
+  try {
+    setTab(prev);
+    flowNavCurrent = prev;
+  } finally {
+    flowNavSilent = false;
+    updateFlowBackBtn();
+  }
+}
+
 function setTab(name) {
   if (name === 'sprava' && !isOwnerUser()) {
     name = 'mujden';
   }
+  pushFlowNav(name);
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
   $$('.pane').forEach((p) => p.classList.add('hidden'));
   const pane = $(`#pane-${name}`);
@@ -276,7 +321,12 @@ function showLoggedIn(user) {
     }
     rozSave?.classList.add('hidden');
   }
+  resetFlowNav(null);
+  flowNavSilent = true;
   setTab('mujden');
+  flowNavSilent = false;
+  flowNavCurrent = 'mujden';
+  updateFlowBackBtn();
   refreshTopAlerts();
 }
 
@@ -284,6 +334,7 @@ function showLogin() {
   currentUser = null;
   riskyAlertItems = [];
   mailUnseenCount = 0;
+  resetFlowNav(null);
   applyFlowBanner(null);
   const alerts = $('#flow-alerts');
   if (alerts) {
@@ -297,16 +348,20 @@ function showLogin() {
   $('#hero-brand').classList.remove('compact');
 }
 
-function renderRezervaceList(container, items, { readonly = false, emptyText = 'Žádné rezervace.' } = {}) {
+function renderRezervaceList(container, items, { readonly = false, emptyText = 'Žádné rezervace.', withStaff = false } = {}) {
   if (!items.length) {
     container.innerHTML = `<p class="empty">${esc(emptyText)}</p>`;
     return;
   }
+  const showStaff = withStaff || isOwnerUser();
   container.innerHTML = items.map((r) => {
     const badges = [];
     if (r.je_rizikova && !r.zaloha_ok_at) badges.push('<span class="badge warn">riziková</span>');
     if (r.zaloha_vyzadana_at && !r.zaloha_ok_at) badges.push('<span class="badge warn">čeká záloha</span>');
     if (r.zaloha_ok_at) badges.push('<span class="badge ok">záloha OK</span>');
+    const staffLine = (showStaff || readonly) && r.zamestnanec_jmeno
+      ? `<p class="meta">u ${esc(r.zamestnanec_jmeno)}</p>`
+      : '';
     const actions = (!readonly && canAct(r))
       ? `<div class="actions">
           <button type="button" class="btn tiny primary" data-act="done" data-id="${r.id}">Proběhla</button>
@@ -316,7 +371,7 @@ function renderRezervaceList(container, items, { readonly = false, emptyText = '
           ${r.zaloha_vyzadana_at && !r.zaloha_ok_at ? `<button type="button" class="btn tiny primary" data-act="zaloha-ok" data-id="${r.id}">Záloha OK</button>` : ''}
           <button type="button" class="btn tiny ghost" data-act="storno" data-id="${r.id}">Storno</button>
         </div>`
-      : (readonly
+      : (readonly && !showStaff
         ? `<p class="meta">u ${esc(r.zamestnanec_jmeno || '—')}</p>`
         : '');
     return `<article class="item stav-${esc(r.stav)}${r.je_rizikova && !r.zaloha_ok_at ? ' risky' : ''}" data-id="${r.id}">
@@ -328,6 +383,7 @@ function renderRezervaceList(container, items, { readonly = false, emptyText = '
       <p class="item-title">${esc(r.kontaktni_jmeno || r.jmeno_host || 'Zákazník')}</p>
       <p class="meta">${esc(sluzbyText(r))}</p>
       ${r.kontaktni_email ? `<p class="meta">${esc(r.kontaktni_email)}</p>` : ''}
+      ${staffLine}
       ${actions}
     </article>`;
   }).join('');
@@ -374,7 +430,7 @@ async function loadWeekList(overview) {
     const data = await api(`/flow/kalendar/?${q}`);
     rememberRez(data.rezervace);
     const absHtml = renderAbsenceBlocks(data.absence || [], {
-      withName: overview,
+      withName: overview || isOwnerUser(),
       canDelete: false,
     });
     listEl.innerHTML = '';
@@ -385,6 +441,7 @@ async function loadWeekList(overview) {
     const holder = document.createElement('div');
     renderRezervaceList(holder, data.rezervace || [], {
       readonly: overview,
+      withStaff: isOwnerUser(),
       emptyText: 'Žádné rezervace v tomto týdnu.',
     });
     listEl.appendChild(holder);
@@ -521,11 +578,15 @@ function renderMonthGrid(range) {
     else classes.push('work');
     const hours = (!abs && !sch.volno && sch.od)
       ? `<span class="m-hours">${esc(formatTime(sch.od))}–${esc(formatTime(sch.do))}</span>`
-      : (abs ? '<span class="m-hours">absence</span>' : '<span class="m-hours">volno</span>');
+      : (abs
+        ? '<span class="m-hours">absence</span>'
+        : (isOwnerUser()
+          ? (count ? `<span class="m-hours">${count} rez.</span>` : '<span class="m-hours">—</span>')
+          : '<span class="m-hours">volno</span>'));
     html += `<button type="button" class="${classes.join(' ')}" data-day="${ymd}">
       <span class="m-num">${day}</span>
       ${hours}
-      ${count ? `<span class="m-count">${count}</span>` : ''}
+      ${count && !isOwnerUser() ? `<span class="m-count">${count}</span>` : ''}
     </button>`;
   }
   grid.innerHTML = html;
@@ -897,7 +958,7 @@ function refreshNovaStaffSelect() {
   }
 }
 
-async function openNova(prefillDate = '') {
+async function openNova(prefillDate = '', contact = null) {
   const msg = $('#nova-msg');
   msg.hidden = true;
   selectedCas = null;
@@ -937,6 +998,7 @@ async function openNova(prefillDate = '') {
     if (!sluzby.length) {
       $('#nova-sluzby').innerHTML = '<p class="empty">Žádné aktivní služby v salonu.</p>';
       $('#nova-terminy-msg').textContent = '';
+      applyNovaContactPrefill(contact);
       return;
     }
     $('#nova-sluzby').innerHTML = sluzby.map((s) => `
@@ -960,6 +1022,28 @@ async function openNova(prefillDate = '') {
   } catch (err) {
     showMsg(msg, err.message, false);
   }
+  // Až po asynchronním načtení — jinak by se mohlo přepsat / zůstat prázdné.
+  applyNovaContactPrefill(contact);
+}
+
+/** Předvyplnění kontaktu ze zákaznické karty do stávajícího formuláře. */
+function applyNovaContactPrefill(contact) {
+  if (!contact || typeof contact !== 'object') return;
+  const nick = (contact.nick || contact.jmeno || '').trim();
+  const email = (contact.email || '').trim();
+  const telefon = (contact.telefon || '').trim();
+  const poznamka = (contact.poznamka || '').trim();
+  if (nick) $('#nova-nick').value = nick;
+  if (email) {
+    $('#nova-no-email').checked = false;
+    $('#nova-email').disabled = false;
+    $('#nova-email').value = email;
+  }
+  // Formulář nemá pole telefon — tel. + popis zákazníka do interní poznámky.
+  const interniParts = [];
+  if (telefon) interniParts.push(`Tel. ${telefon}`);
+  if (poznamka) interniParts.push(poznamka);
+  if (interniParts.length) $('#nova-interni').value = interniParts.join('\n');
 }
 
 function closeNova() {
@@ -1256,6 +1340,7 @@ $('#form-password')?.addEventListener('submit', async (e) => {
 $$('.tab').forEach((tab) => {
   tab.addEventListener('click', () => setTab(tab.dataset.tab));
 });
+$('#btn-flow-back')?.addEventListener('click', () => goFlowBack());
 
 $('#mail-refresh')?.addEventListener('click', () => loadMailList());
 $('#mail-compose')?.addEventListener('click', () => openMailCompose());

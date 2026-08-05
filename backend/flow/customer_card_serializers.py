@@ -28,6 +28,9 @@ class CustomerCardListSerializer(serializers.ModelSerializer):
 class CustomerCardDetailSerializer(serializers.ModelSerializer):
     stav_label = serializers.CharField(source='get_stav_display', read_only=True)
     visits = CustomerVisitSerializer(many=True, read_only=True)
+    # CharField: DRF 3.14 IPAddressField je nekompatibilní s Django 5.2
+    # (ip_address_validators už nevrací (validators, message)).
+    confirmed_ip = serializers.CharField(allow_null=True, required=False, read_only=True)
 
     class Meta:
         model = CustomerCard

@@ -24,6 +24,19 @@ Soubory feature (lze smazat ručně):
 
 DB: `python manage.py migrate flow zero` **NE** — raději `migrate flow 0002` po odstranění 0003, pokud migrace běžela jen lokálně.
 
+## Lokální test bez e-mailu
+
+Na localhostu u karty ve stavu „čeká“ je tlačítko **Aktivovat lokálně (bez e-mailu)**  
+(`POST /api/flow/zakaznicke-karty/<id>/aktivovat-lokalne/` — jen `DEBUG=True`).
+
+E-mailové potvrzení testovat až na stagingu.
+
+## Nová rezervace ze karty
+
+U **aktivní** karty tlačítko **Nová rezervace** otevře stávající `#form-nova` (`openNova`) a předvyplní jméno + e-mail.  
+Do interní poznámky: telefon (pokud je) + popis zákazníka z karty (`poznamka`).  
+Uložení = stávající `POST /api/flow/rezervace/`. Vazba karta↔rezervace = runtime shoda e-mailu u aktivní karty (bez FK).
+
 ## Architektura
 
 - Tabulky `flow_customercard`, `flow_customervisit` — **bez FK** na `rezervace_rezervace`.

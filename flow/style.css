@@ -486,6 +486,25 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
 
+.app-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.app-head .flow-back {
+  flex-shrink: 0;
+  margin-top: 2px;
+  min-width: 5.5rem;
+}
+
+.app-head .flow-back:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .app-title {
   font-size: 1.25rem;
 }

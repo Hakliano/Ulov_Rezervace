@@ -160,6 +160,11 @@ urlpatterns = [
         name='flow-customer-card-send-confirm',
     ),
     path(
+        'flow/zakaznicke-karty/<int:card_id>/aktivovat-lokalne/',
+        customer_card_views.CustomerCardActivateLocalView.as_view(),
+        name='flow-customer-card-activate-local',
+    ),
+    path(
         'flow/zakaznicke-karty/<int:card_id>/navstevy/',
         customer_card_views.CustomerCardVisitCreateView.as_view(),
         name='flow-customer-card-visits',

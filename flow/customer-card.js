@@ -15,6 +15,11 @@
     return `${d.getFullYear()}-${m}-${day}`;
   }
 
+  /** Lokální vývoj — aktivace bez e-mailu (backend jen při DEBUG). */
+  function isLocalDev() {
+    return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+  }
+
   async function loadCustomerCards() {
     const list = $('#cc-list');
     const detail = $('#cc-detail');
@@ -103,7 +108,9 @@
         ${c.poznamka ? `<p class="cc-note">${esc(c.poznamka)}</p>` : ''}
         ${c.confirmed_at ? `<p class="meta">Potvrzeno: ${esc(String(c.confirmed_at).replace('T', ' ').slice(0, 19))}${c.confirmed_ip ? ' · IP ' + esc(c.confirmed_ip) : ''}</p>` : ''}
         <div class="actions" style="margin: .75rem 0">
+          ${c.stav === 'aktivni' ? `<button type="button" class="btn primary" data-cc-nova-rez="${c.id}">Nová rezervace</button>` : ''}
           ${c.stav === 'ceka_na_potvrzeni' ? `<button type="button" class="btn primary" data-cc-send="${c.id}">Odeslat žádost o potvrzení zákaznické karty</button>` : ''}
+          ${c.stav === 'ceka_na_potvrzeni' && isLocalDev() ? `<button type="button" class="btn ghost" data-cc-activate-local="${c.id}">Aktivovat lokálně (bez e-mailu)</button>` : ''}
           <button type="button" class="btn ghost" data-cc-edit="${c.id}">Upravit údaje</button>
           <button type="button" class="btn danger" data-cc-delete="${c.id}">Vyřadit zákazníka</button>
         </div>
@@ -196,6 +203,30 @@
       await openCustomerCard(Number(listBtn.dataset.ccId));
       return;
     }
+    const novaRezBtn = ev.target.closest('[data-cc-nova-rez]');
+    if (novaRezBtn) {
+      const id = Number(novaRezBtn.dataset.ccNovaRez);
+      if (typeof openNova !== 'function') {
+        alert('Formulář rezervace není dostupný.');
+        return;
+      }
+      try {
+        const c = await api(`/flow/zakaznicke-karty/${id}/`);
+        if (c.stav !== 'aktivni') {
+          alert('Novou rezervaci lze vytvořit jen z aktivní karty.');
+          return;
+        }
+        await openNova('', {
+          nick: c.jmeno || '',
+          email: c.email || '',
+          telefon: c.telefon || '',
+          poznamka: c.poznamka || '',
+        });
+      } catch (e) {
+        alert(e.message || 'Nelze otevřít rezervaci');
+      }
+      return;
+    }
     if (ev.target.id === 'cc-btn-new') {
       renderNewCardForm();
       return;
@@ -212,6 +243,21 @@
         alert(e.message || 'Chyba odeslání');
       } finally {
         sendBtn.disabled = false;
+      }
+      return;
+    }
+    const actLocal = ev.target.closest('[data-cc-activate-local]');
+    if (actLocal) {
+      const id = Number(actLocal.dataset.ccActivateLocal);
+      actLocal.disabled = true;
+      try {
+        await api(`/flow/zakaznicke-karty/${id}/aktivovat-lokalne/`, { method: 'POST', body: '{}' });
+        await loadCustomerCards();
+        await openCustomerCard(id);
+      } catch (e) {
+        alert(e.message || 'Aktivace selhala');
+      } finally {
+        actLocal.disabled = false;
       }
       return;
     }

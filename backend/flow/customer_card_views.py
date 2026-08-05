@@ -1,6 +1,7 @@
 """REST + veřejné potvrzení — FLOW Karta zákazníka."""
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.shortcuts import render
 from django.utils import timezone
@@ -159,6 +160,36 @@ class CustomerCardSendConfirmView(APIView):
             'email_odeslan': email_ok,
             'stav': card.stav,
         })
+
+
+class CustomerCardActivateLocalView(APIView):
+    """Lokální / DEBUG: aktivace karty bez e-mailového potvrzení."""
+
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, card_id):
+        if not settings.DEBUG:
+            return Response({'detail': 'Jen při DEBUG=True (lokální vývoj).'}, status=403)
+        user = _user(request)
+        card = _card_for_salon(user, card_id)
+        if not card:
+            return Response({'detail': 'Karta nenalezena.'}, status=404)
+        if card.stav == CustomerCard.STAV_AKTIVNI:
+            return Response(CustomerCardDetailSerializer(
+                card_with_visits(user.salon_id, card.id)
+            ).data)
+        now = timezone.now()
+        card.stav = CustomerCard.STAV_AKTIVNI
+        card.confirmed_at = now
+        card.confirmed_ip = '127.0.0.1'
+        card.confirm_token_used_at = now
+        card.save(update_fields=[
+            'stav', 'confirmed_at', 'confirmed_ip', 'confirm_token_used_at', 'upraveno',
+        ])
+        return Response(CustomerCardDetailSerializer(
+            card_with_visits(user.salon_id, card.id)
+        ).data)
 
 
 class CustomerCardVisitCreateView(APIView):

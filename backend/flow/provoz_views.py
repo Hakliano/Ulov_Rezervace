@@ -124,14 +124,18 @@ class FlowKalendarView(APIView):
 
         salon = user.salon
         qs = Rezervace.objects.filter(salon=salon).prefetch_related('polozky__sluzba', 'zamestnanec')
+        je_majitel = user.zamestnanec.role == Zamestnanec.ROLE_MAJITEL
         if overview:
             mode = 'overview'
+        elif je_majitel:
+            # Majitel zadává rezervace na personál — kalendář musí vidět celý salon.
+            mode = 'salon'
         else:
             mode = 'mine'
             qs = qs.filter(zamestnanec_id=user.zamestnanec_id)
         qs = _filter_rezervace_qs(qs, od, do)
 
-        if overview:
+        if overview or je_majitel:
             abs_qs = ZamestnanecAbsence.objects.filter(
                 zamestnanec__salon=salon,
             ).exclude(
