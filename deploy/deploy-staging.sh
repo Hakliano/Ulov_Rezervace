@@ -20,6 +20,13 @@ if [ "$REF" != "HEAD" ]; then
 fi
 echo "GIT=$(git rev-parse --short HEAD)"
 
+# Po checkoutu znovu spusť skript z disku — jinak by běžela stará verze
+# (inline heredoc / overrides z paměti před `git checkout`).
+if [ "${STAGING_DEPLOY_REEXEC:-}" != "1" ] && [ "$REF" != "HEAD" ]; then
+  export STAGING_DEPLOY_REEXEC=1
+  exec bash "$ROOT/deploy/deploy-staging.sh" "$REF"
+fi
+
 if [ ! -f .env ]; then
   echo "FAIL: chybí .env (LIVE) — z něj se odvodí .env.staging"
   exit 1
