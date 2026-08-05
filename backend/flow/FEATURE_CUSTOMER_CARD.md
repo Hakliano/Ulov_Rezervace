@@ -1,6 +1,6 @@
 # FLOW – Karta zákazníka (`feature/flow-customer-card`)
 
-**Jen lokál / feature branch.** Na LIVE nenasazovat, dokud není schváleno.
+**Nasazeno na DEV / Staging / LIVE.** Feature branch lze po stabilizaci smazat.
 
 ## Odříznutí / rollback
 
