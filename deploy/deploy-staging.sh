@@ -45,6 +45,8 @@ overrides = {
     "SENTRY_ENVIRONMENT": "staging",
     "EMAIL_VIA_CELERY": "false",
     "FLOW_BASE_URL": "https://www.staging.ulovklienty.cz/flow/",
+    "API_PUBLIC_BASE_URL": "https://api-staging.ulovklienty.cz/api",
+    "CUSTOMER_CARD_CONFIRM_BASE_URL": "https://api-staging.ulovklienty.cz/api",
 }
 # EMAIL_OVERRIDE_TO — zachovej pokud už je, jinak info@
 if "EMAIL_OVERRIDE_TO=" not in text:

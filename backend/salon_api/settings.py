@@ -205,6 +205,17 @@ if EMAIL_VIA_CELERY and not REDIS_URL:
 # Veřejná URL aplikace FLOW (pozvánky / reset hesla)
 FLOW_BASE_URL = os.environ.get('FLOW_BASE_URL', 'https://www.ulovklienty.cz/flow/').rstrip('/') + '/'
 
+# Veřejná báze API (odkazy v e-mailech — potvrzení karty apod.)
+# Staging: https://api-staging.ulovklienty.cz/api
+API_PUBLIC_BASE_URL = (
+    os.environ.get('API_PUBLIC_BASE_URL')
+    or os.environ.get('CUSTOMER_CARD_CONFIRM_BASE_URL')
+    or 'https://api.ulovklienty.cz/api'
+).rstrip('/')
+CUSTOMER_CARD_CONFIRM_BASE_URL = os.environ.get(
+    'CUSTOMER_CARD_CONFIRM_BASE_URL', API_PUBLIC_BASE_URL
+).rstrip('/')
+
 if REDIS_URL:
     CACHES = {
         'default': {

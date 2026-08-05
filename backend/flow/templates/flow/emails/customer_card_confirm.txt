@@ -6,3 +6,6 @@ Potvrzením umožníte uchovávat historii návštěv. Údaje nejsou sdíleny s 
 
 Potvrďte zde:
 {{ confirm_url }}
+
+Pokud vám nefunguje tlačítko potvrzení, zkopírujte tento odkaz:
+{{ confirm_url }}

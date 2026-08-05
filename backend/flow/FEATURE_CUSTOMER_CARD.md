@@ -64,4 +64,6 @@ python manage.py runserver
 # FLOW: http://localhost…/flow/ → záložka Zákazníci
 ```
 
-Volitelně: `CUSTOMER_CARD_CONFIRM_BASE_URL=http://localhost:8000/api`
+Volitelně: `CUSTOMER_CARD_CONFIRM_BASE_URL` / `API_PUBLIC_BASE_URL`
+(staging: `https://api-staging.ulovklienty.cz/api`, default LIVE `https://api.ulovklienty.cz/api`).
+Lokálně: `http://localhost:8000/api`.
