@@ -5,6 +5,11 @@ from flow import customer_card_views
 
 urlpatterns = [
     path('salon/<int:pk>/flow/aktivace/', views.FlowAktivaceView.as_view(), name='flow-aktivace'),
+    path(
+        'salon/<int:pk>/flow/majitelka-pracuje/',
+        views.MajitelkaPracujeView.as_view(),
+        name='flow-majitelka-pracuje',
+    ),
     path('salon/<int:pk>/flow/ucty/', views.FlowUctyListCreateView.as_view(), name='flow-ucty'),
     path(
         'salon/<int:pk>/flow/ucty/<int:ucet_id>/',
@@ -24,8 +29,14 @@ urlpatterns = [
     path('flow/prihlaseni/', views.FlowPrihlaseniView.as_view(), name='flow-prihlaseni'),
     path('flow/odhlaseni/', views.FlowOdhlaseniView.as_view(), name='flow-odhlaseni'),
     path('flow/me/', views.FlowMeView.as_view(), name='flow-me'),
+    path('flow/prepnout-personu/', views.FlowPrepnoutPersonuView.as_view(), name='flow-prepnout-personu'),
     path('flow/zmena-hesla/', views.FlowZmenaHeslaView.as_view(), name='flow-zmena-hesla'),
     path('flow/owner/nastaveni/', owner_views.FlowOwnerNastaveniView.as_view(), name='flow-owner-nastaveni'),
+    path(
+        'flow/owner/pracovni-persona/',
+        owner_views.FlowOwnerPracovniPersonaView.as_view(),
+        name='flow-owner-pracovni-persona',
+    ),
     path('flow/owner/personal/', owner_views.FlowOwnerPersonalListCreateView.as_view(), name='flow-owner-personal'),
     path(
         'flow/owner/personal/<int:zamestnanec_id>/',
@@ -117,6 +128,11 @@ urlpatterns = [
         'flow/rezervace/<int:rezervace_id>/zaloha-ok/',
         provoz_views.FlowRezervaceZalohaOkView.as_view(),
         name='flow-rezervace-zaloha-ok',
+    ),
+    path(
+        'flow/rezervace/<int:rezervace_id>/email-preview/',
+        provoz_views.FlowEmailPreviewView.as_view(),
+        name='flow-rezervace-email-preview',
     ),
     path('flow/absence/', provoz_views.FlowAbsenceView.as_view(), name='flow-absence'),
     path(

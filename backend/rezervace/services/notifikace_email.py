@@ -53,26 +53,31 @@ def render_sablonu(text, rezervace, extra_ctx=None):
         return text
 
 
-def email_notifikace_sync(rezervace, notifikace, extra_ctx=None):
+def email_notifikace_sync(rezervace, notifikace, extra_ctx=None, predmet=None, text=None):
     if not ma_kontaktni_email(rezervace):
         return False
     salon = rezervace.salon
-    predmet = render_sablonu(notifikace['predmet'], rezervace, extra_ctx)
-    zprava = render_sablonu(notifikace['text'], rezervace, extra_ctx)
-    return _odeslat_pro_salon(salon, rezervace.kontaktni_email, predmet, zprava)
+    subj = (predmet or '').strip() or render_sablonu(notifikace['predmet'], rezervace, extra_ctx)
+    body = text if text is not None else render_sablonu(notifikace['text'], rezervace, extra_ctx)
+    return _odeslat_pro_salon(salon, rezervace.kontaktni_email, subj, body)
 
 
-def email_notifikace(rezervace, notifikace, extra_ctx=None):
+def email_notifikace(rezervace, notifikace, extra_ctx=None, predmet=None, text=None):
     if not ma_kontaktni_email(rezervace):
         return False
-    if _email_via_celery():
-        from rezervace.tasks import task_email_notifikace
-        task_email_notifikace.delay(rezervace.pk, notifikace, extra_ctx)
-        return True
-    return email_notifikace_sync(rezervace, notifikace, extra_ctx=extra_ctx)
+    if predmet is not None or text is not None or not _email_via_celery():
+        return email_notifikace_sync(
+            rezervace, notifikace, extra_ctx=extra_ctx, predmet=predmet, text=text,
+        )
+    from rezervace.tasks import task_email_notifikace
+    task_email_notifikace.delay(rezervace.pk, notifikace, extra_ctx)
+    return True
 
 
-def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
+def email_platba_qr_sync(
+    rezervace, notifikace, castka, ucet, variabilni_symbol,
+    platba_data=None, predmet=None, text=None,
+):
     from rezervace.services.platba_qr import generuj_platbu_qr
 
     if not ma_kontaktni_email(rezervace):
@@ -86,8 +91,8 @@ def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol,
         'ucet': platba_data['ucet'],
         'variabilni_symbol': platba_data['variabilni_symbol'],
     }
-    predmet = render_sablonu(notifikace['predmet'], rezervace, extra)
-    zprava = render_sablonu(notifikace['text'], rezervace, extra)
+    subj = (predmet or '').strip() or render_sablonu(notifikace['predmet'], rezervace, extra)
+    zprava = text if text is not None else render_sablonu(notifikace['text'], rezervace, extra)
     html = (
         '<div style="font-family:sans-serif;line-height:1.5">'
         f'<pre style="white-space:pre-wrap;font-family:inherit">{zprava}</pre>'
@@ -98,23 +103,26 @@ def email_platba_qr_sync(rezervace, notifikace, castka, ucet, variabilni_symbol,
     return _odeslat_pro_salon(
         salon,
         rezervace.kontaktni_email,
-        predmet,
+        subj,
         zprava,
         html_body=html,
         attachments=[('qr_platba.png', qr_png, 'image/png')],
     )
 
 
-def email_platba_qr(rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=None):
+def email_platba_qr(
+    rezervace, notifikace, castka, ucet, variabilni_symbol,
+    platba_data=None, predmet=None, text=None,
+):
     if not ma_kontaktni_email(rezervace):
         return False
-    if _email_via_celery():
-        from rezervace.tasks import task_email_platba_qr
-        # QR se znovu vygeneruje ve workeru (PNG není vhodné do Redis fronty).
-        task_email_platba_qr.delay(
-            rezervace.pk, notifikace, castka, ucet, variabilni_symbol
+    if predmet is not None or text is not None or not _email_via_celery():
+        return email_platba_qr_sync(
+            rezervace, notifikace, castka, ucet, variabilni_symbol,
+            platba_data=platba_data, predmet=predmet, text=text,
         )
-        return True
-    return email_platba_qr_sync(
-        rezervace, notifikace, castka, ucet, variabilni_symbol, platba_data=platba_data
+    from rezervace.tasks import task_email_platba_qr
+    task_email_platba_qr.delay(
+        rezervace.pk, notifikace, castka, ucet, variabilni_symbol
     )
+    return True

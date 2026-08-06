@@ -349,6 +349,33 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   border-left: 4px solid #c45c26;
 }
 
+.flow-alert.zaloha-storno {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  background: rgba(220, 50, 40, 0.22);
+  border: 2px solid #e85a45;
+  border-left: 6px solid #ff6b4a;
+  box-shadow: 0 0 0 1px rgba(255, 107, 74, 0.25);
+}
+
+.flow-alert.zaloha-storno .flow-alert-text strong {
+  display: block;
+  color: #ffb4a4;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.flow-alert.zaloha-storno .flow-alert-text span {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
 .flow-alert.mail {
   background: rgba(70, 120, 180, 0.16);
   border-color: rgba(90, 140, 200, 0.45);
@@ -550,6 +577,73 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   vertical-align: middle;
 }
 
+.persona-switch {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.persona-btn {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.persona-btn.active {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+  color: var(--accent-ink);
+}
+
+.owner-admin-zone {
+  margin-top: 1.25rem;
+}
+
+.owner-admin-zone-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--gold-soft, #e4c76a);
+  letter-spacing: 0.01em;
+}
+
+.owner-admin-zone-title-tech {
+  color: #f0a090;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+}
+
+.owner-admin-zone-warn {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ffb4a4;
+  letter-spacing: 0.01em;
+}
+
+.owner-admin-zone-tech {
+  margin-top: 1.75rem;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px dashed rgba(232, 90, 69, 0.45);
+  background: rgba(80, 24, 18, 0.22);
+}
+
+.owner-admin-zone-tech-hint {
+  margin: 0 0 0.65rem;
+  color: rgba(255, 200, 190, 0.85);
+}
+
 .owner-admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -568,6 +662,11 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   font: inherit;
   cursor: pointer;
   width: 100%;
+}
+
+.owner-admin-card-tech {
+  border-color: rgba(232, 90, 69, 0.35);
+  background: rgba(20, 12, 14, 0.55);
 }
 
 .owner-admin-card.is-disabled {
@@ -1322,6 +1421,80 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .modal-head h2 { margin: 0; }
+
+.email-sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.email-sheet-card {
+  width: 100%;
+  max-width: 640px;
+  max-height: min(92vh, 900px);
+  margin: 0 auto;
+  border-radius: 18px 18px 0 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.email-sheet-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.email-sheet-card input,
+.email-sheet-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  color: #f4f1ea;
+  padding: 0.7rem 0.8rem;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.email-sheet-card textarea {
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.email-preview-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.email-sheet-actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  background: linear-gradient(180deg, transparent, var(--navy) 30%);
+  justify-content: stretch;
+}
+
+.email-sheet-actions .btn {
+  flex: 1;
+}
+
+@media (min-width: 720px) {
+  .email-sheet {
+    align-items: center;
+    padding: 16px;
+  }
+  .email-sheet-card {
+    border-radius: var(--radius);
+    max-height: min(88vh, 820px);
+  }
+}
 
 .nova-fieldset {
   margin: 0;

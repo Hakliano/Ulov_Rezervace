@@ -1,6 +1,16 @@
 # Dokumenty pro compliance a partnery
 
-Právní a compliance dokumentace platformy **Ulov Rezervaci** ve formátu vhodném pro tisk a odeslání partnerům (salony).
+Právní a compliance dokumentace platformy **Ulov Rezervaci** (značka **ULOV KLIENTY**) ve formátu vhodném pro tisk a odeslání partnerům.
+
+## Podklad pro právní oddělení (funkce + GDPR + obchod)
+
+| Dokument | Účel |
+|----------|------|
+| [`../PODKLAD_PRO_PARTNERY.md`](../PODKLAD_PRO_PARTNERY.md) | **Povinný pro partnerské smlouvy:** 3 balíčky, ceny, vstupní poplatky, všechny služby, Program růstu, **kompletní FLOW** (majitel + pracovník) |
+| [`../presentace/vop.html`](../presentace/vop.html) | **VOP** (veřejný HTML, tisk/PDF) — hlavní právní dokument Partnerství; kapitola po kapitole |
+| [`../For Compliance v1.md`](../For%20Compliance%20v1.md) | GDPR, kategorie údajů, role, retence, bezpečnost |
+| [`../ZIVOTNI_CYKLUS_REZERVACE.md`](../ZIVOTNI_CYKLUS_REZERVACE.md) | Detail životního cyklu rezervace a anonymizace |
+| [`../PREHLED_PRO_SALES_A_MARKETING.md`](../PREHLED_PRO_SALES_A_MARKETING.md) | Obchodní přehled (sales) — ne náhrada právního podkladu |
 
 ## Sales a marketing
 
@@ -47,4 +57,6 @@ python generate_pdf.py
 
 ## Poznámka
 
-Soubory `.md` v kořeni projektu slouží jako pracovní / technická verze. Pro partnery a compliance používejte **HTML a PDF** z této složky.
+Soubory `.md` v kořeni projektu slouží jako pracovní / technická verze. Pro partnery a compliance používejte **HTML a PDF** z této složky.  
+Pro právní mapování funkcí a GDPR: **`For Compliance v1.md`**.  
+Pro ceník, balíčky a FLOW do partnerských smluv: **`PODKLAD_PRO_PARTNERY.md`**.

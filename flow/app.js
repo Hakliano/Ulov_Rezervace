@@ -23,7 +23,7 @@ let ownerStaffOptionsCache = null;
 let ownerPrirazeniCache = null;
 
 let currentUser = null;
-let weekOffset = 0;
+let dayOffset = 0;
 let ovWeekOffset = 0;
 let monthOffset = 0;
 let monthCache = { rezervace: [], absence: [], rozvrh: [] };
@@ -81,6 +81,137 @@ function showMsg(el, text, ok) {
   el.textContent = text;
   el.className = ok ? 'msg ok' : 'msg error';
 }
+
+/** Výrazné varování po stornu rezervace se zaplacenou zálohou (partner ↔ zákazník). */
+function showZalohaStornoBanner(data = {}) {
+  const box = $('#storno-zaloha-banner');
+  if (!box) return;
+  const castka = data.zaloha_castka ? ` ${data.zaloha_castka} Kč` : '';
+  const emailOk = data.email_odeslan === true;
+  const emailLine = emailOk
+    ? 'Zákazníkovi byl odeslán e-mail s žádostí, aby zavolal a domluvil vrácení nebo přesun zálohy.'
+    : 'E-mail se nepodařilo doručit (např. localhost bez SMTP) — zavolejte zákazníkovi sami.';
+  box.hidden = false;
+  box.classList.remove('hidden');
+  box.innerHTML = `
+    <div class="flow-alert-text">
+      <strong>!! POZOR — zaplacená záloha${esc(castka)}</strong>
+      <span>Informujeme zákazníka, aby se domluvil na vrácení / přesunu zálohy. ${esc(emailLine)}</span>
+    </div>
+    <button type="button" class="btn tiny ghost" id="btn-dismiss-zaloha-storno">OK</button>
+  `;
+  $('#btn-dismiss-zaloha-storno')?.addEventListener('click', () => {
+    box.hidden = true;
+    box.classList.add('hidden');
+    box.innerHTML = '';
+  });
+}
+
+let emailPreviewResolve = null;
+
+function closeEmailPreviewSheet(result = null) {
+  const sheet = $('#email-preview-sheet');
+  if (sheet) {
+    sheet.classList.add('hidden');
+  }
+  const msg = $('#email-preview-msg');
+  if (msg) {
+    msg.hidden = true;
+    msg.textContent = '';
+  }
+  const resolve = emailPreviewResolve;
+  emailPreviewResolve = null;
+  if (resolve) resolve(result);
+}
+
+function openEmailPreviewSheet({
+  title = 'Náhled e-mailu',
+  to = '',
+  predmet = '',
+  text = '',
+  hint = '',
+  confirmLabel = 'Odeslat e-mail',
+  skipSend = false,
+} = {}) {
+  return new Promise((resolve) => {
+    emailPreviewResolve = resolve;
+    $('#email-preview-title').textContent = title;
+    $('#email-preview-to').textContent = to || '— (bez e-mailu)';
+    $('#email-preview-predmet').value = predmet || '';
+    $('#email-preview-text').value = text || '';
+    const hintEl = $('#email-preview-hint');
+    if (hintEl) {
+      if (hint) {
+        hintEl.hidden = false;
+        hintEl.textContent = hint;
+      } else {
+        hintEl.hidden = true;
+        hintEl.textContent = '';
+      }
+    }
+    const sendBtn = $('#email-preview-send');
+    if (sendBtn) {
+      sendBtn.textContent = skipSend || !to
+        ? 'Potvrdit bez e-mailu'
+        : (confirmLabel || 'Odeslat e-mail');
+    }
+    $('#email-preview-sheet')?.classList.remove('hidden');
+    $('#email-preview-text')?.focus();
+  });
+}
+
+async function previewFlowEmail(rezervaceId, typ, extra = {}) {
+  return api(`/flow/rezervace/${rezervaceId}/email-preview/`, {
+    method: 'POST',
+    body: JSON.stringify({ typ, ...extra }),
+  });
+}
+
+/** Náhled → úprava → výsledek { predmet, text } | null (zrušeno). */
+async function reviewCustomerEmail(rezervaceId, typ, extra = {}, sheetOpts = {}) {
+  const draft = await previewFlowEmail(rezervaceId, typ, extra);
+  if (!draft?.ma_email && typ !== 'storno') {
+    // U plateb / NO-show bez e-mailu nemá smysl odesílat
+    throw new Error('Rezervace nemá e-mail zákazníka.');
+  }
+  let hint = sheetOpts.hint || '';
+  if (draft.zaloha_zaplacena) {
+    hint = (hint ? `${hint} ` : '')
+      + '!! Zaplacená záloha — v textu musí zůstat výzva k telefonické domluvě.';
+  }
+  if (draft.qr_note) {
+    hint = (hint ? `${hint} ` : '') + draft.qr_note;
+  }
+  const result = await openEmailPreviewSheet({
+    title: draft.title || sheetOpts.title || 'Náhled e-mailu',
+    to: draft.to,
+    predmet: draft.predmet,
+    text: draft.text,
+    hint,
+    confirmLabel: sheetOpts.confirmLabel,
+    skipSend: !draft.ma_email,
+  });
+  return result;
+}
+
+function wireEmailPreviewSheet() {
+  const send = () => {
+    const to = ($('#email-preview-to')?.textContent || '').trim();
+    const hasEmail = to && to !== '—' && !to.includes('bez e-mailu');
+    closeEmailPreviewSheet({
+      predmet: $('#email-preview-predmet')?.value || '',
+      text: $('#email-preview-text')?.value || '',
+      sendEmail: !!hasEmail,
+    });
+  };
+  $('#email-preview-send')?.addEventListener('click', send);
+  $('#email-preview-cancel')?.addEventListener('click', () => closeEmailPreviewSheet(null));
+  $('#email-preview-close')?.addEventListener('click', () => closeEmailPreviewSheet(null));
+  $('#email-preview-sheet')?.addEventListener('click', (e) => {
+    if (e.target?.id === 'email-preview-sheet') closeEmailPreviewSheet(null);
+  });
+}
+
 
 /** Jednorázové zobrazení dočasného FLOW hesla majiteli (i po úspěšném e-mailu). */
 function showFlowAccessResult(el, data, fallbackDetail) {
@@ -149,6 +280,14 @@ function weekRange(offset) {
   return { od: toYmd(start), do: toYmd(end), start, end };
 }
 
+function dayRange(offset) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offset);
+  const ymd = toYmd(d);
+  return { od: ymd, do: ymd, start: d, end: d };
+}
+
 function monthRange(offset) {
   const now = new Date();
   const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
@@ -165,6 +304,20 @@ function monthRange(offset) {
 function formatWeekLabel(range) {
   const opts = { day: 'numeric', month: 'numeric' };
   return `${range.start.toLocaleDateString('cs-CZ', opts)} – ${range.end.toLocaleDateString('cs-CZ', opts)} ${range.end.getFullYear()}`;
+}
+
+function formatDayLabel(range) {
+  const d = range.start;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const label = d.toLocaleDateString('cs-CZ', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+  });
+  if (toYmd(d) === toYmd(today)) return `Dnes · ${label}`;
+  return label;
 }
 
 function formatDateTime(iso) {
@@ -204,6 +357,76 @@ function rememberRez(items) {
 function isOwnerUser(user = currentUser) {
   const z = user?.zamestnanec;
   return z?.je_owner === true || z?.je_majitel === true || z?.role === 'majitel';
+}
+
+function isManagerAccount(user = currentUser) {
+  return !!user?.persona?.muze_prepinat
+    || !!user?.persona?.pracovnik?.id
+    || isOwnerUser(user);
+}
+
+function hasManagerWorkPersona(user = currentUser) {
+  return !!user?.persona?.pracovnik?.id;
+}
+
+function applyAbsenceFormUi(user = currentUser) {
+  const form = $('#form-absence');
+  const hint = $('#abs-manager-hint');
+  const absBtn = $('#abs-submit');
+  if (!form) return;
+  if (isManagerAccount(user) && !hasManagerWorkPersona(user)) {
+    form.classList.add('hidden');
+    if (hint) {
+      hint.classList.remove('hidden');
+      hint.textContent = 'Účet Manager nepracuje — dovolená sem nepatří. Zapněte „Manager také pracuje“, nebo zadejte absenci Staff ve Správě.';
+    }
+    return;
+  }
+  form.classList.remove('hidden');
+  if (isManagerAccount(user) && hasManagerWorkPersona(user)) {
+    if (hint) {
+      hint.classList.remove('hidden');
+      const jmeno = user.persona.pracovnik.jmeno || 'pracovní profil';
+      hint.textContent = `Dovolená platí pro váš pracovní profil (${jmeno}) — jeden člověk, jeden kalendář obsluhy. Uloží se hned bez schvalování.`;
+    }
+    if (absBtn) absBtn.textContent = 'Uložit absenci';
+  } else {
+    if (hint) {
+      hint.classList.add('hidden');
+      hint.textContent = '';
+    }
+    if (absBtn) absBtn.textContent = 'Požádat o volno';
+  }
+}
+
+function canSwitchPersona(user = currentUser) {
+  return !!user?.persona?.muze_prepinat;
+}
+
+function renderPersonaSwitch(user = currentUser) {
+  const box = $('#persona-switch');
+  if (!box) return;
+  if (!canSwitchPersona(user)) {
+    box.classList.add('hidden');
+    return;
+  }
+  box.classList.remove('hidden');
+  const aktivni = user?.persona?.aktivni || 'majitel';
+  $$('#persona-switch .persona-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.persona === aktivni);
+  });
+}
+
+async function switchPersona(persona) {
+  const data = await api('/flow/prepnout-personu/', {
+    method: 'POST',
+    body: JSON.stringify({ persona }),
+  });
+  showLoggedIn(data);
+}
+
+function applyPersonaUi(user = currentUser) {
+  renderPersonaSwitch(user);
 }
 
 function updateFlowBackBtn() {
@@ -302,22 +525,33 @@ function showLoggedIn(user) {
   $('#pwd-box-owner')?.classList.toggle('hidden', !owner);
   $('#tab-sprava')?.classList.toggle('hidden', !owner);
   $('#home-role-badge')?.classList.toggle('hidden', !owner);
-  const absBtn = $('#abs-submit');
-  if (absBtn) absBtn.textContent = owner ? 'Uložit absenci' : 'Požádat o volno';
+  // Manager: dovolená jen ve Správě → Žádosti o volno. Staff (včetně pracovní persony) má záložku Dovolená.
+  const absTab = $('#tab-absence');
+  if (absTab) {
+    absTab.classList.toggle('hidden', owner);
+    if (owner && flowNavCurrent === 'absence') {
+      flowNavSilent = true;
+      setTab('mujden');
+      flowNavSilent = false;
+      flowNavCurrent = 'mujden';
+    }
+  }
+  applyAbsenceFormUi(user);
   refreshOwnerVolnoBadge(user);
   const roleEl = $('#home-role');
-  if (roleEl) roleEl.textContent = owner ? 'Majitel (owner)' : 'Personál (staff)';
-  // Staff: pracovní doba jen view; majitel ji mění ve Správě → Personál
+  if (roleEl) roleEl.textContent = owner ? 'Manager' : 'Staff';
+  applyPersonaUi(user);
+  // Staff: pracovní doba jen view; majitel ji mění ve Správě → Staff
   const rozHint = $('#rozvrh-hint');
   const rozSave = $('#btn-rozvrh-save');
   if (!owner) {
     if (rozHint) {
-      rozHint.textContent = 'Vaše pracovní doba (jen náhled). Změnu může udělat jen majitel ve Správě.';
+      rozHint.textContent = 'Vaše pracovní doba (jen náhled). Změnu může udělat jen Manager ve Správě.';
     }
     rozSave?.classList.add('hidden');
   } else {
     if (rozHint) {
-      rozHint.textContent = 'Účet majitele nemá vlastní rozvrh služeb. Rozvrh personálu upravíte ve Správě → Personál.';
+      rozHint.textContent = 'Účet Manager nemá vlastní rozvrh služeb. Rozvrh Staff upravíte ve Správě → Staff.';
     }
     rozSave?.classList.add('hidden');
   }
@@ -369,7 +603,7 @@ function renderRezervaceList(container, items, { readonly = false, emptyText = '
           <button type="button" class="btn tiny ghost" data-act="platba" data-id="${r.id}">Platba QR</button>
           ${r.je_rizikova || r.zaloha_vyzadana_at ? `<button type="button" class="btn tiny ghost" data-act="zaloha" data-id="${r.id}">Požádat o zálohu</button>` : ''}
           ${r.zaloha_vyzadana_at && !r.zaloha_ok_at ? `<button type="button" class="btn tiny primary" data-act="zaloha-ok" data-id="${r.id}">Záloha OK</button>` : ''}
-          <button type="button" class="btn tiny ghost" data-act="storno" data-id="${r.id}">Storno</button>
+          <button type="button" class="btn tiny ${r.zaloha_ok_at ? 'danger' : 'ghost'}" data-act="storno" data-id="${r.id}">${r.zaloha_ok_at ? 'Storno · záloha!' : 'Storno'}</button>
         </div>`
       : (readonly && !showStaff
         ? `<p class="meta">u ${esc(r.zamestnanec_jmeno || '—')}</p>`
@@ -416,12 +650,11 @@ function renderAbsenceBlocks(absences, { withName = false, canDelete = false } =
 }
 
 async function loadWeekList(overview) {
-  const offset = overview ? ovWeekOffset : weekOffset;
-  const range = weekRange(offset);
+  const range = overview ? weekRange(ovWeekOffset) : dayRange(dayOffset);
   const labelEl = overview ? $('#ov-week-label') : $('#week-label');
   const listEl = overview ? $('#ov-list') : $('#cal-list');
   const msgEl = overview ? $('#ov-msg') : $('#cal-msg');
-  labelEl.textContent = formatWeekLabel(range);
+  labelEl.textContent = overview ? formatWeekLabel(range) : formatDayLabel(range);
   msgEl.hidden = true;
   listEl.innerHTML = '<p class="empty">Načítám…</p>';
   try {
@@ -442,7 +675,7 @@ async function loadWeekList(overview) {
     renderRezervaceList(holder, data.rezervace || [], {
       readonly: overview,
       withStaff: isOwnerUser(),
-      emptyText: 'Žádné rezervace v tomto týdnu.',
+      emptyText: overview ? 'Žádné rezervace v tomto týdnu.' : 'Žádné rezervace v tento den.',
     });
     listEl.appendChild(holder);
     if (!overview) bindCalActions(holder, () => loadWeekList(false));
@@ -470,16 +703,32 @@ function bindCalActions(root, onDone) {
         const r = findRezervace(id);
         let duvod = '';
         if (r?.zaloha_vyzadana_at && !r?.zaloha_ok_at) {
-          duvod = prompt('Důvod storna:', 'Nezaplacená zálohová platba') || 'Nezaplacená zálohová platba';
+          duvod = 'Nezaplacená zálohová platba';
         }
-        if (!confirm('Stornovat rezervaci? Zákazník dostane e-mail.')) return;
         try {
-          await api(`/flow/rezervace/${id}/storno/`, {
+          const reviewed = await reviewCustomerEmail(id, 'storno', { duvod }, {
+            confirmLabel: 'Stornovat a odeslat',
+            hint: r?.zaloha_ok_at
+              ? 'Po potvrzení se rezervace zruší a e-mail odejde zákazníkovi.'
+              : 'Zkontrolujte text e-mailu. Po potvrzení se rezervace zruší.',
+          });
+          if (!reviewed) return;
+          const data = await api(`/flow/rezervace/${id}/storno/`, {
             method: 'DELETE',
-            body: JSON.stringify({ duvod }),
+            body: JSON.stringify({
+              duvod,
+              email_predmet: reviewed.predmet,
+              email_text: reviewed.text,
+            }),
           });
           onDone?.();
           refreshTopAlerts();
+          if (data?.zaloha_zaplacena || r?.zaloha_ok_at) {
+            showZalohaStornoBanner(data || { zaloha_zaplacena: true, zaloha_castka: r?.zaloha_castka });
+            showMsg($('#cal-msg'), 'Stornováno. !! POZOR — zaplacená záloha, domluvte vrácení se zákazníkem.', false);
+          } else {
+            showMsg($('#cal-msg'), 'Rezervace stornována.', true);
+          }
         } catch (err) {
           showMsg($('#cal-msg'), err.message, false);
         }
@@ -490,9 +739,18 @@ function bindCalActions(root, onDone) {
       } else if (act === 'zaloha') {
         openPlatba(id, true);
       } else if (act === 'zaloha-ok') {
-        if (!confirm('Potvrdit přijetí zálohy? Zákazník dostane e-mail.')) return;
         try {
-          await api(`/flow/rezervace/${id}/zaloha-ok/`, { method: 'POST', body: '{}' });
+          const reviewed = await reviewCustomerEmail(id, 'zaloha_ok', {}, {
+            confirmLabel: 'Potvrdit zálohu a odeslat',
+          });
+          if (!reviewed) return;
+          await api(`/flow/rezervace/${id}/zaloha-ok/`, {
+            method: 'POST',
+            body: JSON.stringify({
+              email_predmet: reviewed.predmet,
+              email_text: reviewed.text,
+            }),
+          });
           onDone?.();
           refreshTopAlerts();
         } catch (err) {
@@ -752,7 +1010,7 @@ function renderTopAlerts(riskyN, mailN, mailOk, volnoN = 0, platbyDni = 0) {
     parts.push(`<div class="flow-alert volno">
       <div class="flow-alert-text">
         <strong>Žádosti o volno: ${volnoN}</strong>
-        <span>Ke schválení — dovolená / nemoc personálu</span>
+        <span>Ke schválení — dovolená / nemoc Staff</span>
       </div>
       <button type="button" class="btn primary sm" id="alert-goto-volno">Otevřít</button>
     </div>`);
@@ -982,7 +1240,7 @@ async function openNova(prefillDate = '', contact = null) {
       if (sel) {
         sel.innerHTML = staff.length
           ? staff.map((z) => `<option value="${z.id}">${esc(z.jmeno)}</option>`).join('')
-          : '<option value="">— žádný personál —</option>';
+          : '<option value="">— žádný Staff —</option>';
       }
       refreshNovaStaffSelect();
     } catch (err) {
@@ -1378,9 +1636,9 @@ $('#form-mail')?.addEventListener('submit', async (e) => {
   }
 });
 
-$('#week-prev')?.addEventListener('click', () => { weekOffset -= 1; loadWeekList(false); });
-$('#week-next')?.addEventListener('click', () => { weekOffset += 1; loadWeekList(false); });
-$('#week-today')?.addEventListener('click', () => { weekOffset = 0; loadWeekList(false); });
+$('#week-prev')?.addEventListener('click', () => { dayOffset -= 1; loadWeekList(false); });
+$('#week-next')?.addEventListener('click', () => { dayOffset += 1; loadWeekList(false); });
+$('#week-today')?.addEventListener('click', () => { dayOffset = 0; loadWeekList(false); });
 $('#ov-week-prev')?.addEventListener('click', () => { ovWeekOffset -= 1; loadWeekList(true); });
 $('#ov-week-next')?.addEventListener('click', () => { ovWeekOffset += 1; loadWeekList(true); });
 $('#ov-week-today')?.addEventListener('click', () => { ovWeekOffset = 0; loadWeekList(true); });
@@ -1586,11 +1844,26 @@ function renderAbsenceKonflikt(items, absence = null, { boxSel = '#abs-konflikt'
         actions.querySelector(`[data-abs-storno-back="${id}"]`)?.addEventListener('click', showBtn);
         actions.querySelector(`[data-abs-storno-ok="${id}"]`)?.addEventListener('click', async () => {
           try {
-            await api(`/flow/rezervace/${id}/storno/`, {
-              method: 'DELETE',
-              body: JSON.stringify({ duvod: duvodZakaznik }),
+            const left = items.find((x) => Number(x.id) === id);
+            const reviewed = await reviewCustomerEmail(id, 'storno', { duvod: duvodZakaznik }, {
+              confirmLabel: 'Stornovat a odeslat',
+              hint: 'Storno kvůli absenci — zkontrolujte omluvný e-mail.',
             });
-            showMsg($(msgSel), 'Rezervace stornována.', true);
+            if (!reviewed) return;
+            const data = await api(`/flow/rezervace/${id}/storno/`, {
+              method: 'DELETE',
+              body: JSON.stringify({
+                duvod: duvodZakaznik,
+                email_predmet: reviewed.predmet,
+                email_text: reviewed.text,
+              }),
+            });
+            if (data?.zaloha_zaplacena || left?.zaloha_ok_at) {
+              showZalohaStornoBanner(data || { zaloha_zaplacena: true, zaloha_castka: left?.zaloha_castka });
+              showMsg($(msgSel), 'Stornováno. !! POZOR — zaplacená záloha.', false);
+            } else {
+              showMsg($(msgSel), 'Rezervace stornována.', true);
+            }
             refreshLeft(id);
           } catch (err) {
             showMsg($(msgSel), err.message, false);
@@ -1641,12 +1914,24 @@ $('#noshow-cancel')?.addEventListener('click', closeNoshow);
 $('#noshow-confirm')?.addEventListener('click', async () => {
   if (!noshowTargetId) return;
   const msg = $('#noshow-msg');
+  const sendMail = $('#noshow-send-email')?.checked;
+  const targetId = noshowTargetId;
   try {
-    await api(`/flow/rezervace/${noshowTargetId}/noshow/`, {
+    let emailPayload = { odeslat_upozorneni: !!sendMail };
+    if (sendMail) {
+      const reviewed = await reviewCustomerEmail(targetId, 'noshow', {}, {
+        confirmLabel: 'Uložit NO-show a odeslat',
+      });
+      if (!reviewed) return;
+      emailPayload = {
+        odeslat_upozorneni: true,
+        email_predmet: reviewed.predmet,
+        email_text: reviewed.text,
+      };
+    }
+    await api(`/flow/rezervace/${targetId}/noshow/`, {
       method: 'POST',
-      body: JSON.stringify({
-        odeslat_upozorneni: $('#noshow-send-email').checked,
-      }),
+      body: JSON.stringify(emailPayload),
     });
     closeNoshow();
     loadWeekList(false);
@@ -1661,17 +1946,30 @@ $('#form-platba')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!platbaTarget) return;
   const msg = $('#platba-msg');
+  const targetId = platbaTarget.id;
+  const payload = {
+    castka: $('#platba-castka').value.trim(),
+    ucet: $('#platba-ucet').value.trim(),
+    variabilni_symbol: $('#platba-vs').value.trim(),
+    zaloha: platbaIsZaloha,
+  };
   try {
-    const data = await api(`/flow/rezervace/${platbaTarget.id}/platba/`, {
+    const reviewed = await reviewCustomerEmail(
+      targetId,
+      platbaIsZaloha ? 'zaloha' : 'platba',
+      payload,
+      { confirmLabel: 'Odeslat e-mail s QR' },
+    );
+    if (!reviewed) return;
+    closePlatba();
+    const data = await api(`/flow/rezervace/${targetId}/platba/`, {
       method: 'POST',
       body: JSON.stringify({
-        castka: $('#platba-castka').value.trim(),
-        ucet: $('#platba-ucet').value.trim(),
-        variabilni_symbol: $('#platba-vs').value.trim(),
-        zaloha: platbaIsZaloha,
+        ...payload,
+        email_predmet: reviewed.predmet,
+        email_text: reviewed.text,
       }),
     });
-    closePlatba();
     $('#platba-qr-info').textContent = `${data.castka} Kč · účet ${data.ucet} · VS ${data.variabilni_symbol}`;
     $('#platba-qr-image').src = `data:image/png;base64,${data.qr_png_base64}`;
     $('#platba-qr-modal').classList.remove('hidden');
@@ -1709,6 +2007,37 @@ function showOwnerAdminHome() {
   }
   $('#own-volno-konflikt')?.classList.add('hidden');
   refreshOwnerVolnoBadge(currentUser);
+  const card = $('#owner-card-persona');
+  if (card) {
+    const on = canSwitchPersona(currentUser);
+    const st = card.querySelector('.owner-admin-status');
+    if (st) st.textContent = on ? 'Zapnuto' : 'Nastavit';
+  }
+}
+
+async function loadOwnerPersona() {
+  const msg = $('#owner-admin-msg');
+  const stav = $('#own-persona-stav');
+  const check = $('#own-persona-check');
+  const wrap = $('#own-persona-jmeno-wrap');
+  try {
+    const p = await api('/flow/owner/pracovni-persona/');
+    const linked = !!p?.ano;
+    if (check) check.checked = linked;
+    if (stav) {
+      stav.textContent = linked
+        ? `Zapnuto — na webu: ${p.pracovni?.jmeno || 'pracovní profil'}. Doplňte rozvrh a služby ve Správě → Staff.`
+        : 'Vypnuto — účet Manager je jen pro správu.';
+    }
+    wrap?.classList.toggle('hidden', linked);
+    if (!linked) {
+      const def = currentUser?.persona?.majitel?.jmeno || currentUser?.zamestnanec?.jmeno || '';
+      const inp = $('#own-persona-jmeno');
+      if (inp && !inp.value) inp.value = def;
+    }
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
 }
 
 function refreshOwnerVolnoBadge(user = currentUser) {
@@ -1889,14 +2218,20 @@ $('#form-own-add-volno')?.addEventListener('submit', async (e) => {
 });
 
 async function openOwnerSection(section) {
-  if (!isOwnerUser()) return;
-  const ok = ['pravidla', 'sablony', 'personal', 'prirazeni', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
+  if (!isOwnerUser() && section !== 'persona') return;
+  // persona setup jen jako majitelka (aktivní persona owner)
+  if (section === 'persona' && !isOwnerUser()) return;
+  const ok = ['persona', 'pravidla', 'sablony', 'personal', 'prirazeni', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
   if (!ok.includes(section)) return;
   $('#owner-admin-home')?.classList.add('hidden');
   $('#owner-admin-detail')?.classList.remove('hidden');
   $$('.owner-section').forEach((el) => el.classList.add('hidden'));
   $(`#owner-section-${section}`)?.classList.remove('hidden');
   try {
+    if (section === 'persona') {
+      await loadOwnerPersona();
+      return;
+    }
     if (section === 'personal') {
       await loadOwnerPersonal();
       return;
@@ -2158,7 +2493,7 @@ async function loadOwnerStatistiky() {
     <dt>Storno</dt><dd>${esc(data.storno)} (${esc(data.storno_procent)} %)</dd>
     <dt>NO-show</dt><dd>${esc(data.no_show)}</dd>
     <dt>Top služby</dt><dd>${sluzby}</dd>
-    <dt>Top personál</dt><dd>${staff}</dd>
+    <dt>Top Staff</dt><dd>${staff}</dd>
   </dl>`;
 }
 
@@ -2179,7 +2514,7 @@ function renderOwnerPrirazeni(data) {
   const sluzby = data.sluzby || [];
   const prirazeni = data.prirazeni || {};
   if (!staff.length) {
-    wrap.innerHTML = '<p class="empty">Nejdřív přidejte personál ve Správě → Personál.</p>';
+    wrap.innerHTML = '<p class="empty">Nejdřív přidejte Staff ve Správě → Staff.</p>';
     return;
   }
   if (!sluzby.length) {
@@ -2224,12 +2559,22 @@ async function loadOwnerPersonal() {
   renderOwnerPersonal(data.zamestnanci || []);
 }
 
+function personalNavLabel(z) {
+  if (!z) return '—';
+  if (z.role === 'majitel') return `${z.jmeno} (Manager)`;
+  const workId = currentUser?.persona?.pracovnik?.id;
+  if (workId && Number(z.id) === Number(workId)) {
+    return `${z.jmeno} (Staff · Manager)`;
+  }
+  return z.jmeno;
+}
+
 function renderOwnerPersonal(list) {
   const box = $('#own-personal-list');
   if (!box) return;
   ownerPersonalCache = list || [];
   if (!ownerPersonalCache.length) {
-    box.innerHTML = '<p class="empty">Zatím žádný personál.</p>';
+    box.innerHTML = '<p class="empty">Zatím žádný Staff.</p>';
     return;
   }
   if (
@@ -2247,7 +2592,7 @@ function renderOwnerPersonal(list) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `own-personal-nav-btn${z.id === ownerPersonalSelectedId ? ' is-active' : ''}`;
-    btn.textContent = z.jmeno + (z.role === 'majitel' ? ' (majitel)' : '');
+    btn.textContent = personalNavLabel(z);
     btn.addEventListener('click', () => {
       ownerPersonalSelectedId = z.id;
       renderOwnerPersonal(ownerPersonalCache);
@@ -2263,11 +2608,17 @@ function renderOwnerPersonal(list) {
 
 function buildOwnerPersonalCard(z) {
   const isOwner = z.role === 'majitel';
+  const workId = currentUser?.persona?.pracovnik?.id;
+  const isManagerStaff = !isOwner && workId && Number(z.id) === Number(workId);
   const flow = z.flow || {};
   const ucet = flow.ucet || null;
   const card = document.createElement('article');
   card.className = 'own-personal-card';
   card.dataset.id = String(z.id);
+
+  const roleBadge = isOwner
+    ? ' <span class="role-badge">Manager</span>'
+    : (isManagerStaff ? ' <span class="role-badge">Staff · Manager</span>' : '');
 
   const rozvrhRows = (z.rozvrh || []).map((r) => {
     const volno = !!r.volno;
@@ -2284,11 +2635,13 @@ function buildOwnerPersonalCard(z) {
   card.innerHTML = `
     <div class="own-personal-head">
       <div>
-        <h3>${esc(z.jmeno)}${isOwner ? ' <span class="role-badge">Majitel</span>' : ''}</h3>
+        <h3>${esc(z.jmeno)}${roleBadge}</h3>
         <p class="hint tiny">${esc(z.specializace || '')}</p>
       </div>
     </div>
-    ${isOwner ? '<p class="hint tiny">Majitel zde nemá provozní rozvrh ani FLOW reset — heslo mění ve web-adminu.</p>' : `
+    ${isOwner ? '<p class="hint tiny">Manager zde nemá provozní rozvrh ani FLOW reset — heslo mění ve web-adminu. Pokud Manager také obsluhuje, upravujte rozvrh u položky Staff · Manager.</p>' : ''}
+    ${isManagerStaff ? '<p class="hint tiny">Toto je pracovní profil Managera (web + rezervace). Stejný login — nahoře přepínač Manager / Staff.</p>' : ''}
+    ${isOwner ? '' : `
     <label>Jméno
       <input type="text" class="op-jmeno" value="${esc(z.jmeno || '')}">
     </label>
@@ -2724,12 +3077,54 @@ $('#own-audit-prev')?.addEventListener('click', () => {
 });
 $('#own-audit-next')?.addEventListener('click', () => loadOwnerAudit(ownerAuditPage + 1));
 
-$$('#owner-admin-grid [data-owner-section]').forEach((el) => {
+$$('#owner-admin-home [data-owner-section]').forEach((el) => {
   el.addEventListener('click', () => {
     if (el.classList.contains('is-disabled')) return;
     openOwnerSection(el.dataset.ownerSection);
   });
 });
+
+$$('#persona-switch .persona-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const persona = btn.dataset.persona;
+    if (!persona || currentUser?.persona?.aktivni === persona) return;
+    try {
+      await switchPersona(persona);
+    } catch (err) {
+      alert(err.message || 'Přepnutí se nepodařilo.');
+    }
+  });
+});
+
+$('#form-owner-persona')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+});
+
+$('#own-persona-save')?.addEventListener('click', async () => {
+  const msg = $('#owner-admin-msg');
+  const ano = !!$('#own-persona-check')?.checked;
+  try {
+    const data = await api('/flow/owner/pracovni-persona/', {
+      method: ano ? 'POST' : 'DELETE',
+      body: ano
+        ? JSON.stringify({
+            ano: true,
+            vytvorit: true,
+            jmeno: ($('#own-persona-jmeno')?.value || '').trim(),
+          })
+        : undefined,
+    });
+    currentUser = data;
+    applyPersonaUi(data);
+    showMsg(msg, ano ? 'Zapnuto — přepínač nahoře ve FLOW.' : 'Vypnuto.', true);
+    await loadOwnerPersona();
+    showOwnerAdminHome();
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
+});
+
+$('#own-persona-off')?.addEventListener('click', async () => {});
 
 $('#btn-own-prirazeni-save')?.addEventListener('click', async () => {
   const msg = $('#owner-admin-msg');
@@ -2786,4 +3181,5 @@ $('#btn-own-sablony-save')?.addEventListener('click', async () => {
   }
 });
 
+wireEmailPreviewSheet();
 boot();

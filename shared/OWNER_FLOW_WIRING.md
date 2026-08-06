@@ -30,7 +30,9 @@ Backend už je společný: `POST /api/salon/<id>/flow/aktivace/` + `ensure_owner
    window.UlovOwnerFlow?.onAdminShown?.();
    ```
 
-Modul sám doplní box **Přejít do FLOW** (záložka Základ) a záložku **Heslo**.
+Modul sám doplní box **Přejít do FLOW**, tick box **Manager také pracuje** (záložka Základ) a záložku **Heslo**.
+
+Tick box vytvoří pracovní profil na webu (personál + rezervace) a přepínač rolí ve FLOW pod jedním loginem.
 
 ## Checklist nového pro partnera
 
@@ -39,6 +41,8 @@ Modul sám doplní box **Přejít do FLOW** (záložka Základ) a záložku **He
 3. Deploy `shared/owner-flow-admin.js` spolu s webem (`www/shared/` / `www-staging/shared/`)
 4. Smoke: ⚙ → přihlášení → **Přejít do FLOW** → login ve FLOW stejným e-mailem/heslem
 5. Partner-admin zůstává záložní cesta aktivace (ops)
+
+Testovací e-maily majitelů všech dem: [`deploy/TESTOVACI_PRISTUPY.md`](../deploy/TESTOVACI_PRISTUPY.md).
 
 ## Co nedělat
 

@@ -1,0 +1,15 @@
+Název;Účel;Zpracovávané údaje;Země;Mimo EHP;Povinné;Poznámka;Skupina
+Hetzner Online GmbH;Hosting VPS (API Nginx Docker PostgreSQL Redis Celery zálohy staging);Celá provozní DB rezervace e-maily personál SMTP credentials faktury logy;Německo;Ne;Ano;Primární infrastruktura. Zálohy lokálně na VPS.;A
+BunnyWay d.o.o. (Bunny.net);Object storage + CDN obrázků;Fotografie/média; IP přes CDN; ne rezervační e-maily;EU / CDN edge;Možné (CDN);Ano;Neukládá DB. Transfer SCC/DPF dle Bunny.;A
+Forpsi / Active 24;DNS + platformní SMTP; často SMTP/IMAP Partnerů;DNS; poptávky; transakční maily; IMAP schránka;ČR / EU;Ne;Ano;LIVE smtp.forpsi.com; NS forpsi;A
+Let's Encrypt (ISRG) + Certbot;TLS/SSL;Domény ACME kontakt CA;USA + validace EU;Ano (CA);Ano;Nepřistupuje k DB;A
+Google LLC (Fonts);Webové fonty;IP User-Agent Referer;USA;Ano DPF/SCC;Ne;Prohlížeč návštěvníka;B
+Google LLC (Maps Embed);Mapy;IP; adresa v URL;USA;Ano DPF/SCC;Ne;Embed;B
+Google LLC (Recenze odkaz);CTA recenze;Při kliknutí Google; Ulov jen URL;USA;Ano;Ne;Není API;B
+Cloudflare (cdnjs);Font Awesome CSS;IP;Globální;Ano DPF/SCC;Ne;Není WAF ulovklienty.cz;B
+SMTP/IMAP Partnera (typ. Forpsi);Transakční maily; FLOW Mail;E-mail jméno termín QR; IMAP obsah;Dle Partnera;Záleží;Ano pro maily;Partner = správce;C
+Meta (WhatsApp);Podpora wa.me;Obsah zpráv podpory;USA;Ano;Ne;Není produktové API;C
+GitHub (Microsoft);Git + deploy;Zdrojový kód;USA;Ano;Ano pro vývoj;Ne ostrá rezervační DB;D
+Docker Hub;Pull image;Žádná aplikační PII;USA;Ano;Ano pro Docker;Nezpracovává DB;D
+Sentry;Monitoring chyb;—;—;—;Ne;LIVE vypnuto;E
+Brevo/SendGrid/Stripe/GA/OpenAI;—;—;—;—;—;Nenalezeno v LIVE;E

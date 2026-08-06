@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Podklad — Seznam subzpracovatelů | ULOV KLIENTY</title>
+  <link rel="stylesheet" href="../presentace/vop.css?v=6">
+  <style>
+    .spec-table td { font-size: 8.5pt; vertical-align: top; }
+    .spec-table th { font-size: 8.5pt; }
+    .group-label {
+      margin: 1.5rem 0 0.5rem;
+      font-size: 11pt;
+      color: #1e3a5f;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .intro-box {
+      padding: 12px 14px;
+      background: #fffbeb;
+      border-left: 3px solid #d4a017;
+      font-size: 9.5pt;
+      margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="print-bar no-print">
+    <span>
+      <a href="../presentace/">← ULOV KLIENTY</a>
+      Podklad pro Přílohu č.&nbsp;3
+    </span>
+    <button type="button" onclick="window.print()">Uložit jako PDF / Tisk</button>
+  </div>
+
+  <div class="doc-sheet">
+    <header class="doc-header">
+      <p class="doc-brand">ULOV KLIENTY · Interní podklad pro právní</p>
+      <h1 class="doc-title">Seznam externích služeb a subzpracovatelů</h1>
+      <p class="doc-subtitle">
+        Podklad pro vytvoření Přílohy č.&nbsp;3 ke Smlouvě o partnerství a DPA
+      </p>
+      <dl class="doc-meta">
+        <div><dt>Typ</dt><dd>Pracovní inventář (ne finální právní text)</dd></div>
+        <div><dt>Datum</dt><dd>srpen 2026</dd></div>
+        <div><dt>Zdroj</dt><dd>kód + LIVE konfigurace</dd></div>
+      </dl>
+    </header>
+
+    <div class="intro-box">
+      <strong>Jak s tím pracovat:</strong> Toto není canvas z Cursoru — je to běžný HTML soubor.
+      Otevřete v Chrome/Edge → tlačítko „Uložit jako PDF / Tisk“ → PDF pošlete právnímu.
+      Skupina A = doporučený základ Přílohy č.&nbsp;3. Skupiny B–D = transparentnost.
+      Skupina E = aktuálně nepoužívané / nenalezené.
+    </div>
+
+    <h2 class="group-label">A. Subzpracovatelé provozní infrastruktury (základ Přílohy č.&nbsp;3)</h2>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Účel</th>
+          <th>Zpracovávané údaje</th>
+          <th>Země</th>
+          <th>Mimo EHP</th>
+          <th>Povinné</th>
+          <th>Poznámka</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hetzner Online GmbH</td>
+          <td>Hosting VPS (API, Nginx, Docker, PostgreSQL, Redis, Celery, zálohy, staging)</td>
+          <td>Celá provozní DB: rezervace, e-maily zákazníků, personál, SMTP credentials partnerů, faktury partnerů, logy (IP, URL)</td>
+          <td>Německo (Falkenstein / Nuremberg)</td>
+          <td>Ne</td>
+          <td>Ano</td>
+          <td>Primární infrastruktura. Postgres/Redis na stejném VPS. Zálohy lokálně na VPS.</td>
+        </tr>
+        <tr>
+          <td>BunnyWay d.o.o. (Bunny.net)</td>
+          <td>Object storage + CDN (obrázky webů)</td>
+          <td>Fotografie/média (vč. personálu); přes CDN i IP návštěvníků; ne rezervační e-maily</td>
+          <td>EU (Slovinsko / storage); CDN: haklweb.b-cdn.net</td>
+          <td>Možné (CDN edge mimo EHP)</td>
+          <td>Ano (obrázky)</td>
+          <td>Neukládá obsah DB. Transfer: SCC / DPF dle podmínek Bunny.</td>
+        </tr>
+        <tr>
+          <td>Forpsi / Active 24</td>
+          <td>DNS + platformní SMTP (info@ulovklienty.cz); často i SMTP/IMAP Partnerů</td>
+          <td>DNS metadata; poptávky; transakční maily; při IMAP obsah schránky Partnera</td>
+          <td>Česká republika / EU</td>
+          <td>Ne</td>
+          <td>Ano (DNS + platformní mail)</td>
+          <td>LIVE: smtp.forpsi.com; NS ns.forpsi.*. Partner může mít jiný SMTP.</td>
+        </tr>
+        <tr>
+          <td>Let's Encrypt (ISRG) + Certbot</td>
+          <td>TLS/SSL certifikáty</td>
+          <td>Domény, ACME, kontaktní e-mail CA (minimální)</td>
+          <td>USA (ISRG) + validace na EU serveru</td>
+          <td>Ano (komunikace s CA)</td>
+          <td>Ano</td>
+          <td>Nepřistupuje k DB ani rezervacím.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="group-label">B. Front-end služby (prohlížeč návštěvníka)</h2>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Účel</th>
+          <th>Zpracovávané údaje</th>
+          <th>Země</th>
+          <th>Mimo EHP</th>
+          <th>Povinné</th>
+          <th>Poznámka</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Google LLC (Fonts)</td>
+          <td>Webové fonty</td>
+          <td>IP, User-Agent, Referer</td>
+          <td>USA / globální</td>
+          <td>Ano — DPF / SCC</td>
+          <td>Ne</td>
+          <td>Volání z prohlížeče; neukládá rezervační DB.</td>
+        </tr>
+        <tr>
+          <td>Google LLC (Maps Embed)</td>
+          <td>Mapy na webech</td>
+          <td>IP; adresa provozovny v URL</td>
+          <td>USA / globální</td>
+          <td>Ano — DPF / SCC</td>
+          <td>Ne</td>
+          <td>Embed maps.google.com</td>
+        </tr>
+        <tr>
+          <td>Google LLC (Recenze — odkaz)</td>
+          <td>CTA recenze po návštěvě</td>
+          <td>Při kliknutí Google; Ulov jen URL</td>
+          <td>USA / globální</td>
+          <td>Ano (při kliknutí)</td>
+          <td>Ne</td>
+          <td>Není API; URL nastaví Partner.</td>
+        </tr>
+        <tr>
+          <td>Cloudflare, Inc. (cdnjs)</td>
+          <td>Font Awesome CSS CDN</td>
+          <td>IP při načtení CSS</td>
+          <td>Globální</td>
+          <td>Ano — DPF / SCC</td>
+          <td>Ne</td>
+          <td>Není WAF/proxy pro ulovklienty.cz.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="group-label">C. Poskytovatelé Partnera a komunikační kanály</h2>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Účel</th>
+          <th>Zpracovávané údaje</th>
+          <th>Země</th>
+          <th>Mimo EHP</th>
+          <th>Povinné</th>
+          <th>Poznámka</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SMTP/IMAP zvolený Partnerem (typicky Forpsi; může být Seznam, Google Workspace, M365…)</td>
+          <td>Transakční e-maily rezervací; volitelně FLOW Mail</td>
+          <td>E-mail, jméno, termín, služba, QR; IMAP = obsah schránky</td>
+          <td>Dle poskytovatele Partnera</td>
+          <td>Záleží na poskytovateli</td>
+          <td>Ano pro transakční maily</td>
+          <td>Partner = správce; Ulov předává na SMTP Partnera. Do Přílohy 3 často jako „SMTP Partnera“.</td>
+        </tr>
+        <tr>
+          <td>Meta Platforms (WhatsApp)</td>
+          <td>Podpora (wa.me), ne produktové API</td>
+          <td>Obsah zpráv při kontaktu podpory</td>
+          <td>USA / globální</td>
+          <td>Ano — DPF / SCC</td>
+          <td>Ne</td>
+          <td>Není integrovaný messaging stack.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="group-label">D. Vývoj a deploy</h2>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Účel</th>
+          <th>Zpracovávané údaje</th>
+          <th>Země</th>
+          <th>Mimo EHP</th>
+          <th>Povinné</th>
+          <th>Poznámka</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>GitHub, Inc. (Microsoft)</td>
+          <td>Git + deploy pipeline</td>
+          <td>Zdrojový kód (nemělo by být ostré PII)</td>
+          <td>USA</td>
+          <td>Ano — DPF / SCC</td>
+          <td>Ano pro vývoj</td>
+          <td>Není provozní úložiště rezervací.</td>
+        </tr>
+        <tr>
+          <td>Docker Hub</td>
+          <td>Pull base image</td>
+          <td>Žádná aplikační PII</td>
+          <td>USA / globální</td>
+          <td>Ano</td>
+          <td>Ano pro Docker deploy</td>
+          <td>Nezpracovává DB Partnerů.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="group-label">E. Neaktivní / nenalezené</h2>
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Účel</th>
+          <th>Poznámka</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Sentry</td>
+          <td>Monitoring chyb (volitelné v kódu)</td>
+          <td>LIVE: SENTRY_DSN není nastaven — nepoužíváno.</td>
+        </tr>
+        <tr>
+          <td>Uptime Kuma / Better Stack</td>
+          <td>Uptime monitoring</td>
+          <td>Jen doporučení v dokumentaci; není potvrzený vendor.</td>
+        </tr>
+        <tr>
+          <td>Brevo, SendGrid, Stripe, GoPay, reCAPTCHA, GA, OpenAI…</td>
+          <td>—</td>
+          <td>V repu a LIVE konfiguraci nenalezeno. QR platby = lokální SPAYD bez brány.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="footer-note">
+      ULOV KLIENTY · Interní podklad · srpen 2026<br>
+      Tento dokument slouží jako technický podklad pro právní poradce.
+      Finální znění Přílohy č.&nbsp;3 schvaluje Poskytovatel / právní poradce.
+    </p>
+  </div>
+</body>
+</html>

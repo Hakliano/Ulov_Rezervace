@@ -564,6 +564,20 @@ img { display: block; max-width: 100%; }
   background: var(--navy);
 }
 .personel-edit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+.role-pill {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: #1a1a1a;
+  background: var(--gold, #c9a962);
+  border: 1px solid var(--gold, #c9a962);
+}
+
 .personel-edit-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
 .p-foto-preview { margin: 0.5rem 0; max-height: 120px; overflow: hidden; }
 .p-foto-preview img { max-height: 120px; width: auto; }

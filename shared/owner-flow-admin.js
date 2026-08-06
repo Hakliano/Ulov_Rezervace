@@ -1,5 +1,6 @@
 /**
- * Schválené chování majitele ze salon2 — FLOW aktivace + změna sdíleného hesla.
+ * Schválené chování majitele ze salon2 — FLOW aktivace + změna sdíleného hesla
+ * + tick box „Manager také pracuje“.
  *
  * Zapojení (povinné u každého partner webu):
  *   1) <script src="../shared/owner-flow-admin.js"></script> před app.js
@@ -12,6 +13,29 @@
   'use strict';
 
   const CFG = () => global.UlovOwnerFlowConfig || {};
+
+  /** Zlatý štítek Manager — funguje i bez --gold v CSS konkrétního webu. */
+  function ensureRolePillStyles() {
+    if (document.getElementById('ulov-role-pill-css')) return;
+    const style = document.createElement('style');
+    style.id = 'ulov-role-pill-css';
+    style.textContent = `
+      .role-pill {
+        display: inline-block;
+        margin-left: 0.45rem;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        vertical-align: middle;
+        color: #1a1a1a !important;
+        background: var(--gold, #c9a962) !important;
+        border: 1px solid var(--gold, #c9a962) !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   function flowAppUrl() {
     const h = location.hostname;
@@ -66,6 +90,7 @@
   }
 
   function ensureUi() {
+    ensureRolePillStyles();
     const edit = document.getElementById('edit-section');
     if (!edit) return false;
 
@@ -93,7 +118,7 @@
       box.innerHTML = `
         <h4>Provozní den — FLOW</h4>
         <p class="admin-hint" id="flow-onboard-hint">
-          Web můžete mít i bez rezervací. Až budete chtít kalendář a personál v provozu,
+          Web můžete mít i bez rezervací. Až budete chtít kalendář a Staff v provozu,
           aktivujte FLOW — přihlášení stejným e-mailem a heslem.
         </p>
         <p id="flow-onboard-msg" class="status-msg"></p>
@@ -102,13 +127,36 @@
       zaklad.insertBefore(box, zaklad.firstChild);
     }
 
+    if (zaklad && !document.getElementById('owner-works-box')) {
+      const box = document.createElement('div');
+      box.id = 'owner-works-box';
+      box.className = 'upload-box';
+      box.innerHTML = `
+        <h4>Manager také pracuje</h4>
+        <p class="admin-hint">
+          Zapne pracovní profil na webu (Staff + rezervace) a přepínač
+          Manager / Staff ve FLOW — jeden login, bez druhého hesla.
+        </p>
+        <label class="checkbox" style="display:flex;gap:0.5rem;align-items:flex-start;margin:0.75rem 0;">
+          <input type="checkbox" id="owner-works-check">
+          <span>Ano — Manager také obsluhuje zákazníky</span>
+        </label>
+        <p id="owner-works-detail" class="admin-hint"></p>
+        <p id="owner-works-msg" class="status-msg"></p>
+      `;
+      const flowBox = document.getElementById('flow-onboard-box');
+      if (flowBox && flowBox.nextSibling) zaklad.insertBefore(box, flowBox.nextSibling);
+      else if (flowBox) flowBox.after(box);
+      else zaklad.insertBefore(box, zaklad.firstChild);
+    }
+
     if (!edit.querySelector('[data-panel="heslo"]')) {
       const panel = document.createElement('div');
       panel.className = 'tab-panel';
       panel.dataset.panel = 'heslo';
       panel.innerHTML = `
         <p class="admin-hint">
-          Změna sdíleného hesla majitele. Stejné heslo platí pro webovou administraci i pro FLOW.
+          Změna sdíleného hesla Manager. Stejné heslo platí pro webovou administraci i pro FLOW.
           Nejde o reset — reset hesla zaměstnanců bude jen ve FLOW.
         </p>
         <form id="form-owner-password" class="login-form">
@@ -135,11 +183,13 @@
     if (wired) return;
     const btn = document.getElementById('btn-goto-flow');
     const form = document.getElementById('form-owner-password');
-    if (!btn && !form) return;
+    const works = document.getElementById('owner-works-check');
+    if (!btn && !form && !works) return;
     wired = true;
 
     btn?.addEventListener('click', handleGotoFlow);
     form?.addEventListener('submit', handlePasswordChange);
+    works?.addEventListener('change', handleOwnerWorksToggle);
 
     // Záložka Heslo — pokud app.js nezná panel, přepneme sami
     document.getElementById('edit-section')?.addEventListener('click', (e) => {
@@ -151,6 +201,79 @@
         p.classList.toggle('active', p.dataset.panel === 'heslo');
       });
     });
+  }
+
+  function escHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function applyOwnerWorksUi(payload) {
+    const check = document.getElementById('owner-works-check');
+    const detail = document.getElementById('owner-works-detail');
+    if (!check) return;
+    const ano = !!payload?.ano;
+    check.checked = ano;
+    if (detail) {
+      if (ano && payload.pracovni) {
+        detail.innerHTML =
+          `Pracovní profil: <strong>${escHtml(payload.pracovni.jmeno)}</strong> ` +
+          `<span class="role-pill" title="Manager">Manager</span>. ` +
+          'Upravte rozvrh ve Personálu / Staff; ve FLOW nahoře přepnete Manager / Staff.';
+      } else {
+        detail.textContent =
+          'Vypnuto — účet Manager zůstává jen pro správu, na webu se nezobrazuje.';
+      }
+    }
+  }
+
+  async function refreshOwnerWorks() {
+    const sid = salonId();
+    if (!token() || !sid) return;
+    try {
+      const data = await api(`/salon/${sid}/flow/majitelka-pracuje/`);
+      applyOwnerWorksUi(data);
+    } catch (_) {
+      /* FLOW ještě nemusí být aktivní — checkbox stejně půjde zapnout (API zajistí FLOW) */
+    }
+  }
+
+  async function handleOwnerWorksToggle() {
+    const check = document.getElementById('owner-works-check');
+    const msg = document.getElementById('owner-works-msg');
+    const sid = salonId();
+    if (!check || !sid || !token() || !isMajitel()) return;
+    const ano = !!check.checked;
+    if (msg) {
+      msg.textContent = ano ? 'Zapínám…' : 'Vypínám…';
+      msg.className = 'status-msg';
+    }
+    check.disabled = true;
+    try {
+      const data = await api(`/salon/${sid}/flow/majitelka-pracuje/`, {
+        method: 'PUT',
+        body: JSON.stringify({ ano }),
+      });
+      applyOwnerWorksUi(data);
+      if (msg) {
+        msg.textContent = ano
+          ? 'Zapnuto. Doplňte rozvrh u pracovního profilu ve Staff.'
+          : 'Vypnuto.';
+        msg.className = 'status-msg success';
+      }
+      await refreshFlowOnboard();
+    } catch (err) {
+      check.checked = !ano;
+      if (msg) {
+        msg.textContent = err.message || 'Uložení selhalo.';
+        msg.className = 'status-msg error';
+      }
+    } finally {
+      check.disabled = false;
+    }
   }
 
   async function refreshFlowOnboard() {
@@ -165,9 +288,10 @@
         btn.textContent = 'Otevřít FLOW';
       } else {
         hint.textContent =
-          'Web můžete mít i bez rezervací. Až budete chtít kalendář a personál v provozu, aktivujte FLOW — přihlášení stejným e-mailem a heslem.';
+          'Web můžete mít i bez rezervací. Až budete chtít kalendář a Staff v provozu, aktivujte FLOW — přihlášení stejným e-mailem a heslem.';
         btn.textContent = 'Přejít do FLOW';
       }
+      if (data.majitelka_pracuje) applyOwnerWorksUi(data.majitelka_pracuje);
     } catch (err) {
       hint.textContent = err.message || 'Stav FLOW se nepodařilo načíst.';
     }
@@ -241,16 +365,21 @@
     if (!isMajitel()) return;
     ensureUi();
     refreshFlowOnboard();
+    refreshOwnerWorks();
   }
 
   function boot() {
     ensureUi();
-    if (token() && isMajitel()) refreshFlowOnboard();
+    if (token() && isMajitel()) {
+      refreshFlowOnboard();
+      refreshOwnerWorks();
+    }
   }
 
   global.UlovOwnerFlow = {
     ensureUi,
     refreshFlowOnboard,
+    refreshOwnerWorks,
     onAdminShown,
     flowAppUrl,
     handleGotoFlow,

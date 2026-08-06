@@ -12,7 +12,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from flow.auth import get_flow_user_from_request
+from flow.auth import flow_zam, get_flow_user_from_request
 from flow.customer_card_emails import email_customer_card_confirm
 from flow.customer_card_models import CustomerCard, CustomerVisit
 from flow.customer_card_serializers import (
@@ -67,7 +67,8 @@ class CustomerCardListCreateView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        autor_jmeno = user.zamestnanec.jmeno if user.zamestnanec_id else user.email
+        zam = flow_zam(user)
+        autor_jmeno = zam.jmeno if zam else user.email
         try:
             with transaction.atomic():
                 card = CustomerCard(
@@ -208,7 +209,8 @@ class CustomerCardVisitCreateView(APIView):
             )
         ser = CustomerVisitCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        autor_jmeno = user.zamestnanec.jmeno if user.zamestnanec_id else user.email
+        zam = flow_zam(user)
+        autor_jmeno = zam.jmeno if zam else user.email
         CustomerVisit.objects.create(
             card=card,
             datum=ser.validated_data['datum'],

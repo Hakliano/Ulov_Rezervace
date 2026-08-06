@@ -24,9 +24,15 @@ class Command(BaseCommand):
     help = 'Naplní rezervační data pro salony (nastavení, zaměstnanci, délky služeb)'
 
     def handle(self, *args, **options):
+        from django.conf import settings
+
+        from rezervace.services.booking_urls import DEMO_LIVE_BOOKING_URLS
+
         for salon in Salon.objects.all():
-            port = 5499 + salon.pk
-            default_url = f'http://localhost:{port}/rezervace.html'
+            if settings.DEBUG:
+                default_url = f'http://localhost:{5499 + salon.pk}/rezervace.html'
+            else:
+                default_url = DEMO_LIVE_BOOKING_URLS.get(salon.pk, '')
             nast, _ = RezervacniNastaveni.objects.get_or_create(
                 salon=salon,
                 defaults={
@@ -54,9 +60,11 @@ class Command(BaseCommand):
                 nast.email_odesilatel = salon.email
                 nast.email_jmeno_odesilatele = salon.name
                 nast.save(update_fields=['email_odesilatel', 'email_jmeno_odesilatele'])
-            if not nast.web_rezervace_url:
-                nast.web_rezervace_url = default_url
-                nast.save(update_fields=['web_rezervace_url'])
+            raw = (nast.web_rezervace_url or '').strip()
+            if (not raw) or ((not settings.DEBUG) and 'localhost' in raw.lower()):
+                if default_url:
+                    nast.web_rezervace_url = default_url
+                    nast.save(update_fields=['web_rezervace_url'])
 
             for polozka in salon.cenik.all():
                 dur = DURATION_MAP.get(polozka.nazev, (30, 5))

@@ -11,8 +11,12 @@ Aktualizace: **2026-08-05** (po nasazení Karty zákazníka na LIVE, SHA `612475
 | FLOW | https://www.ulovklienty.cz/flow/ | https://www.staging.ulovklienty.cz/flow/ |
 | Hub | https://www.ulovklienty.cz/ | https://www.staging.ulovklienty.cz/ |
 | API | https://api.ulovklienty.cz/ | https://api-staging.ulovklienty.cz/ |
+| Partner-admin (superadmin) | https://api.ulovklienty.cz/partner-admin/ | https://api-staging.ulovklienty.cz/partner-admin/ |
 
 **Login = e-mail** (už ne username `majitelka`). Stejný e-mail + heslo funguje na webu i ve FLOW.
+
+Partner-admin vyžaduje **Django superuser**, ne login majitelky salonu.  
+Hub `ulovklienty.cz/partner-admin/` přesměruje na API.
 
 Starý sdílený login `majitelka` / `majitelka` je zrušený — každý salon má unikátní e-mail.
 

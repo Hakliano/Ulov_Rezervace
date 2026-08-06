@@ -107,7 +107,7 @@ Dotazy: {{ telefon }}
 
 DEFAULT_TEXT_STORNO = """Dobrý den {{ jmeno }},
 
-velice se omlouváme, ale vaši rezervaci v salonu {{ salon.name }} bohužel musíme zrušit.
+{% if kdo == 'salon' %}velice se omlouváme, ale vaši rezervaci v provozovně {{ salon.name }} bohužel musíme zrušit.{% else %}potvrzujeme zrušení vaší rezervace v provozovně {{ salon.name }}.{% endif %}
 
 Původní termín: {{ termin }}
 Služby: {{ sluzby }}
@@ -115,7 +115,14 @@ Služby: {{ sluzby }}
 {% if duvod %}
 Důvod zrušení: {{ duvod }}
 {% endif %}
+{% if zaloha_ok %}
+{{ zaloha_blok }}
+{% endif %}
+{% if kdo == 'salon' %}
 Je nám líto za komplikace, které vám tím vznikají. Rádi vám pomůžeme vybrat jiný termín — ozvěte se nám prosím na {{ telefon }}{% if adresa %}, nebo nás navštivte na adrese {{ adresa }}{% endif %}.
+{% else %}
+Pokud potřebujete jiný termín, ozvěte se nám prosím na {{ telefon }}.
+{% endif %}
 
 Děkujeme za pochopení.
 S pozdravem
@@ -179,6 +186,8 @@ NOTIFIKACE_TAGY = [
     {'tag': '{{ variabilni_symbol }}', 'popis': 'Variabilní symbol (platba)', 'priklad': '20260705'},
     {'tag': '{{ kdo }}', 'popis': 'Kdo rezervaci zrušil (salon / zákazník)', 'priklad': 'salon'},
     {'tag': '{{ duvod }}', 'popis': 'Důvod storna (např. dovolená / nezaplacená záloha)', 'priklad': 'Nezaplacená záloha'},
+    {'tag': '{% if zaloha_ok %}…{% endif %}', 'popis': 'Blok jen když partner potvrdil přijetí zálohy', 'priklad': 'viz výchozí storno'},
+    {'tag': '{{ zaloha_blok }}', 'popis': 'Hotový text o záloze + telefon provozovny', 'priklad': 'Na tuto službu byla…'},
     {'tag': '{% if rizikova %}…{% endif %}', 'popis': 'Blok jen u rizikové služby (záloha možná)', 'priklad': 'viz výchozí potvrzení'},
 ]
 

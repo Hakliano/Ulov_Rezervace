@@ -92,11 +92,21 @@ function personelRozvrhRows(rozvrh) {
   `).join('');
 }
 
+function personelIsManagerProfile(z) {
+  if (!z) return false;
+  if (z.role === 'majitel') return true;
+  const mp = window.__majitelkaPracuje;
+  return !!(mp?.ano && mp.pracovni && Number(mp.pracovni.id) === Number(z.id));
+}
+
 function personelEditCard(z) {
   const id = z.id || '';
+  const managerBadge = personelIsManagerProfile(z)
+    ? '<span class="role-pill" title="Manager">Manager</span>'
+    : '';
   return `<div class="personel-edit-card" data-id="${id}">
     <div class="personel-edit-head">
-      <strong>${esc(z.jmeno || 'Nový člen týmu')}</strong>
+      <strong>${esc(z.jmeno || 'Nový člen týmu')} ${managerBadge}</strong>
       <label class="checkbox"><input type="checkbox" class="p-web" ${z.zobrazit_na_webu !== false ? 'checked' : ''}> Na webu</label>
     </div>
     <label>Jméno<input type="text" class="p-jmeno" value="${esc(z.jmeno)}"></label>
@@ -133,6 +143,7 @@ function collectPersonelRozvrh(card) {
 
 async function loadPersonelAdmin() {
   const data = await apiRezervace(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/`);
+  window.__majitelkaPracuje = data.majitelka_pracuje || { ano: false, pracovni: null };
   personelAdminData = (data.zamestnanci || []).filter((z) => z.role !== 'majitel');
   renderPersonelAdminEdit();
 }

@@ -397,11 +397,14 @@ class RezervaceStornoView(APIView):
         log_historie(rezervace, 'zákazník', 'Storno přes odkaz', pred, {'stav': rezervace.stav}, request=request)
 
         try:
-            email_storno(rezervace)
+            email_storno(rezervace, kdo='zákazník')
         except Exception:
             pass
 
-        return Response({'ok': True, 'message': 'Rezervace byla zrušena.'})
+        from rezervace.services.zaloha_storno import storno_zaloha_payload
+        payload = {'ok': True, 'message': 'Rezervace byla zrušena.'}
+        payload.update(storno_zaloha_payload(rezervace, lze_stornovat=True))
+        return Response(payload)
 
 
 class RezervacePotvrditView(APIView):
@@ -446,13 +449,20 @@ class RezervacePotvrditInfoView(APIView):
 
 class RezervaceStornoInfoView(APIView):
     def get(self, request, pk, token):
+        from rezervace.services.zaloha_storno import storno_zaloha_payload
+
         salon = get_salon(pk)
         rezervace = get_object_or_404(Rezervace, salon=salon, cancel_token=token)
         ok, msg = muze_stornovat(rezervace)
+        zaloha = storno_zaloha_payload(rezervace, lze_stornovat=ok)
+        duvod = msg if not ok else ''
+        if not ok and zaloha.get('zaloha_propada') and zaloha.get('zaloha_info'):
+            duvod = f"{duvod} {zaloha['zaloha_info']}".strip() if duvod else zaloha['zaloha_info']
         return Response({
             'rezervace': RezervaceSerializer(rezervace).data,
             'lze_stornovat': ok,
-            'duvod': msg if not ok else '',
+            'duvod': duvod,
+            **zaloha,
         })
 
 
@@ -783,10 +793,19 @@ class AdminZamestnanciView(APIView):
     def get(self, request, pk):
         salon = get_salon(pk)
         qs = Zamestnanec.objects.filter(salon=salon).prefetch_related('rozvrh', 'absence')
+        from flow.models import FlowUser
+        from flow.persona_service import majitelka_pracuje_payload
         from rezervace.services.oteviraci_doba import vypocti_oteviraci_dobu_tydne
         from salons.serializers import OteviraciDobaSerializer
+
+        fu = (
+            FlowUser.objects.filter(salon=salon, zamestnanec__role='majitel')
+            .select_related('pracovni_zamestnanec')
+            .first()
+        )
         return Response({
             'zamestnanci': ZamestnanecDetailSerializer(qs, many=True).data,
+            'majitelka_pracuje': majitelka_pracuje_payload(fu),
             'oteviraci_doba_salonu': OteviraciDobaSerializer(
                 vypocti_oteviraci_dobu_tydne(salon), many=True,
             ).data,

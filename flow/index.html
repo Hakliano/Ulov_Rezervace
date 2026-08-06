@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=50">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -43,7 +43,7 @@
           <label>Heslo
             <input type="password" id="login-password" required autocomplete="current-password">
           </label>
-          <p class="hint">Majitel: stejný e-mail a heslo jako do webové administrace.</p>
+          <p class="hint">Manager: stejný e-mail a heslo jako do webové administrace.</p>
           <button type="submit" class="btn primary">Přihlásit</button>
           <p id="login-msg" class="msg" hidden></p>
         </form>
@@ -52,13 +52,18 @@
       <section id="view-home" class="app-panel hidden">
         <div id="flow-banner" class="flow-banner hidden" role="status"></div>
         <div id="flow-alerts" class="flow-alerts hidden" aria-live="polite"></div>
+        <div id="storno-zaloha-banner" class="flow-alert zaloha-storno hidden" role="alert" hidden></div>
         <div class="app-head">
           <div>
             <h1 class="app-title">Ahoj, <span id="home-name">—</span></h1>
             <p class="lede tight">
               <span id="home-salon">—</span>
-              <span id="home-role-badge" class="role-badge hidden">Majitel</span>
+              <span id="home-role-badge" class="role-badge hidden">Manager</span>
             </p>
+            <div id="persona-switch" class="persona-switch hidden" role="group" aria-label="Přepínač role">
+              <button type="button" class="persona-btn" data-persona="majitel" id="persona-btn-majitel">Manager</button>
+              <button type="button" class="persona-btn" data-persona="pracovnik" id="persona-btn-pracovnik">Staff</button>
+            </div>
           </div>
           <button type="button" id="btn-flow-back" class="btn primary sm flow-back" disabled title="Zpět na předchozí obrazovku ve FLOW">
             ← Zpět
@@ -75,7 +80,7 @@
           <button type="button" class="tab" data-tab="mesic">Kalendář</button>
           <button type="button" class="tab" data-tab="rozvrh">Pracovní doba</button>
           <button type="button" class="tab hidden" data-tab="overview" id="tab-overview">Overview</button>
-          <button type="button" class="tab" data-tab="absence">Dovolená</button>
+          <button type="button" class="tab" data-tab="absence" id="tab-absence">Dovolená</button>
           <button type="button" class="tab" data-tab="mail" id="tab-mail">Mail</button>
           <button type="button" class="tab" data-tab="karty" id="tab-karty">Zákazníci</button>
           <button type="button" class="tab hidden" data-tab="sprava" id="tab-sprava">Správa</button>
@@ -85,9 +90,9 @@
         <div id="pane-mujden" class="pane">
           <div id="risky-inbox" class="risky-inbox hidden"></div>
           <div class="week-bar">
-            <button type="button" class="btn ghost sm" id="week-prev" aria-label="Předchozí týden">‹</button>
+            <button type="button" class="btn ghost sm" id="week-prev" aria-label="Předchozí den">‹</button>
             <p class="week-label" id="week-label">—</p>
-            <button type="button" class="btn ghost sm" id="week-next" aria-label="Další týden">›</button>
+            <button type="button" class="btn ghost sm" id="week-next" aria-label="Další den">›</button>
             <button type="button" class="btn ghost sm" id="week-today">Dnes</button>
           </div>
           <p id="cal-msg" class="msg" hidden></p>
@@ -130,6 +135,7 @@
         </div>
 
         <div id="pane-absence" class="pane hidden">
+          <p id="abs-manager-hint" class="hint tiny hidden"></p>
           <form id="form-absence" class="form abs-form">
             <div class="row2">
               <label>Od
@@ -205,62 +211,96 @@
 
         <div id="pane-sprava" class="pane hidden">
           <div id="owner-admin-home">
-            <p class="hint">
-              Provozní nastavení salonu pro majitele — pravidla, personál, volno, platby,
-              NO-show / hříšníci, audit i statistiky. Veřejná stránka rezervací je jen pro zákazníky.
-            </p>
-            <div class="owner-admin-grid" id="owner-admin-grid">
-              <button type="button" class="owner-admin-card" data-owner-section="pravidla">
-                <h3>Rezervační pravidla</h3>
-                <p>Interval termínů, předstih, storno, potvrzení, odkaz na recenze.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="sablony">
-                <h3>E-mailové šablony</h3>
-                <p>Připomínky, storno, QR / záloha a další texty pro zákazníky.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="personal">
-                <h3>Personál a přístupy</h3>
-                <p>Čísla účtů, FLOW účty, reset hesla staff, blokace přihlášení.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="prirazeni">
-                <h3>Přiřazení služeb</h3>
-                <p>Kdo umí které služby — matice personál × ceník.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="volno" id="owner-card-volno">
-                <h3>Žádosti o volno <span id="owner-volno-badge" class="tab-badge hidden">0</span></h3>
-                <p>Schvalování dovolené / nemoci a řešení kolizí rezervací.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="platby" id="owner-card-platby">
-                <h3>Platby partnera</h3>
-                <p>Účet ULOV, variabilní symbol, splatnost, historie a faktury.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="hrisnici">
-                <h3>NO-show / hříšníci</h3>
-                <p>Archiv NO-show, blokace e-mailů pro online rezervace.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="audit">
-                <h3>Audit log</h3>
-                <p>Historie změn v salonu — kdo co upravil.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-              <button type="button" class="owner-admin-card" data-owner-section="statistiky">
-                <h3>Statistiky</h3>
-                <p>Počty rezervací, storna, NO-show, top služby a personál.</p>
-                <span class="owner-admin-status is-ready">Otevřít</span>
-              </button>
-            </div>
+
+            <section class="owner-admin-zone" aria-labelledby="owner-zone-bezna-title">
+              <h2 id="owner-zone-bezna-title" class="owner-admin-zone-title">Běžná administrativa</h2>
+              <div class="owner-admin-grid" id="owner-admin-grid-bezna">
+                <button type="button" class="owner-admin-card" data-owner-section="persona" id="owner-card-persona">
+                  <h3>Manager také pracuje</h3>
+                  <p>Tick box — web + rezervace + přepínač ve FLOW pod jedním loginem.</p>
+                  <span class="owner-admin-status is-ready">Nastavit</span>
+                </button>
+                <button type="button" class="owner-admin-card" data-owner-section="personal">
+                  <h3>Staff a přístupy</h3>
+                  <p>Čísla účtů, FLOW účty, reset hesla staff, blokace přihlášení.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card" data-owner-section="prirazeni">
+                  <h3>Přiřazení služeb</h3>
+                  <p>Kdo umí které služby — matice Staff × ceník.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card" data-owner-section="volno" id="owner-card-volno">
+                  <h3>Žádosti o volno <span id="owner-volno-badge" class="tab-badge hidden">0</span></h3>
+                  <p>Vlastní dovolená pracovního profilu, schvalování Staff a kolize rezervací.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card" data-owner-section="platby" id="owner-card-platby">
+                  <h3>Platby partnera</h3>
+                  <p>Účet ULOV, variabilní symbol, splatnost, historie a faktury.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card" data-owner-section="hrisnici">
+                  <h3>NO-show / hříšníci</h3>
+                  <p>Archiv NO-show, blokace e-mailů pro online rezervace.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card" data-owner-section="statistiky">
+                  <h3>Statistiky</h3>
+                  <p>Počty rezervací, storna, NO-show, top služby a Staff.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="owner-admin-zone owner-admin-zone-tech" aria-labelledby="owner-zone-tech-title">
+              <h2 id="owner-zone-tech-title" class="owner-admin-zone-title owner-admin-zone-title-tech">
+                Technické nastavení
+                <span class="owner-admin-zone-warn">úpravy na vlastní riziko!</span>
+              </h2>
+              <p class="hint tiny owner-admin-zone-tech-hint">
+                Šablony e-mailů, limity rezervací a audit — změny ovlivní chování celého salonu.
+              </p>
+              <div class="owner-admin-grid" id="owner-admin-grid-tech">
+                <button type="button" class="owner-admin-card owner-admin-card-tech" data-owner-section="pravidla">
+                  <h3>Rezervační pravidla</h3>
+                  <p>Interval termínů, předstih, storno, potvrzení, odkaz na recenze.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card owner-admin-card-tech" data-owner-section="sablony">
+                  <h3>E-mailové šablony</h3>
+                  <p>Připomínky, storno, QR / záloha a další texty pro zákazníky.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+                <button type="button" class="owner-admin-card owner-admin-card-tech" data-owner-section="audit">
+                  <h3>Audit log</h3>
+                  <p>Historie změn v salonu — kdo co upravil.</p>
+                  <span class="owner-admin-status is-ready">Otevřít</span>
+                </button>
+              </div>
+            </section>
           </div>
 
           <div id="owner-admin-detail" class="hidden">
             <button type="button" class="btn ghost sm" id="owner-admin-back">← Zpět na Správu</button>
             <p id="owner-admin-msg" class="msg" hidden></p>
+
+            <div id="owner-section-persona" class="owner-section hidden">
+              <h2 class="owner-section-title">Manager také pracuje</h2>
+              <p class="hint">
+                Stejné nastavení jako ve webové administraci. Zapne pracovní profil na webu
+                (Staff + rezervace) a přepínač Manager / Staff nahoře ve FLOW.
+              </p>
+              <label class="check-row" style="margin:1rem 0;">
+                <input type="checkbox" id="own-persona-check">
+                <span>Ano — Manager také obsluhuje zákazníky</span>
+              </label>
+              <p id="own-persona-stav" class="hint"></p>
+              <label id="own-persona-jmeno-wrap" class="hidden">Jméno na webu
+                <input type="text" id="own-persona-jmeno" placeholder="např. Marie">
+              </label>
+              <button type="button" class="btn primary sm" id="own-persona-save">Uložit</button>
+            </div>
 
             <div id="owner-section-pravidla" class="owner-section hidden">
               <h2 class="owner-section-title">Rezervační pravidla</h2>
@@ -302,7 +342,7 @@
                 </label>
                 <label class="check-row">
                   <input type="checkbox" id="own-auto-potvrzeni">
-                  <span>Potvrzovat automaticky rezervace zadané personálem<br>
+                  <span>Potvrzovat automaticky rezervace zadané Staff<br>
                     <small>Platí jen pro rezervace ze systému. Online rezervace od zákazníka vždy vyžadují potvrzení e-mailem.</small>
                   </span>
                 </label>
@@ -328,7 +368,7 @@
             </div>
 
             <div id="owner-section-personal" class="owner-section hidden">
-              <h2 class="owner-section-title">Personál a přístupy</h2>
+              <h2 class="owner-section-title">Staff a přístupy</h2>
               <p class="hint tiny">
                 Provozní údaje a FLOW přístupy. Fotky / texty na web a deaktivace zaměstnance zůstávají ve web-adminu.
               </p>
@@ -359,7 +399,7 @@
             </div>
 
             <div id="owner-section-prirazeni" class="owner-section hidden">
-              <h2 class="owner-section-title">Přiřazení služeb k personálu</h2>
+              <h2 class="owner-section-title">Přiřazení služeb ke Staff</h2>
               <p class="hint tiny" id="own-prirazeni-hint">
                 Bez zaškrtnutí u pracovníka = umí všechny služby. Po zaškrtnutí alespoň jedné umí jen označené.
               </p>
@@ -371,7 +411,7 @@
 
             <div id="owner-section-volno" class="owner-section hidden">
               <h2 class="owner-section-title">Žádosti o volno</h2>
-              <p class="hint tiny">Schvalte nebo zamítněte žádosti personálu. Po schválení vyřešte kolize rezervací.</p>
+              <p class="hint tiny">Schvalte nebo zamítněte žádosti Staff. Po schválení vyřešte kolize rezervací.</p>
               <form id="form-own-add-volno" class="form own-add-staff-form">
                 <h3 class="own-subh">Zapsat absenci pracovníkovi</h3>
                 <label>Pracovník
@@ -480,7 +520,7 @@
           </details>
           <div class="panel hidden" id="pwd-box-owner">
             <p class="hint">
-              Sdílené heslo majitele se mění ve webové administraci salonu
+              Sdílené heslo Manager se mění ve webové administraci salonu
               (záložka Heslo). Ve FLOW se nemění.
             </p>
           </div>
@@ -559,7 +599,7 @@
         <input type="checkbox" id="noshow-send-email">
         Odeslat upozornění zákazníkovi e-mailem
       </label>
-      <p class="hint tiny">Blokaci e-mailu řeší jen majitelka v systému rezervací.</p>
+      <p class="hint tiny">Blokaci e-mailu řeší jen Manager v systému rezervací.</p>
       <p id="noshow-msg" class="msg" hidden></p>
       <div class="modal-actions">
         <button type="button" class="btn ghost" id="noshow-cancel">Zrušit</button>
@@ -619,6 +659,28 @@
     </div>
   </div>
 
+  <div id="email-preview-sheet" class="modal email-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="email-preview-title">
+    <div class="modal-card email-sheet-card">
+      <div class="modal-head">
+        <h2 id="email-preview-title">Náhled e-mailu</h2>
+        <button type="button" class="btn ghost sm" id="email-preview-close" aria-label="Zavřít">✕</button>
+      </div>
+      <p id="email-preview-hint" class="hint tiny" hidden></p>
+      <p class="email-preview-meta">Komu: <strong id="email-preview-to">—</strong></p>
+      <label>Předmět
+        <input type="text" id="email-preview-predmet" autocomplete="off">
+      </label>
+      <label>Text e-mailu
+        <textarea id="email-preview-text" rows="12"></textarea>
+      </label>
+      <p id="email-preview-msg" class="msg" hidden></p>
+      <div class="modal-actions email-sheet-actions">
+        <button type="button" class="btn ghost" id="email-preview-cancel">Zpět</button>
+        <button type="button" class="btn primary" id="email-preview-send">Odeslat</button>
+      </div>
+    </div>
+  </div>
+
   <div id="platba-qr-modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h2>QR platba odeslána</h2>
@@ -630,7 +692,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=47"></script>
+  <script src="app.js?v=57"></script>
   <script src="customer-card.js?v=4"></script>
 
 </body>

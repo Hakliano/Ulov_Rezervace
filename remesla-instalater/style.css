@@ -610,3 +610,17 @@ a:hover { color: var(--primary-dark); }
   font-weight: 600;
   color: var(--gold, #c9a962);
 }
+
+.role-pill {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: #1a1a1a;
+  background: var(--gold, #c9a962);
+  border: 1px solid var(--gold, #c9a962);
+}

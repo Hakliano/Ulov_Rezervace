@@ -20,6 +20,15 @@ class FlowUser(models.Model):
     zamestnanec = models.OneToOneField(
         Zamestnanec, related_name='flow_ucet', on_delete=models.CASCADE
     )
+    # Majitelka zároveň pracovnice: druhá persona bez druhého loginu (ne N:N).
+    pracovni_zamestnanec = models.ForeignKey(
+        Zamestnanec,
+        related_name='flow_pracovni_pro',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='pracovní persona',
+    )
     email = models.EmailField('e-mail')
     password_hash = models.CharField('heslo (hash)', max_length=128)
     visible_overview = models.BooleanField('Visible Overview', default=False)
@@ -49,6 +58,15 @@ class FlowUser(models.Model):
 class FlowSession(models.Model):
     user = models.ForeignKey(FlowUser, related_name='sessiony', on_delete=models.CASCADE)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    # Null = primární persona (FlowUser.zamestnanec). Jinak majitelka/pracovnice.
+    active_zamestnanec = models.ForeignKey(
+        Zamestnanec,
+        related_name='flow_aktivni_sessiony',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='aktivní persona',
+    )
     vytvoreno = models.DateTimeField(auto_now_add=True)
     expirace = models.DateTimeField()
 

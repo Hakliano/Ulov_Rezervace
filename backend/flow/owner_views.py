@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from flow.auth import get_flow_user_from_request, zrusit_vsechny_sessiony
+from flow.auth import flow_je_owner, flow_zam, get_flow_user_from_request, zrusit_vsechny_sessiony
 from flow.emails import email_flow_pristup, flow_pristup_payload, generate_heslo
 from flow.models import FlowUser, heslo_je_platne
 from flow.permissions import FlowPermission
@@ -24,9 +24,9 @@ def require_flow_owner(request):
     user = get_flow_user_from_request(request)
     if not user:
         return None, Response({'detail': 'Nejste přihlášeni.'}, status=status.HTTP_401_UNAUTHORIZED)
-    if user.zamestnanec.role != 'majitel':
+    if not flow_je_owner(user):
         return None, Response(
-            {'detail': 'Tuto část Správy může používat jen majitel.'},
+            {'detail': 'Tuto část Správy může používat jen Manager.'},
             status=status.HTTP_403_FORBIDDEN,
         )
     return user, None
@@ -43,6 +43,10 @@ def _personal_payload(z):
     except FlowUser.DoesNotExist:
         data['flow'] = {'ma_flow': False, 'ucet': None}
     return data
+
+
+def _actor(user):
+    return f'FLOW:{flow_zam(user).jmeno}'
 
 
 class FlowOwnerNastaveniSerializer(RezervacniNastaveniSerializer):
@@ -82,7 +86,7 @@ class FlowOwnerNastaveniView(APIView):
         po = ser.data
         log_audit(
             user.salon,
-            f'FLOW:{user.zamestnanec.jmeno}',
+            _actor(user),
             'nastaveni',
             'změna nastavení rezervací ve FLOW',
             pred=pred,
@@ -121,7 +125,7 @@ class FlowOwnerPersonalListCreateView(APIView):
         po = _personal_payload(z)
         log_audit(
             user.salon,
-            f'FLOW:{user.zamestnanec.jmeno}',
+            _actor(user),
             'zamestnanec',
             f'FLOW: přidání zaměstnance ({z.jmeno})',
             objekt_typ='zamestnanec',
@@ -158,7 +162,7 @@ class FlowOwnerPersonalDetailView(APIView):
         po = _personal_payload(z)
         log_audit(
             user.salon,
-            f'FLOW:{user.zamestnanec.jmeno}',
+            _actor(user),
             'zamestnanec',
             f'FLOW: změna zaměstnance ({z.jmeno})',
             objekt_typ='zamestnanec',
@@ -182,7 +186,7 @@ class FlowOwnerPersonalFlowCreateView(APIView):
         zam = get_object_or_404(Zamestnanec, pk=zamestnanec_id, salon=user.salon)
         if zam.role == Zamestnanec.ROLE_MAJITEL:
             return Response(
-                {'detail': 'Majitel už má FLOW přístup přes svůj účet.'},
+                {'detail': 'Manager už má FLOW přístup přes svůj účet.'},
                 status=400,
             )
         try:
@@ -631,7 +635,7 @@ class FlowOwnerNoShowBlokovatView(APIView):
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         log_audit(
             user.salon,
-            f'FLOW:{user.zamestnanec.jmeno}',
+            _actor(user),
             'noshow',
             f'blokace e-mailu v salonu ({email})',
         )
@@ -657,7 +661,7 @@ class FlowOwnerNoShowOdblokovatView(APIView):
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         log_audit(
             user.salon,
-            f'FLOW:{user.zamestnanec.jmeno}',
+            _actor(user),
             'noshow',
             f'odblokování e-mailu v salonu ({email})',
         )
@@ -807,9 +811,93 @@ class FlowOwnerPrirazeniSluzebView(APIView):
 
         log_audit(
             salon,
-            f'FLOW:{user.zamestnanec.jmeno}',
+            _actor(user),
             'nastaveni',
             'změna přiřazení služeb k personálu',
             po={'prirazeni': {str(k): v for k, v in normalized.items()}},
         )
         return self.get(request)
+
+
+class FlowOwnerPracovniPersonaView(APIView):
+    """
+    Propojení majitelky s pracovní personou (stejný login, přepínač ve FLOW).
+    GET — stav. POST — zapnout (vytvorit / zamestnanec_id). DELETE — vypnout.
+    """
+
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def get(self, request):
+        user, err = require_flow_owner(request)
+        if err:
+            return err
+        from flow.persona_service import majitelka_pracuje_payload
+
+        return Response(majitelka_pracuje_payload(user))
+
+    def post(self, request):
+        user, err = require_flow_owner(request)
+        if err:
+            return err
+        from flow.auth import flow_ucet_je_majitel, flow_user_do_dict
+        from flow.persona_service import set_majitelka_pracuje
+
+        if not flow_ucet_je_majitel(user):
+            return Response({'detail': 'Jen účet majitelky.'}, status=403)
+
+        zam_id = request.data.get('zamestnanec_id')
+        vytvorit = bool(request.data.get('vytvorit', True))
+        jmeno = (request.data.get('jmeno') or '').strip() or None
+        ano = request.data.get('ano')
+        if ano is None:
+            ano = True if (vytvorit or zam_id) else False
+        else:
+            ano = bool(ano)
+
+        try:
+            payload = set_majitelka_pracuje(
+                user.salon,
+                ano=ano,
+                jmeno=jmeno,
+                zamestnanec_id=int(zam_id) if zam_id else None,
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=400)
+
+        user.refresh_from_db()
+        log_audit(
+            user.salon,
+            _actor(user),
+            'nastaveni',
+            'majitelka také pracuje — zapnuto' if ano else 'majitelka také pracuje — vypnuto',
+            po=payload,
+        )
+        data = flow_user_do_dict(user)
+        data['majitelka_pracuje'] = payload
+        return Response(data)
+
+    def delete(self, request):
+        user, err = require_flow_owner(request)
+        if err:
+            return err
+        from flow.auth import flow_user_do_dict, prepnout_personu
+        from flow.persona_service import set_majitelka_pracuje
+
+        payload = set_majitelka_pracuje(user.salon, ano=False)
+        user.refresh_from_db()
+        try:
+            prepnout_personu(user, 'majitel')
+        except ValueError:
+            pass
+        log_audit(
+            user.salon,
+            _actor(user),
+            'nastaveni',
+            'majitelka také pracuje — vypnuto',
+            po=payload,
+        )
+        data = flow_user_do_dict(user)
+        data['majitelka_pracuje'] = payload
+        return Response(data)
+

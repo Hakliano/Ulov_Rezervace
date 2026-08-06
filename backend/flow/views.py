@@ -5,9 +5,11 @@ from rest_framework.views import APIView
 
 from flow.auth import (
     HEADER,
+    flow_ucet_je_majitel,
     flow_user_do_dict,
     get_flow_user_from_request,
     odhlasit_flow,
+    prepnout_personu,
     prihlasit_flow,
     zrusit_vsechny_sessiony,
 )
@@ -36,6 +38,15 @@ class FlowAktivaceView(APIView):
         salon = get_object_or_404(Salon, pk=pk)
         data = owner_flow_stav(salon)
         data['flow_path'] = '/flow/'
+        try:
+            from flow.persona_service import majitelka_pracuje_payload
+
+            fu = FlowUser.objects.filter(
+                salon=salon, zamestnanec__role='majitel'
+            ).select_related('pracovni_zamestnanec').first()
+            data['majitelka_pracuje'] = majitelka_pracuje_payload(fu)
+        except Exception:
+            data['majitelka_pracuje'] = {'ano': False, 'pracovni': None}
         return Response(data)
 
     def post(self, request, pk):
@@ -56,7 +67,57 @@ class FlowAktivaceView(APIView):
             else 'FLOW přístup majitele už existuje.'
         )
         stav['email'] = user.email
+        try:
+            from flow.persona_service import majitelka_pracuje_payload
+
+            stav['majitelka_pracuje'] = majitelka_pracuje_payload(user)
+        except Exception:
+            stav['majitelka_pracuje'] = {'ano': False, 'pracovni': None}
         return Response(stav, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class MajitelkaPracujeView(APIView):
+    """Web-admin: tick box „Majitelka také pracuje“ (X-Staff-Token majitelky)."""
+
+    permission_classes = [MajitelPermission]
+
+    def get(self, request, pk):
+        from flow.persona_service import majitelka_pracuje_payload
+
+        salon = get_object_or_404(Salon, pk=pk)
+        fu = (
+            FlowUser.objects.filter(salon=salon, zamestnanec__role='majitel')
+            .select_related('pracovni_zamestnanec')
+            .first()
+        )
+        return Response(majitelka_pracuje_payload(fu))
+
+    def put(self, request, pk):
+        from flow.persona_service import set_majitelka_pracuje
+        from rezervace.services.audit import audit_actor, log_audit
+
+        salon = get_object_or_404(Salon, pk=pk)
+        ano = bool(request.data.get('ano'))
+        jmeno = (request.data.get('jmeno') or '').strip() or None
+        zam_id = request.data.get('zamestnanec_id')
+        try:
+            payload = set_majitelka_pracuje(
+                salon,
+                ano=ano,
+                jmeno=jmeno,
+                zamestnanec_id=int(zam_id) if zam_id else None,
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        actor = audit_actor(request, salon.pk)
+        log_audit(
+            salon,
+            actor,
+            'nastaveni',
+            f'{actor}: majitelka také pracuje — {"zapnuto" if ano else "vypnuto"}',
+            po=payload,
+        )
+        return Response(payload)
 
 
 class FlowUctyListCreateView(APIView):
@@ -233,6 +294,24 @@ class FlowMeView(APIView):
         return Response(flow_user_do_dict(user))
 
 
+class FlowPrepnoutPersonuView(APIView):
+    """Majitelka ↔ pracovnice pod stejným loginem (session.active_zamestnanec)."""
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        user = get_flow_user_from_request(request)
+        if not user:
+            return Response({'detail': 'Nejste přihlášeni.'}, status=status.HTTP_401_UNAUTHORIZED)
+        persona = request.data.get('persona') or request.data.get('jako') or ''
+        try:
+            prepnout_personu(user, persona)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(flow_user_do_dict(user))
+
+
 class FlowZmenaHeslaView(APIView):
     authentication_classes = []
     permission_classes = []
@@ -241,7 +320,7 @@ class FlowZmenaHeslaView(APIView):
         user = get_flow_user_from_request(request)
         if not user:
             return Response({'detail': 'Nejste přihlášeni.'}, status=status.HTTP_401_UNAUTHORIZED)
-        if user.zamestnanec.role == 'majitel':
+        if flow_ucet_je_majitel(user):
             return Response(
                 {
                     'detail': (

@@ -21,6 +21,7 @@ Prostředí: **Hetzner VPS + Ubuntu 24.04 + Docker Compose + Nginx + Gunicorn + 
 | `deploy/deploy-live.sh` | LIVE jen z GitHub tagu/`main` (záloha → check → sync) |
 | `deploy/rollback-live.sh` | Návrat na tag + volitelně DB/www ze zálohy |
 | `deploy/DEPLOY_SAFETY.md` | Sync bez `--delete` naslepo; incident demo7/8 |
+| `deploy/TESTOVACI_PRISTUPY.md` | Loginy majitelů dem (web + FLOW) |
 | `deploy/DEPLOY_PIPELINE.md` | **Staging + rollback strategie** (GitHub povinně) |
 | `deploy/restore.sh` | Obnova zálohy (drill i ostrá havárie) |
 | `deploy/disk-check.sh` | Hlídání obsazenosti disku (80/90 %) |

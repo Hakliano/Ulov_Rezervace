@@ -325,17 +325,22 @@ async function handleStorno(token) {
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/storno/${token}/info/`);
     const r = data.rezervace;
+    const zalohaHtml = data.zaloha_info
+      ? `<p class="${data.zaloha_propada ? 'error' : 'admin-hint'}">${esc(data.zaloha_info)}</p>`
+      : '';
     $('#storno-info').innerHTML = `
       <p><strong>${formatDateTime(r.zacatek)}</strong></p>
       <p>${r.polozky.map(p => esc(p.nazev)).join(', ')}</p>
       <p>Stav: ${esc(r.stav_label)}</p>
-      ${data.lze_stornovat ? '' : `<p class="error">${esc(data.duvod)}</p>`}
+      ${data.lze_stornovat ? zalohaHtml : `<p class="error">${esc(data.duvod)}</p>`}
     `;
     $('#btn-storno').disabled = !data.lze_stornovat;
     $('#btn-storno').onclick = async () => {
       try {
-        await api(`/salon/${SALON_ID}/rezervace/storno/${token}/`, { method: 'POST', body: '{}' });
-        $('#storno-msg').textContent = 'Rezervace zrušena.';
+        const res = await api(`/salon/${SALON_ID}/rezervace/storno/${token}/`, { method: 'POST', body: '{}' });
+        let msg = 'Rezervace zrušena.';
+        if (res?.zaloha_info) msg += ` ${res.zaloha_info}`;
+        $('#storno-msg').textContent = msg;
         $('#storno-msg').className = 'status-msg success';
         $('#btn-storno').disabled = true;
       } catch (e) {
@@ -999,6 +1004,7 @@ function renderSalonHoursHint() {
 
 async function loadStaff() {
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/`);
+  window.__majitelkaPracuje = data.majitelka_pracuje || { ano: false, pracovni: null };
   staffData = data.zamestnanci || [];
   staffSalonHours = data.oteviraci_doba_salonu || [];
   renderSalonHoursHint();
@@ -1015,11 +1021,19 @@ async function loadStaff() {
   }
 }
 
+
+function staffRoleSuffix(s) {
+  if (s.role === 'majitel') return ' · Manager';
+  const mp = window.__majitelkaPracuje;
+  if (mp?.ano && mp.pracovni && Number(mp.pracovni.id) === Number(s.id)) return ' · Manager';
+  return '';
+}
+
 function renderStaffList() {
   $('#staff-list').innerHTML = staffData.map((s) => `
     <button type="button" class="staff-list-btn ${s.id === selectedStaffId ? 'active' : ''} ${s.aktivni ? '' : 'staff-inactive'}" data-id="${s.id}">
       ${esc(s.jmeno)}
-      <small>${esc(s.specializace || 'bez specializace')}${s.role === 'majitel' ? ' · majitelka' : ''}${s.aktivni ? '' : ' · účet deaktivován'}</small>
+      <small>${esc(s.specializace || 'bez specializace')}${staffRoleSuffix(s)}${s.aktivni ? '' : ' · účet deaktivován'}</small>
     </button>
   `).join('');
   $$('#staff-list .staff-list-btn').forEach((btn) => {
@@ -1080,7 +1094,7 @@ function selectStaff(id) {
   renderStaffList();
   $('#staff-empty').classList.add('hidden');
   $('#staff-detail').classList.remove('hidden');
-  $('#staff-detail-name').textContent = staff.jmeno;
+  $('#staff-detail-name').textContent = staff.jmeno + staffRoleSuffix(staff);
   $('#staff-aktivni').checked = staff.aktivni;
   $('#staff-prihlasovaci-jmeno').value = staff.prihlasovaci_jmeno || '';
   $('#staff-heslo').value = '';

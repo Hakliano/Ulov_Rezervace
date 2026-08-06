@@ -3,6 +3,7 @@ from datetime import time
 from django.core.management.base import BaseCommand, CommandError
 
 from rezervace.models import RezervacniNastaveni, Zamestnanec, ZamestnanecRozvrh
+from rezervace.services.booking_urls import DEMO_LIVE_BOOKING_URLS
 from salons.models import CenikPolozka, Novinka, OteviraciDoba, Salon
 
 
@@ -99,14 +100,27 @@ class Command(BaseCommand):
                     defaults={'od': time(9, 0) if open_day else None, 'do': time(17, 0) if open_day else None, 'zavreno': not open_day},
                 )
 
-            RezervacniNastaveni.objects.update_or_create(
-                salon=salon,
-                defaults={
-                    'interval_minut': 15, 'min_predstih_hodin': 2, 'max_predstih_mesicu': 3,
-                    'storno_do_hodin': 24, 'email_odesilatel': salon.email,
-                    'email_jmeno_odesilatele': salon.name, 'web_rezervace_url': '',
+            nast_defaults = {
+                'interval_minut': 15, 'min_predstih_hodin': 2, 'max_predstih_mesicu': 3,
+                'storno_do_hodin': 24, 'email_odesilatel': salon.email,
+                'email_jmeno_odesilatele': salon.name,
+            }
+            # web_rezervace_url NIKDY nepřepisovat na prázdno — maže LIVE odkazy v e-mailech
+            nast, created = RezervacniNastaveni.objects.get_or_create(
+                salon=salon, defaults={
+                    **nast_defaults,
+                    'web_rezervace_url': DEMO_LIVE_BOOKING_URLS.get(salon.pk, ''),
                 },
             )
+            if not created:
+                for key, val in nast_defaults.items():
+                    setattr(nast, key, val)
+                raw = (nast.web_rezervace_url or '').strip()
+                if (not raw) or ('localhost' in raw.lower()):
+                    mapped = DEMO_LIVE_BOOKING_URLS.get(salon.pk, '')
+                    if mapped:
+                        nast.web_rezervace_url = mapped
+                nast.save()
 
             owner_login = f'majitel.salon{salon.pk}@ulov.local'
             owner, created = Zamestnanec.objects.get_or_create(

@@ -203,47 +203,28 @@ def odeslat_volny_email(salon, prijemce, predmet, zprava, headers=None):
     return _odeslat_pro_salon(salon, prijemce, predmet, zprava, headers=headers)
 
 
-def _salon_dev_port(salon_id):
-    """Lokální port statického frontendu: salon 1 → 5500, 2 → 5501, 3 → 5502 …"""
-    return 5499 + int(salon_id)
-
-
 def _storno_url(rezervace):
-    try:
-        base = (rezervace.salon.rezervacni_nastaveni.web_rezervace_url or '').strip()
-    except Exception:
-        base = ''
+    from rezervace.services.booking_urls import resolve_rezervace_web_url
+
+    base = resolve_rezervace_web_url(rezervace.salon)
     if not base:
-        port = _salon_dev_port(rezervace.salon_id)
-        base = f'http://localhost:{port}/rezervace.html'
-    elif not base.endswith('.html'):
-        base = base.rstrip('/') + '/rezervace.html'
-    token = rezervace.cancel_token
-    return f'{base}?storno={token}'
+        return ''
+    return f'{base}?storno={rezervace.cancel_token}'
 
 
 def _potvrzeni_url(rezervace):
-    try:
-        base = (rezervace.salon.rezervacni_nastaveni.web_rezervace_url or '').strip()
-    except Exception:
-        base = ''
+    from rezervace.services.booking_urls import resolve_rezervace_web_url
+
+    base = resolve_rezervace_web_url(rezervace.salon)
     if not base:
-        port = _salon_dev_port(rezervace.salon_id)
-        base = f'http://localhost:{port}/rezervace.html'
-    elif not base.endswith('.html'):
-        base = base.rstrip('/') + '/rezervace.html'
+        return ''
     return f'{base}?potvrdit={rezervace.potvrzeni_token}'
 
 
 def _rezervace_web_url(salon):
-    try:
-        url = (salon.rezervacni_nastaveni.web_rezervace_url or '').strip()
-    except Exception:
-        url = ''
-    if not url:
-        port = _salon_dev_port(salon.pk)
-        return f'http://localhost:{port}/rezervace.html'
-    return url
+    from rezervace.services.booking_urls import resolve_rezervace_web_url
+
+    return resolve_rezervace_web_url(salon)
 
 
 def _email_via_celery():
@@ -342,49 +323,34 @@ def email_potvrzeni(rezervace):
     return email_potvrzeni_sync(rezervace)
 
 
-def email_storno_sync(rezervace, kdo='zákazník', duvod=''):
+def email_storno_sync(rezervace, kdo='zákazník', duvod='', predmet=None, text=None):
+    from flow.email_drafts import render_storno_draft
+
     salon = rezervace.salon
-    kdo_label = 'salon' if kdo in ('salon', 'admin', 'flow') else 'zákazník'
-    predmet = f'Storno rezervace – {salon.name}'
-    zprava = None
-    duvod_txt = (duvod or '').strip() or kdo_label
+    draft = render_storno_draft(rezervace, kdo=kdo, duvod=duvod)
+    predmet = (predmet or '').strip() or draft['predmet']
+    zprava = draft['text'] if text is None else text
 
-    try:
-        from rezervace.notifikace_defaults import MANUAL_TYP_STORNO, get_manual_notifikace
-        from rezervace.services.notifikace_email import render_sablonu
-
-        notif = get_manual_notifikace(salon.rezervacni_nastaveni.notifikace, MANUAL_TYP_STORNO)
-        if notif:
-            extra = {'kdo': kdo_label, 'duvod': duvod_txt}
-            predmet = render_sablonu(notif.get('predmet') or predmet, rezervace, extra)
-            zprava = render_sablonu(notif.get('text') or '', rezervace, extra)
-    except Exception:
-        zprava = None
-
-    if not zprava:
-        zprava = render_to_string('rezervace/emails/storno.txt', {
-            'rezervace': rezervace,
-            'salon': salon,
-            'kdo': kdo_label,
-            'duvod': duvod_txt,
-        })
-
+    odeslano_zakaznik = False
     if ma_kontaktni_email(rezervace):
-        _odeslat_pro_salon(salon, rezervace.kontaktni_email, predmet, zprava)
+        odeslano_zakaznik = bool(_odeslat_pro_salon(salon, rezervace.kontaktni_email, predmet, zprava))
     if salon.email:
         _odeslat_pro_salon(
             salon, salon.email,
             f'Storno rezervace – {rezervace.kontaktni_jmeno}',
             zprava,
         )
+    return odeslano_zakaznik
 
 
-def email_storno(rezervace, kdo='zákazník', duvod=''):
-    if _email_via_celery():
-        from rezervace.tasks import task_email_storno
-        task_email_storno.delay(rezervace.pk, kdo=kdo, duvod=duvod)
-        return True
-    email_storno_sync(rezervace, kdo=kdo, duvod=duvod)
+def email_storno(rezervace, kdo='zákazník', duvod='', predmet=None, text=None):
+    # Vlastní text z preview — vždy sync, ať platí úprava ve FLOW.
+    if predmet is not None or text is not None or not _email_via_celery():
+        return email_storno_sync(
+            rezervace, kdo=kdo, duvod=duvod, predmet=predmet, text=text,
+        )
+    from rezervace.tasks import task_email_storno
+    task_email_storno.delay(rezervace.pk, kdo=kdo, duvod=duvod)
     return True
 
 
@@ -414,14 +380,10 @@ def email_zmena_obsluhy(rezervace, puvodni_jmeno, nove_jmeno):
 
 
 def email_nove_heslo_sync(zakaznik, heslo):
+    from rezervace.services.booking_urls import resolve_rezervace_web_url
+
     salon = zakaznik.salon
-    try:
-        base = (salon.rezervacni_nastaveni.web_rezervace_url or '').strip()
-    except Exception:
-        base = ''
-    if not base:
-        port = _salon_dev_port(salon.pk)
-        base = f'http://localhost:{port}/rezervace.html'
+    base = resolve_rezervace_web_url(salon)
     zprava = render_to_string('rezervace/emails/zapomenute_heslo.txt', {
         'zakaznik': zakaznik,
         'heslo': heslo,

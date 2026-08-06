@@ -354,17 +354,22 @@ async function handleStorno(token) {
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/storno/${token}/info/`);
     const r = data.rezervace;
+    const zalohaHtml = data.zaloha_info
+      ? `<p class="${data.zaloha_propada ? 'error' : 'admin-hint'}">${esc(data.zaloha_info)}</p>`
+      : '';
     $('#storno-info').innerHTML = `
       <p><strong>${formatDateTime(r.zacatek)}</strong></p>
       <p>${r.polozky.map(p => esc(p.nazev)).join(', ')}</p>
       <p>Stav: ${esc(r.stav_label)}</p>
-      ${data.lze_stornovat ? '' : `<p class="error">${esc(data.duvod)}</p>`}
+      ${data.lze_stornovat ? zalohaHtml : `<p class="error">${esc(data.duvod)}</p>`}
     `;
     $('#btn-storno').disabled = !data.lze_stornovat;
     $('#btn-storno').onclick = async () => {
       try {
-        await api(`/salon/${SALON_ID}/rezervace/storno/${token}/`, { method: 'POST', body: '{}' });
-        $('#storno-msg').textContent = 'Rezervace zrušena.';
+        const res = await api(`/salon/${SALON_ID}/rezervace/storno/${token}/`, { method: 'POST', body: '{}' });
+        let msg = 'Rezervace zrušena.';
+        if (res?.zaloha_info) msg += ` ${res.zaloha_info}`;
+        $('#storno-msg').textContent = msg;
         $('#storno-msg').className = 'status-msg success';
         $('#btn-storno').disabled = true;
       } catch (e) {
@@ -622,7 +627,7 @@ function applyStaffUI() {
   const badge = $('#admin-actor-badge');
   if (badge && staffUser) {
     badge.textContent = staffUser.je_majitel
-      ? `${staffUser.jmeno} · majitelka`
+      ? `${staffUser.jmeno} · Manager`
       : staffUser.jmeno;
   }
   const flowUrl = flowAppUrl();
@@ -1035,6 +1040,7 @@ function renderSalonHoursHint() {
 async function loadStaff() {
   const data = await api(`/salon/${SALON_ID}/rezervace/admin/zamestnanci/`);
   staffData = data.zamestnanci || [];
+  window.__majitelkaPracuje = data.majitelka_pracuje || { ano: false, pracovni: null };
   staffSalonHours = data.oteviraci_doba_salonu || [];
   renderSalonHoursHint();
   renderStaffList();
@@ -1050,11 +1056,19 @@ async function loadStaff() {
   }
 }
 
+
+function staffRoleSuffix(s) {
+  if (s.role === 'majitel') return ' · Manager';
+  const mp = window.__majitelkaPracuje;
+  if (mp?.ano && mp.pracovni && Number(mp.pracovni.id) === Number(s.id)) return ' · Manager';
+  return '';
+}
+
 function renderStaffList() {
   $('#staff-list').innerHTML = staffData.map((s) => `
     <button type="button" class="staff-list-btn ${s.id === selectedStaffId ? 'active' : ''} ${s.aktivni ? '' : 'staff-inactive'}" data-id="${s.id}">
       ${esc(s.jmeno)}
-      <small>${esc(s.specializace || 'bez specializace')}${s.role === 'majitel' ? ' · majitelka' : ''}${s.aktivni ? '' : ' · účet deaktivován'}</small>
+      <small>${esc(s.specializace || 'bez specializace')}${staffRoleSuffix(s)}${s.aktivni ? '' : ' · účet deaktivován'}</small>
     </button>
   `).join('');
   $$('#staff-list .staff-list-btn').forEach((btn) => {
@@ -1073,14 +1087,83 @@ function renderStaffSluzby() {
   `).join('');
 }
 
+
+function renderMajitelkaPracujeToggle(staff) {
+  let box = document.getElementById('staff-owner-works');
+  if (!staff || staff.role !== 'majitel') {
+    box?.classList.add('hidden');
+    return;
+  }
+  if (!box) {
+    const host = document.getElementById('staff-ucet-status')?.parentElement
+      || document.getElementById('staff-detail');
+    if (!host) return;
+    box = document.createElement('div');
+    box.id = 'staff-owner-works';
+    box.className = 'staff-block';
+    box.style.marginTop = '0.75rem';
+    box.innerHTML = `
+      <label class="checkbox" style="display:flex;gap:0.5rem;align-items:flex-start;">
+        <input type="checkbox" id="staff-owner-works-check">
+        <span>Manager také pracuje (web + rezervace + přepínač ve FLOW)</span>
+      </label>
+      <p id="staff-owner-works-msg" class="hint"></p>
+    `;
+    host.appendChild(box);
+    document.getElementById('staff-owner-works-check')?.addEventListener('change', async (e) => {
+      const ano = !!e.target.checked;
+      const msg = document.getElementById('staff-owner-works-msg');
+      e.target.disabled = true;
+      try {
+        const data = await api(`/salon/${SALON_ID}/flow/majitelka-pracuje/`, {
+          method: 'PUT',
+          body: JSON.stringify({ ano }),
+        });
+        window.__majitelkaPracuje = data;
+        if (msg) {
+          msg.textContent = ano
+            ? `Zapnuto — pracovní profil „${data.pracovni?.jmeno || ''}“. Upravte rozvrh u něj v seznamu.`
+            : 'Vypnuto.';
+          msg.className = 'hint success';
+        }
+        await loadStaff();
+        const pid = data.pracovni?.id;
+        if (ano && pid) selectStaff(pid);
+        else {
+          const owner = staffData.find((s) => s.role === 'majitel');
+          if (owner) selectStaff(owner.id);
+        }
+      } catch (err) {
+        e.target.checked = !ano;
+        if (msg) {
+          msg.textContent = err.message || 'Uložení selhalo.';
+          msg.className = 'hint error';
+        }
+      } finally {
+        e.target.disabled = false;
+      }
+    });
+  }
+  box.classList.remove('hidden');
+  const check = document.getElementById('staff-owner-works-check');
+  const mp = window.__majitelkaPracuje;
+  if (check) check.checked = !!mp?.ano;
+}
+
 function updateStaffUcetUI(staff) {
   const status = $('#staff-ucet-status');
   const btnDeakt = $('#btn-staff-deaktivovat');
   const isMajitelka = staff.role === 'majitel';
   if (status) {
     if (isMajitelka) {
-      status.textContent = 'Účet majitele — jen správa salonu, bez rezervací a rozvrhu. Pokud majitel také provádí služby, založte mu běžný zaměstnanecký účet.';
-      status.className = 'hint';
+      const mp = window.__majitelkaPracuje;
+      if (mp?.ano && mp.pracovni) {
+        status.textContent = `Manager také pracuje — na webu jako „${mp.pracovni.jmeno}“. Rozvrh a služby upravte u tohoto pracovního profilu v seznamu Staff. Ve FLOW přepnete Manager / Staff.`;
+        status.className = 'hint success';
+      } else {
+        status.textContent = 'Účet Manager — správa salonu. Pokud také obsluhuje zákazníky, zapněte „Manager také pracuje“ ve webové administraci (⚙ Základ) nebo ve FLOW → Správa.';
+        status.className = 'hint';
+      }
     } else if (!staff.aktivni) {
       status.textContent = 'Účet je deaktivován. Zaměstnanec se nemůže přihlásit, historie rezervací a audit zůstávají zachované.';
       status.className = 'hint error';
@@ -1095,6 +1178,7 @@ function updateStaffUcetUI(staff) {
   if (btnDeakt) {
     btnDeakt.classList.toggle('hidden', isMajitelka || !staff.aktivni || !staff.ma_prihlaseni);
   }
+  renderMajitelkaPracujeToggle(staff);
   const loginDisabled = !staff.aktivni && !isMajitelka;
   $('#staff-prihlasovaci-jmeno')?.toggleAttribute('disabled', loginDisabled);
   $('#staff-heslo')?.toggleAttribute('disabled', loginDisabled);
@@ -1104,6 +1188,10 @@ function updateStaffServiceUi(staff) {
   const isMajitelka = staff?.role === 'majitel';
   document.querySelector('.staff-active-label')?.classList.toggle('hidden', isMajitelka);
   document.querySelectorAll('#staff-detail .staff-block').forEach((block, index) => {
+    if (block.id === 'staff-owner-works') {
+      block.classList.toggle('hidden', !isMajitelka);
+      return;
+    }
     if (index > 0) block.classList.toggle('hidden', isMajitelka);
   });
 }
@@ -1115,7 +1203,7 @@ function selectStaff(id) {
   renderStaffList();
   $('#staff-empty').classList.add('hidden');
   $('#staff-detail').classList.remove('hidden');
-  $('#staff-detail-name').textContent = staff.jmeno;
+  $('#staff-detail-name').textContent = staff.jmeno + staffRoleSuffix(staff);
   $('#staff-aktivni').checked = staff.aktivni;
   $('#staff-prihlasovaci-jmeno').value = staff.prihlasovaci_jmeno || '';
   $('#staff-heslo').value = '';

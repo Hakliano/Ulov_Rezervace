@@ -1,470 +1,458 @@
-# For Compliance v1
+# For Compliance — popis funkcí a zpracování údajů
 
-**Systém:** Ulov Rezervaci  
-**Verze dokumentu:** 1.3  
-**Datum:** červenec 2026  
-**Rozsah:** GDPR, osobní údaje, účty, přístupová práva, audit, životní cyklus dat  
-**Stav produktu:** funkční MVP s compliance hardeningem (rate limit, GDPR evidence, admin nástroje) — před produkcí doporučeno HTTPS a PostgreSQL (viz kapitola 9)
+**Systém / produkt:** Ulov Rezervaci (značka **ULOV KLIENTY**)  
+**Verze dokumentu:** 1.5  
+**Datum:** srpen 2026  
+**Určeno pro:** právní oddělení, DPO, compliance — podklad k DPA, ROPA, zásadám, **partnerským smlouvám**  
+**Stav produktu:** ostrý provoz (LIVE) + staging; PostgreSQL, HTTPS, Docker na Hetzner VPS
+
+---
+
+## 0. Povinná sada dokumentů pro právní
+
+| Dokument | Co obsahuje |
+|----------|-------------|
+| **`PODKLAD_PRO_PARTNERY.md`** | **Obchodní nabídka** (3 balíčky, ceny, vstupní poplatky), **všechny služby**, **kompletní FLOW** (majitel + pracovník), matice balíčků |
+| **Tento dokument (`For Compliance v1.md`)** | GDPR, kategorie údajů, role, retence, bezpečnost, práva subjektů |
+| **`dokumenty/`** | Formální DPA, přílohy, ROPA (HTML/PDF) |
+
+Bez `PODKLAD_PRO_PARTNERY.md` nelze správně sepsat ceník závazků Partnerství ani popis FLOW ve smlouvě.
 
 ---
 
 ## 1. Účel dokumentu
 
-Tento dokument popisuje, **jak platforma Ulov Rezervaci zpracovává osobní údaje**, jak jsou řízeny **uživatelské účty** a **přístupová práva**, a jaké **technické a organizační kontroly** jsou v systému implementovány. Slouží jako podklad pro:
+Tento dokument popisuje **co platforma dělá (funkční rozsah)** a **jak zpracovává osobní údaje** — účty, přístupová práva, životní cyklus dat, e-maily, subdodavatele a technické kontroly.
 
-- compliance / DPO review,
-- smlouvu o zpracování (DPA) mezi provozovatelem platformy a salony,
-- interní audit a dokumentaci pro ÚOOÚ (na žádost).
+Slouží jako podklad pro:
 
-Doplňující technické detaily: `ZIVOTNI_CYKLUS_REZERVACE.md`, `TECHNICKE_NASAZENI.md`.  
-Veřejný text pro zákazníky salonu: `salon*/ochrana-osobnich-udaju.html`.
+- smlouvu o zpracování osobních údajů (DPA) mezi provozovatelem platformy a partnerem (provozovnou),
+- ROPA a přílohy DPA,
+- zásady ochrany osobních údajů pro zákazníky partnera,
+- interní audit / odpověď ÚOOÚ.
 
----
+| Související materiál | Obsah |
+|----------------------|--------|
+| **`PODKLAD_PRO_PARTNERY.md`** | Ceník, 3 balíčky, vstupní poplatky, Program růstu, **FLOW detail majitel/pracovník** |
+| `dokumenty/` (HTML/PDF) | DPA, přílohy 1–3, ROPA — formální verze pro partnery |
+| `ZIVOTNI_CYKLUS_REZERVACE.md` | Detail retenčních lhůt a cronu |
+| `TECHNICKE_NASAZENI.md` | Technická architektura |
+| `PREHLED_PRO_SALES_A_MARKETING.md` | Obchodní popis (není compliance podklad) |
+| `salon*/ochrana-osobnich-udaju.html` | Veřejný text pro zákazníky dané provozovny |
 
-## 2. Architektura a role v GDPR
-
-### 2.1 Multi-tenant model
-
-- Jeden backend obsluhuje **více salonů** (tenantů).
-- Data jsou izolována přes `salon_id` (cizí klíč na model `Salon`).
-- **Data mezi salony se nesdílejí** (zákazníci, NO-show archiv, blokace e-mailů).
-
-### 2.2 Role správce vs. zpracovatele
-
-| Role | Kdo | Odpovědnost |
-|------|-----|-------------|
-| **Správce** (vůči zákazníkovi salonu) | Provozovatel salonu (majitel / majitelka) | Účel rezervací, kontakt se zákazníkem, obsah webu, nastavení SMTP |
-| **Zpracovatel** (technický provoz) | Provozovatel platformy Ulov Rezervaci | Hosting API, databáze, automatický životní cyklus dat, agregované statistiky |
-| **Subjekt údajů** | Zákazník salonu | Osoba rezervující termín |
-| **Uživatel s oprávněním** | Majitelka, zaměstnanec salonu | Přístup do administrace rezervací a webu |
-
-> **Poznámka pro compliance:** Finální právní vymezení správce/zpracovatele musí být potvrzeno ve smlouvě mezi platformou a salonem. Tento dokument popisuje **technickou realitu systému**.
+> Dokument popisuje **technickou realitu systému** (zejm. GDPR). Obchodní závazky a FLOW → **`PODKLAD_PRO_PARTNERY.md`**. Finální právní kvalifikace náleží právnímu oddělení.
 
 ---
 
-## 3. Kategorie osobních údajů
+## 1a. Obchodní nabídka (stručný odkaz)
 
-### 3.1 Zákazníci (`Zakaznik`)
+Veřejný ceník (stav srpen 2026) — **plný text v `PODKLAD_PRO_PARTNERY.md`**:
+
+| Balíček | Cena | Vstupní nastavení |
+|---------|------|-------------------|
+| Web jednorázově | 4 000 Kč jednorázově | — |
+| Partnerský web | 199 Kč/měs. (běžně 299); akce do 31. 12. 2026 navždy | — |
+| Partner pro provozovnu | 499 Kč/měs. (běžně 799); akce do 31. 12. 2026 navždy | **2 999 Kč** standard / **3 999 Kč** vč. Programu růstu |
+
+Měsíční Partnerství zahrnuje WEB + rezervace + FLOW + podporu; Program růstu jen při vstupu 3 999 Kč.
+
+---
+
+## 1b. FLOW (stručný odkaz)
+
+FLOW = provozní CRM na `https://www.ulovklienty.cz/flow/`.
+
+- **Majitel:** Správa (pravidla, šablony, personál/FLOW přístupy, volno, platby ULOV, NO-show, audit, statistiky) + denní provoz rezervací.  
+- **Pracovník:** vlastní kalendář, žádosti o volno, změna hesla, volitelně overview a Mail.  
+- **Mimo FLOW:** obsah webu, ceník, SMTP/IMAP credentials, heslo majitele → web ⚙.
+
+**Kompletní inventář akcí** → kapitola 6 v `PODKLAD_PRO_PARTNERY.md`.
+
+---
+
+## 2. Stručný popis produktu
+
+**ULOV KLIENTY** poskytuje partnerovi (salon, ordinace, řemeslo, provozovna):
+
+1. **Veřejný web** provozovny (obsah, fotky, ceník, kontakt),
+2. **Online rezervace** pro zákazníky (včetně e-mailových potvrzení a storna),
+3. **Administraci webu** (majitel),
+4. **FLOW** — pracovní prostředí majitele a personálu (kalendář, provoz, interní komunikace),
+5. Volitelně **Program růstu / partnerství** a podporu (mimo rozsah zpracování v tomto dokumentu, pokud nejde o smluvní vztah).
+
+Jeden backend obsluhuje **více partnerů (tenantů)**. Data jsou izolována přes `salon_id`. **Zákaznická data se mezi partnery nesdílejí.**
+
+Veřejné prostředí: `https://www.ulovklienty.cz/` (hub), dema a partner weby, API `https://api.ulovklienty.cz/`.  
+Staging (test): `https://www.staging.ulovklienty.cz/` — oddělená databáze; transakční maily lze přesměrovat na testovací schránku.
+
+---
+
+## 3. Inventář funkcí (pro právní mapování)
+
+### 3.1 Prezentační / marketingový hub (`presentace/`)
+
+| Funkce | Popis | Osobní údaje |
+|--------|--------|--------------|
+| Vertikální landing pages | Beauty, zdraví, řemesla, provozovny — nabídka partnerství | Ne (statický obsah) |
+| Formulář **nezávazné poptávky** | Jméno, e-mail, souhlas se zpracováním poptávky | Ano — zájemce o partnerství (`POST /api/poptavka/`) |
+| Odkazy na dema | Ukázkové weby a rezervace | Ne |
+
+### 3.2 Veřejný web partnera
+
+| Funkce | Popis | Osobní údaje |
+|--------|--------|--------------|
+| Úvod / O nás | Název, popis, hero fotka, CTA rezervace | Ne (obsah partnera) |
+| Galerie | Fotografie provozovny | Ne (může obsahovat tváře — dle partnera) |
+| Personál | Jméno, specializace, popis, fotka, rozvrh | Ano — zaměstnanci zveřejnění partnerem |
+| Ceník | Služby a ceny | Ne |
+| Novinky | Texty + volitelné obrázky | Ne |
+| Kontakt | Adresa, telefon, e-mail provozovny | Kontaktní údaje partnera (B2B) |
+| Zásady ochrany osobních údajů | `ochrana-osobnich-udaju.html` | Informační text |
+
+### 3.3 Online rezervace (zákazník)
+
+| Funkce | Popis | Osobní údaje |
+|--------|--------|--------------|
+| Nová rezervace | Služby, personál, termín, jméno, e-mail, poznámka | Ano |
+| Potvrzení e-mailem | Odkaz s tokenem; neopotvrzené se zruší (výchozí 24 h) | Ano (e-mail + token) |
+| Storno odkazem | UUID token v e-mailu, bez přihlášení | Ano (token) |
+| Registrace / přihlášení zákazníka | Účet „Moje rezervace“ | Ano |
+| Zapomenuté heslo | Nové heslo e-mailem | Ano |
+| Export do kalendáře (.ics) | Jedna rezervace | Termín + služba |
+| Potvrzení seznámení se zásadami | Povinný checkbox (informační povinnost, ne marketingový souhlas) | Evidence (IP, verze, čas) |
+
+### 3.4 Administrace webu (majitel, ⚙ na webu)
+
+| Funkce | Popis | Osobní údaje |
+|--------|--------|--------------|
+| Úprava textů a kontaktů | Název, popis, adresa, telefon, e-mail | Kontakt partnera |
+| Upload obrázků | Hero, galerie, logo — úložiště Bunny.net | Fotky (vč. personálu) |
+| Správa ceníku / novinek | Obsah webu | Ne |
+| SMTP nastavení | Odesílání transakčních e-mailů jménem partnera | Přihlašovací údaje ke schránce partnera |
+| URL stránky rezervací | Odkazy v e-mailech zákazníkům | Konfigurace |
+| Správa personálu (zobrazení na webu) | Jméno, foto, rozvrh | Ano |
+| Aktivace / vstup do FLOW | Stejný e-mail a heslo majitele | Ano |
+| Změna hesla majitele | Sdílené heslo web + FLOW | Hash hesla |
+
+### 3.5 FLOW — provozní prostředí týmu (`/flow/`)
+
+Denní provoz personálu (kalendář, směny, interní práce) probíhá ve **FLOW**, nikoli na veřejné stránce rezervací.
+
+| Funkce | Popis | Osobní údaje |
+|--------|--------|--------------|
+| Přihlášení | E-mail + heslo (`FlowUser` vázaný na zaměstnance / majitele) | Ano |
+| Kalendář rezervací | Provozní přehled, stavy (dokončeno, storno, …) | Ano — zákazníci rezervací |
+| Absence / volno | Plánování dostupnosti personálu | Ano — zaměstnanci |
+| Interní oznámení / banner | Zprávy pro tým po přihlášení | Text (provozní) |
+| FLOW Mail (volitelně) | Čtení / odesílání firemní schránky přes IMAP/SMTP partnera | Ano — obsah e-mailů ve schránce partnera |
+| Aktivace přístupu | Majitel vytvoří / resetuje přístup zaměstnance; dočasné heslo | Ano |
+| Blokace přístupu | Zakázání přihlášení do FLOW | Ano |
+
+### 3.6 Partner-admin (interní ops platformy)
+
+Interní rozhraní provozovatele platformy pro správu partnerů (domény, přístupy, platby partnerství — dle nasazení). **Není určeno zákazníkům salonů.** Může zobrazovat provozní údaje partnera a stavy FLOW.
+
+### 3.7 Automatizace na pozadí (cron / Celery)
+
+| Proces | Účel |
+|--------|------|
+| Připomínky před termínem | Transakční e-mail zákazníkovi |
+| Děkovný e-mail / výzva k recenzi | Transakční e-mail po službě (URL recenze nastaví partner) |
+| Expirace neopotvrzených rezervací | Uvolnění termínu |
+| Anonymizace (24 h po službě) | Smazání e-mailu / poznámky u salonu |
+| Soft delete / fyzické mazání | Retence 12 měsíců |
+| Mazání starého audit logu | Retence 12 měsíců |
+
+---
+
+## 4. Architektura a role v GDPR
+
+### 4.1 Multi-tenant model
+
+- Jeden backend, více salonů / provozoven (`Salon` + `salon_id`).
+- **Data mezi partnery se nesdílejí** (zákazníci, NO-show, blokace e-mailů).
+- Každý partner: vlastní obsah webu, SMTP, branding, personál, rezervace.
+
+### 4.2 Role správce vs. zpracovatele (technický pohled)
+
+| Role | Kdo | Odpovědnost (fakticky v systému) |
+|------|-----|----------------------------------|
+| **Správce** (vůči zákazníkovi provozovny) | Partner (majitel provozovny) | Účel rezervací, komunikace se zákazníkem, obsah webu, SMTP, personál |
+| **Zpracovatel** | Provozovatel platformy Ulov Rezervaci | Hosting API/DB, automatický životní cyklus, infrastruktura |
+| **Subjekt údajů** | Zákazník provozovny | Osoba rezervující termín |
+| **Uživatel s oprávněním** | Majitel, zaměstnanec | Web admin / FLOW |
+| **Zájemce o partnerství** | Osoba z poptávkového formuláře | B2B lead — oddělený účel od rezervací |
+
+> Finální smluvní vymezení správce/zpracovatele potvrdí právní oddělení ve DPA.
+
+---
+
+## 5. Kategorie osobních údajů
+
+### 5.1 Zákazníci (`Zakaznik`)
 
 | Údaj | Povinný | Účel |
 |------|---------|------|
-| Přezdívka / jméno | ano | Identifikace rezervace, zobrazení v kalendáři |
-| E-mail | ano (rezervace / registrace) | Potvrzení, připomínky, děkovný e-mail, přihlášení |
-| Hash e-mailu (SHA-256) | odvozený | Propojení záznamů po anonymizaci, NO-show bez plaintext e-mailu |
-| Heslo (bcrypt hash) | volitelné | Přihlášení do „Moje rezervace“ |
-| Potvrzení seznámení se zásadami + datum | ano při registraci / rezervaci | Důkaz splnění informační povinnosti |
-| Verze zásad + jazyk + IP | při potvrzení | Evidence v `SouhlasGDPR` a na `Zakaznik` |
-| Marketing souhlas | pole existuje, **výchozí false** | **Nepoužíváno** — marketingové e-maily se neodesílají; právní základ by byl čl. 6 odst. 1 písm. a) |
-| Blokace účtu | systémové | Po opakovaném NO-show nebo ručně majitelkou |
-| Počet NO-show | systémové | Reputace v rámci salonu |
+| Přezdívka / jméno | ano | Identifikace rezervace, kalendář |
+| E-mail | ano (rezervace / registrace) | Potvrzení, připomínky, děkovný mail, přihlášení |
+| Hash e-mailu (SHA-256) | odvozený | Propojení po anonymizaci, NO-show |
+| Heslo (hash) | volitelné | „Moje rezervace“ |
+| Potvrzení seznámení se zásadami + datum | ano při rezervaci / registraci | Informační povinnost |
+| Verze zásad + jazyk + IP | při potvrzení | Evidence (`SouhlasGDPR` / pole na zákazníkovi) |
+| Marketing souhlas | pole existuje, **výchozí false** | **Nepoužíváno** — marketingové kampaně se neodesílají |
+| Blokace účtu, počet NO-show | systémové | Ochrana provozu v rámci jedné provozovny |
 
-### 3.2 Rezervace (`Rezervace`)
-
-| Údaj | Účel |
-|------|------|
-| Termín (začátek, konec) | Provoz rezervací |
-| Služby, pracovník | Plánování kapacity |
-| Poznámka zákazníka | Provozní informace pro salon |
-| Interní poznámka | Pouze personál salonu |
-| E-mail / jméno hosta | Rezervace bez registrace (`email_host`, `jmeno_host`) |
-| Tokeny (UUID) | Storno (`cancel_token`), potvrzení e-mailem (`potvrzeni_token`) |
-| Stav rezervace | Provoz, statistiky |
-| Časová razítka životního cyklu | `thank_you_sent_at`, `anonymized_at`, `deleted_at` |
-
-### 3.3 Zaměstnanci (`Zamestnanec`)
+### 5.2 Rezervace (`Rezervace`)
 
 | Údaj | Účel |
 |------|------|
-| Jméno, specializace, popis, fotka | Web salonu, kalendář |
-| Přihlašovací jméno | Přístup do administrace |
-| Heslo (hash) | Autentizace personálu |
-| Role (`majitel` / `zamestnanec`) | Řízení přístupu |
-| Aktivní (`aktivni`) | Přijímání rezervací + možnost přihlášení |
-| Číslo účtu | QR platby u rezervací zaměstnance |
+| Termín, služby, pracovník | Provoz |
+| Poznámka zákazníka / interní poznámka | Provoz |
+| E-mail / jméno hosta (bez účtu) | Rezervace bez registrace |
+| Tokeny UUID | Storno, potvrzení e-mailem |
+| Stav, časová razítka životního cyklu | Provoz, GDPR |
 
-### 3.4 NO-show archiv (`NoShowZaznam`)
-
-| Údaj | Účel |
-|------|------|
-| Jméno, e-mail (do anonymizace) | Evidence nedorazivších zákazníků **v rámci jednoho salonu** |
-| Hash e-mailu | Identifikace po vymazání plaintext e-mailu |
-| Metadata rezervace | Audit a rozhodnutí o blokaci |
-
-### 3.5 Audit log (`SalonAuditLog`)
+### 5.3 Zaměstnanci a FLOW (`Zamestnanec`, `FlowUser`)
 
 | Údaj | Účel |
 |------|------|
-| Kdo (`kdo`) | Jméno přihlášeného zaměstnance / majitelky |
-| Kdy, kategorie, popis | Sledovatelnost změn |
-| Snapshot před/po (JSON) | Detail změny — **hesla a tokeny jsou maskována** (`***`) |
+| Jméno, specializace, popis, fotka | Web, kalendář |
+| Přihlašovací e-mail / jméno | Autentizace web + FLOW |
+| Heslo (hash) | Autentizace |
+| Role (`majitel` / `zamestnanec`) | Oprávnění |
+| Číslo účtu (volitelně) | QR platby (SPAYD) — účet **zaměstnance/partnera**, ne karty zákazníků |
+| FLOW session token | Přihlášení do FLOW |
+| IMAP/SMTP credentials provozovny | FLOW Mail — přístup ke schránce partnera |
 
-### 3.6 Co systém **nezpracovává**
+### 5.4 NO-show archiv, audit
 
-- Marketingové kampaně ani profilování pro reklamu.
-- Platební karty (jen text/QR instrukce a číslo účtu zaměstnance).
-- Rodné číslo, zdravotní údaje, citlivé kategorie dle čl. 9 GDPR.
+- NO-show: jméno/e-mail (do anonymizace), hash, metadata — **jen v rámci jedné provozovny**.
+- Audit log: kdo, kdy, co; hesla/tokeny maskovány (`***`).
+- GDPR audit: export / výmaz / změny účtů personálu.
+
+### 5.5 Poptávka z hubu
+
+| Údaj | Účel |
+|------|------|
+| Jméno, e-mail, zpráva (dle formuláře) | Vyřízení B2B poptávky partnerství |
+| Souhlas / potvrzení dle formuláře | Evidence u leadu |
+
+### 5.6 Co systém **nezpracovává** (běžně)
+
+- Marketingové kampaně a profilování pro reklamu.
+- Platební karty zákazníků (jen QR / textové platební instrukce).
+- Rodné číslo, občanský průkaz, zdravotní údaje, zvláštní kategorie dle čl. 9 GDPR.
+- Telefon a adresa bydliště **zákazníka** (není součástí standardního rezervačního formuláře).
 
 ---
 
-## 4. Právní základ zpracování a informační povinnost
+## 6. Právní základ a informační povinnost (zákazník provozovny)
 
-### 4.1 Právní základ (čl. 6 GDPR)
+### 6.1 Právní základ
 
-Zpracování osobních údajů při online rezervaci a provozu účtu zákazníka probíhá na základě:
+**čl. 6 odst. 1 písm. b) GDPR** — plnění smlouvy / opatření před uzavřením smlouvy (rezervace služby).
 
-**čl. 6 odst. 1 písm. b) GDPR** — zpracování je nezbytné pro **plnění smlouvy** (rezervace služby salonu) nebo pro **provedení opatření před uzavřením smlouvy** na žádost subjektu údajů.
+Checkbox u rezervace **není souhlasem** dle čl. 6 odst. 1 písm. a) — jde o **potvrzení seznámení se Zásadami** (čl. 12–14 GDPR).
 
-> **Důležité:** Nejde o **souhlas** dle čl. 6 odst. 1 písm. a) GDPR. Checkbox u rezervace proto **není souhlasem se zpracováním** — slouží k **potvrzení seznámení se Zásadami ochrany osobních údajů** (splnění informační povinnosti dle čl. 12–14 GDPR).
+### 6.2 Evidence seznámení
 
-### 4.2 Potvrzení informační povinnosti (zákazník)
+Ukládá se čas, IP, verze zásad, jazyk, zdroj (`rezervace` / `registrace`).  
+Technické názvy polí (`SouhlasGDPR`, `ochrana_udaju_souhlas`) jsou historické — obsahově jde o evidenci seznámení.
 
-| Akce | Požadavek |
-|------|-----------|
-| Nová online rezervace | Povinné **potvrzení seznámení** se [Zásadami ochrany osobních údajů](salon1/ochrana-osobnich-udaju.html) — checkbox ve formuláři; validace na frontendu i v API (technické pole `ochrana_udaju_souhlas`) |
-| Registrace účtu zákazníka | Stejné potvrzení seznámení se zásadami |
-| Marketing | **Žádný checkbox** — pole `marketing_souhlas` zůstává `false`; marketing se neprovádí |
+### 6.3 Potvrzení rezervace e-mailem
 
-Text checkboxu ve formuláři: *„Beru na vědomí zpracování osobních údajů podle Zásad ochrany osobních údajů.“*
-
-### 4.3 Evidence potvrzení seznámení (auditní stopa)
-
-Při každém potvrzení seznámení se zásadami (rezervace nebo registrace) systém ukládá důkazní záznam:
-
-| Pole | Popis |
-|------|-------|
-| `datum` / `cas` | Časové razítko (`SouhlasGDPR.vytvoreno`, `Zakaznik.gdpr_datum`) |
-| `ip_adresa` | IP klienta (`SouhlasGDPR.ip_adresa`, `Zakaznik.gdpr_ip`) |
-| `zasady_verze` | Verze zásad, se kterými se zákazník seznámil (např. `1.1`) |
-| `jazyk` | Jazyk zásad (výchozí `cs`) |
-| `zdroj` | `rezervace` / `registrace` |
-
-Verze zásad je konfigurovatelná per salon (`RezervacniNastaveni.gdpr_zasady_verze`) a vrací se v API `/rezervace/info/` jako `gdpr.zasady_verze`. Frontend ji načte při otevření formuláře a odešle v poli `zasady_verze` spolu s `jazyk` při rezervaci i registraci. Veřejný text zásad uvádí aktuální verzi v `ochrana-osobnich-udaju.html` (aktuálně **1.1**). Při každé změně textu majitelka zvýší verzi v nastavení rezervací.
-
-Služba: `backend/rezervace/services/gdpr_consent.py`, model `SouhlasGDPR` (historický název v kódu — obsahově jde o evidenci potvrzení seznámení, nikoli o souhlas dle čl. 6 odst. 1 písm. a)).
-
-> **Poznámka k názvům polí v kódu:** Pole `gdpr_souhlas`, `ochrana_udaju_souhlas` a model `SouhlasGDPR` jsou technické identifikátory z dřívější verze. V dokumentaci a UI se používá formulace **potvrzení seznámení se zásadami**.
-
-### 4.4 Potvrzení rezervace e-mailem
-
-- Online rezervace se vytvoří ve stavu **„Čeká na potvrzení“**.
-- Zákazník obdrží e-mail s odkazem; rezervace je platná až po potvrzení.
-- Neopotvrzené rezervace se po uplynutí platnosti odkazu (výchozí **24 h**) automaticky zruší.
-- Účel: ověření vlastnictví e-mailové adresy, snížení falešných rezervací.
-
-### 4.5 Veřejný dokument
-
-Každý salon má stránku `ochrana-osobnich-udaju.html` s popisem:
-
-- správce vs. platforma,
-- rozsah údajů,
-- doby uchování (jednotná retenční politika platformy),
-- práva subjektu údajů,
-- právní základ zpracování (čl. 6 odst. 1 písm. b)),
-- absence marketingu.
+Online rezervace vzniká ve stavu „čeká na potvrzení“; platnost odkazu výchozí **24 h**, pak automatické zrušení. Účel: ověření e-mailu, snížení falešných rezervací.
 
 ---
 
-## 5. Účty a přístupová práva
+## 7. Účty a přístupová práva
 
-### 5.1 Typy účtů
+### 7.1 Typy účtů
 
 | Typ | Autentizace | Session |
 |-----|-------------|---------|
-| **Zákazník** | E-mail + heslo (volitelné) | Token UUID v `localStorage`, platnost **30 dní** (`ZakaznikSession`) |
-| **Zaměstnanec** | Přihlašovací jméno + heslo | HTTP hlavička `X-Staff-Token`, platnost **14 dní** (`ZamestnanecSession`) |
-| **Majitelka** | Stejný mechanismus jako zaměstnanec, role `majitel` | Stejně |
-| **Legacy admin** | Sdílené heslo `SALON_ADMIN_PASSWORD` (dev / přechodné) | Bez session — heslo v každém požadavku |
+| Zákazník | E-mail + heslo (volitelné) | Token UUID, cca 30 dní |
+| Zaměstnanec | E-mail / login + heslo | `X-Staff-Token`, cca 14 dní; FLOW session |
+| Majitel | Stejně, role `majitel` | Web admin + FLOW |
+| Legacy admin heslo | `SALON_ADMIN_PASSWORD` (dev / přechodné) | Bez session — **není cíl produkčního modelu** |
 
-Hesla (zákazník i personál) se ukládají pouze jako **hash** (Django `make_password` / bcrypt).
+Hesla pouze jako hash (Django password hashers).
 
-### 5.2 Matice oprávnění — personál salonu
+### 7.2 Matice oprávnění (zjednodušeně)
 
-| Funkce | Majitelka | Zaměstnanec | Zákazník |
-|--------|-----------|-------------|----------|
-| Vlastní kalendář rezervací | vše | jen vlastní | — |
-| Statistiky | celý salon | jen vlastní | — |
-| Nastavení rezervací | ano | ne | — |
-| Správa personálu (kadeřnice) | ano | ne | — |
-| NO-show archiv, blokace e-mailů | ano | ne | — |
-| Audit log | ano | ne | — |
-| GDPR export / výmaz zákazníka | ano | ne | — |
-| Úprava webu salonu (⚙) | ano | ne | — |
-| Nová rezervace (zákaznický formulář) | — | — | ano |
-| Moje rezervace / storno odkazem | — | — | ano (vlastní) |
+| Funkce | Majitel | Zaměstnanec | Zákazník |
+|--------|---------|-------------|---------|
+| Úprava webu (⚙) | ano | ne | — |
+| Nastavení rezervací, GDPR export/výmaz | ano | ne | — |
+| Správa personálu / FLOW účtů | ano | ne | — |
+| Kalendář / provoz ve FLOW | ano (celý) | ano (dle oprávnění / vlastní) | — |
+| Nová rezervace / moje rezervace | — | — | ano |
 
-Implementace: `backend/rezervace/services/staff_auth.py`, `backend/salons/permissions.py`.
+### 7.3 Deaktivace zaměstnance
 
-### 5.3 Deaktivace účtu zaměstnance (bez smazání)
+Účet se **nemaže** — `aktivni = false`, invalidace session, historie rezervací a audit zůstávají. Účet majitele nelze deaktivovat stejnou cestou.
 
-Při odchodu zaměstnance majitelka **deaktivuje účet** — účet se **nemazá**.
+### 7.4 Blokace zákazníka (NO-show)
 
-| Efekt | Chování |
-|-------|---------|
-| `aktivni = false` | Zaměstnanec se **nemůže přihlásit** |
-| `zobrazit_na_webu = false` | Zmizí z veřejného webu |
-| Sessiony | Okamžitě invalidovány |
-| Historie rezervací | **Zachována** (vazba na `zamestnanec_id`) |
-| Audit log | **Zachován** (jméno v poli `kdo`) |
-| Účet majitelky | **Nelze deaktivovat** |
+Jen v rámci provozovny: od 2× problematický, od 3× auto-blokace online rezervací; majitel může blokovat ručně.
 
-Obnovení: majitelka zaškrtne „Aktivní“ a uloží.
+### 7.5 GDPR nástroje majitele
 
-API: `POST /api/salon/<id>/rezervace/admin/zamestnanci/<id>/deaktivovat/`  
-(`DELETE` na stejném URL provádí deaktivaci, nikoli fyzické smazání.)
-
-### 5.4 Blokace zákazníka (NO-show)
-
-- NO-show se eviduje **pouze v rámci daného salonu** (`email_reputace.py`).
-- Od **2× NO-show**: označení jako problematický.
-- Od **3× NO-show**: automatická blokace nových rezervací v tom salonu.
-- Majitelka může e-mail ručně zablokovat / odblokovat.
-- Blokovaný zákazník při pokusu o rezervaci obdrží: *„Váš účet je blokován. Kontaktujte salon.“*
-
-### 5.5 Administrátorské GDPR nástroje (jen majitelka)
-
-V administraci rezervací → **Nastavení** (pouze role `majitel`):
-
-| Funkce | Popis |
-|--------|-------|
-| Verze Zásad ochrany osobních údajů | Pole `gdpr_zasady_verze` — musí odpovídat verzi v `ochrana-osobnich-udaju.html` |
-| Export údajů subjektu | Vyhledání podle e-mailu → stažení JSON (`GET /api/salon/<id>/rezervace/admin/gdpr/export/?email=...`) |
-| Výmaz na žádost | Potvrzení → anonymizace / výmaz osobních údajů (`POST /api/salon/<id>/rezervace/admin/gdpr/vymaz/`) |
-
-Export obsahuje profil zákazníka, rezervace a evidenci potvrzení seznámení se zásadami. Výmaz zachová anonymizované rezervace pro statistiky do konce retention období. Obě operace se zapisují do GDPR audit logu (kap. 8.3).
+Export JSON podle e-mailu; výmaz na žádost (anonymizace se zachováním anonymních statistik do konce retence). Obě operace do GDPR audit logu.
 
 ---
 
-## 6. Životní cyklus osobních údajů rezervace
+## 8. Životní cyklus osobních údajů rezervace
 
-Automatizovaný cron (doporučeno **každou hodinu**):
+Cron: `python manage.py rezervace_zivotni_cyklus` (doporučeno hodinově).
 
-```bash
-python manage.py rezervace_zivotni_cyklus
-```
+| Fáze | Čas od konce služby | Akce |
+|------|---------------------|------|
+| Provoz | 0 | Partner vidí e-mail (platby, NO-show) |
+| Děkovný e-mail | +2 h (pokud zapnutý) | Odeslání |
+| **Anonymizace** | **+24 h** | E-mail a poznámka zákazníka pryč |
+| Soft delete | +12 měsíců | Zmizí z běžného kalendáře |
+| Fyzické smazání | po retenci | Smazání včetně související historie |
 
-### 6.1 Časová osa (po ukončení služby)
+**Retence platformy: 12 měsíců** — jednotná, partner ji v administraci **nemění** (`GDPR_UCHOVAVANI_MESICU`).
 
-| Fáze | Čas od konce služby | Co se stane |
-|------|---------------------|-------------|
-| Provoz | 0 | Salon vidí e-mail zákazníka (platby, NO-show) |
-| Děkovný e-mail | +2 h (pokud zapnutý) | Odeslání, `thank_you_sent_at` |
-| **Anonymizace** | +24 h | E-mail u salonu smazán, poznámka zákazníka vymazána, `anonymized_at` |
-| Soft delete | +12 měsíců od konce služby | `deleted_at` — zmizí z kalendáře salonu |
-| Fyzické smazání | po uplynutí retenční doby | Smazání rezervace, historie, souvisejícího audit logu |
-
-### 6.2 Retenční doba (platforma)
-
-Platforma Ulov Rezervaci používá **jednotnou retenční dobu 12 měsíců** pro všechny salony. Tato hodnota je stanovena provozovatelem platformy jako součást bezpečnostních a organizačních opatření a **není uživatelsky měnitelná** (salon ji nemůže změnit v administraci).
-
-Technicky: konstanta `GDPR_UCHOVAVANI_MESICU_DEFAULT` v `backend/salon_api/settings.py` (proměnná prostředí `GDPR_UCHOVAVANI_MESICU`, výchozí `12`). Cron `rezervace_zivotni_cyklus` ji aplikuje stejně na všechny tenanty.
-
-### 6.3 Co anonymizace konkrétně provede
-
-(`backend/rezervace/services/gdpr.py`)
-
-- Vymaže `email_host`, `poznamka_zakaznika` na rezervaci.
-- U zákazníka: e-mail nahradí placeholderem `anon-{id}@anonym.ulovrezervaci.local`, uloží SHA-256 hash původního e-mailu, smaže heslo a sessiony.
-- U NO-show záznamů: vymaže plaintext e-mail, ponechá hash.
-- V historii rezervace vyčistí e-mailové údaje ze snapshotů.
-
-### 6.4 Co po anonymizaci zůstává
-
-- Přezdívka / jméno u rezervace.
-- Termín, služby, pracovník, stav.
-- Agregované statistiky salonu (bez identifikace e-mailu).
-
-### 6.5 Neopotvrzené online rezervace
-
-- Stav `ceka` + expirace potvrzovacího odkazu (výchozí 24 h).
-- Po expiraci: automatické zrušení (`zakaznik_storno`), uvolnění termínu.
+Detail: `ZIVOTNI_CYKLUS_REZERVACE.md`.
 
 ---
 
-## 7. E-mailová komunikace
+## 9. E-mailová komunikace (transakční)
 
-| Typ e-mailu | Příjemce | Kdy | Marketing |
-|-------------|----------|-----|-----------|
-| Výzva k potvrzení rezervace | zákazník | Po vytvoření online rezervace | ne |
-| Potvrzení rezervace | zákazník | Po potvrzení / okamžitě u personálu | ne |
-| Připomínka před termínem | zákazník | Dle nastavení (např. +24 h před) | ne |
-| Děkovný e-mail / recenze | zákazník | Po službě (např. −2 h od konce) | ne |
-| NO-show upozornění | zákazník | Ručně majitelkou | ne |
-| Žádost o platbu (QR) | zákazník | Ručně personálem | ne |
-| Storno | zákazník (+ kopie salonu) | Při zrušení | ne |
-| Zapomenuté heslo | zákazník | Na žádost | ne |
+| Typ | Příjemce | Marketing |
+|-----|----------|-----------|
+| Výzva k potvrzení rezervace | zákazník | ne |
+| Potvrzení / připomínka / storno | zákazník (+ storno kopie partnerovi) | ne |
+| Děkovný / výzva k recenzi | zákazník | ne (odkaz na recenze partnera) |
+| NO-show / QR platba | zákazník | ne |
+| Zapomenuté heslo | zákazník | ne |
+| FLOW přístup (dočasné heslo) | zaměstnanec / majitel | ne |
+| Poptávka partnerství | provozovatel platformy | B2B lead |
 
-Odesílání: SMTP **per salon** (nastavení v administraci webu) nebo proměnné prostředí.  
-Obsah e-mailů: šablony v `backend/rezervace/templates/rezervace/emails/`.
+Odesílání: **SMTP nastavené partnerem** (nebo env). Odkazy v mailech používají `web_rezervace_url` partnera (absolutní HTTPS URL produkční stránky rezervací).  
+Volitelně fronta Celery + Redis.
 
----
-
-## 8. Audit a sledovatelnost
-
-### 8.1 Audit log salonu
-
-- Zapisuje změny: rezervace, personál, nastavení, otevírací doba, e-mail SMTP, …
-- Actor = jméno přihlášeného staff (`audit_actor` z `X-Staff-Token`).
-- Citlivá pole (`password`, `smtp_password`, `token`, …) se do logu ukládají jako `***`.
-- Přístup: **pouze majitelka**.
-- Retence: mazání záznamů starších **12 měsíců** (cron).
-
-### 8.2 Historie rezervace (`RezervaceHistorie`)
-
-- Interní log změn konkrétní rezervace (kdo, co, kdy).
-- Po fyzickém smazání rezervace se historie také maže.
-
-### 8.3 GDPR audit log
-
-Samostatný log operací souvisejících s ochranou osobních údajů (`backend/rezervace/services/gdpr_audit.py`):
-
-| Operace | Kdo spustil |
-|---------|-------------|
-| Export osobních údajů zákazníka | Majitelka |
-| Výmaz na žádost subjektu | Majitelka |
-| Deaktivace / aktivace účtu zaměstnance | Majitelka |
-
-Každý záznam obsahuje čas, IP, popis a identifikaci subjektu (e-mail / ID).
+**FLOW Mail:** při zapnutí IMAP čte systém schránku partnera — obsah e-mailů zpracovává jménem partnera jako součást poskytované funkce.
 
 ---
 
-## 9. Bezpečnostní opatření (technická)
+## 10. Audit a sledovatelnost
 
-| Oblast | Implementace |
-|--------|--------------|
-| Hesla | Hash (Django password hashers), min. délka 6 (personál) / 8 (zákazník registrace) |
-| API autentizace personálu | Bearer-like token v hlavičce `X-Staff-Token` |
-| Storno / potvrzení bez přihlášení | Jednorázové UUID tokeny v URL |
-| Izolace tenantů | Všechny dotazy filtrují `salon_id` |
-| Session expiry | Automatické mazání expirovaných session (cron) |
-| Deaktivovaný personál | Okamžitá invalidace session + odmítnutí loginu |
-| Audit | Maskování citlivých hodnot v JSON snapshotech |
-| Rate limiting | `backend/rezervace/throttles.py` — login 5/min, rezervace 20/h, reset hesla 3/h, potvrzení e-mailu 10/h (per IP) |
-| Security headers | `backend/salon_api/security_middleware.py` — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy |
-| CORS | `django-cors-headers` — v produkci `CORS_ALLOWED_ORIGINS` z env; hlavička `X-Staff-Token` povolena |
-| CSRF | API **nepoužívá session cookies** — autentizace přes tokeny (`X-Staff-Token`, `session_token` v těle / `localStorage`). CSRF útok na cookie-based session proto není primární vektor; storno a potvrzení rezervace chrání jednorázové UUID tokeny v URL |
-
-### 9.1 Rate limiting (per IP)
-
-Ochrana proti zneužití citlivých endpointů (`backend/rezervace/throttles.py`, cache v `settings.py`):
-
-| Endpoint | Limit |
-|----------|-------|
-| Login zákazníka | 5 / minuta |
-| Login personálu | 5 / minuta |
-| Nová rezervace (`POST /rezervace/`) | 20 / hodina |
-| Reset hesla | 3 / hodina |
-| Potvrzení rezervace e-mailem | 10 / hodina |
-
-Při překročení limitu API vrací HTTP **429 Too Many Requests**.
-
-### 9.2 CORS a security headers
-
-- **CORS:** `django-cors-headers`; v produkci nastavit proměnnou `CORS_ALLOWED_ORIGINS` (seznam povolených domén frontendu).
-- **Security headers** (`backend/salon_api/security_middleware.py`): `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`. V produkci s HTTPS doplnit `SECURE_*` nastavení Django.
-
-### 9.3 Doporučení před produkcí
-
-| Oblast | Aktuální stav | Doporučení |
-|--------|---------------|------------|
-| Přenos | HTTP v dev | **HTTPS povinně**, HSTS (middleware připraveno pro `SECURE_*`) |
-| Legacy heslo | `SALON_ADMIN_PASSWORD` pro celou instanci | Odstranit v produkci, pouze staff tokeny |
-| Databáze | SQLite v dev | PostgreSQL, šifrované zálohy |
-| Rate limiting | Implementováno (in-memory cache) | V produkci Redis pro sdílený limit mezi workers |
-| Logování přístupů | Audit změn + GDPR audit | Centrální logy serveru |
-| DPA se subdodavateli | Bunny.net (obrázky), SMTP poskytovatel | Smluvní pokrytí |
-
-Detail: `TECHNICKE_NASAZENI.md`, sekce 8.
+- Audit log změn (rezervace, personál, nastavení, SMTP…) — citlivá pole maskována.
+- Historie jednotlivých rezervací.
+- GDPR audit (export, výmaz, deaktivace účtů).
+- Retence auditních záznamů: typicky 12 měsíců (cron).
 
 ---
 
-## 10. Práva subjektů údajů (čl. 12–22 GDPR)
+## 11. Bezpečnostní opatření (technická)
 
-| Právo | Jak je v systému podporováno |
-|-------|------------------------------|
-| **Informace** | `ochrana-osobnich-udaju.html` + potvrzení seznámení se zásadami při rezervaci |
-| **Přístup** | Zákazník: „Moje rezervace“ po přihlášení; jinak žádost na salon / platformu |
-| **Oprava** | Zákazník může zadat nové jméno při další rezervaci; majitelka může upravit v adminu |
-| **Výmaz** | Automatický po 12 měsících (platforma); předčasný výmaz — majitelka v adminu (GDPR → Výmaz na žádost) |
-| **Omezení** | Blokace účtu (`blokovan`) |
-| **Přenositelnost** | Export .ics jedné rezervace; **hromadný export JSON** — majitelka (`GET .../admin/gdpr/export/`) |
-| **Námitka proti marketingu** | Není relevantní — marketing se neprovádí |
-| **Stížnost u ÚOOÚ** | Informováno v zásadách ochrany osobních údajů |
-
-> **Provozní poznámka:** Pro plnou compliance je nutné definovat **proces vyřizování žádostí** (kontaktní e-mail, lhůty 30 dní) na straně salonu a platformy.
+| Oblast | Stav |
+|--------|------|
+| Hesla | Hash |
+| API personálu | Token hlavička / FLOW session |
+| Storno / potvrzení | Jednorázové UUID v URL |
+| Izolace tenantů | Filtr `salon_id` |
+| Rate limiting | Login, rezervace, reset hesla, potvrzení (per IP) |
+| Security headers | CSP, X-Frame-Options, … |
+| CORS | Povolené produkční origins |
+| Přenos | HTTPS (LIVE) |
+| DB | PostgreSQL (LIVE/staging); SQLite jen lokální vývoj |
+| Hosting | Hetzner VPS, Docker Compose |
+| Média | Bunny.net (cesta `webs/salon-{id}/…`) |
+| Zálohy | DB + konfigurace + `www/` (cron / před deployem) |
 
 ---
 
-## 11. Subdodavatelé a přenos dat
+## 12. Práva subjektů údajů (čl. 12–22)
+
+| Právo | Podpora v systému |
+|-------|-------------------|
+| Informace | Zásady na webu + checkbox seznámení |
+| Přístup | Moje rezervace; export majitelem |
+| Oprava | Nová rezervace / úprava v adminu |
+| Výmaz | Auto po 12 měs.; předčasně majitel (GDPR výmaz) |
+| Přenositelnost | .ics; JSON export majitelem |
+| Námitka marketingu | Není relevantní — marketing se neprovádí |
+| Stížnost ÚOOÚ | Uvedeno v zásadách |
+
+Provozní lhůty a kontaktní proces (30 dní) musí doplnit smlouva / interní postup partnera a platformy.
+
+---
+
+## 13. Subdodavatelé (orientační)
 
 | Subdodavatel | Účel | Osobní údaje |
 |--------------|------|--------------|
-| **SMTP poskytovatel salonu** (např. Forpsi) | Odesílání transakčních e-mailů | E-mail zákazníka, jméno v těle zprávy |
-| **Bunny.net** (volitelně) | CDN / úložiště obrázků webu | Fotky personálu (jméno v alt textu na webu), ne zákaznické údaje |
-| **Hosting API / DB** | Provoz platformy | Všechna data dle této dokumentace |
+| **Hetzner** | Hosting VPS (API, DB, staging) | Data dle této dokumentace |
+| **Bunny.net** | CDN / storage obrázků webu | Fotky webu / personálu (ne rezervační e-maily zákazníků) |
+| **SMTP poskytovatel partnera** (např. Forpsi) | Transakční maily | E-mail a jméno v těle zprávy |
+| **IMAP** (stejná schránka partnera) | FLOW Mail | Obsah schránky partnera |
 
-Data **nejsou** prodávána třetím stranám ani používána pro reklamu.
+Aktuální smluvní seznam: `dokumenty/priloha-03-dalsi-zpracovatele.html`.  
+Data se **neprodávají** třetím stranám ani nepoužívají k reklamě platformy.
 
 ---
 
-## 12. Přehled klíčových souborů (pro audit kódu)
+## 14. Co musí právní / compliance doplnit mimo software
 
-| Oblast | Soubor |
-|--------|--------|
-| GDPR anonymizace | `backend/rezervace/services/gdpr.py` |
-| Evidence potvrzení seznámení | `backend/rezervace/services/gdpr_consent.py` |
-| Admin export / výmaz | `backend/rezervace/services/gdpr_admin.py` |
-| GDPR audit | `backend/rezervace/services/gdpr_audit.py` |
-| Rate limiting | `backend/rezervace/throttles.py` |
-| Security headers | `backend/salon_api/security_middleware.py` |
+1. Finální texty DPA a příloh (složka `dokumenty/`).
+2. ROPA správce (partner) a zpracovatele (platforma).
+3. Proces vyřizování žádostí subjektů (kontakt, lhůty).
+4. Posouzení DPIA dle rozsahu a rizik.
+5. Smluvní pokrytí subdodavatelů a B2B poptávek z hubu.
+6. Texty zásad na webech partnerů (verze musí sedět s `gdpr_zasady_verze`).
+
+---
+
+## 15. Klíčové soubory v kódu (pro audit)
+
+| Oblast | Umístění |
+|--------|----------|
+| GDPR anonymizace / admin | `backend/rezervace/services/gdpr*.py` |
 | Životní cyklus | `backend/rezervace/services/zivotni_cyklus.py` |
-| NO-show / blokace | `backend/rezervace/services/email_reputace.py` |
-| Přihlášení personálu | `backend/rezervace/services/staff_auth.py` |
-| Oprávnění API | `backend/salons/permissions.py` |
-| Audit | `backend/rezervace/services/audit.py` |
-| Modely | `backend/rezervace/models.py` |
-| Zásady pro zákazníky | `salon1/ochrana-osobnich-udaju.html`, `salon2/ochrana-osobnich-udaju.html` |
-| Cron příkaz | `backend/rezervace/management/commands/rezervace_zivotni_cyklus.py` |
+| NO-show | `backend/rezervace/services/email_reputace.py` |
+| E-maily rezervací | `backend/rezervace/services/emails.py` |
+| URL rezervací v mailech | `backend/rezervace/services/booking_urls.py` |
+| Staff / majitel auth | `backend/rezervace/services/staff_auth.py` |
+| FLOW | `backend/flow/` |
+| Partner-admin | `backend/partner_admin/` |
+| Zásady pro zákazníky | `*/ochrana-osobnich-udaju.html` |
+| Formální DPA/ROPA | `dokumenty/` |
 
 ---
 
-## 13. Shrnutí pro compliance officer
+## 16. Shrnutí pro právní oddělení
 
-### Co systém dělá správně
+### Produkt umí (podstatné pro dokumentaci)
 
-1. **Minimizace údajů** — žádný marketing, žádné citlivé kategorie.
-2. **Izolace salonů** — žádné sdílení zákazníků ani NO-show mezi tenanty.
-3. **Automatická anonymizace** e-mailů u salonu do 24 h po službě.
-4. **Automatické mazání** po 12 měsících (jednotná retenční politika platformy) včetně audit logu starších záznamů.
-5. **Oddělené účty personálu** s rolemi majitel / zaměstnanec.
-6. **Deaktivace bez smazání** — zachování auditu a historie.
-7. **Dokumentované potvrzení seznámení** se zásadami — včetně data, času, IP, verze a jazyka (právní základ čl. 6 odst. 1 písm. b), nikoli souhlas).
-8. **Potvrzení rezervace e-mailem** — ověření e-mailové adresy.
-9. **Audit log** s maskováním hesel.
-10. **Rate limiting** citlivých endpointů.
-11. **Security headers** a CORS.
-12. **Admin export a výmaz** osobních údajů na žádost.
-13. **GDPR audit log** exportů, výmazů a změn účtů personálu.
-14. **Jednotná retenční doba 12 měsíců** — stanovena provozovatelem platformy, salony ji nemohou měnit.
+- Multi-tenant web + rezervace + FLOW pro libovolný počet partnerů.
+- Transakční e-maily bez marketingu.
+- Automatická anonymizace a retence.
+- Role majitel / zaměstnanec / zákazník; izolace dat mezi partnery.
+- Export a výmaz na žádost (nástroje majitele).
+- Evidence seznámení se zásadami (ne marketingový souhlas).
 
-### Co vyžaduje doplnění mimo software
+### Produkt záměrně neumí / nedělá
 
-1. Smlouva DPA mezi platformou a salony.
-2. Záznamy o činnostech zpracování (ROPA) per správce.
-3. Proces vyřizování žádostí subjektů údajů.
-4. Produkční hardening (HTTPS, odstranění legacy hesla, zálohy).
-5. Posouzení DPIA (doporučeno při větším rozsahu nebo citlivějších údajích).
+- Sdílení zákazníků mezi provozovnami.
+- Marketingové newslettery zákazníkům.
+- Zpracování platebních karet.
+- Zvláštní kategorie údajů dle čl. 9.
 
 ---
 
-## 14. Historie verzí dokumentu
+## 17. Historie verzí
 
 | Verze | Datum | Změna |
 |-------|-------|-------|
-| 1.0 | červenec 2026 | První vydání — GDPR, účty, přístupy, životní cyklus, audit, deaktivace personálu |
-| 1.1 | červenec 2026 | Evidence potvrzení seznámení (IP, verze, jazyk), rate limiting, security headers, admin GDPR export/výmaz |
-| 1.2 | červenec 2026 | Terminologie: právní základ čl. 6 odst. 1 písm. b) místo „souhlasu“; doplněny tabulky rate limiting, admin GDPR nástroje, CSRF/CORS |
-| 1.3 | červenec 2026 | Retenční doba sjednocena na 12 měsíců na úrovni platformy — salony ji nemohou měnit |
+| 1.0–1.3 | červenec 2026 | GDPR jádro, účty, retence 12 měs., rate limit, admin GDPR |
+| 1.4 | srpen 2026 | Inventář funkcí; FLOW; LIVE stack; subdodavatelé |
+| **1.5** | **srpen 2026** | Odkaz na `PODKLAD_PRO_PARTNERY.md` (ceny, balíčky, vstupní poplatky, kompletní FLOW); sekce 0 / 1a / 1b |
 
 ---
 
-*Tento dokument popisuje stav kódu platformy Ulov Rezervaci k datu vydání. Nepředstavuje právní poradenství; finální compliance posouzení má provést právník / DPO v kontextu konkrétního nasazení.*
+*Dokument popisuje stav platformy Ulov Rezervaci / ULOV KLIENTY k datu vydání. Nepředstavuje právní poradenství; finální compliance posouzení provádí právní oddělení / DPO.*

@@ -423,6 +423,7 @@ cd salon2 && python -m http.server 5501
 - API: http://localhost:8000/api/  
 - Salon 1: http://localhost:5500/rezervace.html  
 - Admin heslo (dev): `admin123` (`SALON_ADMIN_PASSWORD`)
+- Testovací loginy majitelů na LIVE/staging (e-mail + FLOW): [`deploy/TESTOVACI_PRISTUPY.md`](deploy/TESTOVACI_PRISTUPY.md)
 
 ---
 
