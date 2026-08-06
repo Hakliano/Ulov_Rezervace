@@ -8,9 +8,9 @@ window.UlovOwnerFlowConfig = {
   getToken: () => staffToken,
   isMajitel: () => isMajitel(),
   getEmail: () => (
-    document.getElementById('staff-login')?.value
+    staffUser?.email
     || staffUser?.prihlasovaci_jmeno
-    || staffUser?.email
+    || document.getElementById('staff-login')?.value
     || ''
   ).trim(),
 };

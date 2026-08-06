@@ -205,22 +205,42 @@ def ensure_owner_flow_user(salon, email=None):
     if not majitel.password_hash:
         raise ValueError('Majitel nemá nastavené heslo. Nejdřív nastavte heslo.')
 
+    # Hint z UI může být neplatný nebo kontakt webu (sdílený napříč demy) —
+    # login majitele má přednost.
     email_n = normalizuj_prihlasovaci_jmeno(email) if email else ''
-    if not email_n:
+    if email_n and not _je_email(email_n):
+        email_n = ''
+
+    def _fallback_owner_email():
         if _je_email(majitel.prihlasovaci_jmeno):
-            email_n = normalizuj_prihlasovaci_jmeno(majitel.prihlasovaci_jmeno)
-        elif _je_email(getattr(salon, 'email', '') or ''):
-            email_n = normalizuj_prihlasovaci_jmeno(salon.email)
-        else:
-            try:
-                email_n = normalizuj_prihlasovaci_jmeno(majitel.flow_ucet.email)
-            except FlowUser.DoesNotExist:
-                raise ValueError(
-                    'Zadejte e-mail majitele — přihlášení do FLOW je jen e-mailem.'
-                )
+            return normalizuj_prihlasovaci_jmeno(majitel.prihlasovaci_jmeno)
+        try:
+            fe = normalizuj_prihlasovaci_jmeno(majitel.flow_ucet.email)
+            if _je_email(fe):
+                return fe
+        except FlowUser.DoesNotExist:
+            pass
+        # salon.email jen když není konflikt s jiným účtem
+        salon_email = normalizuj_prihlasovaci_jmeno(getattr(salon, 'email', '') or '')
+        if _je_email(salon_email):
+            taken = FlowUser.objects.filter(email__iexact=salon_email).exclude(
+                zamestnanec_id=majitel.id
+            ).exists()
+            if not taken:
+                return salon_email
+        return ''
+
+    if not email_n:
+        email_n = _fallback_owner_email()
+    elif FlowUser.objects.filter(email__iexact=email_n).exclude(zamestnanec_id=majitel.id).exists():
+        # např. info@ulovklienty.cz z kontaktu webu = login jiného dema
+        email_n = _fallback_owner_email()
 
     if not _je_email(email_n):
-        raise ValueError('E-mail majitele není platný.')
+        raise ValueError(
+            'E-mail majitele není platný. Nastavte unikátní e-mail přihlášení majitele '
+            '(ne kontaktní e-mail na webu).'
+        )
 
     try:
         flow_ucet = majitel.flow_ucet

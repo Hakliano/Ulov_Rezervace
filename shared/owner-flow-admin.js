@@ -70,10 +70,24 @@
     return true;
   }
 
+  function looksLikeEmail(v) {
+    const s = String(v || '').trim();
+    if (!s.includes('@')) return false;
+    const domain = s.split('@').pop() || '';
+    return domain.includes('.');
+  }
+
+  /**
+   * E-mail pro aktivaci FLOW = login majitele, ne kontakt na webu.
+   * Preferuje session (staffUser); z login pole bere jen platný e-mail.
+   */
   function emailHint() {
     const c = CFG();
-    if (typeof c.getEmail === 'function') return (c.getEmail() || '').trim();
-    return (document.getElementById('staff-login')?.value || '').trim();
+    const raw = typeof c.getEmail === 'function'
+      ? (c.getEmail() || '').trim()
+      : (document.getElementById('staff-login')?.value || '').trim();
+    if (looksLikeEmail(raw)) return raw;
+    return '';
   }
 
   async function api(path, opts = {}) {

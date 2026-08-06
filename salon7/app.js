@@ -1,4 +1,4 @@
-﻿const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname))
+const API_BASE = (window.location.protocol === 'file:' || ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname))
   ? 'http://localhost:8000/api'
   : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 7;
@@ -9,9 +9,9 @@ window.UlovOwnerFlowConfig = {
   getToken: () => staffToken,
   isMajitel: () => isMajitel(),
   getEmail: () => (
-    document.getElementById('staff-login')?.value
+    staffUser?.email
     || staffUser?.prihlasovaci_jmeno
-    || staffUser?.email
+    || document.getElementById('staff-login')?.value
     || ''
   ).trim(),
 };
