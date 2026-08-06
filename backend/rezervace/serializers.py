@@ -406,7 +406,7 @@ class AdminRezervaceSerializer(serializers.ModelSerializer):
             'poznamka_zakaznika', 'poznamka_interni',
             'typ_vytvoreni', 'polozky', 'skutecna_delka_minut', 'dokonceno_at',
             'thank_you_sent_at', 'anonymized_at', 'deleted_at', 'anonymizovano',
-            'je_rizikova', 'zaloha_vyzadana_at', 'zaloha_ok_at', 'zaloha_castka',
+            'je_rizikova', 'zaloha_vyzadana_at', 'zaloha_ok_at', 'zaloha_nepozadovana_at', 'zaloha_castka',
         ]
 
     def get_anonymizovano(self, obj):

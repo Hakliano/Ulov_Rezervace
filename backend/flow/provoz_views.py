@@ -427,11 +427,14 @@ class FlowRezervacePlatbaView(APIView):
 
         if je_zaloha:
             rezervace.zaloha_vyzadana_at = timezone.now()
+            rezervace.zaloha_nepozadovana_at = None
             try:
                 rezervace.zaloha_castka = float(str(castka).replace(',', '.').replace(' ', ''))
             except (TypeError, ValueError):
                 rezervace.zaloha_castka = None
-            rezervace.save(update_fields=['zaloha_vyzadana_at', 'zaloha_castka', 'aktualizovano'])
+            rezervace.save(update_fields=[
+                'zaloha_vyzadana_at', 'zaloha_nepozadovana_at', 'zaloha_castka', 'aktualizovano',
+            ])
             _log_flow(user, rezervace, f'žádost o zálohu {castka} Kč')
             msg = 'E-mail s QR zálohou odeslán.'
         else:
@@ -486,6 +489,29 @@ class FlowRezervaceZalohaOkView(APIView):
         return Response({
             'ok': True,
             'message': 'Záloha potvrzena.',
+            'rezervace': AdminRezervaceSerializer(rezervace).data,
+        })
+
+
+class FlowRezervaceZalohaNepozadovatView(APIView):
+    """Personál / Manager: riziková služba, ale zálohu nechceme (stabilní host, rodina…)."""
+
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, rezervace_id):
+        user = _flow_user(request)
+        rezervace = get_object_or_404(Rezervace, pk=rezervace_id, salon_id=user.salon_id)
+        denied = _own_rezervace_or_403(user, rezervace)
+        if denied:
+            return denied
+
+        rezervace.zaloha_nepozadovana_at = timezone.now()
+        rezervace.save(update_fields=['zaloha_nepozadovana_at', 'aktualizovano'])
+        _log_flow(user, rezervace, 'záloha nepožadována – důvěryhodný host / výjimka')
+        return Response({
+            'ok': True,
+            'message': 'Záloha se nepožaduje — rezervace zmizí z rizikových.',
             'rezervace': AdminRezervaceSerializer(rezervace).data,
         })
 

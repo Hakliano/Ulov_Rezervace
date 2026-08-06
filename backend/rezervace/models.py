@@ -383,6 +383,11 @@ class Rezervace(models.Model):
     # Měkká záloha (bez systémového timeoutu)
     zaloha_vyzadana_at = models.DateTimeField('žádost o zálohu odeslána', null=True, blank=True)
     zaloha_ok_at = models.DateTimeField('záloha potvrzena personálem', null=True, blank=True)
+    zaloha_nepozadovana_at = models.DateTimeField(
+        'záloha nepožadována (důvěryhodný host)',
+        null=True,
+        blank=True,
+    )
     zaloha_castka = models.DecimalField(
         'částka zálohy (Kč)', max_digits=10, decimal_places=0, null=True, blank=True,
     )

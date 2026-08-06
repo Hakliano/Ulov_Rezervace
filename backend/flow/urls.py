@@ -130,6 +130,11 @@ urlpatterns = [
         name='flow-rezervace-zaloha-ok',
     ),
     path(
+        'flow/rezervace/<int:rezervace_id>/zaloha-nepozadovat/',
+        provoz_views.FlowRezervaceZalohaNepozadovatView.as_view(),
+        name='flow-rezervace-zaloha-nepozadovat',
+    ),
+    path(
         'flow/rezervace/<int:rezervace_id>/email-preview/',
         provoz_views.FlowEmailPreviewView.as_view(),
         name='flow-rezervace-email-preview',

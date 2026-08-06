@@ -590,25 +590,34 @@ function renderRezervaceList(container, items, { readonly = false, emptyText = '
   const showStaff = withStaff || isOwnerUser();
   container.innerHTML = items.map((r) => {
     const badges = [];
-    if (r.je_rizikova && !r.zaloha_ok_at) badges.push('<span class="badge warn">riziková</span>');
-    if (r.zaloha_vyzadana_at && !r.zaloha_ok_at) badges.push('<span class="badge warn">čeká záloha</span>');
+    const riskyOpen = r.je_rizikova && !r.zaloha_ok_at && !r.zaloha_nepozadovana_at;
+    if (riskyOpen) badges.push('<span class="badge warn">riziková</span>');
+    if (r.zaloha_nepozadovana_at && !r.zaloha_ok_at) {
+      badges.push('<span class="badge ok">bez zálohy</span>');
+    }
+    if (r.zaloha_vyzadana_at && !r.zaloha_ok_at && !r.zaloha_nepozadovana_at) {
+      badges.push('<span class="badge warn">čeká záloha</span>');
+    }
     if (r.zaloha_ok_at) badges.push('<span class="badge ok">záloha OK</span>');
     const staffLine = (showStaff || readonly) && r.zamestnanec_jmeno
       ? `<p class="meta">u ${esc(r.zamestnanec_jmeno)}</p>`
       : '';
+    const showZalohaAsk = (r.je_rizikova || r.zaloha_vyzadana_at) && !r.zaloha_ok_at;
+    const showZalohaSkip = r.je_rizikova && !r.zaloha_ok_at && !r.zaloha_nepozadovana_at;
     const actions = (!readonly && canAct(r))
       ? `<div class="actions">
           <button type="button" class="btn tiny primary" data-act="done" data-id="${r.id}">Proběhla</button>
           <button type="button" class="btn tiny danger" data-act="noshow" data-id="${r.id}">NO-show</button>
           <button type="button" class="btn tiny ghost" data-act="platba" data-id="${r.id}">Platba QR</button>
-          ${r.je_rizikova || r.zaloha_vyzadana_at ? `<button type="button" class="btn tiny ghost" data-act="zaloha" data-id="${r.id}">Požádat o zálohu</button>` : ''}
-          ${r.zaloha_vyzadana_at && !r.zaloha_ok_at ? `<button type="button" class="btn tiny primary" data-act="zaloha-ok" data-id="${r.id}">Záloha OK</button>` : ''}
+          ${showZalohaAsk ? `<button type="button" class="btn tiny ghost" data-act="zaloha" data-id="${r.id}">Požádat o zálohu</button>` : ''}
+          ${showZalohaSkip ? `<button type="button" class="btn tiny ghost" data-act="zaloha-skip" data-id="${r.id}">Nepožadujeme zálohu</button>` : ''}
+          ${r.zaloha_vyzadana_at && !r.zaloha_ok_at && !r.zaloha_nepozadovana_at ? `<button type="button" class="btn tiny primary" data-act="zaloha-ok" data-id="${r.id}">Záloha OK</button>` : ''}
           <button type="button" class="btn tiny ${r.zaloha_ok_at ? 'danger' : 'ghost'}" data-act="storno" data-id="${r.id}">${r.zaloha_ok_at ? 'Storno · záloha!' : 'Storno'}</button>
         </div>`
       : (readonly && !showStaff
         ? `<p class="meta">u ${esc(r.zamestnanec_jmeno || '—')}</p>`
         : '');
-    return `<article class="item stav-${esc(r.stav)}${r.je_rizikova && !r.zaloha_ok_at ? ' risky' : ''}" data-id="${r.id}">
+    return `<article class="item stav-${esc(r.stav)}${riskyOpen ? ' risky' : ''}" data-id="${r.id}">
       <div class="item-top">
         <time>${esc(formatDateTime(r.zacatek))}</time>
         <span class="badge">${esc(STAV_LABEL[r.stav] || r.stav)}</span>
@@ -738,6 +747,18 @@ function bindCalActions(root, onDone) {
         openPlatba(id, false);
       } else if (act === 'zaloha') {
         openPlatba(id, true);
+      } else if (act === 'zaloha-skip') {
+        try {
+          await api(`/flow/rezervace/${id}/zaloha-nepozadovat/`, {
+            method: 'POST',
+            body: '{}',
+          });
+          onDone?.();
+          refreshTopAlerts();
+          showMsg($('#cal-msg'), 'Záloha se nepožaduje — rezervace je mimo rizikové.', true);
+        } catch (err) {
+          showMsg($('#cal-msg'), err.message, false);
+        }
       } else if (act === 'zaloha-ok') {
         try {
           const reviewed = await reviewCustomerEmail(id, 'zaloha_ok', {}, {
@@ -989,6 +1010,7 @@ function filterRiskyItems(items) {
   return (items || []).filter((r) => (
     r.je_rizikova
     && !r.zaloha_ok_at
+    && !r.zaloha_nepozadovana_at
     && ['ceka', 'potvrzeno'].includes(r.stav)
   ));
 }
@@ -1019,7 +1041,7 @@ function renderTopAlerts(riskyN, mailN, mailOk, volnoN = 0, platbyDni = 0) {
     parts.push(`<div class="flow-alert warn">
       <div class="flow-alert-text">
         <strong>Rizikové rezervace: ${riskyN}</strong>
-        <span>Ke kontrole — můžete požádat o zálohu, nebo nechat běžet</span>
+        <span>Ke kontrole — záloha, nebo „Nepožadujeme zálohu“ u známého hosta</span>
       </div>
       <button type="button" class="btn primary sm" id="alert-goto-risky">Zobrazit</button>
     </div>`);
@@ -1121,7 +1143,7 @@ function refreshRiskyInbox() {
   }
   box.classList.remove('hidden');
   box.innerHTML = `<h3 class="list-h">Rizikové / ke kontrole (${risky.length})</h3>
-    <p class="hint tiny">Služby označené jako rizikové. Můžete požádat o zálohu, nebo nechat rezervaci běžet.</p>
+    <p class="hint tiny">Služby označené jako rizikové. Požádejte o zálohu, nebo u důvěryhodného hosta zvolte „Nepožadujeme zálohu“.</p>
     <div id="risky-list" class="list"></div>`;
   const holder = document.createElement('div');
   renderRezervaceList(holder, risky, { emptyText: '' });
