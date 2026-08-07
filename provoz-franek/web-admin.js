@@ -72,14 +72,20 @@ function renderPersonelPublic(list) {
       return `<tr><td>${esc(r.den_nazev)}</td><td>${cas}</td></tr>`;
     }).join('');
     return `<article class="team-card" style="--i:${i}">
+      <header class="team-head">
+        <h3>${esc(p.jmeno)}</h3>
+        ${p.specializace ? `<p class="team-role">${esc(p.specializace)}</p>` : ''}
+      </header>
       <div class="team-photo">${p.fotka
         ? `<img src="${esc(p.fotka)}" alt="${esc(p.jmeno)}" loading="lazy">`
         : '<div class="team-photo-placeholder" aria-hidden="true"></div>'}</div>
-      <div class="team-body">
-        <h3>${esc(p.jmeno)}</h3>
-        ${p.specializace ? `<p class="team-role">${esc(p.specializace)}</p>` : ''}
-        ${p.popis ? `<p class="team-desc">${esc(p.popis)}</p>` : ''}
-        <table class="team-hours"><tbody>${hours}</tbody></table>
+      <div class="team-below">
+        <div class="team-desc-col">
+          ${p.popis ? `<p class="team-desc">${esc(p.popis)}</p>` : '<p class="team-desc team-desc-empty"></p>'}
+        </div>
+        <div class="team-hours-col">
+          <table class="team-hours"><tbody>${hours}</tbody></table>
+        </div>
       </div>
     </article>`;
   }).join('');

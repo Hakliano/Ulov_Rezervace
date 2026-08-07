@@ -27,33 +27,14 @@
 .gallery-empty { text-align: center; color: var(--muted); padding: 2rem; }
 @media (max-width: 700px) { .gallery-item { aspect-ratio: 4/3; } }
 
-/* Personál — mechanic cards with landscape photo */
+/* Personál — landscape full-width (base; finální layout níže v overrides) */
 .team-section { background: #fff; }
-.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+.team-grid { display: grid; gap: 2rem; }
 .team-card {
-  background: transparent; border: 1px solid var(--line); position: relative;
-  display: grid; grid-template-rows: auto 1fr;
-  animation: fadeUp 0.5s ease backwards; animation-delay: calc(var(--i) * 0.08s);
+  background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; position: relative;
 }
-.team-card::before {
-  content: "ID"; position: absolute; top: 0; right: 0; z-index: 1;
-  font-family: var(--mono); font-size: 0.65rem; color: #141414;
-  background: var(--steel); padding: 0.15rem 0.5rem; letter-spacing: 0.1em;
-}
-.team-photo {
-  width: 100%; aspect-ratio: 16 / 10; background: var(--line); overflow: hidden;
-}
-.team-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.team-photo-placeholder { width: 100%; height: 100%; background: linear-gradient(160deg, var(--navy), #000); }
-.team-body { padding: 1.1rem 1.2rem; min-width: 0; }
-.team-body h3 { font-family: var(--font); font-size: 1.15rem; text-transform: uppercase; margin-bottom: 0.3rem; }
-.team-role { font-family: var(--mono); color: var(--steel); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
-.team-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.8rem; }
-.team-hours { width: 100%; font-size: 0.78rem; border-collapse: collapse; font-family: var(--mono); }
-.team-hours td { padding: 0.25rem 0; border-bottom: 1px solid var(--line); }
-.team-hours td:first-child { color: var(--muted); width: 45%; }
-.team-empty { margin-top: 1rem; color: var(--muted); text-align: center; }
-.hours-note { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; font-style: italic; }
+.team-card::before { content: none; }
 .personel-edit-card { border: 1px solid var(--line); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; background: var(--paper); }
 .personel-edit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .personel-edit-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
@@ -335,12 +316,95 @@
   margin-top: 1.25rem;
 }
 .hours-card h3 { color: var(--navy, #093c5d); font-family: var(--font); text-transform: none; margin: 0 0 0.5rem; }
-.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-.gallery-item { margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; background: #fff; }
-.gallery-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
-.team-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: grid; grid-template-columns: 140px 1fr; }
-.team-photo { min-height: 140px; background: #e8f3f7; }
-.price-card { background: #fff !important; }
+.gallery { display: flex; flex-direction: column; gap: 1.25rem; }
+.gallery-item {
+  margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
+  cursor: pointer; background: #fff; width: 100%;
+}
+.gallery-item img {
+  width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
+}
+.gallery-item figcaption {
+  padding: 0.65rem 1rem; font-size: 0.9rem; color: var(--muted);
+}
+
+.team-grid { display: grid; gap: 2rem; }
+.team-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 36px rgba(6, 37, 54, 0.06);
+}
+.team-card::before { display: none; }
+.team-head {
+  padding: 1.25rem 1.35rem 0.85rem;
+}
+.team-head h3 {
+  margin: 0;
+  font-family: var(--font);
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  color: var(--navy);
+  text-transform: none;
+  letter-spacing: -0.02em;
+}
+.team-role {
+  margin: 0.35rem 0 0;
+  font-family: var(--mono);
+  color: var(--steel);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.team-photo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #e8f3f7;
+}
+.team-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.team-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--navy), var(--steel));
+}
+.team-below {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1.25rem 1.75rem;
+  padding: 1.25rem 1.35rem 1.4rem;
+  align-items: start;
+}
+.team-desc {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.team-desc-empty { min-height: 0; }
+.team-hours {
+  width: 100%;
+  font-size: 0.88rem;
+  border-collapse: collapse;
+  font-family: var(--mono);
+}
+.team-hours td {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.team-hours td:first-child { color: var(--muted); width: 45%; }
+.team-hours td:last-child { text-align: right; font-weight: 600; color: var(--navy); }
+
+@media (max-width: 720px) {
+  .team-below { grid-template-columns: 1fr; }
+}
 .price-card:nth-child(even) { background: #f3f8fb !important; }
 .price-card:hover { background: #e8f3f7 !important; }
 .price-name::before { color: var(--steel); }
