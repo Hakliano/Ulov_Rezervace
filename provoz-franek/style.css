@@ -176,40 +176,31 @@ body {
   opacity: 0.45;
 }
 
-/* Diagnostický blueprint + scan — hlavní wow prvek */
-.hero-stage {
-  position: absolute;
-  right: max(-2rem, calc(50% - 560px));
-  bottom: 8%;
-  width: min(640px, 58vw);
+/* Jedno putující blueprint auto — fixed traveler */
+.car-traveler {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  width: min(580px, 52vw);
   aspect-ratio: 640 / 280;
-  z-index: 1;
-  pointer-events: none;
-  will-change: transform, opacity;
-  filter: drop-shadow(0 20px 40px rgba(6, 37, 54, 0.35));
-}
-
-.section-onas {
-  position: relative;
-  overflow: hidden;
-}
-
-.onas-car-stage {
-  position: absolute;
-  left: max(-1rem, calc(50% - 560px));
-  top: 42%;
-  width: min(520px, 72vw);
-  aspect-ratio: 640 / 280;
-  z-index: 0;
   pointer-events: none;
   will-change: transform, opacity;
   opacity: 0;
-  filter: drop-shadow(0 16px 36px rgba(6, 37, 54, 0.14));
+  filter: drop-shadow(0 18px 40px rgba(6, 37, 54, 0.28));
 }
 
-.section-onas .wrap {
+.car-traveler.is-hero {
+  filter: drop-shadow(0 20px 40px rgba(6, 37, 54, 0.35));
+}
+
+.section-contact {
   position: relative;
-  z-index: 1;
+  overflow: visible;
+}
+
+.section-car-stop {
+  position: relative;
 }
 
 .car-blueprint {
@@ -231,17 +222,6 @@ body {
 .bp-detail { animation-delay: 0.7s; }
 .bp-wheel { animation-delay: 0.55s; stroke-dasharray: 180; stroke-dashoffset: 180; }
 .bp-link { animation-delay: 1s; stroke-dasharray: 280; stroke-dashoffset: 280; }
-
-.car-stage.is-static .bp-path {
-  animation: none;
-  stroke-dashoffset: 0;
-}
-
-.car-stage.is-static .bp-hub,
-.car-stage.is-static .bp-nodes .node {
-  animation: none;
-  opacity: 0.85;
-}
 
 .bp-hub {
   fill: rgba(93, 248, 216, 0.15);
@@ -286,12 +266,6 @@ body {
   mix-blend-mode: screen;
   animation: scanSweep 3.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
   filter: blur(0.5px);
-}
-
-.scan-beam-soft {
-  animation-duration: 5.2s;
-  opacity: 0.7;
-  mix-blend-mode: multiply;
 }
 
 .orbit-ring {
@@ -751,26 +725,11 @@ body {
 
   .hero-copy {
     max-width: 100%;
-    padding: 5.5rem 0 1.5rem;
+    padding: 5.5rem 0 3.5rem;
   }
 
-  .hero-stage {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: min(100%, 420px);
-    margin: 0 auto 2.5rem;
-    opacity: 0.95;
-  }
-
-  .onas-car-stage {
-    top: 8%;
-    width: min(100%, 360px);
-    opacity: 0.35;
-  }
-
-  .section-onas .section-grid {
-    padding-top: 7rem;
+  .car-traveler {
+    z-index: 4;
   }
 }
 
@@ -785,5 +744,4 @@ body {
   .bp-hub,
   .bp-nodes .node { opacity: 1; }
   .reveal { opacity: 1; transform: none; transition: none; }
-  .onas-car-stage { opacity: 0.45; transform: translate3d(0, -50%, 0); }
 }
