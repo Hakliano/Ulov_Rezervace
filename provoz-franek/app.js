@@ -33,8 +33,26 @@
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
   const navCar = document.getElementById('nav-car');
-  const road = document.querySelector('.nav-road');
+  const track = document.querySelector('.nav-road-track');
+  const stopLinks = [...document.querySelectorAll('.nav-stop')];
+
+  const sectionEls = {
+    top: document.querySelector('.hero'),
+    'o-nas': document.getElementById('o-nas'),
+    sluzby: document.getElementById('sluzby'),
+    mapa: document.getElementById('mapa'),
+    kontakt: document.getElementById('kontakt'),
+  };
+
+  const stops = stopLinks
+    .map((label) => {
+      const key = label.getAttribute('data-stop');
+      return { key, label, el: sectionEls[key] };
+    })
+    .filter((s) => s.el && s.label);
 
   const spinWheels = (deg) => {
     navCar?.querySelectorAll('.bp-wheel-group').forEach((g) => {
@@ -45,16 +63,57 @@
     });
   };
 
+  const sectionFocusY = (el) => {
+    const r = el.getBoundingClientRect();
+    return window.scrollY + r.top + Math.min(r.height * 0.25, 160);
+  };
+
+  const labelCenterX = (label) => {
+    const lr = label.getBoundingClientRect();
+    const tr = track.getBoundingClientRect();
+    return lr.left + lr.width / 2 - tr.left;
+  };
+
   const updateNavCar = () => {
-    if (!navCar || !road) return;
-    const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    const progress = reduceMotion ? 0 : clamp(window.scrollY / maxScroll, 0, 1);
-    const roadW = road.clientWidth;
+    if (!navCar || !track || stops.length < 2) return;
+
+    const focus = window.scrollY + window.innerHeight * 0.28;
+    const ys = stops.map((s) => sectionFocusY(s.el));
     const carW = navCar.offsetWidth || 140;
-    const travel = Math.max(0, roadW - carW - 24);
-    const x = 12 + travel * progress;
-    navCar.style.transform = `translate3d(${x.toFixed(1)}px, -50%, 0)`;
-    spinWheels(progress * 720);
+
+    let i = 0;
+    for (; i < ys.length - 1; i += 1) {
+      if (focus < ys[i + 1]) break;
+    }
+
+    let t = 0;
+    let active = 0;
+    if (focus <= ys[0]) {
+      t = 0;
+      active = 0;
+      i = 0;
+    } else if (focus >= ys[ys.length - 1]) {
+      t = 1;
+      active = ys.length - 1;
+      i = ys.length - 2;
+    } else {
+      t = clamp((focus - ys[i]) / Math.max(ys[i + 1] - ys[i], 1), 0, 1);
+      active = t < 0.5 ? i : i + 1;
+    }
+
+    const x0 = labelCenterX(stops[i].label) - carW / 2;
+    const x1 = labelCenterX(stops[Math.min(i + 1, stops.length - 1)].label) - carW / 2;
+    const x = reduceMotion
+      ? labelCenterX(stops[active].label) - carW / 2
+      : lerp(x0, x1, t);
+
+    const maxX = Math.max(0, track.clientWidth - carW - 4);
+    navCar.style.transform = `translate3d(${clamp(x, 4, maxX).toFixed(1)}px, 0, 0)`;
+    spinWheels((reduceMotion ? active / (stops.length - 1) : (i + t) / (stops.length - 1)) * 540);
+
+    stops.forEach((s, idx) => {
+      s.label.classList.toggle('is-active', idx === active);
+    });
   };
 
   updateNavCar();

@@ -31,35 +31,44 @@
       </nav>
       <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menu">Menu</button>
     </div>
-    <div class="nav-road" aria-hidden="true">
-      <div class="nav-road-line"></div>
-      <div class="nav-car" id="nav-car">
-        <svg class="car-blueprint nav-car-svg" viewBox="0 0 640 280" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="glowStrokeNav" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#5DF8D8"/>
-              <stop offset="55%" stop-color="#6FD1D7"/>
-              <stop offset="100%" stop-color="#3B7597"/>
-            </linearGradient>
-          </defs>
-          <path class="bp-body" stroke="url(#glowStrokeNav)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
-            d="M78 178 C96 178 108 152 128 148 L168 118 C190 102 230 96 268 98 L360 104 C410 108 448 122 470 148 L512 148 C548 148 568 162 576 178 L576 198 C576 210 566 218 552 218 L520 218 C508 236 484 248 456 248 C428 248 404 236 392 218 L250 218 C238 236 214 248 186 248 C158 248 134 236 122 218 L96 218 C84 218 76 210 76 198 Z"/>
-          <path stroke="url(#glowStrokeNav)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"
-            d="M178 148 L210 118 C228 106 258 100 292 102 L348 108 C372 110 392 118 404 132 L424 148"/>
-          <path stroke="#6FD1D7" stroke-width="1.3" stroke-linecap="round" opacity="0.7"
-            d="M132 168 H250 M268 168 H390 M410 168 H500"/>
-          <g class="bp-wheel-group" data-wheel="1">
-            <circle class="bp-wheel" cx="186" cy="218" r="28" stroke="url(#glowStrokeNav)" stroke-width="2"/>
-            <circle cx="186" cy="218" r="8" stroke="#5DF8D8" stroke-width="1.4" fill="rgba(93,248,216,0.15)"/>
-            <path d="M186 194 V242 M162 218 H210" stroke="#5DF8D8" stroke-width="1.2" opacity="0.55"/>
-          </g>
-          <g class="bp-wheel-group" data-wheel="2">
-            <circle class="bp-wheel" cx="456" cy="218" r="28" stroke="url(#glowStrokeNav)" stroke-width="2"/>
-            <circle cx="456" cy="218" r="8" stroke="#5DF8D8" stroke-width="1.4" fill="rgba(93,248,216,0.15)"/>
-            <path d="M456 194 V242 M432 218 H480" stroke="#5DF8D8" stroke-width="1.2" opacity="0.55"/>
-          </g>
-        </svg>
+    <div class="nav-road" id="nav-road">
+      <div class="nav-road-track">
+        <div class="nav-road-line" aria-hidden="true"></div>
+        <div class="nav-car" id="nav-car" aria-hidden="true">
+          <svg class="car-blueprint nav-car-svg" viewBox="0 0 640 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="glowStrokeNav" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#5DF8D8"/>
+                <stop offset="55%" stop-color="#6FD1D7"/>
+                <stop offset="100%" stop-color="#3B7597"/>
+              </linearGradient>
+            </defs>
+            <path class="bp-body" stroke="url(#glowStrokeNav)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+              d="M78 178 C96 178 108 152 128 148 L168 118 C190 102 230 96 268 98 L360 104 C410 108 448 122 470 148 L512 148 C548 148 568 162 576 178 L576 198 C576 210 566 218 552 218 L520 218 C508 236 484 248 456 248 C428 248 404 236 392 218 L250 218 C238 236 214 248 186 248 C158 248 134 236 122 218 L96 218 C84 218 76 210 76 198 Z"/>
+            <path stroke="url(#glowStrokeNav)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"
+              d="M178 148 L210 118 C228 106 258 100 292 102 L348 108 C372 110 392 118 404 132 L424 148"/>
+            <path stroke="#6FD1D7" stroke-width="1.3" stroke-linecap="round" opacity="0.7"
+              d="M132 168 H250 M268 168 H390 M410 168 H500"/>
+            <g class="bp-wheel-group" data-wheel="1">
+              <circle class="bp-wheel" cx="186" cy="218" r="28" stroke="url(#glowStrokeNav)" stroke-width="2"/>
+              <circle cx="186" cy="218" r="8" stroke="#5DF8D8" stroke-width="1.4" fill="rgba(93,248,216,0.15)"/>
+              <path d="M186 194 V242 M162 218 H210" stroke="#5DF8D8" stroke-width="1.2" opacity="0.55"/>
+            </g>
+            <g class="bp-wheel-group" data-wheel="2">
+              <circle class="bp-wheel" cx="456" cy="218" r="28" stroke="url(#glowStrokeNav)" stroke-width="2"/>
+              <circle cx="456" cy="218" r="8" stroke="#5DF8D8" stroke-width="1.4" fill="rgba(93,248,216,0.15)"/>
+              <path d="M456 194 V242 M432 218 H480" stroke="#5DF8D8" stroke-width="1.2" opacity="0.55"/>
+            </g>
+          </svg>
+        </div>
       </div>
+      <nav class="nav-stops wrap" id="nav-stops" aria-label="Sekce stránky">
+        <a class="nav-stop is-active" href="#top" data-stop="top">Úvod</a>
+        <a class="nav-stop" href="#o-nas" data-stop="o-nas">O nás</a>
+        <a class="nav-stop" href="#sluzby" data-stop="sluzby">Služby</a>
+        <a class="nav-stop" href="#mapa" data-stop="mapa">Mapa</a>
+        <a class="nav-stop" href="#kontakt" data-stop="kontakt">Kontakt</a>
+      </nav>
     </div>
   </header>
 

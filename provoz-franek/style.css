@@ -126,41 +126,47 @@ body {
   font-weight: 700;
 }
 
-/* Silnice v navu — auto jen vodorovně se scrollem */
+/* Silnice v navu + zastávky sekcí */
 .nav-road {
-  position: relative;
-  height: 4.75rem;
-  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(9, 60, 93, 0.96), rgba(9, 60, 93, 0.88)),
+    linear-gradient(180deg, rgba(9, 60, 93, 0.98), rgba(9, 60, 93, 0.9)),
     linear-gradient(90deg, #093c5d, #3b7597);
   border-top: 1px solid rgba(93, 248, 216, 0.18);
+  padding-bottom: 0.55rem;
+}
+
+.nav-road-track {
+  position: relative;
+  height: 3.6rem;
+  overflow: hidden;
 }
 
 .nav-road-line {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 62%;
+  left: 4%;
+  right: 4%;
+  bottom: 0.55rem;
   height: 2px;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(93, 248, 216, 0.55) 12%,
-    rgba(111, 209, 215, 0.45) 88%,
+    rgba(93, 248, 216, 0.5) 10%,
+    rgba(111, 209, 215, 0.4) 90%,
     transparent
   );
-  opacity: 0.85;
+  z-index: 0;
 }
 
 .nav-car {
   position: absolute;
-  top: 50%;
+  top: 0.15rem;
   left: 0;
-  width: min(168px, 38vw);
-  transform: translate3d(12px, -50%, 0);
+  width: min(150px, 34vw);
+  z-index: 1;
+  transform: translate3d(0, 0, 0);
   will-change: transform;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.28));
+  transition: transform 0.15s linear;
 }
 
 .nav-car-svg {
@@ -172,6 +178,36 @@ body {
 .nav-car .bp-body,
 .nav-car .bp-wheel {
   fill: none;
+}
+
+.nav-stops {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  align-items: end;
+  padding-top: 0.15rem;
+  padding-bottom: 0.35rem;
+}
+
+.nav-stop {
+  text-align: center;
+  text-decoration: none;
+  color: rgba(244, 251, 255, 0.55);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding: 0.2rem 0.15rem;
+  transition: color 0.2s ease, font-size 0.2s ease, transform 0.2s ease;
+}
+
+.nav-stop.is-active {
+  color: var(--aqua);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transform: translateY(-1px);
 }
 
 .hero {
@@ -582,8 +618,10 @@ body {
   .nav a { padding: 0.7rem 0.2rem; }
   .nav-toggle { display: inline-flex; }
 
-  .nav-road { height: 3.8rem; }
-  .nav-car { width: min(132px, 42vw); }
+  .nav-road-track { height: 3rem; }
+  .nav-car { width: min(118px, 30vw); transition: none; }
+  .nav-stop { font-size: 0.58rem; letter-spacing: 0.02em; }
+  .nav-stop.is-active { font-size: 0.78rem; }
 
   .hero {
     min-height: auto;
@@ -606,5 +644,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
-  .nav-car { transition: none; }
+  .nav-car,
+  .nav-stop { transition: none; }
 }
