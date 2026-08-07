@@ -68,6 +68,18 @@ body {
   color: var(--navy);
 }
 
+.brand-logo {
+  width: 2.85rem;
+  height: auto;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(6, 37, 54, 0.18));
+}
+
+.brand-logo.sm {
+  width: 2.35rem;
+}
+
 .brand-mark {
   width: 2.6rem;
   height: 2.6rem;
@@ -421,6 +433,25 @@ body {
   color: var(--navy);
   padding: 1.5rem;
   animation: pulseSoft 3.5s ease-in-out infinite;
+}
+
+.logo-slot-filled {
+  border-style: solid;
+  border-color: var(--line);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(93, 248, 216, 0.16), transparent 55%),
+    linear-gradient(165deg, #ffffff 0%, #e8f4f8 100%);
+  animation: none;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 12px 36px rgba(6, 37, 54, 0.08);
+}
+
+.logo-slot-filled img {
+  width: min(220px, 100%);
+  height: auto;
+  display: block;
+  margin-inline: auto;
+  filter: drop-shadow(0 10px 22px rgba(6, 37, 54, 0.16));
 }
 
 .logo-slot-label {
