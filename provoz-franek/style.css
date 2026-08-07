@@ -176,13 +176,13 @@ body {
   opacity: 0.45;
 }
 
-/* Jedno putující blueprint auto — fixed traveler */
+/* Jedno putující blueprint auto — pevná vodorovná linie jízdy */
 .car-traveler {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 6;
-  width: min(580px, 52vw);
+  z-index: 5;
+  width: min(560px, 48vw);
   aspect-ratio: 640 / 280;
   pointer-events: none;
   will-change: transform, opacity;
@@ -191,7 +191,58 @@ body {
 }
 
 .car-traveler.is-hero {
+  z-index: 3;
   filter: drop-shadow(0 20px 40px rgba(6, 37, 54, 0.35));
+}
+
+.car-traveler.is-light::before {
+  content: "";
+  position: absolute;
+  inset: 6% -4% 2%;
+  border-radius: 22px;
+  background: linear-gradient(125deg, rgba(9, 60, 93, 0.94), rgba(59, 117, 151, 0.88));
+  box-shadow: 0 16px 40px rgba(6, 37, 54, 0.22);
+  z-index: 0;
+}
+
+.car-traveler.is-drawn .bp-path {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+.car-traveler.is-drawn .bp-hub,
+.car-traveler.is-drawn .bp-nodes .node {
+  animation: none;
+  opacity: 0.9;
+}
+
+.car-traveler.is-driving .orbit-ring {
+  opacity: 0.35;
+}
+
+.car-dock {
+  min-height: 1px;
+}
+
+.car-dock-park {
+  min-height: 180px;
+  align-self: center;
+}
+
+.sluzby-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.35fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.sluzby-layout .car-dock {
+  min-height: 220px;
+}
+
+.sluzby-content {
+  position: relative;
+  z-index: 1;
 }
 
 .section-car-stop {
@@ -513,8 +564,8 @@ body {
 
 .contact-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr minmax(260px, 380px) minmax(240px, 340px);
+  gap: 1.5rem;
   align-items: start;
 }
 
@@ -692,10 +743,24 @@ body {
   transform: translateY(0);
 }
 
+@media (max-width: 1100px) {
+  .contact-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .car-dock-park {
+    display: none;
+  }
+}
+
 @media (max-width: 880px) {
   .section-grid,
   .contact-grid,
-  .service-list { grid-template-columns: 1fr; }
+  .service-list,
+  .sluzby-layout { grid-template-columns: 1fr; }
+
+  .sluzby-layout .car-dock,
+  .car-dock-park { display: none; }
 
   .nav {
     display: none;
@@ -727,6 +792,10 @@ body {
 
   .car-traveler {
     z-index: 4;
+  }
+
+  .car-traveler.is-light::before {
+    inset: 10% 0 4%;
   }
 }
 

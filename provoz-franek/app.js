@@ -40,18 +40,18 @@
   const hero = document.querySelector('.hero');
   const sluzby = document.getElementById('sluzby');
   const kontakt = document.getElementById('kontakt');
+  const dockSluzby = document.getElementById('car-dock-sluzby');
+  const dockPark = document.getElementById('car-dock-park');
 
-  /* Zastávky na každé druhé sekci: Hero → (skip O nás) → Služby → (skip Mapa) → Kontakt */
+  /* Hero → skip O nás → Služby → skip Mapa → Kontakt (park) */
   const stops = [
-    { el: hero, side: 'right', final: false, tone: 'hero' },
-    { el: sluzby, side: 'left', final: false, tone: 'mid' },
-    { el: kontakt, side: 'right', final: true, tone: 'park', anchor: form },
+    { el: hero, tone: 'hero' },
+    { el: sluzby, tone: 'mid', dock: dockSluzby },
+    { el: kontakt, tone: 'park', dock: dockPark, final: true },
   ];
 
-  let parallaxX = 0;
-  let parallaxY = 0;
-  let targetParallaxX = 0;
-  let targetParallaxY = 0;
+  let spinAcc = 0;
+  let lastX = null;
 
   const spinWheels = (deg) => {
     traveler?.querySelectorAll('.bp-wheel-group').forEach((g) => {
@@ -63,101 +63,82 @@
   };
 
   const carWidth = (tone) => {
-    if (window.innerWidth < 880) return Math.min(320, window.innerWidth * 0.78);
-    if (tone === 'hero') return Math.min(580, window.innerWidth * 0.52);
-    if (tone === 'park') return Math.min(420, window.innerWidth * 0.34);
-    return Math.min(500, window.innerWidth * 0.46);
+    if (window.innerWidth < 880) return Math.min(300, window.innerWidth * 0.72);
+    if (tone === 'hero') return Math.min(560, window.innerWidth * 0.48);
+    if (tone === 'park') return Math.min(380, window.innerWidth * 0.3);
+    return Math.min(440, window.innerWidth * 0.38);
   };
 
-  const dockPoint = (stop) => {
-    const w = carWidth(stop.tone);
-    const h = w * (280 / 640);
-    const r = stop.el.getBoundingClientRect();
+  /* Jedna vodorovná linie jízdy ve viewportu — Y se při jízdě nemění */
+  const roadTop = (h) => window.innerHeight * 0.5 - h / 2;
 
-    if (stop.anchor) {
-      const a = stop.anchor.getBoundingClientRect();
-      let left = a.right + 20;
-      let top = a.top + a.height * 0.28;
-      if (left + w > window.innerWidth - 10) {
-        left = Math.max(12, window.innerWidth - w - 14);
-        top = a.top + a.height * 0.08;
+  const parkX = (stop, w) => {
+    if (stop.dock) {
+      const r = stop.dock.getBoundingClientRect();
+      if (r.width > 40) {
+        return r.left + Math.max(0, (r.width - w) / 2);
       }
-      if (window.innerWidth < 880) {
-        left = Math.max(12, (window.innerWidth - w) / 2);
-        top = a.bottom - h * 0.15;
-      }
-      return { left, top, w, h, opacity: window.innerWidth < 880 ? 0.45 : 0.7 };
     }
-
-    if (stop.side === 'left') {
-      return {
-        left: Math.max(12, r.left + 8),
-        top: r.top + r.height * 0.38,
-        w,
-        h,
-        opacity: 0.7,
-      };
+    if (stop.tone === 'hero') {
+      return Math.min(window.innerWidth - w - 28, window.innerWidth * 0.48);
     }
-
-    /* right — hero default */
-    return {
-      left: Math.min(r.right - w - 8, window.innerWidth - w - 20),
-      top: stop.tone === 'hero' ? r.bottom - h - Math.min(70, r.height * 0.1) : r.top + r.height * 0.3,
-      w,
-      h,
-      opacity: stop.tone === 'hero' ? 1 : 0.72,
-    };
+    if (stop.tone === 'mid') return 20;
+    if (form) {
+      const a = form.getBoundingClientRect();
+      return Math.min(window.innerWidth - w - 16, a.right + 18);
+    }
+    return window.innerWidth - w - 24;
   };
 
   const focusY = () => window.scrollY + window.innerHeight * 0.42;
 
   const stopFocusY = (stop) => {
     const r = stop.el.getBoundingClientRect();
-    return window.scrollY + r.top + r.height * (stop.tone === 'hero' ? 0.55 : 0.35);
+    return window.scrollY + r.top + r.height * (stop.tone === 'hero' ? 0.5 : 0.35);
   };
 
-  const place = (left, top, w, opacity, spin, parallax = true) => {
+  const place = (x, w, tone, opacity, driving) => {
     if (!traveler) return;
-    const px = parallax ? parallaxX * opacity : 0;
-    const py = parallax ? parallaxY * opacity : 0;
+    const h = w * (280 / 640);
+    const y = roadTop(h);
     traveler.style.width = `${w}px`;
-    traveler.style.transform = `translate3d(${(left + px).toFixed(1)}px, ${(top + py).toFixed(1)}px, 0)`;
+    traveler.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
     traveler.style.opacity = String(clamp(opacity, 0, 1));
-    traveler.classList.toggle('is-hero', opacity > 0.85 && spin < 40);
-    spinWheels(spin);
+    traveler.classList.toggle('is-hero', tone === 'hero' && !driving);
+    traveler.classList.toggle('is-light', tone !== 'hero');
+    traveler.classList.toggle('is-driving', driving);
+
+    if (lastX != null && driving) {
+      spinAcc += (x - lastX) * 0.55;
+    }
+    lastX = x;
+    spinWheels(driving ? spinAcc : spinAcc * 0.15);
   };
 
   const updateCarDrive = () => {
     if (!traveler || stops.some((s) => !s.el)) return;
 
-    parallaxX += (targetParallaxX - parallaxX) * 0.1;
-    parallaxY += (targetParallaxY - parallaxY) * 0.1;
-
-    const docks = stops.map(dockPoint);
     const ys = stops.map(stopFocusY);
     const y = focusY();
+    const widths = stops.map((s) => carWidth(s.tone));
+    const xs = stops.map((s, i) => parkX(s, widths[i]));
 
     if (reduceMotion) {
-      const d = docks[0];
-      place(d.left, d.top, d.w, 1, 0, false);
+      place(xs[0], widths[0], 'hero', 1, false);
       return;
     }
 
-    /* Park at first stop */
     if (y <= ys[0]) {
-      const d = docks[0];
-      place(d.left, d.top, d.w, d.opacity, 0);
+      place(xs[0], widths[0], 'hero', 1, false);
       return;
     }
 
-    /* Final park at form — stays */
     if (y >= ys[ys.length - 1]) {
-      const d = docks[docks.length - 1];
-      place(d.left, d.top, d.w, d.opacity, 0, false);
+      const i = ys.length - 1;
+      place(xs[i], widths[i], 'park', 1, false);
       return;
     }
 
-    /* Find leg between stop i and i+1 */
     let i = 0;
     for (let n = 0; n < ys.length - 1; n += 1) {
       if (y >= ys[n] && y <= ys[n + 1]) {
@@ -166,54 +147,38 @@
       }
     }
 
-    const yA = ys[i];
-    const yB = ys[i + 1];
-    const t = clamp((y - yA) / Math.max(yB - yA, 1), 0, 1);
-    const from = docks[i];
-    const to = docks[i + 1];
-    const offRight = window.innerWidth + from.w * 0.15;
-    const offLeft = -to.w * 1.05;
-    const midY = (from.top + to.top) / 2;
+    const t = clamp((y - ys[i]) / Math.max(ys[i + 1] - ys[i], 1), 0, 1);
+    const fromX = xs[i];
+    const toX = xs[i + 1];
+    const fromW = widths[i];
+    const toW = widths[i + 1];
+    const toTone = stops[i + 1].tone;
+    const fromTone = stops[i].tone;
+    const offRight = window.innerWidth + fromW * 0.2;
+    const offLeft = -toW * 1.1;
 
-    /*
-      0–0.18 park at A
-      0.18–0.48 exit right (skip section in between)
-      0.48–0.52 invisible teleport
-      0.52–0.82 enter from left to B
-      0.82–1 park at B
-    */
-    if (t < 0.18) {
-      place(from.left, from.top, from.w, from.opacity, 0);
+    /* Jen horizont: park → vpravo pryč → zleva → park. Y vždy roadTop. */
+    if (t < 0.16) {
+      place(fromX, fromW, fromTone, 1, false);
       return;
     }
     if (t < 0.48) {
-      const p = easeInOut((t - 0.18) / 0.3);
-      place(
-        lerp(from.left, offRight, p),
-        lerp(from.top, midY, p * 0.35),
-        lerp(from.w, to.w, p * 0.3),
-        from.opacity * (1 - p * 0.15),
-        p * 520,
-      );
+      const p = easeInOut((t - 0.16) / 0.32);
+      place(lerp(fromX, offRight, p), lerp(fromW, toW, p * 0.25), fromTone, 1, true);
       return;
     }
     if (t < 0.52) {
-      place(offLeft, midY, to.w, 0, 260, false);
+      place(offLeft, toW, toTone, 0, false);
+      lastX = offLeft;
       return;
     }
-    if (t < 0.82) {
-      const p = easeInOut((t - 0.52) / 0.3);
-      place(
-        lerp(offLeft, to.left, p),
-        lerp(midY, to.top, p),
-        lerp(from.w * 0.9, to.w, p),
-        to.opacity * (0.35 + p * 0.65),
-        (1 - p) * 480,
-      );
+    if (t < 0.84) {
+      const p = easeInOut((t - 0.52) / 0.32);
+      place(lerp(offLeft, toX, p), lerp(fromW * 0.95, toW, p), toTone, 1, true);
       return;
     }
 
-    place(to.left, to.top, to.w, to.opacity, 0);
+    place(toX, toW, toTone, 1, false);
   };
 
   let raf = 0;
@@ -223,12 +188,6 @@
   };
 
   if (!reduceMotion) {
-    window.addEventListener('pointermove', (e) => {
-      const nx = (e.clientX / window.innerWidth - 0.5) * 2;
-      const ny = (e.clientY / window.innerHeight - 0.5) * 2;
-      targetParallaxX = nx * -14;
-      targetParallaxY = ny * -8;
-    }, { passive: true });
     raf = requestAnimationFrame(loop);
     window.addEventListener('pagehide', () => cancelAnimationFrame(raf), { once: true });
   } else {
@@ -237,6 +196,9 @@
   }
 
   window.addEventListener('resize', updateCarDrive, { passive: true });
+
+  /* Po dokreslení blueprintu nechat čáry napevno */
+  window.setTimeout(() => traveler?.classList.add('is-drawn'), 2600);
 
   const revealEls = [
     ...document.querySelectorAll('.section-grid, .service-list li, .map-frame, .contact-form'),
