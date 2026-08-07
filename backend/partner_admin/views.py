@@ -19,6 +19,7 @@ from salons.models import Salon
 
 from .forms import (
     BlokaceForm,
+    FakturaPlatbyForm,
     NovyPartnerForm,
     PartnerNastaveniForm,
     PlatbaForm,
@@ -529,6 +530,60 @@ def potvrdit_platbu(request, salon_id):
     else:
         messages.error(request, 'Zkontrolujte datum, částku a případně PDF faktury.')
     return _detail_redirect(salon.id, 'parovani')
+
+
+@superadmin_required
+@require_POST
+def nahrat_fakturu_platby(request, salon_id, platba_id):
+    """Zpětně nahrát / nahradit PDF faktury u existující platby."""
+    salon = get_object_or_404(Salon, pk=salon_id)
+    platba = get_object_or_404(PlatbaPartnera, pk=platba_id, salon=salon)
+    form = FakturaPlatbyForm(request.POST, request.FILES)
+    if not form.is_valid():
+        messages.error(request, 'Nahrajte platný PDF soubor faktury.')
+        return _detail_redirect(salon.id, 'platby')
+
+    pdf = form.cleaned_data['faktura_pdf']
+    if platba.faktura_pdf:
+        platba.faktura_pdf.delete(save=False)
+    platba.faktura_pdf = pdf
+    platba.save(update_fields=['faktura_pdf'])
+    log_superadmin(
+        salon,
+        request.user,
+        f'Nahrána/nahrazena faktura PDF u platby splatnost {platba.splatnost:%d.%m.%Y}.',
+        kategorie='platby',
+        objekt_typ='PlatbaPartnera',
+        objekt_id=platba.id,
+        po={'soubor': getattr(pdf, 'name', '')},
+    )
+    messages.success(request, 'Faktura PDF uložena.')
+    return _detail_redirect(salon.id, 'platby')
+
+
+@superadmin_required
+@require_POST
+def smazat_fakturu_platby(request, salon_id, platba_id):
+    """Smazat PDF faktury u existující platby."""
+    salon = get_object_or_404(Salon, pk=salon_id)
+    platba = get_object_or_404(PlatbaPartnera, pk=platba_id, salon=salon)
+    if not platba.faktura_pdf:
+        messages.error(request, 'U této platby není žádná faktura.')
+        return _detail_redirect(salon.id, 'platby')
+
+    platba.faktura_pdf.delete(save=False)
+    platba.faktura_pdf = None
+    platba.save(update_fields=['faktura_pdf'])
+    log_superadmin(
+        salon,
+        request.user,
+        f'Smazána faktura PDF u platby splatnost {platba.splatnost:%d.%m.%Y}.',
+        kategorie='platby',
+        objekt_typ='PlatbaPartnera',
+        objekt_id=platba.id,
+    )
+    messages.success(request, 'Faktura PDF smazána.')
+    return _detail_redirect(salon.id, 'platby')
 
 
 @superadmin_required

@@ -162,6 +162,23 @@ class PlatbaForm(forms.Form):
     )
 
 
+class FakturaPlatbyForm(forms.Form):
+    faktura_pdf = forms.FileField(
+        label='Faktura PDF',
+        help_text='Nahraje nebo nahradí PDF u vybrané platby.',
+    )
+
+    def clean_faktura_pdf(self):
+        f = self.cleaned_data['faktura_pdf']
+        name = (getattr(f, 'name', '') or '').lower()
+        content = getattr(f, 'content_type', '') or ''
+        if not (name.endswith('.pdf') or content in ('application/pdf', 'application/x-pdf')):
+            raise forms.ValidationError('Nahrajte soubor PDF.')
+        if f.size and f.size > 15 * 1024 * 1024:
+            raise forms.ValidationError('PDF je příliš velké (max. 15 MB).')
+        return f
+
+
 class UpozorneniForm(forms.Form):
     predmet = forms.CharField(label='Předmět e-mailu', max_length=200)
     text = forms.CharField(

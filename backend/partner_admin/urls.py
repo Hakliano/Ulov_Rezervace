@@ -15,6 +15,16 @@ urlpatterns = [
     path('salon/<int:salon_id>/blokovat/', views.blokovat, name='blokovat'),
     path('salon/<int:salon_id>/aktivovat/', views.aktivovat, name='aktivovat'),
     path('salon/<int:salon_id>/platba/', views.potvrdit_platbu, name='potvrdit_platbu'),
+    path(
+        'salon/<int:salon_id>/platba/<int:platba_id>/faktura/',
+        views.nahrat_fakturu_platby,
+        name='nahrat_fakturu',
+    ),
+    path(
+        'salon/<int:salon_id>/platba/<int:platba_id>/faktura/smazat/',
+        views.smazat_fakturu_platby,
+        name='smazat_fakturu',
+    ),
     path('salon/<int:salon_id>/upozorneni/', views.odeslat_upozorneni, name='odeslat_upozorneni'),
     path(
         'salon/<int:salon_id>/ucet/<int:zamestnanec_id>/reset/',

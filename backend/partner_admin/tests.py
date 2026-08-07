@@ -282,3 +282,33 @@ class PartnerAdminTests(TestCase):
         self.assertTrue(
             SalonAuditLog.objects.filter(salon=salon, popis__icontains='Založen nový partner').exists()
         )
+
+    def test_zpetne_nahrani_a_smazani_faktury_pdf(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_login(self.superuser)
+        platba = PlatbaPartnera.objects.create(
+            salon=self.salon,
+            splatnost=date(2026, 7, 15),
+            zaplaceno_dne=date(2026, 8, 7),
+            ocekavana_castka=Decimal('499.00'),
+            prijata_castka=Decimal('499.00'),
+            variabilni_symbol='500',
+            oznacil=self.superuser,
+        )
+        pdf = SimpleUploadedFile('faktura.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        response = self.client.post(
+            reverse('partner_admin:nahrat_fakturu', args=[self.salon.id, platba.id]),
+            {'faktura_pdf': pdf},
+        )
+        self.assertEqual(response.status_code, 302)
+        platba.refresh_from_db()
+        self.assertTrue(platba.faktura_pdf)
+        self.assertTrue(platba.faktura_pdf.name.endswith('.pdf'))
+
+        response = self.client.post(
+            reverse('partner_admin:smazat_fakturu', args=[self.salon.id, platba.id]),
+        )
+        self.assertEqual(response.status_code, 302)
+        platba.refresh_from_db()
+        self.assertFalse(platba.faktura_pdf)

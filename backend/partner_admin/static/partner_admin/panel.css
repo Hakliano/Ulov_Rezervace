@@ -273,6 +273,10 @@ label.check input { width: auto; min-height: 0; }
 .form-grid .field-error { color: var(--danger); display: block; margin-top: .25rem; }
 .form-grid .check-row { display: flex; align-items: center; gap: .55rem; font-weight: 700; }
 .form-grid .check-label { align-self: end; }
+.btn-tiny { padding: .28rem .55rem; font-size: .72rem; }
+.faktura-cell { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; min-width: 14rem; }
+.inline-form { display: inline-flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: 0; }
+.faktura-upload input[type="file"] { max-width: 11rem; font-size: .72rem; }
 .form-note { margin: .8rem 0 0; color: var(--muted); font-size: .78rem; }
 .inline-form { display: flex; }
 .reminder-form { display: grid; gap: .7rem; }

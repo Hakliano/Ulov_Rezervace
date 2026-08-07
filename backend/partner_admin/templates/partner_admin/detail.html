@@ -173,7 +173,22 @@
               <td>{{ platba.prijata_castka|default:platba.ocekavana_castka|floatformat:2 }} Kč</td>
               <td>{{ platba.variabilni_symbol|default:"—" }}</td>
               <td>{{ platba.oznacil.username|default:"—" }}</td>
-              <td>{% if platba.faktura_pdf %}<span class="badge badge-ok">PDF</span>{% else %}—{% endif %}</td>
+              <td class="faktura-cell">
+                {% if platba.faktura_pdf %}
+                  <a class="btn btn-quiet btn-tiny" href="{{ platba.faktura_pdf.url }}" target="_blank" rel="noopener">Otevřít PDF</a>
+                  <form class="inline-form" method="post" action="{% url 'partner_admin:smazat_fakturu' salon.id platba.id %}" onsubmit="return confirm('Smazat PDF fakturu u této platby?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="tab" value="platby">
+                    <button class="btn btn-danger btn-tiny" type="submit">Smazat</button>
+                  </form>
+                {% endif %}
+                <form class="inline-form faktura-upload" method="post" action="{% url 'partner_admin:nahrat_fakturu' salon.id platba.id %}" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <input type="hidden" name="tab" value="platby">
+                  <input type="file" name="faktura_pdf" accept="application/pdf,.pdf" required>
+                  <button class="btn btn-secondary btn-tiny" type="submit">{% if platba.faktura_pdf %}Nahradit{% else %}Nahrát PDF{% endif %}</button>
+                </form>
+              </td>
             </tr>
           {% empty %}
             <tr><td colspan="7">Zatím žádná zaplacená platba.</td></tr>
