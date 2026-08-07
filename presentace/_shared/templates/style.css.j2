@@ -4104,8 +4104,22 @@ section { padding: 3.5rem 0; }
   margin-inline: auto;
 }
 .flow-show-copy {
-  max-width: 40rem;
+  max-width: 52rem;
   margin-inline: auto;
+}
+.flow-show-areas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem 1.5rem;
+  margin-bottom: 1.15rem;
+}
+.flow-show-area h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gold);
 }
 .flow-shots {
   display: grid;
@@ -4179,15 +4193,17 @@ section { padding: 3.5rem 0; }
 }
 .flow-show-points {
   list-style: none;
-  margin: 0 0 1rem;
+  margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.55rem;
+  gap: 0.4rem;
 }
 .flow-show-points li {
   position: relative;
-  padding-left: 1.35rem;
-  font-weight: 600;
+  padding-left: 1.2rem;
+  font-weight: 500;
+  font-size: 0.92rem;
+  line-height: 1.4;
   color: #e2e8f0;
 }
 .flow-show-points li::before {
@@ -4199,17 +4215,21 @@ section { padding: 3.5rem 0; }
 }
 .flow-show-example {
   margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: #b7c0ce;
+  padding-top: 0.25rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  font-weight: 500;
+  color: #d6dde8;
 }
 @media (max-width: 860px) {
   .flow-show-grid { grid-template-columns: 1fr; }
   .flow-show-logo { height: clamp(96px, 28vw, 140px); }
   .flow-shots { grid-template-columns: 1fr; }
+  .flow-show-areas { grid-template-columns: 1fr; gap: 1rem; }
 }
 @media (max-width: 640px) {
   .flow-shots { grid-template-columns: 1fr; }
+  .flow-show-areas { grid-template-columns: 1fr; }
 }
 
 .pricing-card--dominant {
