@@ -115,7 +115,7 @@ class Command(BaseCommand):
                         zamestnanec=zam,
                         zacatek=start,
                         konec=end,
-                        stav='potvrzena',
+                        stav='potvrzeno',
                         typ_vytvoreni='telefon',
                         jmeno_host=jmeno,
                         email_host=f'test.{salon.pk}.{day:%Y%m%d}.{used}@ulov.local',
