@@ -21,6 +21,11 @@ urlpatterns = [
         name='nahrat_fakturu',
     ),
     path(
+        'salon/<int:salon_id>/platba/<int:platba_id>/faktura/stahnout/',
+        views.stahnout_fakturu_platby,
+        name='stahnout_fakturu',
+    ),
+    path(
         'salon/<int:salon_id>/platba/<int:platba_id>/faktura/smazat/',
         views.smazat_fakturu_platby,
         name='smazat_fakturu',

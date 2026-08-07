@@ -45,6 +45,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./media-staging:/app/media
     command:
       [
         "sh",
@@ -67,6 +69,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./media-staging:/app/media
     command: >
       celery -A salon_api worker
       --loglevel=info

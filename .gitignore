@@ -17,3 +17,7 @@ deploy/smtp-salon2.json
 deploy/demo-media.json
 _recovered/
 
+
+media-staging/
+backend/media/
+

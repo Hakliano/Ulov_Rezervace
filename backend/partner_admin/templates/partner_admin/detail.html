@@ -175,7 +175,7 @@
               <td>{{ platba.oznacil.username|default:"—" }}</td>
               <td class="faktura-cell">
                 {% if platba.faktura_pdf %}
-                  <a class="btn btn-quiet btn-tiny" href="{{ platba.faktura_pdf.url }}" target="_blank" rel="noopener">Otevřít PDF</a>
+                  <a class="btn btn-quiet btn-tiny" href="{% url 'partner_admin:stahnout_fakturu' salon.id platba.id %}" target="_blank" rel="noopener">Otevřít PDF</a>
                   <form class="inline-form" method="post" action="{% url 'partner_admin:smazat_fakturu' salon.id platba.id %}" onsubmit="return confirm('Smazat PDF fakturu u této platby?');">
                     {% csrf_token %}
                     <input type="hidden" name="tab" value="platby">

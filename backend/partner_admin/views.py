@@ -562,6 +562,23 @@ def nahrat_fakturu_platby(request, salon_id, platba_id):
 
 
 @superadmin_required
+def stahnout_fakturu_platby(request, salon_id, platba_id):
+    """Stažení PDF přes přihlášený partner-admin (ne veřejné /media/)."""
+    from django.http import FileResponse, Http404
+
+    salon = get_object_or_404(Salon, pk=salon_id)
+    platba = get_object_or_404(PlatbaPartnera, pk=platba_id, salon=salon)
+    if not platba.faktura_pdf:
+        raise Http404('Faktura neexistuje.')
+    try:
+        handle = platba.faktura_pdf.open('rb')
+    except FileNotFoundError as exc:
+        raise Http404('Soubor faktury na disku chybí.') from exc
+    filename = platba.faktura_pdf.name.rsplit('/', 1)[-1]
+    return FileResponse(handle, as_attachment=False, filename=filename, content_type='application/pdf')
+
+
+@superadmin_required
 @require_POST
 def smazat_fakturu_platby(request, salon_id, platba_id):
     """Smazat PDF faktury u existující platby."""

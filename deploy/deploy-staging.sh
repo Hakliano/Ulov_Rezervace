@@ -142,6 +142,10 @@ echo "### Start staging containers"
 # Síť LIVE musí existovat
 docker network inspect ulov_default >/dev/null
 
+# Zachovej už nahraná media z běžícího kontejneru před mountem volume
+mkdir -p media-staging
+docker cp ulov-staging-api:/app/media/. media-staging/ 2>/dev/null || true
+
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis
 
 echo "### Migrate + seed (základní data, oddělená DB)"
