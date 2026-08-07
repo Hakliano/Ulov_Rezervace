@@ -194,11 +194,6 @@ body {
   filter: drop-shadow(0 20px 40px rgba(6, 37, 54, 0.35));
 }
 
-.section-contact {
-  position: relative;
-  overflow: visible;
-}
-
 .section-car-stop {
   position: relative;
 }
@@ -509,6 +504,8 @@ body {
 }
 
 .section-contact {
+  position: relative;
+  overflow: visible;
   background:
     linear-gradient(180deg, rgba(9, 60, 93, 0.04), transparent 30%),
     rgba(255, 255, 255, 0.4);
