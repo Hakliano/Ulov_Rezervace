@@ -151,6 +151,8 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
   python manage.py seed_salons 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_vertical_demos 2>/dev/null || true
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py fix_pg_sequences 2>/dev/null || true
 
 echo "### Reload LIVE nginx (staging vhost + mount www-staging)"
 cp -f deploy/nginx/conf.d/staging.conf deploy/nginx/conf.d/staging.conf 2>/dev/null || true

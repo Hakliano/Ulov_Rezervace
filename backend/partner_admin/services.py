@@ -2,12 +2,28 @@ import calendar
 from datetime import date
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import connection, transaction
 
 from rezervace.models import RezervacniNastaveni, SalonAuditLog, Zamestnanec
 from salons.models import Salon
 
 from .models import PartnerNastaveni, PlatbaPartnera
+
+
+def _sync_salon_id_sequence():
+    """Po seedech s pk=… musí Postgres sequence dohnat MAX(id)."""
+    if connection.vendor != 'postgresql':
+        return
+    with connection.cursor() as c:
+        c.execute(
+            """
+            SELECT setval(
+              pg_get_serial_sequence('salons_salon', 'id'),
+              COALESCE((SELECT MAX(id) FROM salons_salon), 1),
+              true
+            )
+            """
+        )
 
 
 @transaction.atomic
@@ -17,6 +33,8 @@ def vytvor_noveho_partnera(*, data: dict, actor):
     Volitelně aktivuje FLOW. Vrací (salon, partner, majitel, flow_user|None).
     """
     from rezervace.services.staff_auth import ensure_owner_flow_user
+
+    _sync_salon_id_sequence()
 
     salon_email = (data.get('email') or data['majitel_email'] or '').strip()
     salon = Salon.objects.create(
