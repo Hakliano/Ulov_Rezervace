@@ -512,7 +512,11 @@ function showLoggedIn(user) {
   $('#btn-logout').classList.remove('hidden');
   $('#shell').classList.add('app-mode');
   $('#hero-brand').classList.add('compact');
-  $('#home-name').textContent = user.zamestnanec?.jmeno || '—';
+  const owner = isOwnerUser(user);
+  // UI: Manager účet vždy jako „Manager“ (ne DB jméno typu Majitelka); Staff = jméno.
+  $('#home-name').textContent = owner
+    ? 'Manager'
+    : (user.zamestnanec?.jmeno || 'Staff');
   $('#home-salon').textContent = user.salon?.name || '—';
   $('#home-email').textContent = user.email || '—';
   $('#home-overview').textContent = user.visible_overview ? 'zapnuto' : 'vypnuto';
@@ -520,11 +524,11 @@ function showLoggedIn(user) {
   const ovTab = $('#tab-overview');
   if (user.visible_overview) ovTab.classList.remove('hidden');
   else ovTab.classList.add('hidden');
-  const owner = isOwnerUser(user);
   $('#pwd-box-staff')?.classList.toggle('hidden', owner);
   $('#pwd-box-owner')?.classList.toggle('hidden', !owner);
   $('#tab-sprava')?.classList.toggle('hidden', !owner);
-  $('#home-role-badge')?.classList.toggle('hidden', !owner);
+  // Badge vedle salonu je redundantní, když je nadpis už „Manager“.
+  $('#home-role-badge')?.classList.add('hidden');
   // Manager: dovolená jen ve Správě → Žádosti o volno. Staff (včetně pracovní persony) má záložku Dovolená.
   const absTab = $('#tab-absence');
   if (absTab) {
@@ -2053,9 +2057,10 @@ async function loadOwnerPersona() {
     }
     wrap?.classList.toggle('hidden', linked);
     if (!linked) {
-      const def = currentUser?.persona?.majitel?.jmeno || currentUser?.zamestnanec?.jmeno || '';
+      // Nepředvyplňovat „Majitelka“ — pracovní jméno zadá Manager sám.
       const inp = $('#own-persona-jmeno');
-      if (inp && !inp.value) inp.value = def;
+      if (inp && !inp.value) inp.value = '';
+      inp?.setAttribute('placeholder', 'Jméno na webu a v rezervacích');
     }
   } catch (err) {
     showMsg(msg, err.message, false);
@@ -2241,7 +2246,7 @@ $('#form-own-add-volno')?.addEventListener('submit', async (e) => {
 
 async function openOwnerSection(section) {
   if (!isOwnerUser() && section !== 'persona') return;
-  // persona setup jen jako majitelka (aktivní persona owner)
+  // persona setup jen jako Manager (aktivní persona owner)
   if (section === 'persona' && !isOwnerUser()) return;
   const ok = ['persona', 'pravidla', 'sablony', 'personal', 'prirazeni', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
   if (!ok.includes(section)) return;
@@ -2583,7 +2588,7 @@ async function loadOwnerPersonal() {
 
 function personalNavLabel(z) {
   if (!z) return '—';
-  if (z.role === 'majitel') return `${z.jmeno} (Manager)`;
+  if (z.role === 'majitel') return 'Manager';
   const workId = currentUser?.persona?.pracovnik?.id;
   if (workId && Number(z.id) === Number(workId)) {
     return `${z.jmeno} (Staff · Manager)`;
@@ -2638,8 +2643,9 @@ function buildOwnerPersonalCard(z) {
   card.className = 'own-personal-card';
   card.dataset.id = String(z.id);
 
+  const displayName = isOwner ? 'Manager' : z.jmeno;
   const roleBadge = isOwner
-    ? ' <span class="role-badge">Manager</span>'
+    ? ''
     : (isManagerStaff ? ' <span class="role-badge">Staff · Manager</span>' : '');
 
   const rozvrhRows = (z.rozvrh || []).map((r) => {
@@ -2657,7 +2663,7 @@ function buildOwnerPersonalCard(z) {
   card.innerHTML = `
     <div class="own-personal-head">
       <div>
-        <h3>${esc(z.jmeno)}${roleBadge}</h3>
+        <h3>${esc(displayName)}${roleBadge}</h3>
         <p class="hint tiny">${esc(z.specializace || '')}</p>
       </div>
     </div>
