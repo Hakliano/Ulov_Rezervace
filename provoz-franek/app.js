@@ -120,10 +120,15 @@
   window.addEventListener('scroll', updateNavCar, { passive: true });
   window.addEventListener('resize', updateNavCar, { passive: true });
 
-  /* Hero auto: scan + odjezd doprava jen uvnitř hero (scroll dolů/nahoru) */
+  /* Hero auto: scan + plynulý odjezd doprava jen uvnitř hero */
   const hero = document.querySelector('.hero');
   const heroStage = document.getElementById('hero-stage');
-  const easeOutCubic = (t) => 1 - (1 - t) ** 3;
+  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2);
+
+  let heroTarget = 0;
+  let heroCurrent = 0;
+  let heroSpin = 0;
+  let heroRaf = 0;
 
   const spinHeroWheels = (deg) => {
     heroStage?.querySelectorAll('.bp-wheel-group').forEach((g) => {
@@ -134,26 +139,53 @@
     });
   };
 
-  const updateHeroCar = () => {
-    if (!hero || !heroStage) return;
-    if (reduceMotion) {
-      heroStage.style.transform = 'translate3d(0,0,0)';
-      heroStage.style.opacity = '1';
-      return;
-    }
+  const readHeroTarget = () => {
+    if (!hero) return 0;
     const r = hero.getBoundingClientRect();
-    /* 0 = hero nahoře / viditelné, 1 = hero odscrollované → auto pryč vpravo */
-    const raw = clamp(-r.top / Math.max(r.height * 0.7, 1), 0, 1);
-    const p = easeOutCubic(raw);
-    const travel = Math.max(window.innerWidth * 0.85, heroStage.offsetWidth + 80);
-    heroStage.style.transform = `translate3d(${(travel * p).toFixed(1)}px, 0, 0)`;
-    heroStage.style.opacity = String(clamp(1 - p * 0.35, 0.4, 1));
-    spinHeroWheels(p * 480);
+    /* Delší dráha scrollu = méně trhavý odjezd */
+    return clamp(-r.top / Math.max(r.height * 1.05, 1), 0, 1);
   };
 
-  updateHeroCar();
-  window.addEventListener('scroll', updateHeroCar, { passive: true });
-  window.addEventListener('resize', updateHeroCar, { passive: true });
+  const paintHeroCar = (p) => {
+    if (!heroStage) return;
+    const travel = Math.max(window.innerWidth * 0.9, (heroStage.offsetWidth || 400) + 100);
+    const x = travel * p;
+    heroStage.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+    heroStage.style.opacity = String(clamp(1 - p * 0.25, 0.55, 1));
+    spinHeroWheels(heroSpin);
+  };
+
+  const tickHeroCar = () => {
+    if (!hero || !heroStage) return;
+
+    if (reduceMotion) {
+      paintHeroCar(0);
+      return;
+    }
+
+    heroTarget = readHeroTarget();
+    /* Plynulé dohánění cíle — nezávislé na frekvenci scroll eventů */
+    const lag = 0.075;
+    const prev = heroCurrent;
+    heroCurrent += (heroTarget - heroCurrent) * lag;
+    if (Math.abs(heroTarget - heroCurrent) < 0.0004) heroCurrent = heroTarget;
+
+    const p = easeInOut(heroCurrent);
+    heroSpin += (heroCurrent - prev) * 420;
+    paintHeroCar(p);
+
+    heroRaf = requestAnimationFrame(tickHeroCar);
+  };
+
+  if (reduceMotion) {
+    paintHeroCar(0);
+  } else {
+    heroRaf = requestAnimationFrame(tickHeroCar);
+    window.addEventListener('pagehide', () => cancelAnimationFrame(heroRaf), { once: true });
+  }
+  window.addEventListener('resize', () => {
+    heroTarget = readHeroTarget();
+  }, { passive: true });
   window.setTimeout(() => heroStage?.classList.add('is-drawn'), 2600);
 
   const revealEls = [
