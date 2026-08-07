@@ -120,6 +120,42 @@
   window.addEventListener('scroll', updateNavCar, { passive: true });
   window.addEventListener('resize', updateNavCar, { passive: true });
 
+  /* Hero auto: scan + odjezd doprava jen uvnitř hero (scroll dolů/nahoru) */
+  const hero = document.querySelector('.hero');
+  const heroStage = document.getElementById('hero-stage');
+  const easeOutCubic = (t) => 1 - (1 - t) ** 3;
+
+  const spinHeroWheels = (deg) => {
+    heroStage?.querySelectorAll('.bp-wheel-group').forEach((g) => {
+      const wheel = g.querySelector('.bp-wheel');
+      const cx = Number(wheel?.getAttribute('cx') || 0);
+      const cy = Number(wheel?.getAttribute('cy') || 0);
+      g.setAttribute('transform', `rotate(${deg} ${cx} ${cy})`);
+    });
+  };
+
+  const updateHeroCar = () => {
+    if (!hero || !heroStage) return;
+    if (reduceMotion) {
+      heroStage.style.transform = 'translate3d(0,0,0)';
+      heroStage.style.opacity = '1';
+      return;
+    }
+    const r = hero.getBoundingClientRect();
+    /* 0 = hero nahoře / viditelné, 1 = hero odscrollované → auto pryč vpravo */
+    const raw = clamp(-r.top / Math.max(r.height * 0.7, 1), 0, 1);
+    const p = easeOutCubic(raw);
+    const travel = Math.max(window.innerWidth * 0.85, heroStage.offsetWidth + 80);
+    heroStage.style.transform = `translate3d(${(travel * p).toFixed(1)}px, 0, 0)`;
+    heroStage.style.opacity = String(clamp(1 - p * 0.35, 0.4, 1));
+    spinHeroWheels(p * 480);
+  };
+
+  updateHeroCar();
+  window.addEventListener('scroll', updateHeroCar, { passive: true });
+  window.addEventListener('resize', updateHeroCar, { passive: true });
+  window.setTimeout(() => heroStage?.classList.add('is-drawn'), 2600);
+
   const revealEls = [
     ...document.querySelectorAll('.section-grid, .service-list li, .map-frame, .contact-form'),
   ];
