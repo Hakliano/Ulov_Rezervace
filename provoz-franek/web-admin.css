@@ -27,12 +27,12 @@
 .gallery-empty { text-align: center; color: var(--muted); padding: 2rem; }
 @media (max-width: 700px) { .gallery-item { aspect-ratio: 4/3; } }
 
-/* Personál — landscape full-width (base; finální layout níže v overrides) */
+/* Personál — 3 karty vedle sebe, fotka na šířku karty */
 .team-section { background: #fff; }
-.team-grid { display: grid; gap: 2rem; }
+.team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
 .team-card {
   background: #fff; border: 1px solid var(--line); border-radius: 14px;
-  overflow: hidden; position: relative;
+  overflow: hidden; position: relative; min-width: 0;
 }
 .team-card::before { content: none; }
 .personel-edit-card { border: 1px solid var(--line); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; background: var(--paper); }
@@ -328,7 +328,11 @@
   padding: 0.65rem 1rem; font-size: 0.9rem; color: var(--muted);
 }
 
-.team-grid { display: grid; gap: 2rem; }
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
 .team-card {
   background: #fff;
   border: 1px solid var(--line);
@@ -337,24 +341,26 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 12px 36px rgba(6, 37, 54, 0.06);
+  min-width: 0;
 }
 .team-card::before { display: none; }
 .team-head {
-  padding: 1.25rem 1.35rem 0.85rem;
+  padding: 1rem 1.1rem 0.7rem;
 }
 .team-head h3 {
   margin: 0;
   font-family: var(--font);
-  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
   color: var(--navy);
   text-transform: none;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .team-role {
-  margin: 0.35rem 0 0;
+  margin: 0.3rem 0 0;
   font-family: var(--mono);
   color: var(--steel);
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -377,32 +383,37 @@
 }
 .team-below {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 1.25rem 1.75rem;
-  padding: 1.25rem 1.35rem 1.4rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1rem;
+  padding: 0.95rem 1.1rem 1.15rem;
   align-items: start;
+  flex: 1;
 }
 .team-desc {
   margin: 0;
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   color: var(--muted);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 .team-desc-empty { min-height: 0; }
 .team-hours {
   width: 100%;
-  font-size: 0.88rem;
+  font-size: 0.75rem;
   border-collapse: collapse;
   font-family: var(--mono);
 }
 .team-hours td {
-  padding: 0.4rem 0;
+  padding: 0.28rem 0;
   border-bottom: 1px solid var(--line);
 }
-.team-hours td:first-child { color: var(--muted); width: 45%; }
+.team-hours td:first-child { color: var(--muted); width: 42%; }
 .team-hours td:last-child { text-align: right; font-weight: 600; color: var(--navy); }
 
-@media (max-width: 720px) {
+@media (max-width: 980px) {
+  .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .team-grid { grid-template-columns: 1fr; }
   .team-below { grid-template-columns: 1fr; }
 }
 .price-card:nth-child(even) { background: #f3f8fb !important; }
