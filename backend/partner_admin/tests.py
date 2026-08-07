@@ -236,3 +236,49 @@ class PartnerAdminTests(TestCase):
         self.partner.refresh_from_db()
         self.assertEqual(self.partner.castka, Decimal('1.00'))
         self.assertEqual(self.partner.dalsi_splatnost, date(2026, 1, 31))
+
+    def test_novy_partner_vytvori_salon_majitele_a_flow(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('partner_admin:novy'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nový partner')
+
+        response = self.client.post(
+            reverse('partner_admin:novy'),
+            {
+                'name': 'AutoServis Test',
+                'address': 'Dílenska 1',
+                'phone': '+420777000111',
+                'email': 'info@autoservis-test.cz',
+                'majitel_email': 'majitel@autoservis-test.cz',
+                'majitel_heslo': 'DocasneHeslo99',
+                'aktivovat_flow': 'on',
+                'domena': 'autoservis-test.cz',
+                'tarif': 'Partner pro vaši provozovnu',
+                'fakturacni_email': 'fakturace@autoservis-test.cz',
+                'variabilni_symbol': '88001234',
+                'periodicita': PartnerNastaveni.PERIODA_MESIC,
+                'castka': '499.00',
+                'dalsi_splatnost': '',
+                'ulov_cislo_uctu': '',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        salon = Salon.objects.get(name='AutoServis Test')
+        self.assertEqual(salon.email, 'info@autoservis-test.cz')
+        partner = salon.partner_nastaveni
+        self.assertEqual(partner.variabilni_symbol, '88001234')
+        self.assertEqual(partner.domena, 'autoservis-test.cz')
+        majitel = Zamestnanec.objects.get(salon=salon, role=Zamestnanec.ROLE_MAJITEL)
+        self.assertEqual(majitel.jmeno, 'Manager')
+        self.assertFalse(majitel.zobrazit_na_webu)
+        self.assertEqual(majitel.prihlasovaci_jmeno, 'majitel@autoservis-test.cz')
+        self.assertTrue(majitel.check_password('DocasneHeslo99'))
+        self.assertTrue(hasattr(majitel, 'flow_ucet'))
+        self.assertEqual(majitel.flow_ucet.email, 'majitel@autoservis-test.cz')
+        self.assertFalse(
+            Zamestnanec.objects.filter(salon=salon, role=Zamestnanec.ROLE_ZAMESTNANEC).exists()
+        )
+        self.assertTrue(
+            SalonAuditLog.objects.filter(salon=salon, popis__icontains='Založen nový partner').exists()
+        )

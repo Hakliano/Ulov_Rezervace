@@ -4,9 +4,81 @@ from decimal import Decimal
 
 from django.db import transaction
 
-from rezervace.models import SalonAuditLog
+from rezervace.models import RezervacniNastaveni, SalonAuditLog, Zamestnanec
+from salons.models import Salon
 
 from .models import PartnerNastaveni, PlatbaPartnera
+
+
+@transaction.atomic
+def vytvor_noveho_partnera(*, data: dict, actor):
+    """
+    Založí Salon + PartnerNastaveni + účet Manager (bez Staff/rozvrhu/fotek).
+    Volitelně aktivuje FLOW. Vrací (salon, partner, majitel, flow_user|None).
+    """
+    from rezervace.services.staff_auth import ensure_owner_flow_user
+
+    salon_email = (data.get('email') or data['majitel_email'] or '').strip()
+    salon = Salon.objects.create(
+        name=data['name'].strip(),
+        address=(data.get('address') or '').strip(),
+        phone=(data.get('phone') or '').strip(),
+        email=salon_email,
+    )
+
+    partner = salon.partner_nastaveni
+    partner.domena = data.get('domena') or ''
+    partner.tarif = (data.get('tarif') or '').strip()
+    partner.fakturacni_email = (
+        (data.get('fakturacni_email') or '').strip()
+        or data['majitel_email']
+        or salon_email
+    )
+    vs = (data.get('variabilni_symbol') or '').strip() or None
+    partner.variabilni_symbol = vs
+    partner.periodicita = data.get('periodicita') or PartnerNastaveni.PERIODA_MESIC
+    partner.castka = data.get('castka') if data.get('castka') is not None else Decimal('0.00')
+    partner.dalsi_splatnost = data.get('dalsi_splatnost') or None
+    partner.ulov_cislo_uctu = (data.get('ulov_cislo_uctu') or '').strip()
+    partner.save()
+
+    RezervacniNastaveni.objects.get_or_create(
+        salon=salon,
+        defaults={
+            'email_odesilatel': salon_email,
+            'email_jmeno_odesilatele': salon.name,
+        },
+    )
+
+    majitel = Zamestnanec(
+        salon=salon,
+        jmeno='Manager',
+        role=Zamestnanec.ROLE_MAJITEL,
+        prihlasovaci_jmeno=data['majitel_email'],
+        aktivni=True,
+        zobrazit_na_webu=False,
+        poradi=0,
+    )
+    majitel.set_password(data['majitel_heslo'])
+    majitel.save()
+
+    flow_user = None
+    if data.get('aktivovat_flow', True):
+        flow_user, _ = ensure_owner_flow_user(salon, email=data['majitel_email'])
+
+    log_superadmin(
+        salon,
+        actor,
+        f'Založen nový partner (salon #{salon.id}).',
+        pred=None,
+        po={
+            'name': salon.name,
+            'majitel_email': data['majitel_email'],
+            'vs': partner.variabilni_symbol,
+            'flow': bool(flow_user),
+        },
+    )
+    return salon, partner, majitel, flow_user
 
 
 def posun_splatnost(puvodni, periodicita):

@@ -1,0 +1,44 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Nový partner{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Onboarding</p>
+      <h1>Nový partner</h1>
+      <p class="muted">
+        Založí provozovnu, platební nastavení a účet Manager do databáze.
+        Personál, rozvrh, fotky a web řešíte zvlášť později.
+      </p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="{% url 'partner_admin:dashboard' %}">← Zpět na přehled</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <form class="form-grid" method="post" action="{% url 'partner_admin:novy' %}" autocomplete="off">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="full">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        <label class="{% if field.name == 'aktivovat_flow' %}full check-label{% endif %}">
+          {% if field.name == 'aktivovat_flow' %}
+            <span class="check-row">{{ field }} {{ field.label }}</span>
+          {% else %}
+            {{ field.label }}
+            {{ field }}
+          {% endif %}
+          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+          {% if field.errors %}<small class="field-error">{{ field.errors|striptags }}</small>{% endif %}
+        </label>
+      {% endfor %}
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Založit partnera</button>
+        <a class="btn btn-quiet" href="{% url 'partner_admin:dashboard' %}">Zrušit</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

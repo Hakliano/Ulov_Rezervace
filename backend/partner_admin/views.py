@@ -19,13 +19,14 @@ from salons.models import Salon
 
 from .forms import (
     BlokaceForm,
+    NovyPartnerForm,
     PartnerNastaveniForm,
     PlatbaForm,
     ResetHeslaForm,
     UpozorneniForm,
 )
 from .models import PartnerNastaveni, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
-from .services import log_superadmin, oznac_platbu
+from .services import log_superadmin, oznac_platbu, vytvor_noveho_partnera
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
 
@@ -227,6 +228,34 @@ def _aplikuj_filtry(salons, filtry, dnes=None):
 
 def _export_querystring(filtry):
     return urlencode({key: value for key, value in filtry.items() if value})
+
+
+@superadmin_required
+def novy_partner(request):
+    """Založení nového partnera — jen základní data do DB."""
+    if request.method == 'POST':
+        form = NovyPartnerForm(request.POST)
+        if form.is_valid():
+            try:
+                salon, partner, majitel, flow_user = vytvor_noveho_partnera(
+                    data=form.cleaned_data,
+                    actor=request.user,
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            except Exception as exc:
+                messages.error(request, f'Partnera se nepodařilo založit: {exc}')
+            else:
+                flow_note = ' FLOW aktivováno.' if flow_user else ' FLOW zatím neaktivní.'
+                messages.success(
+                    request,
+                    f'Partner „{salon.name}“ založen (ID {salon.id}). '
+                    f'Login majitele: {majitel.prihlasovaci_jmeno}.{flow_note}',
+                )
+                return _detail_redirect(salon.id, 'partner')
+    else:
+        form = NovyPartnerForm()
+    return render(request, 'partner_admin/novy.html', {'form': form})
 
 
 @superadmin_required

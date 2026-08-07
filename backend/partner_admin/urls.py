@@ -7,6 +7,7 @@ app_name = 'partner_admin'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('novy/', views.novy_partner, name='novy'),
     path('export.csv', views.export_csv, name='export_csv'),
     path('salon/<int:salon_id>/', views.detail_partnera, name='detail'),
     path('salon/<int:salon_id>/platby.csv', views.export_platby_csv, name='export_platby_csv'),

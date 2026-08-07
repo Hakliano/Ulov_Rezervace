@@ -270,6 +270,9 @@ label.check input { width: auto; min-height: 0; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
 .form-grid .form-actions { grid-column: 1 / -1; }
 .form-grid.compact { grid-template-columns: repeat(3, 1fr); align-items: end; }
+.form-grid .field-error { color: var(--danger); display: block; margin-top: .25rem; }
+.form-grid .check-row { display: flex; align-items: center; gap: .55rem; font-weight: 700; }
+.form-grid .check-label { align-self: end; }
 .form-note { margin: .8rem 0 0; color: var(--muted); font-size: .78rem; }
 .inline-form { display: flex; }
 .reminder-form { display: grid; gap: .7rem; }
