@@ -42,8 +42,10 @@
   const sectionEls = {
     top: document.querySelector('.hero'),
     'o-nas': document.getElementById('o-nas'),
-    sluzby: document.getElementById('sluzby'),
-    mapa: document.getElementById('mapa'),
+    galerie: document.getElementById('galerie'),
+    personel: document.getElementById('personel'),
+    cenik: document.getElementById('cenik'),
+    novinky: document.getElementById('novinky'),
     kontakt: document.getElementById('kontakt'),
   };
 

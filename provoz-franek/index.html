@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../shared/creator-footer.css">
+  <link rel="stylesheet" href="web-admin.css">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -16,7 +18,9 @@
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="#top">
-        <img class="brand-logo" src="franek-logo.webp" width="48" height="44" alt="Fraňek Autoservis">
+        <span id="nav-logo" data-fallback-text="Fraňek">
+          <img class="brand-logo" src="franek-logo.webp" width="48" height="44" alt="Fraňek Autoservis">
+        </span>
         <span class="brand-text">
           <strong>Fraňek</strong>
           <span>Autoservis</span>
@@ -24,8 +28,10 @@
       </a>
       <nav class="nav" id="nav">
         <a href="#o-nas">O nás</a>
-        <a href="#sluzby">Služby</a>
-        <a href="#mapa">Mapa</a>
+        <a href="#galerie">Galerie</a>
+        <a href="#personel">Tým</a>
+        <a href="#cenik">Ceník</a>
+        <a href="#novinky">Novinky</a>
         <a href="#kontakt">Kontakt</a>
         <a class="nav-cta" href="#kontakt">Napsat</a>
       </nav>
@@ -65,16 +71,19 @@
       <nav class="nav-stops wrap" id="nav-stops" aria-label="Sekce stránky">
         <a class="nav-stop is-active" href="#top" data-stop="top">Úvod</a>
         <a class="nav-stop" href="#o-nas" data-stop="o-nas">O nás</a>
-        <a class="nav-stop" href="#sluzby" data-stop="sluzby">Služby</a>
-        <a class="nav-stop" href="#mapa" data-stop="mapa">Mapa</a>
+        <a class="nav-stop" href="#galerie" data-stop="galerie">Galerie</a>
+        <a class="nav-stop" href="#personel" data-stop="personel">Tým</a>
+        <a class="nav-stop" href="#cenik" data-stop="cenik">Ceník</a>
+        <a class="nav-stop" href="#novinky" data-stop="novinky">Novinky</a>
         <a class="nav-stop" href="#kontakt" data-stop="kontakt">Kontakt</a>
       </nav>
     </div>
   </header>
 
-  <main id="top">
+  <main id="content">
+    <div id="site-banner" class="site-banner hidden" role="status"></div>
     <section class="hero">
-      <div class="hero-plane" aria-hidden="true"></div>
+      <div class="hero-plane" id="hero-bg" aria-hidden="true"></div>
       <div class="hero-stage" id="hero-stage" aria-hidden="true">
         <div class="scan-beam"></div>
         <svg class="car-blueprint" viewBox="0 0 640 280" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -122,9 +131,9 @@
         <div class="orbit-ring delay"></div>
       </div>
       <div class="wrap hero-copy">
-        <p class="hero-brand">Fraňek Autoservis</p>
+        <p class="hero-brand" id="salon-name">Fraňek Autoservis</p>
         <h1>Poctivý servis spalovacích aut<br>kousek za Prahou.</h1>
-        <p class="hero-lead">
+        <p class="hero-lead" id="salon-desc">
           Diagnostika, údržba, STK, pneu, klimatizace i geometrie —
           přehledně a bez zbytečného chaosu.
         </p>
@@ -140,15 +149,7 @@
         <div>
           <p class="eyebrow">O nás</p>
           <h2>Malý autoservis. Velký klid na práci.</h2>
-          <p>
-            Jmenuji se Lukáš Fraňek. Vedou mě klasická spalovací auta —
-            běžná údržba, opravy po haváriích, diagnostika, příprava na STK,
-            výměna gum, doplnění klimatizace i geometrie.
-          </p>
-          <p>
-            Sídlím kousek za Prahou v <strong>Dobřichovicích</strong>.
-            Žádná továrna — dílna, kde víte, kdo vám auto opravuje.
-          </p>
+          <p id="about-text"></p>
         </div>
         <aside class="logo-slot logo-slot-filled" aria-label="Logo Fraňek Autoservis">
           <img src="franek-logo.webp" width="220" height="204" alt="Fraňek Autoservis — Dobřichovice">
@@ -156,11 +157,29 @@
       </div>
     </section>
 
+    <section class="section section-alt hidden" id="galerie">
+      <div class="wrap">
+        <p class="eyebrow">Galerie</p>
+        <h2>Z dílny</h2>
+        <p class="section-lead">Fotky doplníte ve web administraci.</p>
+        <div class="gallery" id="gallery"></div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="personel">
+      <div class="wrap">
+        <p class="eyebrow">Personál</p>
+        <h2>Kdo se o auto stará</h2>
+        <p class="section-lead">Údaje personálu se berou z web administrace.</p>
+        <div class="team-grid" id="personel-list"></div>
+      </div>
+    </section>
+
     <section class="section section-alt" id="sluzby">
       <div class="wrap">
         <p class="eyebrow">Služby</p>
         <h2>Co u mě řešíte</h2>
-        <p class="section-lead">Přehled hlavních prací — bez složitého ceníku, s jasnými body.</p>
+        <p class="section-lead">Orientace v nabídce — podrobný ceník spravujete ve web administraci.</p>
         <ul class="service-list">
           <li>
             <span class="svc-code">01</span>
@@ -208,6 +227,27 @@
       </div>
     </section>
 
+    <section class="section hidden" id="cenik">
+      <div class="wrap">
+        <p class="eyebrow">Ceník</p>
+        <h2>Ceník služeb</h2>
+        <p class="section-lead">Položky a ceny spravujete ve web administraci.</p>
+        <div class="price-sheet">
+          <div class="price-sheet-head"><span>Služba</span><span>Cena</span></div>
+          <div id="cenik-list" class="price-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt hidden" id="novinky">
+      <div class="wrap">
+        <p class="eyebrow">Novinky</p>
+        <h2>Co je nového</h2>
+        <p class="section-lead">Aktuality přidáte ve web administraci.</p>
+        <div class="news-list" id="novinky-list"></div>
+      </div>
+    </section>
+
     <section class="section" id="mapa">
       <div class="wrap">
         <p class="eyebrow">Příjezd</p>
@@ -222,7 +262,7 @@
           ></iframe>
         </div>
         <p class="map-note">
-          Přesnou adresu dílny doplníme při napojení ostrých dat.
+          Přesnou adresu doplní web administrace do kontaktu.
           Pro navigaci zatím: <strong>Dobřichovice</strong>.
         </p>
       </div>
@@ -237,10 +277,16 @@
             Krátký formulář — jméno, e-mail, telefon (volitelně) a popis problému.
           </p>
           <ul class="contact-meta">
-            <li><span>Majitel</span><strong>Lukáš Fraňek</strong></li>
-            <li><span>E-mail</span><a href="mailto:trener.hakl@gmail.com">trener.hakl@gmail.com</a></li>
+            <li><span>Adresa</span><strong id="salon-address"></strong></li>
+            <li><span>Telefon</span><a id="salon-phone" href="#">—</a></li>
+            <li><span>E-mail</span><a id="salon-email" href="#">—</a></li>
             <li><span>Web</span><span>franek-autoservis.cz</span></li>
           </ul>
+          <div class="hours-card" id="oteviraci-doba">
+            <h3>Otevírací doba</h3>
+            <p class="hours-note">Spočítá se z rozvrhu personálu ve web administraci.</p>
+            <table><tbody></tbody></table>
+          </div>
           <div class="social-row">
             <a class="chip-link" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">Facebook</a>
             <a class="chip-link" href="https://www.firmy.cz/" target="_blank" rel="noopener noreferrer">Firmy.cz</a>
@@ -278,14 +324,203 @@
       <div class="footer-brand">
         <img class="brand-logo sm" src="franek-logo.webp" width="40" height="37" alt="">
         <div>
-          <strong>Fraňek Autoservis</strong>
-          <p>Dobřichovice · staging náhled (salon ID 18)</p>
+          <strong id="footer-name">Fraňek Autoservis</strong>
+          <p>Dobřichovice · salon ID 18</p>
         </div>
       </div>
-      <p class="footer-copy">UI připraveno odděleně — bez napojení na sdílená data.</p>
+      <p class="footer-copy">© 2026 · Fraňek Autoservis</p>
     </div>
   </footer>
 
+  <aside class="creator-bar" aria-label="Informace o tvůrci webu">
+    <div class="creator-bar-inner">
+      <p class="creator-bar-copy">© 2026 <a href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">ULOV KLIENTY</a></p>
+      <div class="creator-bar-credits">
+        <span>Vytvořeno Jiřím Haklem</span>
+        <span class="creator-bar-sep" aria-hidden="true">•</span>
+        <a class="creator-brand" href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">
+          <span class="creator-brand-url">www.ulovklienty.cz</span>
+          <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="ULOV KLIENTY" width="88" height="88" loading="lazy" decoding="async">
+        </a>
+        <span class="creator-bar-sep" aria-hidden="true">•</span>
+        <a class="creator-brand" href="https://www.ulovsalon.cz" target="_blank" rel="noopener noreferrer">
+          <span class="creator-brand-url">www.ulovsalon.cz</span>
+          <img src="https://ulovsalon-images.b-cdn.net/images/ulov_salon-1759830649.webp" alt="ULOV SALON" width="88" height="88" loading="lazy" decoding="async">
+        </a>
+      </div>
+    </div>
+  </aside>
+
+
+  <button id="admin-toggle" class="admin-fab" type="button" title="Administrace">⚙</button>
+
+  <div id="admin-panel" class="admin-panel">
+    <div class="admin-drawer">
+      <div class="admin-header">
+        <h2>Administrace</h2>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <button type="button" id="btn-web-logout" class="btn btn-secondary btn-sm hidden">Odhlásit</button>
+          <button type="button" id="btn-cancel" class="btn-icon">✕</button>
+        </div>
+      </div>
+
+      <div id="login-section" class="admin-body">
+        <form id="login-form" class="login-form">
+          <p class="admin-hint">Přihlášení majitelky pro úpravu obsahu webu.</p>
+          <label for="staff-login">Přihlašovací jméno</label>
+          <input type="text" id="staff-login" autocomplete="username" required>
+          <label for="staff-password">Heslo</label>
+          <input type="password" id="staff-password" autocomplete="current-password" required>
+          <div id="login-status-msg" class="status-msg"></div>
+          <button type="submit" class="btn btn-primary btn-block">Přihlásit</button>
+        </form>
+      </div>
+
+      <div id="edit-section" class="admin-body hidden">
+        <div class="admin-tabs">
+          <button type="button" class="tab active" data-tab="zaklad">Základní</button>
+          <button type="button" class="tab" data-tab="obrazky">Obrázky</button>
+          <button type="button" class="tab" data-tab="vizual">Vizuál</button>
+          <button type="button" class="tab" data-tab="banner">Banner</button>
+          <button type="button" class="tab" data-tab="personel">Personál</button>
+          <button type="button" class="tab" data-tab="cenik">Ceník</button>
+          <button type="button" class="tab" data-tab="novinky">Novinky</button>
+          <button type="button" class="tab" data-tab="email">E-mail</button>
+          <button type="button" class="tab" data-tab="heslo">Heslo</button>
+        </div>
+
+        <div class="tab-panel active" data-panel="zaklad">
+          <label for="edit-name">Název</label>
+          <input type="text" id="edit-name">
+          <label for="edit-desc">Popis</label>
+          <textarea id="edit-desc" rows="3"></textarea>
+          <label for="edit-address">Adresa</label>
+          <input type="text" id="edit-address">
+          <label for="edit-phone">Telefon</label>
+          <input type="text" id="edit-phone">
+          <label for="edit-email">E-mail (kontakt na webu)</label>
+          <input type="email" id="edit-email">
+        </div>
+
+        <div class="tab-panel" data-panel="email">
+          <p class="admin-hint">Nastavení odesílání potvrzení rezervací. Údaje najdete u poskytovatele e-mailu (Forpsi → Ruční nastavení klienta).</p>
+          <p id="email-status" class="admin-hint"></p>
+          <label for="smtp-host">SMTP server</label>
+          <input type="text" id="smtp-host" placeholder="smtp.forpsi.com">
+          <label for="smtp-port">Port</label>
+          <input type="number" id="smtp-port" placeholder="465">
+          <label class="checkbox"><input type="checkbox" id="smtp-ssl" checked> Použít SSL (port 465)</label>
+          <label for="smtp-user">Přihlášení (e-mail)</label>
+          <input type="email" id="smtp-user" placeholder="info@vase-domena.cz">
+          <label for="smtp-password">Heslo ke schránce</label>
+          <input type="password" id="smtp-password" placeholder="Nechte prázdné = beze změny">
+          <label for="web-rezervace-url">URL stránky rezervací (odkazy v e-mailech)</label>
+          <input type="url" id="web-rezervace-url" placeholder="https://vase-domena.cz/rezervace.html">
+          <p class="admin-hint">Pro lokální test: http://localhost:5500/rezervace.html (salon 1) nebo :5501 (salon 2)</p>
+          
+          <hr class="admin-sep">
+          <h4 class="admin-sub">FLOW Mail (IMAP)</h4>
+          <p class="admin-hint">Personál ve FLOW uvidí schránku (číst / odpovědět / nový). Stejné přihlášení jako SMTP.</p>
+          <label class="checkbox"><input type="checkbox" id="imap-enabled"> Zapnout schránku ve FLOW</label>
+          <label for="imap-host">IMAP server</label>
+          <input type="text" id="imap-host" placeholder="imap.forpsi.com">
+          <label for="imap-port">IMAP port</label>
+          <input type="number" id="imap-port" placeholder="993">
+          <label class="checkbox"><input type="checkbox" id="imap-ssl" checked> IMAP SSL (port 993)</label>
+          <p id="imap-status" class="admin-hint"></p>
+
+<p id="email-save-msg" class="status-msg"></p>
+          <button type="button" id="btn-save-email" class="btn btn-primary btn-block">Uložit e-mail nastavení</button>
+          <button type="button" id="btn-test-email" class="btn btn-secondary btn-block">Odeslat testovací e-mail</button>
+        </div>
+
+        <div class="tab-panel" data-panel="obrazky">
+          <div class="upload-box">
+            <h4>Úvodní fotka (hero)</h4>
+            <div class="hero-preview" id="hero-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát hero fotku
+              <input type="file" id="upload-hero" accept="image/*" hidden>
+            </label>
+          </div>
+          <div class="upload-box">
+            <h4>Galerie</h4>
+            <div id="gallery-edit" class="gallery-edit"></div>
+            <label class="btn btn-secondary btn-upload">
+              + Přidat do galerie
+              <input type="file" id="upload-gallery" accept="image/*" hidden>
+            </label>
+            <p class="bunny-hint" id="bunny-hint"></p>
+          </div>
+        </div>
+
+
+        <div class="tab-panel" data-panel="vizual">
+          <p class="admin-hint">Logo a favicon pro web salonu.</p>
+          <div class="upload-box">
+            <h4>Logo</h4>
+            <div class="hero-preview" id="logo-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát logo
+              <input type="file" id="upload-logo" accept="image/*" hidden>
+            </label>
+            <button type="button" id="btn-clear-logo" class="btn btn-secondary btn-sm">Odebrat logo</button>
+          </div>
+          <div class="upload-box">
+            <h4>Favicon</h4>
+            <div class="hero-preview" id="favicon-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát favicon
+              <input type="file" id="upload-favicon" accept="image/*" hidden>
+            </label>
+            <button type="button" id="btn-clear-favicon" class="btn btn-secondary btn-sm">Odebrat favicon</button>
+          </div>
+</div>
+
+        <div class="tab-panel" data-panel="banner">
+          <p class="admin-hint">Krátká zpráva pro personál ve FLOW (po přihlášení). Na veřejném webu se nezobrazuje. Prázdné datum = bez omezení.</p>
+          <label class="checkbox">
+            <input type="checkbox" id="edit-banner-enabled"> Banner zapnutý
+          </label>
+          <label for="edit-banner-text">Text</label>
+          <input type="text" id="edit-banner-text" maxlength="300" placeholder="Např. Letní dovolená 1.–15. 8. — objednávky od 16. 8.">
+          <label for="edit-banner-od">Zobrazit od</label>
+          <input type="date" id="edit-banner-od">
+          <label for="edit-banner-do">Zobrazit do</label>
+          <input type="date" id="edit-banner-do">
+        </div>
+        <div class="tab-panel" data-panel="personel">
+          <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Personál. Fotku nahrajte tlačítkem níže.</p>
+          <div id="personel-edit"></div>
+          <button type="button" id="btn-add-personel" class="btn btn-secondary btn-sm">+ Přidat člena týmu</button>
+        </div>
+
+        <div class="tab-panel" data-panel="cenik">
+          <div id="cenik-edit"></div>
+          <button type="button" id="btn-add-cenik" class="btn btn-secondary btn-sm">+ Položka</button>
+        </div>
+
+        <div class="tab-panel" data-panel="novinky">
+          <div id="novinky-edit"></div>
+          <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
+        </div>
+
+
+        <div class="admin-footer">
+          <button type="button" id="btn-save" class="btn btn-primary btn-block">Uložit textová data</button>
+          <div id="status-msg" class="status-msg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden">
+    <button class="lightbox-close" type="button">✕</button>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <script src="../shared/owner-flow-admin.js"></script>
+  <script src="web-admin.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
