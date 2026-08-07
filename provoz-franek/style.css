@@ -48,7 +48,7 @@ body {
   top: 0;
   z-index: 40;
   backdrop-filter: blur(12px);
-  background: rgba(243, 248, 251, 0.82);
+  background: rgba(243, 248, 251, 0.92);
   border-bottom: 1px solid var(--line);
 }
 
@@ -57,7 +57,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 4.2rem;
+  min-height: 4.6rem;
 }
 
 .brand {
@@ -76,25 +76,7 @@ body {
   filter: drop-shadow(0 2px 6px rgba(6, 37, 54, 0.18));
 }
 
-.brand-logo.sm {
-  width: 2.35rem;
-}
-
-.brand-mark {
-  width: 2.6rem;
-  height: 2.6rem;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: linear-gradient(145deg, var(--navy), var(--steel));
-  color: var(--aqua);
-  font-family: var(--mono);
-  font-weight: 500;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-}
-
-.brand-mark.sm { width: 2.2rem; height: 2.2rem; font-size: 0.75rem; }
+.brand-logo.sm { width: 2.35rem; }
 
 .brand-text {
   display: flex;
@@ -144,9 +126,57 @@ body {
   font-weight: 700;
 }
 
+/* Silnice v navu — auto jen vodorovně se scrollem */
+.nav-road {
+  position: relative;
+  height: 4.75rem;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(9, 60, 93, 0.96), rgba(9, 60, 93, 0.88)),
+    linear-gradient(90deg, #093c5d, #3b7597);
+  border-top: 1px solid rgba(93, 248, 216, 0.18);
+}
+
+.nav-road-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 62%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(93, 248, 216, 0.55) 12%,
+    rgba(111, 209, 215, 0.45) 88%,
+    transparent
+  );
+  opacity: 0.85;
+}
+
+.nav-car {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: min(168px, 38vw);
+  transform: translate3d(12px, -50%, 0);
+  will-change: transform;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.28));
+}
+
+.nav-car-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.nav-car .bp-body,
+.nav-car .bp-wheel {
+  fill: none;
+}
+
 .hero {
   position: relative;
-  min-height: min(92vh, 820px);
+  min-height: min(88vh, 760px);
   display: grid;
   align-items: end;
   overflow: hidden;
@@ -160,8 +190,6 @@ body {
     linear-gradient(115deg, rgba(9, 60, 93, 0.94) 0%, rgba(9, 60, 93, 0.78) 38%, rgba(59, 117, 151, 0.52) 100%),
     radial-gradient(circle at 78% 28%, rgba(93, 248, 216, 0.32), transparent 42%),
     linear-gradient(160deg, #093c5d, #3b7597 55%, #6fd1d7);
-  transform: scale(1.02);
-  animation: heroDrift 14s ease-in-out infinite alternate;
 }
 
 .hero-plane::after {
@@ -176,164 +204,22 @@ body {
   opacity: 0.45;
 }
 
-/* Jedno putující blueprint auto — pevná vodorovná linie jízdy */
-.car-traveler {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 5;
-  width: min(560px, 48vw);
+/* Statické auto v hero — bez pohybu */
+.hero-stage {
+  position: absolute;
+  right: max(-2rem, calc(50% - 560px));
+  bottom: 8%;
+  width: min(640px, 58vw);
   aspect-ratio: 640 / 280;
+  z-index: 1;
   pointer-events: none;
-  will-change: transform, opacity;
-  opacity: 0;
-  filter: drop-shadow(0 18px 40px rgba(6, 37, 54, 0.28));
-}
-
-.car-traveler.is-hero {
-  z-index: 3;
   filter: drop-shadow(0 20px 40px rgba(6, 37, 54, 0.35));
 }
 
-.car-traveler.is-light::before {
-  content: "";
-  position: absolute;
-  inset: 6% -4% 2%;
-  border-radius: 22px;
-  background: linear-gradient(125deg, rgba(9, 60, 93, 0.94), rgba(59, 117, 151, 0.88));
-  box-shadow: 0 16px 40px rgba(6, 37, 54, 0.22);
-  z-index: 0;
-}
-
-.car-traveler.is-drawn .bp-path {
-  animation: none;
-  stroke-dashoffset: 0;
-}
-
-.car-traveler.is-drawn .bp-hub,
-.car-traveler.is-drawn .bp-nodes .node {
-  animation: none;
-  opacity: 0.9;
-}
-
-.car-traveler.is-driving .orbit-ring {
-  opacity: 0.35;
-}
-
-.car-dock {
-  min-height: 1px;
-}
-
-.car-dock-park {
-  min-height: 180px;
-  align-self: center;
-}
-
-.sluzby-layout {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.35fr);
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.sluzby-layout .car-dock {
-  min-height: 220px;
-}
-
-.sluzby-content {
-  position: relative;
-  z-index: 1;
-}
-
-.section-car-stop {
-  position: relative;
-}
-
-.car-blueprint {
+.hero-stage .car-blueprint {
   width: 100%;
   height: auto;
   display: block;
-  position: relative;
-  z-index: 2;
-}
-
-.bp-path {
-  fill: none;
-  stroke-dasharray: 1200;
-  stroke-dashoffset: 1200;
-  animation: drawPath 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.bp-cabin { animation-delay: 0.35s; }
-.bp-detail { animation-delay: 0.7s; }
-.bp-wheel { animation-delay: 0.55s; stroke-dasharray: 180; stroke-dashoffset: 180; }
-.bp-link { animation-delay: 1s; stroke-dasharray: 280; stroke-dashoffset: 280; }
-
-.bp-hub {
-  fill: rgba(93, 248, 216, 0.15);
-  opacity: 0;
-  animation: fadeNode 0.6s ease 1.2s forwards;
-}
-
-.bp-wheel-group {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.bp-spoke {
-  fill: none;
-}
-
-.bp-nodes .node {
-  opacity: 0;
-  transform-origin: center;
-  animation: nodePulse 2.8s ease-in-out infinite;
-}
-
-.bp-nodes .node:nth-child(1) { animation-delay: 1.1s; }
-.bp-nodes .node:nth-child(2) { animation-delay: 1.25s; }
-.bp-nodes .node:nth-child(3) { animation-delay: 1.4s; }
-.bp-nodes .node:nth-child(4) { animation-delay: 1.55s; }
-.bp-nodes .node:nth-child(5) { animation-delay: 1.7s; }
-
-.scan-beam {
-  position: absolute;
-  inset: -8% auto -8% 0;
-  width: 18%;
-  z-index: 3;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(93, 248, 216, 0.05) 30%,
-    rgba(93, 248, 216, 0.45) 50%,
-    rgba(111, 209, 215, 0.12) 70%,
-    transparent 100%
-  );
-  mix-blend-mode: screen;
-  animation: scanSweep 3.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-  filter: blur(0.5px);
-}
-
-.orbit-ring {
-  position: absolute;
-  left: 52%;
-  top: 48%;
-  width: 72%;
-  height: 118%;
-  border: 1px solid rgba(93, 248, 216, 0.22);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) rotateX(68deg) rotateZ(-8deg);
-  animation: orbitSpin 18s linear infinite;
-  z-index: 1;
-  box-shadow: inset 0 0 40px rgba(93, 248, 216, 0.06);
-}
-
-.orbit-ring.delay {
-  width: 88%;
-  height: 140%;
-  border-color: rgba(111, 209, 215, 0.14);
-  animation-duration: 28s;
-  animation-direction: reverse;
 }
 
 .hero-copy {
@@ -341,7 +227,6 @@ body {
   z-index: 2;
   padding: 7rem 0 4.5rem;
   max-width: min(820px, 54%);
-  animation: riseIn 0.9s ease both;
 }
 
 .hero-brand {
@@ -395,9 +280,7 @@ body {
 .btn-ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.35); }
 .btn-block { width: 100%; }
 
-.section {
-  padding: 5rem 0;
-}
+.section { padding: 5rem 0; }
 
 .section-alt {
   background: rgba(255, 255, 255, 0.55);
@@ -445,14 +328,12 @@ body {
   min-height: 220px;
   border: 2px dashed rgba(59, 117, 151, 0.45);
   border-radius: var(--radius);
-  background:
-    linear-gradient(160deg, rgba(111, 209, 215, 0.18), rgba(255, 255, 255, 0.7));
+  background: linear-gradient(160deg, rgba(111, 209, 215, 0.18), rgba(255, 255, 255, 0.7));
   display: grid;
   place-content: center;
   text-align: center;
   color: var(--navy);
   padding: 1.5rem;
-  animation: pulseSoft 3.5s ease-in-out infinite;
 }
 
 .logo-slot-filled {
@@ -461,7 +342,6 @@ body {
   background:
     radial-gradient(circle at 50% 40%, rgba(93, 248, 216, 0.16), transparent 55%),
     linear-gradient(165deg, #ffffff 0%, #e8f4f8 100%);
-  animation: none;
   padding: 1.75rem 1.5rem;
   box-shadow: 0 12px 36px rgba(6, 37, 54, 0.08);
 }
@@ -472,25 +352,6 @@ body {
   display: block;
   margin-inline: auto;
   filter: drop-shadow(0 10px 22px rgba(6, 37, 54, 0.16));
-}
-
-.logo-slot-label {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--steel);
-}
-
-.logo-slot p {
-  margin: 0.6rem 0 0;
-  font-weight: 700;
-  color: var(--navy);
-}
-
-.logo-slot small {
-  font-weight: 500;
-  color: var(--muted);
 }
 
 .service-list {
@@ -555,8 +416,6 @@ body {
 }
 
 .section-contact {
-  position: relative;
-  overflow: visible;
   background:
     linear-gradient(180deg, rgba(9, 60, 93, 0.04), transparent 30%),
     rgba(255, 255, 255, 0.4);
@@ -564,8 +423,8 @@ body {
 
 .contact-grid {
   display: grid;
-  grid-template-columns: 1fr minmax(260px, 380px) minmax(240px, 340px);
-  gap: 1.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
   align-items: start;
 }
 
@@ -577,10 +436,7 @@ body {
   gap: 0.7rem;
 }
 
-.contact-meta li {
-  display: grid;
-  gap: 0.15rem;
-}
+.contact-meta li { display: grid; gap: 0.15rem; }
 
 .contact-meta span {
   font-family: var(--mono);
@@ -692,46 +548,6 @@ body {
   font-size: 0.88rem;
 }
 
-@keyframes heroDrift {
-  from { transform: scale(1.02) translate3d(0, 0, 0); }
-  to { transform: scale(1.06) translate3d(-1.2%, 1%, 0); }
-}
-
-@keyframes riseIn {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulseSoft {
-  0%, 100% { border-color: rgba(59, 117, 151, 0.35); }
-  50% { border-color: rgba(93, 248, 216, 0.75); }
-}
-
-@keyframes drawPath {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes scanSweep {
-  0% { left: -12%; opacity: 0; }
-  12% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { left: 94%; opacity: 0; }
-}
-
-@keyframes nodePulse {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.55); }
-}
-
-@keyframes fadeNode {
-  to { opacity: 1; }
-}
-
-@keyframes orbitSpin {
-  from { transform: translate(-50%, -50%) rotateX(68deg) rotateZ(-8deg); }
-  to { transform: translate(-50%, -50%) rotateX(68deg) rotateZ(352deg); }
-}
-
 .reveal {
   opacity: 0;
   transform: translateY(22px);
@@ -743,29 +559,15 @@ body {
   transform: translateY(0);
 }
 
-@media (max-width: 1100px) {
-  .contact-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .car-dock-park {
-    display: none;
-  }
-}
-
 @media (max-width: 880px) {
   .section-grid,
   .contact-grid,
-  .service-list,
-  .sluzby-layout { grid-template-columns: 1fr; }
-
-  .sluzby-layout .car-dock,
-  .car-dock-park { display: none; }
+  .service-list { grid-template-columns: 1fr; }
 
   .nav {
     display: none;
     position: absolute;
-    top: 4.2rem;
+    top: 4.6rem;
     left: 0;
     right: 0;
     flex-direction: column;
@@ -780,6 +582,9 @@ body {
   .nav a { padding: 0.7rem 0.2rem; }
   .nav-toggle { display: inline-flex; }
 
+  .nav-road { height: 3.8rem; }
+  .nav-car { width: min(132px, 42vw); }
+
   .hero {
     min-height: auto;
     align-items: start;
@@ -787,27 +592,19 @@ body {
 
   .hero-copy {
     max-width: 100%;
-    padding: 5.5rem 0 3.5rem;
+    padding: 5.5rem 0 1.5rem;
   }
 
-  .car-traveler {
-    z-index: 4;
-  }
-
-  .car-traveler.is-light::before {
-    inset: 10% 0 4%;
+  .hero-stage {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: min(100%, 420px);
+    margin: 0 auto 2rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-plane,
-  .scan-beam,
-  .orbit-ring,
-  .bp-path,
-  .bp-nodes .node,
-  .logo-slot { animation: none !important; }
-  .bp-path { stroke-dashoffset: 0; }
-  .bp-hub,
-  .bp-nodes .node { opacity: 1; }
   .reveal { opacity: 1; transform: none; transition: none; }
+  .nav-car { transition: none; }
 }
