@@ -198,7 +198,7 @@ label {
 
 input, select, textarea {
   padding: 0.7rem 0.85rem;
-  background: var(--surface);
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);
@@ -207,12 +207,18 @@ input, select, textarea {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  color-scheme: light;
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(61, 122, 110, 0.15);
+  box-shadow: 0 0 0 3px rgba(9, 60, 93, 0.18);
+}
+
+select option {
+  background: #fff;
+  color: var(--text);
 }
 
 .terminy-grid {
@@ -660,4 +666,7 @@ body > .creator-bar {
   --creator-bar-muted: rgba(255, 255, 255, 0.72);
   --creator-bar-link-hover: #fff;
 }
-.rez-header, .panel, .settings-card, .modal-box { background: var(--surface); color: var(--text); } input, select, textarea { background: #252529; color: var(--text); border-color: var(--border); }
+.rez-header, .panel, .settings-card, .modal-box {
+  background: var(--surface);
+  color: var(--text);
+}
