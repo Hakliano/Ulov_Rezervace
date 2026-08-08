@@ -6,26 +6,7 @@
 .zavreno { color: var(--muted); font-style: italic; }
 .nav-logo-img { display: block; max-height: 48px; max-width: 160px; width: auto; height: auto; object-fit: contain; }
 .gallery-section { background: var(--paper); }
-.gallery { display: flex; flex-direction: column; gap: 1rem; }
-.gallery-item {
-  position: relative; cursor: pointer; overflow: hidden;
-  aspect-ratio: 21/8; border: 1px solid var(--line);
-  filter: grayscale(0.55) contrast(1.05); transition: filter 0.35s, transform 0.35s;
-}
-.gallery-item:hover { filter: grayscale(0) contrast(1.1); transform: scale(1.008); }
-.gallery-item img { width: 100%; height: 100%; object-fit: cover; }
-.gallery-item figcaption {
-  position: absolute; left: 0; bottom: 0; right: 0;
-  padding: 0.9rem 1.2rem; background: linear-gradient(transparent, rgba(0,0,0,0.85));
-  color: #fff; font-size: 0.85rem; font-weight: 600;
-}
-.gallery-item::before {
-  content: ""; position: absolute; top: 0; left: 0; width: 5px; height: 100%;
-  background: var(--steel); z-index: 2; opacity: 0; transition: opacity 0.25s;
-}
-.gallery-item:hover::before { opacity: 1; }
 .gallery-empty { text-align: center; color: var(--muted); padding: 2rem; }
-@media (max-width: 700px) { .gallery-item { aspect-ratio: 4/3; } }
 
 /* Personál — 3 karty vedle sebe, fotka na šířku karty */
 .team-section { background: #fff; }
@@ -82,6 +63,20 @@
 .news-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
 .news-card-media { flex-shrink: 0; width: 220px; margin: 0; }
 .news-card-media img { width: 100%; height: auto; display: block; object-fit: contain; filter: grayscale(0.3); }
+.news-card-media-zoom {
+  cursor: zoom-in;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.news-card-media-zoom:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 20px rgba(6, 37, 54, 0.12);
+}
+.news-card-media-zoom:focus-visible {
+  outline: 2px solid var(--teal, #6fd1d7);
+  outline-offset: 2px;
+}
 
 @media (max-width: 700px) {
   .news-card { flex-direction: column; align-items: stretch; padding-left: 1.4rem; }
@@ -316,16 +311,150 @@
   margin-top: 1.25rem;
 }
 .hours-card h3 { color: var(--navy, #093c5d); font-family: var(--font); text-transform: none; margin: 0 0 0.5rem; }
-.gallery { display: flex; flex-direction: column; gap: 1.25rem; }
-.gallery-item {
-  margin: 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
-  cursor: pointer; background: #fff; width: 100%;
+.gallery {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
 }
-.gallery-item img {
-  width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
+.gallery.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
 }
-.gallery-item figcaption {
-  padding: 0.65rem 1rem; font-size: 0.9rem; color: var(--muted);
+.gallery .gallery-item,
+.gallery-grid .gallery-item,
+.gallery-page .gallery-item {
+  margin: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  background: #fff;
+  min-width: 0;
+}
+.gallery .gallery-item img,
+.gallery-grid .gallery-item img,
+.gallery-page .gallery-item img {
+  width: 100%;
+  /* ~50 % vyšší náhled než 16/9 (jen Fraňek) */
+  aspect-ratio: 16 / 13.5;
+  object-fit: cover;
+  display: block;
+}
+.gallery .gallery-item figcaption,
+.gallery-grid .gallery-item figcaption,
+.gallery-page .gallery-item figcaption {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.gallery.gallery-carousel {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+.gallery-viewport {
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+  border-radius: 14px;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.gallery-viewport:active { cursor: grabbing; }
+.gallery-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.gallery-page {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: 1rem;
+  box-sizing: border-box;
+}
+.gallery-nav {
+  position: relative;
+  z-index: 3;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(6, 37, 54, 0.12);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.gallery-nav:hover { background: var(--paper); }
+.gallery-dots {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.45rem;
+  position: relative;
+  z-index: 3;
+}
+.gallery-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(9, 60, 93, 0.25);
+  cursor: pointer;
+  padding: 0;
+  touch-action: manipulation;
+}
+.gallery-dot.is-active { background: var(--navy); }
+
+@media (max-width: 880px) {
+  .gallery,
+  .gallery.gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .gallery,
+  .gallery.gallery-grid { grid-template-columns: 1fr; }
+  .gallery.gallery-carousel {
+    display: block;
+    padding: 0 0.15rem;
+  }
+  .gallery-viewport {
+    width: 100%;
+  }
+  .gallery-nav {
+    position: absolute;
+    top: 42%;
+    transform: translateY(-50%);
+    width: 2.8rem;
+    height: 2.8rem;
+    background: rgba(255, 255, 255, 0.95);
+  }
+  .gallery-prev { left: 0.2rem; }
+  .gallery-next { right: 0.2rem; }
+  .gallery-dots {
+    display: flex;
+    margin-top: 0.75rem;
+  }
+  .gallery-dot {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
 }
 
 .team-grid {

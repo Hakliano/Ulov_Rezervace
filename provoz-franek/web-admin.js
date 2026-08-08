@@ -465,18 +465,11 @@ function renderSalon(data) {
   const obrazky = data.obrazky || [];
   if (gallery) {
     if (obrazky.length) {
-      gallery.innerHTML = obrazky.map(o =>
-        `<figure class="gallery-item" data-url="${esc(o.url)}">
-          <img src="${esc(o.url)}" alt="${esc(o.popis)}" loading="lazy">
-          ${o.popis ? `<figcaption>${esc(o.popis)}</figcaption>` : ''}
-        </figure>`
-      ).join('');
+      renderGalleryPublic(obrazky);
       gallerySection?.classList.remove('hidden');
-      gallery.querySelectorAll('.gallery-item').forEach(el => {
-        el.addEventListener('click', () => openLightbox(el.dataset.url));
-      });
     } else {
       gallery.innerHTML = '';
+      gallery.className = 'gallery';
       gallerySection?.classList.add('hidden');
     }
   }
@@ -514,10 +507,27 @@ function renderSalon(data) {
             <h3>${esc(n.nadpis)}</h3>
             <p>${esc(n.text)}</p>
           </div>
-          ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
+          ${n.obrazek ? `<figure class="news-card-media news-card-media-zoom" data-url="${esc(n.obrazek)}" role="button" tabindex="0" aria-label="Zvětšit fotku">
+            <img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy">
+          </figure>` : ''}
         </article>`
       ).join('');
       novinkySection?.classList.remove('hidden');
+      if (!novinkyList.dataset.lightboxBound) {
+        novinkyList.dataset.lightboxBound = '1';
+        novinkyList.addEventListener('click', (e) => {
+          const media = e.target.closest('.news-card-media-zoom');
+          if (!media || !novinkyList.contains(media)) return;
+          openLightbox(media.dataset.url);
+        });
+        novinkyList.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          const media = e.target.closest('.news-card-media-zoom');
+          if (!media || !novinkyList.contains(media)) return;
+          e.preventDefault();
+          openLightbox(media.dataset.url);
+        });
+      }
     } else {
       novinkyList.innerHTML = '';
       novinkySection?.classList.add('hidden');
@@ -533,6 +543,210 @@ function renderSalon(data) {
 function openLightbox(url) {
   document.getElementById('lightbox-img').src = url;
   document.getElementById('lightbox').classList.remove('hidden');
+}
+
+/** Galerie: 1–3 fotky = mřížka 3 sloupců; od 4. fotky carousel po 3. */
+function renderGalleryPublic(obrazky) {
+  const gallery = document.getElementById('gallery');
+  if (!gallery) return;
+
+  const figureHtml = (o) =>
+    `<figure class="gallery-item" data-url="${esc(o.url)}">
+      <img src="${esc(o.url)}" alt="${esc(o.popis || '')}" loading="lazy">
+      ${o.popis ? `<figcaption>${esc(o.popis)}</figcaption>` : ''}
+    </figure>`;
+
+  if (obrazky.length <= 3) {
+    gallery.className = 'gallery gallery-grid';
+    gallery.innerHTML = obrazky.map(figureHtml).join('');
+  } else {
+    gallery.className = 'gallery gallery-carousel';
+    gallery.innerHTML = `
+      <button type="button" class="gallery-nav gallery-prev" aria-label="Předchozí">‹</button>
+      <div class="gallery-viewport">
+        <div class="gallery-track"></div>
+      </div>
+      <button type="button" class="gallery-nav gallery-next" aria-label="Další">›</button>
+      <div class="gallery-dots" role="tablist" aria-label="Snímky galerie"></div>
+    `;
+    initGalleryCarousel(gallery, obrazky, figureHtml);
+  }
+
+  if (!gallery.dataset.lightboxBound) {
+    gallery.dataset.lightboxBound = '1';
+    gallery.addEventListener('click', (e) => {
+      const item = e.target.closest('.gallery-item');
+      if (!item || !gallery.contains(item)) return;
+      openLightbox(item.dataset.url);
+    });
+  }
+}
+
+function galleryPerPage() {
+  if (window.matchMedia('(max-width: 560px)').matches) return 1;
+  if (window.matchMedia('(max-width: 880px)').matches) return 2;
+  return 3;
+}
+
+function initGalleryCarousel(root, obrazky, figureHtml) {
+  const track = root.querySelector('.gallery-track');
+  const viewport = root.querySelector('.gallery-viewport');
+  const dotsWrap = root.querySelector('.gallery-dots');
+  const prev = root.querySelector('.gallery-prev');
+  const next = root.querySelector('.gallery-next');
+  if (!track || !viewport) return;
+
+  if (typeof root._galleryCleanup === 'function') root._galleryCleanup();
+
+  let page = 0;
+  let pages = 1;
+  let perPage = galleryPerPage();
+  let dragX = 0;
+  let startX = 0;
+  let startY = 0;
+  let dragging = false;
+  let swiped = false;
+  let suppressClick = false;
+
+  const buildPages = (force = false) => {
+    const nextPerPage = galleryPerPage();
+    if (!force && nextPerPage === perPage && track.children.length) return;
+    perPage = nextPerPage;
+    pages = Math.max(1, Math.ceil(obrazky.length / perPage));
+    if (page > pages - 1) page = pages - 1;
+
+    track.innerHTML = Array.from({ length: pages }, (_, pi) => {
+      const slice = obrazky.slice(pi * perPage, pi * perPage + perPage);
+      return `<div class="gallery-page" style="--cols:${perPage}">${slice.map(figureHtml).join('')}</div>`;
+    }).join('');
+
+    dotsWrap.innerHTML = Array.from({ length: pages }, (_, i) =>
+      `<button type="button" class="gallery-dot${i === page ? ' is-active' : ''}" data-page="${i}" aria-label="Strana ${i + 1}"></button>`
+    ).join('');
+
+    go(page, false);
+  };
+
+  const pageOffsetPx = () => viewport.clientWidth || 0;
+
+  const go = (p, animate = true) => {
+    pages = Math.max(1, pages);
+    page = ((p % pages) + pages) % pages;
+    track.style.transition = animate ? '' : 'none';
+    track.style.transform = `translate3d(${-(page * pageOffsetPx()) + dragX}px, 0, 0)`;
+    dotsWrap.querySelectorAll('.gallery-dot').forEach((d, i) => {
+      d.classList.toggle('is-active', i === page);
+    });
+    if (!animate) {
+      /* force reflow so next animated go works */
+      void track.offsetHeight;
+      track.style.transition = '';
+    }
+  };
+
+  const onPrev = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragX = 0;
+    go(page - 1);
+  };
+  const onNext = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragX = 0;
+    go(page + 1);
+  };
+  const onDots = (e) => {
+    const btn = e.target.closest('.gallery-dot');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragX = 0;
+    go(Number(btn.dataset.page));
+  };
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragging = true;
+    swiped = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    dragX = 0;
+    track.style.transition = 'none';
+    try { viewport.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!swiped && Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    if (!swiped && Math.abs(dy) > Math.abs(dx)) {
+      /* vertical scroll — zruš drag */
+      dragging = false;
+      dragX = 0;
+      go(page, false);
+      return;
+    }
+    swiped = true;
+    suppressClick = true;
+    dragX = dx;
+    track.style.transform = `translate3d(${-(page * pageOffsetPx()) + dragX}px, 0, 0)`;
+    e.preventDefault();
+  };
+
+  const onPointerUp = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    const width = pageOffsetPx() || 1;
+    const threshold = Math.min(80, width * 0.18);
+    let target = page;
+    if (dragX <= -threshold) target = page + 1;
+    else if (dragX >= threshold) target = page - 1;
+    dragX = 0;
+    go(target, true);
+    try { viewport.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    if (swiped) {
+      setTimeout(() => { suppressClick = false; }, 280);
+    }
+  };
+
+  const onGalleryClickCapture = (e) => {
+    if (!suppressClick) return;
+    if (e.target.closest('.gallery-item')) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  };
+
+  const onResize = () => {
+    buildPages(false);
+    go(page, false);
+  };
+
+  prev?.addEventListener('click', onPrev);
+  next?.addEventListener('click', onNext);
+  dotsWrap.addEventListener('click', onDots);
+  viewport.addEventListener('pointerdown', onPointerDown);
+  viewport.addEventListener('pointermove', onPointerMove, { passive: false });
+  viewport.addEventListener('pointerup', onPointerUp);
+  viewport.addEventListener('pointercancel', onPointerUp);
+  root.addEventListener('click', onGalleryClickCapture, true);
+  window.addEventListener('resize', onResize);
+
+  root._galleryCleanup = () => {
+    prev?.removeEventListener('click', onPrev);
+    next?.removeEventListener('click', onNext);
+    dotsWrap.removeEventListener('click', onDots);
+    viewport.removeEventListener('pointerdown', onPointerDown);
+    viewport.removeEventListener('pointermove', onPointerMove);
+    viewport.removeEventListener('pointerup', onPointerUp);
+    viewport.removeEventListener('pointercancel', onPointerUp);
+    root.removeEventListener('click', onGalleryClickCapture, true);
+    window.removeEventListener('resize', onResize);
+  };
+
+  buildPages(true);
 }
 
 function closeLightbox() {
