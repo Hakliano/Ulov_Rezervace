@@ -116,6 +116,12 @@ body {
   color: #fff !important;
 }
 
+.nav-cta-ghost {
+  background: transparent;
+  color: var(--navy) !important;
+  border: 1px solid var(--line);
+}
+
 .nav-toggle {
   display: none;
   border: 1px solid var(--line);
