@@ -617,6 +617,21 @@ body {
   color: var(--muted);
 }
 
+.contact-form label.consent {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  font-weight: 500;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.contact-form label.consent input {
+  width: auto;
+  margin-top: 0.2rem;
+}
+
 .contact-form input,
 .contact-form textarea {
   width: 100%;

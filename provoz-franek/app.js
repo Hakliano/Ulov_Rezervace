@@ -11,23 +11,56 @@
 
   const form = document.getElementById('contact-form');
   const msg = document.getElementById('form-msg');
-  form?.addEventListener('submit', (e) => {
+  const host = location.hostname;
+  const isLocal = host === 'localhost' || host === '127.0.0.1';
+  const isStaging = host.includes('staging');
+  const API_BASE = isLocal
+    ? `http://${host}:8000/api`
+    : (isStaging ? 'https://api-staging.ulovklienty.cz/api' : 'https://api.ulovklienty.cz/api');
+  const SALON_ID = 18;
+
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const jmeno = document.getElementById('f-jmeno')?.value.trim();
     const email = document.getElementById('f-email')?.value.trim();
+    const telefon = document.getElementById('f-telefon')?.value.trim() || '';
     const zprava = document.getElementById('f-zprava')?.value.trim();
+    const souhlas = document.getElementById('f-souhlas')?.checked;
+
+    const setMsg = (text, ok) => {
+      if (!msg) return;
+      msg.textContent = text;
+      msg.classList.toggle('is-ok', !!ok);
+      msg.classList.toggle('is-err', !ok);
+    };
+
     if (!jmeno || !email || !zprava) {
-      if (msg) {
-        msg.textContent = 'Vyplňte prosím jméno, e-mail a popis problému.';
-        msg.classList.add('is-err');
-        msg.classList.remove('is-ok');
-      }
+      setMsg('Vyplňte prosím jméno, e-mail a popis problému.', false);
       return;
     }
-    if (msg) {
-      msg.textContent = 'Náhled OK — odesílání formuláře napojíme až s daty partnera (zatím bez API).';
-      msg.classList.add('is-ok');
-      msg.classList.remove('is-err');
+    if (!souhlas) {
+      setMsg('Potvrďte souhlas se zpracováním údajů.', false);
+      return;
+    }
+
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = true;
+    setMsg('Odesílám…', true);
+
+    try {
+      const res = await fetch(`${API_BASE}/salon/${SALON_ID}/kontakt/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jmeno, email, telefon, zprava, souhlas: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Odeslání se nepodařilo.');
+      setMsg(data.message || 'Děkujeme — ozveme se vám co nejdříve.', true);
+      form.reset();
+    } catch (err) {
+      setMsg(err.message || 'Odeslání se nepodařilo.', false);
+    } finally {
+      if (btn) btn.disabled = false;
     }
   });
 

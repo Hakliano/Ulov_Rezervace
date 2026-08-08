@@ -9,13 +9,19 @@ from django.conf import settings
 
 from rezervace.services.audit import audit_actor, log_audit
 
-from rezervace.throttles import PoptavkaRateThrottle
+from rezervace.throttles import PoptavkaRateThrottle, IPRateThrottle
 
 from .poptavka import odeslat_poptavku
+from .kontakt import odeslat_kontakt_salonu
 from .bunny import BunnyUploadError, delete_image, is_bunny_configured, upload_image
 from .models import CenikPolozka, Novinka, Salon, SalonObrazek
 from .permissions import AdminPasswordPermission, MajitelPermission
 from .serializers import NovinkaSerializer, SalonObrazekSerializer, SalonSerializer
+
+
+class SalonKontaktRateThrottle(IPRateThrottle):
+    scope = 'salon_kontakt'
+    rate = '5/hour'
 
 
 def _form_param(request, name):
@@ -301,6 +307,53 @@ class PoptavkaView(APIView):
         except Exception:
             return Response(
                 {'detail': 'Odeslání se nepodařilo. Zkuste to později nebo napište na info@ulovklienty.cz.'},
+                status=500,
+            )
+
+        return Response({
+            'ok': True,
+            'message': 'Děkujeme — ozveme se vám co nejdříve.',
+            'prijemce': prijemce,
+        })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SalonKontaktView(APIView):
+    """Kontaktní formulář z webu partnera — e-mail na salon.email přes SMTP salonu."""
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [SalonKontaktRateThrottle]
+
+    def post(self, request, pk):
+        jmeno = (request.data.get('jmeno') or '').strip()
+        email = (request.data.get('email') or '').strip()
+        telefon = (request.data.get('telefon') or '').strip()
+        zprava = (request.data.get('zprava') or '').strip()
+        souhlas = request.data.get('souhlas')
+
+        if not jmeno or not email:
+            return Response({'detail': 'Vyplňte jméno a e-mail.'}, status=400)
+        if not zprava:
+            return Response({'detail': 'Napište prosím zprávu.'}, status=400)
+        if not souhlas:
+            return Response({'detail': 'Potvrďte souhlas se zpracováním údajů.'}, status=400)
+        if len(zprava) > 5000:
+            return Response({'detail': 'Zpráva je příliš dlouhá.'}, status=400)
+        if '@' not in email or len(email) > 254:
+            return Response({'detail': 'Zadejte platný e-mail.'}, status=400)
+
+        try:
+            Salon.objects.only('id').get(pk=pk)
+        except Salon.DoesNotExist:
+            return Response({'detail': 'Salon nenalezen.'}, status=404)
+
+        try:
+            prijemce = odeslat_kontakt_salonu(pk, jmeno, email, telefon, zprava)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=503)
+        except Exception:
+            return Response(
+                {'detail': 'Odeslání se nepodařilo. Zkuste to později nebo zavolejte.'},
                 status=500,
             )
 

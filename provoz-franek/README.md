@@ -5,6 +5,7 @@ Izolovaný web partnera — **salon ID 18** (staging).
 ## Co je napojené
 
 - Veřejné sekce: Galerie, Personál, Ceník, Novinky, Otevírací doba, kontaktní údaje — data z API / web-adminu
+- Kontaktní formulář → `POST /api/salon/18/kontakt/` (e-mail na salon.email přes Forpsi SMTP z adminu)
 - Web-admin (⚙) + owner FLOW přes `../shared/owner-flow-admin.js` (read-only import)
 - Creator patička Ulov (`../shared/creator-footer.css`)
 - Vlastní UI: nav silnice, hero scan/odjezd — `app.js`

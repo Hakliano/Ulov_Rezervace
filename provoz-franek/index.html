@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260808f">
+  <link rel="stylesheet" href="style.css?v=20260808g">
   <link rel="stylesheet" href="../shared/creator-footer.css">
-  <link rel="stylesheet" href="web-admin.css?v=20260808f">
+  <link rel="stylesheet" href="web-admin.css?v=20260808g">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -305,10 +305,12 @@
             Co je s vozidlem za problém?
             <textarea name="zprava" id="f-zprava" rows="5" required maxlength="2000" placeholder="Značka, model, co se děje…"></textarea>
           </label>
+          <label class="consent">
+            <input type="checkbox" name="souhlas" id="f-souhlas" required>
+            <span>Souhlasím se zpracováním údajů za účelem odpovědi na můj dotaz.</span>
+          </label>
           <button class="btn btn-primary btn-block" type="submit">Odeslat dotaz</button>
-          <p class="form-note" id="form-msg" role="status" aria-live="polite">
-            Formulář je zatím jen UI náhled — odesílání napojíme později.
-          </p>
+          <p class="form-note" id="form-msg" role="status" aria-live="polite"></p>
         </form>
       </div>
     </section>
@@ -515,7 +517,7 @@
   </div>
 
   <script src="../shared/owner-flow-admin.js"></script>
-  <script src="web-admin.js?v=20260808f"></script>
-  <script src="app.js?v=20260808f"></script>
+  <script src="web-admin.js?v=20260808g"></script>
+  <script src="app.js?v=20260808g"></script>
 </body>
 </html>

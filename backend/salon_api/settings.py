@@ -313,6 +313,7 @@ REST_FRAMEWORK = {
         'password_reset': '3/hour',
         'email_potvrzeni': '10/hour',
         'poptavka': '5/hour',
+        'salon_kontakt': '5/hour',
     },
 }
 
