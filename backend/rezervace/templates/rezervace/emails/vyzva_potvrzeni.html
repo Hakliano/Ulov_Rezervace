@@ -19,10 +19,14 @@
           </tr>
           <tr>
             <td align="center" style="padding:12px 28px 24px;">
+              {% if potvrzeni_url %}
               <a href="{{ potvrzeni_url }}"
-                 style="display:inline-block;padding:14px 28px;background:#1a1c20;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:0.06em;border-radius:4px;">
-                POTVRDIT REGISTRACI
+                 style="display:inline-block;padding:14px 28px;background:#093c5d;color:#ffffff !important;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:0.06em;border-radius:4px;">
+                POTVRDIT REZERVACI
               </a>
+              {% else %}
+              <p style="margin:0;color:#b42318;font-weight:700;">Chybí odkaz pro potvrzení — kontaktujte provozovnu.</p>
+              {% endif %}
             </td>
           </tr>
           <tr>
@@ -32,10 +36,16 @@
               {% if rezervace.zamestnanec %}
               <p style="margin:0 0 8px;"><strong>Pracovník:</strong> {{ rezervace.zamestnanec.jmeno }}</p>
               {% endif %}
-              <p style="margin:20px 0 0;font-size:13px;color:#6e757f;">
+              {% if potvrzeni_url %}
+              <p style="margin:20px 0 0;font-size:13px;color:#555b63;">
                 Pokud tlačítko nefunguje, zkopírujte odkaz:<br>
-                <a href="{{ potvrzeni_url }}" style="color:#4a6d8c;word-break:break-all;">{{ potvrzeni_url }}</a>
+                <a href="{{ potvrzeni_url }}" style="color:#0b5cab;word-break:break-all;text-decoration:underline;">{{ potvrzeni_url }}</a>
               </p>
+              {% else %}
+              <p style="margin:20px 0 0;font-size:13px;color:#b42318;">
+                Odkaz pro potvrzení se nepodařilo sestavit — kontaktujte provozovnu.
+              </p>
+              {% endif %}
               <p style="margin:20px 0 0;font-size:13px;color:#6e757f;">
                 Pokud jste rezervaci nevytvářeli, tento e-mail ignorujte — termín se po vypršení platnosti sám zruší.
               </p>

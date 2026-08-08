@@ -6,7 +6,7 @@ děkujeme za rezervaci v salonu {{ salon.name }}.
 
 Termín zatím není potvrzený — potvrďte ho tlačítkem v e-mailu (nebo odkazem níže, platí {{ platnost_hodin }} h):
 
-POTVRDIT REGISTRACI:
+POTVRDIT REZERVACI:
 {{ potvrzeni_url }}
 
 Navrhovaný termín: {{ rezervace.zacatek|date:"d.m.Y" }} v {{ rezervace.zacatek|time:"H:i" }}
