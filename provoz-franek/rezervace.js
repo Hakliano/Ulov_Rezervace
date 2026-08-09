@@ -156,7 +156,7 @@ async function loadTerminy() {
   try {
     const data = await api(`/salon/${SALON_ID}/rezervace/volne-terminy/?${params}`);
     if (data.zavreno) {
-      $('#terminy-msg').textContent = data.duvod || 'Salon je tento den zavřený.';
+      $('#terminy-msg').textContent = data.duvod || 'Provozovna je tento den zavřená.';
       return;
     }
     if (!data.terminy.length) {

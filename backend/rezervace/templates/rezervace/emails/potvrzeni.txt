@@ -2,7 +2,7 @@ Dobrý den {{ rezervace.kontaktni_jmeno }},
 
 
 
-Vaše rezervace v salonu {{ salon.name }} byla potvrzena.
+Vaše rezervace v provozovně {{ salon.name }} byla potvrzena.
 
 
 

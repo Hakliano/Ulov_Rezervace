@@ -322,7 +322,7 @@ class VolneTerminyView(APIView):
 
         datum = datetime.strptime(datum_str, '%Y-%m-%d').date()
         if salon_je_zavreny(salon, datum):
-            return Response({'datum': datum_str, 'zavreno': True, 'terminy': [], 'duvod': 'Salon je tento den zavřený.'})
+            return Response({'datum': datum_str, 'zavreno': True, 'terminy': [], 'duvod': 'Provozovna je tento den zavřená.'})
 
         if not Zamestnanec.objects.filter(salon=salon, aktivni=True).exclude(role=Zamestnanec.ROLE_MAJITEL).exists():
             return Response({

@@ -1,6 +1,6 @@
 Dobrý den {{ zakaznik.nick }},
 
-pro přihlášení k vašim rezervacím v salonu {{ salon.name }} jsme vám vygenerovali nové heslo:
+pro přihlášení k vašim rezervacím v provozovně {{ salon.name }} jsme vám vygenerovali nové heslo:
 
 {{ heslo }}
 

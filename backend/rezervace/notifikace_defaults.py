@@ -25,7 +25,7 @@ DEFAULT_PREDMET_ZALOHA_OK = 'Záloha přijata – rezervace potvrzena ({{ salon.
 
 DEFAULT_TEXT_PRED = """Dobrý den {{ jmeno }},
 
-připomínáme vaši rezervaci v salonu {{ salon.name }}.
+připomínáme vaši rezervaci v provozovně {{ salon.name }}.
 
 Termín: {{ termin }}
 Služby: {{ sluzby }}
@@ -57,7 +57,7 @@ Těšíme se na vás příště!
 
 DEFAULT_TEXT_NO_SHOW = """Dobrý den {{ jmeno }},
 
-zaznamenali jsme, že jste se nedostavili na rezervaci v salonu {{ salon.name }}.
+zaznamenali jsme, že jste se nedostavili na rezervaci v provozovně {{ salon.name }}.
 
 Termín: {{ termin }}
 Služby: {{ sluzby }}
@@ -65,14 +65,14 @@ Služby: {{ sluzby }}
 
 Prosíme o kontakt pro případné přeobjednání: {{ telefon }}
 
-Důležité upozornění: Při dvou neuskutečněných rezervacích v salonu {{ salon.name }} bude váš e-mail veden jako problematický. Po třetí neuskutečněné rezervaci v tomto salonu bude váš účet automaticky zablokován pro online rezervace v salonu {{ salon.name }}.
+Důležité upozornění: Při dvou neuskutečněných rezervacích v provozovně {{ salon.name }} bude váš e-mail veden jako problematický. Po třetí neuskutečněné rezervaci v této provozovně bude váš účet automaticky zablokován pro online rezervace v provozovně {{ salon.name }}.
 
 Děkujeme za pochopení.
 {{ salon.name }}"""
 
 DEFAULT_TEXT_PLATBA = """Dobrý den {{ jmeno }},
 
-děkujeme za návštěvu salonu {{ salon.name }}.
+děkujeme za návštěvu provozovny {{ salon.name }}.
 
 Prosíme o úhradu za služby: {{ sluzby }}
 
@@ -88,7 +88,7 @@ Děkujeme.
 
 DEFAULT_TEXT_ZALOHA = """Dobrý den {{ jmeno }},
 
-pro váš termín v salonu {{ salon.name }} vás prosíme o zálohovou platbu.
+pro váš termín v provozovně {{ salon.name }} vás prosíme o zálohovou platbu.
 
 Termín: {{ termin }}
 Služby: {{ sluzby }}
@@ -99,7 +99,7 @@ Služby: {{ sluzby }}
 Variabilní symbol: {{ variabilni_symbol }}
 
 Platbu proveďte naskenováním QR kódu v příloze e-mailu, nebo bankovním převodem dle údajů výše.
-Uhraďte prosím zálohu včas (lhůtu uveďte podle provozovny — typicky několik hodin před službou). Pokud záloha nedorazí, salon může rezervaci zrušit.
+Uhraďte prosím zálohu včas (lhůtu uveďte podle provozovny — typicky několik hodin před službou). Pokud záloha nedorazí, provozovna může rezervaci zrušit.
 
 Dotazy: {{ telefon }}
 
@@ -130,7 +130,7 @@ S pozdravem
 
 DEFAULT_TEXT_POTVRZENI = """Dobrý den {{ jmeno }},
 
-vaše rezervace v salonu {{ salon.name }} je potvrzena.
+vaše rezervace v provozovně {{ salon.name }} je potvrzena.
 
 Termín: {{ termin }}
 Služby: {{ sluzby }}
@@ -159,7 +159,7 @@ DEFAULT_TEXT_ZALOHA_OK = """Dobrý den {{ jmeno }},
 
 děkujeme — zálohovou platbu jsme zaregistrovali.
 
-Vaše rezervace v salonu {{ salon.name }} zůstává potvrzena.
+Vaše rezervace v provozovně {{ salon.name }} zůstává potvrzena.
 
 Termín: {{ termin }}
 Služby: {{ sluzby }}
@@ -171,14 +171,14 @@ Těšíme se na vaši návštěvu!
 
 NOTIFIKACE_TAGY = [
     {'tag': '{{ jmeno }}', 'popis': 'Jméno zákazníka', 'priklad': 'Petra Nováková'},
-    {'tag': '{{ salon.name }}', 'popis': 'Název salonu', 'priklad': 'Salon Elegance'},
+    {'tag': '{{ salon.name }}', 'popis': 'Název provozovny', 'priklad': 'Fraňek Autoservis'},
     {'tag': '{{ termin }}', 'popis': 'Datum a čas rezervace', 'priklad': '15. 3. 2026 v 10:00'},
     {'tag': '{{ termin_datum }}', 'popis': 'Jen datum rezervace', 'priklad': '15. 3. 2026'},
     {'tag': '{{ termin_cas }}', 'popis': 'Jen čas rezervace', 'priklad': '10:00'},
     {'tag': '{{ sluzby }}', 'popis': 'Objednané služby', 'priklad': 'Střih, barvení'},
-    {'tag': '{{ zamestnanec }}', 'popis': 'Jméno kadeřnice / pracovníka', 'priklad': 'Jana'},
-    {'tag': '{{ adresa }}', 'popis': 'Adresa salonu', 'priklad': 'Hlavní 12, Praha'},
-    {'tag': '{{ telefon }}', 'popis': 'Telefon salonu', 'priklad': '+420 123 456 789'},
+    {'tag': '{{ zamestnanec }}', 'popis': 'Jméno pracovníka', 'priklad': 'Jana'},
+    {'tag': '{{ adresa }}', 'popis': 'Adresa provozovny', 'priklad': 'Hlavní 12, Praha'},
+    {'tag': '{{ telefon }}', 'popis': 'Telefon provozovny', 'priklad': '+420 123 456 789'},
     {'tag': '{{ storno_url }}', 'popis': 'Odkaz pro zrušení rezervace', 'priklad': 'https://…/rezervace.html?storno=…'},
     {'tag': '{{ recenze_url }}', 'popis': 'Odkaz na recenze (nastavíte v Nastavení)', 'priklad': 'https://g.page/…/review'},
     {'tag': '{{ castka }}', 'popis': 'Částka k úhradě (platba / záloha)', 'priklad': '850'},
