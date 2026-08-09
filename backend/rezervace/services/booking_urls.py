@@ -23,7 +23,7 @@ DEMO_LIVE_BOOKING_URLS = {
     15: 'https://www.ulovklienty.cz/provoz-autoservis/rezervace.html',
     16: 'https://www.ulovklienty.cz/provoz-pujcovna/rezervace.html',
     17: 'https://www.ulovklienty.cz/provoz-studio/rezervace.html',
-    18: 'https://www.ulovklienty.cz/provoz-franek/rezervace.html',
+    18: 'https://www.franek-autoservis.cloud/rezervace.html',
 }
 
 
