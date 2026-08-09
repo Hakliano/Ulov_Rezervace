@@ -127,6 +127,7 @@ class PartnerNastaveniForm(forms.ModelForm):
             'castka',
             'dalsi_splatnost',
             'ulov_cislo_uctu',
+            'povolit_technicke_nastaveni',
         ]
         widgets = {
             # HTML5 type=date vyžaduje ISO YYYY-MM-DD; bez format se v CS locale

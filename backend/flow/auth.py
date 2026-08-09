@@ -173,6 +173,7 @@ def flow_user_do_dict(user):
     pracovni = user.pracovni_zamestnanec
     ceka_volno = 0
     po_splatnosti_dni = 0
+    povolit_technicke_nastaveni = False
     # Badge / splatnost jen když je účet majitelky (i ve staff personě ať vidí alerty)
     if ucet_majitel:
         from partner_admin.models import PartnerNastaveni
@@ -185,8 +186,10 @@ def flow_user_do_dict(user):
             nast = PartnerNastaveni.objects.get(salon_id=user.salon_id)
             if nast.je_po_splatnosti:
                 po_splatnosti_dni = nast.dni_po_splatnosti
+            povolit_technicke_nastaveni = bool(nast.povolit_technicke_nastaveni)
         except PartnerNastaveni.DoesNotExist:
             po_splatnosti_dni = 0
+            povolit_technicke_nastaveni = False
     aktivni_kod = 'majitel' if active.id == primary.id else 'pracovnik'
     return {
         'id': user.id,
@@ -195,6 +198,7 @@ def flow_user_do_dict(user):
         'aktivni': user.aktivni,
         'ceka_volno_pocet': ceka_volno,
         'po_splatnosti_dni': po_splatnosti_dni,
+        'povolit_technicke_nastaveni': povolit_technicke_nastaveni,
         'salon': {
             'id': user.salon_id,
             'name': user.salon.name,

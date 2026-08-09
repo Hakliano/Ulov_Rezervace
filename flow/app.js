@@ -545,6 +545,7 @@ function showLoggedIn(user) {
   const roleEl = $('#home-role');
   if (roleEl) roleEl.textContent = owner ? 'Manager' : 'Staff';
   applyPersonaUi(user);
+  applyTechnickeNastaveniUi(user);
   // Staff: pracovní doba jen view; majitel ji mění ve Správě → Staff
   const rozHint = $('#rozvrh-hint');
   const rozSave = $('#btn-rozvrh-save');
@@ -2033,12 +2034,20 @@ function showOwnerAdminHome() {
   }
   $('#own-volno-konflikt')?.classList.add('hidden');
   refreshOwnerVolnoBadge(currentUser);
+  applyTechnickeNastaveniUi(currentUser);
   const card = $('#owner-card-persona');
   if (card) {
     const on = canSwitchPersona(currentUser);
     const st = card.querySelector('.owner-admin-status');
     if (st) st.textContent = on ? 'Zapnuto' : 'Nastavit';
   }
+}
+
+function applyTechnickeNastaveniUi(user = currentUser) {
+  const zone = $('#owner-zone-tech');
+  if (!zone) return;
+  const allowed = !!user?.povolit_technicke_nastaveni && isOwnerUser(user);
+  zone.classList.toggle('hidden', !allowed);
 }
 
 async function loadOwnerPersona() {
@@ -2248,6 +2257,11 @@ async function openOwnerSection(section) {
   if (!isOwnerUser() && section !== 'persona') return;
   // persona setup jen jako Manager (aktivní persona owner)
   if (section === 'persona' && !isOwnerUser()) return;
+  const techSections = ['pravidla', 'sablony', 'audit'];
+  if (techSections.includes(section) && !currentUser?.povolit_technicke_nastaveni) {
+    showOwnerAdminHome();
+    return;
+  }
   const ok = ['persona', 'pravidla', 'sablony', 'personal', 'prirazeni', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
   if (!ok.includes(section)) return;
   $('#owner-admin-home')?.classList.add('hidden');

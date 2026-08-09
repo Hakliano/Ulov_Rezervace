@@ -3,6 +3,7 @@
 from django.test import TestCase, Client
 
 from flow.models import FlowUser
+from partner_admin.models import PartnerNastaveni
 from rezervace.models import RezervacniNastaveni, Zamestnanec
 from salons.models import Salon
 
@@ -47,6 +48,9 @@ class FlowOwnerNastaveniTests(TestCase):
         self.flow_staff.set_password('Staff1234')
         self.flow_staff.save(update_fields=['password_hash'])
         RezervacniNastaveni.objects.get_or_create(salon=self.salon)
+        partner, _ = PartnerNastaveni.objects.get_or_create(salon=self.salon)
+        partner.povolit_technicke_nastaveni = True
+        partner.save(update_fields=['povolit_technicke_nastaveni'])
         self.client = Client()
 
     def _login(self, email, password):
@@ -87,6 +91,20 @@ class FlowOwnerNastaveniTests(TestCase):
         self.assertNotIn('gdpr_zasady_verze', body)
         nast = RezervacniNastaveni.objects.get(salon=self.salon)
         self.assertNotEqual(nast.gdpr_zasady_verze, '99.9')
+        me = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=token)
+        self.assertTrue(me.json().get('povolit_technicke_nastaveni'))
+
+    def test_technicke_nastaveni_blocked_when_disabled(self):
+        PartnerNastaveni.objects.filter(salon=self.salon).update(
+            povolit_technicke_nastaveni=False,
+        )
+        token = self._login('owner-i3@test.local', 'Heslo1234')
+        me = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=token)
+        self.assertFalse(me.json().get('povolit_technicke_nastaveni'))
+        get = self.client.get('/api/flow/owner/nastaveni/', HTTP_X_FLOW_TOKEN=token)
+        self.assertEqual(get.status_code, 403)
+        audit = self.client.get('/api/flow/owner/audit-log/', HTTP_X_FLOW_TOKEN=token)
+        self.assertEqual(audit.status_code, 403)
 
     def test_staff_forbidden(self):
         token = self._login('staff-i3@test.local', 'Staff1234')

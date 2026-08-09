@@ -80,11 +80,20 @@
       {% csrf_token %}
       <input type="hidden" name="tab" value="partner">
       {% for field in nastaveni_form %}
-        <label>
-          {{ field.label }}
-          {{ field }}
-          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-        </label>
+        {% if field.name == 'povolit_technicke_nastaveni' %}
+          <label class="full check-label">
+            <span class="check-row">{{ field }} {{ field.label }}</span>
+            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}
+          </label>
+        {% else %}
+          <label>
+            {{ field.label }}
+            {{ field }}
+            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}
+          </label>
+        {% endif %}
       {% endfor %}
       <div class="form-actions">
         <button class="btn btn-primary" type="submit">Uložit nastavení</button>

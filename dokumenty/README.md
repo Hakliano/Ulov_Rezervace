@@ -55,6 +55,13 @@ python generate_pdf.py
 2. Klikněte na **„Uložit jako PDF / Tisk“** (nebo Ctrl+P).
 3. Cíl tisku: **Uložit jako PDF**.
 
+## Interní — spuštění partnera
+
+| Dokument | Pro koho | Účel |
+|----------|----------|------|
+| [`NASTAVENI_NOVEHO_PARTNERA.md`](NASTAVENI_NOVEHO_PARTNERA.md) | člověk | Od nuly po vlastní doménu (bez brandu / layoutu) |
+| [`../deploy/PARTNER_ONBOARDING_RUNBOOK.md`](../deploy/PARTNER_ONBOARDING_RUNBOOK.md) | agent / technický runbook | Stejný postup s placeholdery a příkazy |
+
 ## Poznámka
 
 Soubory `.md` v kořeni projektu slouží jako pracovní / technická verze. Pro partnery a compliance používejte **HTML a PDF** z této složky.  

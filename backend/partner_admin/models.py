@@ -65,6 +65,14 @@ class PartnerNastaveni(models.Model):
     )
     blokovan_od = models.DateTimeField('blokován od', null=True, blank=True)
     duvod_blokace = models.CharField('důvod blokace', max_length=300, blank=True)
+    povolit_technicke_nastaveni = models.BooleanField(
+        'povolit Technické nastavení ve FLOW',
+        default=False,
+        help_text=(
+            'Když je zapnuto, majitel ve FLOW Správě vidí zónu Technické nastavení '
+            '(rezervační pravidla, e-mailové šablony, audit log).'
+        ),
+    )
     aktualizovano = models.DateTimeField(auto_now=True)
 
     class Meta:

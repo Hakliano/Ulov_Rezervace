@@ -5,8 +5,17 @@ from .models import PartnerNastaveni, PlatbaPartnera, TechnickaChyba, Upozorneni
 
 @admin.register(PartnerNastaveni)
 class PartnerNastaveniAdmin(admin.ModelAdmin):
-    list_display = ['salon', 'domena', 'stav', 'variabilni_symbol', 'castka', 'dalsi_splatnost']
-    list_filter = ['stav', 'periodicita']
+    list_display = [
+        'salon',
+        'domena',
+        'stav',
+        'povolit_technicke_nastaveni',
+        'variabilni_symbol',
+        'castka',
+        'dalsi_splatnost',
+    ]
+    list_filter = ['stav', 'periodicita', 'povolit_technicke_nastaveni']
+    list_editable = ['povolit_technicke_nastaveni']
     search_fields = ['salon__name', 'domena', 'variabilni_symbol', 'fakturacni_email']
 
 

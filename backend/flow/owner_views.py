@@ -32,6 +32,27 @@ def require_flow_owner(request):
     return user, None
 
 
+def require_technicke_nastaveni(user):
+    """Technická zóna FLOW jen když ji Ulov povolí v partner-adminu."""
+    from partner_admin.models import PartnerNastaveni
+
+    ok = PartnerNastaveni.objects.filter(
+        salon_id=user.salon_id,
+        povolit_technicke_nastaveni=True,
+    ).exists()
+    if not ok:
+        return Response(
+            {
+                'detail': (
+                    'Technické nastavení není pro tento salon povoleno. '
+                    'Zapíná se v partner-adminu.'
+                ),
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
+
 def _personal_payload(z):
     data = ZamestnanecDetailSerializer(z).data
     try:
@@ -69,6 +90,9 @@ class FlowOwnerNastaveniView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        tech_err = require_technicke_nastaveni(user)
+        if tech_err:
+            return tech_err
         nastaveni, _ = RezervacniNastaveni.objects.get_or_create(salon=user.salon)
         return Response(FlowOwnerNastaveniSerializer(nastaveni).data)
 
@@ -76,6 +100,9 @@ class FlowOwnerNastaveniView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        tech_err = require_technicke_nastaveni(user)
+        if tech_err:
+            return tech_err
         data = dict(request.data or {})
         data.pop('gdpr_zasady_verze', None)
         nastaveni, _ = RezervacniNastaveni.objects.get_or_create(salon=user.salon)
@@ -581,6 +608,9 @@ class FlowOwnerAuditLogView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        tech_err = require_technicke_nastaveni(user)
+        if tech_err:
+            return tech_err
         try:
             page = max(1, int(request.query_params.get('page', 1)))
         except (TypeError, ValueError):
