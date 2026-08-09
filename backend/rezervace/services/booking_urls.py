@@ -1,8 +1,10 @@
 """Veřejná URL stránky rezervací (odkazy v e-mailech)."""
 
+import re
+
 from django.conf import settings
 
-# Demo / showcase salony na LIVE (pk → absolutní rezervace.html)
+# Demo / showcase + partneři na LIVE (pk → absolutní rezervace.html)
 DEMO_LIVE_BOOKING_URLS = {
     1: 'https://demo1.ulovklienty.cz/rezervace.html',
     2: 'https://demo2.ulovklienty.cz/rezervace.html',
@@ -21,12 +23,41 @@ DEMO_LIVE_BOOKING_URLS = {
     15: 'https://www.ulovklienty.cz/provoz-autoservis/rezervace.html',
     16: 'https://www.ulovklienty.cz/provoz-pujcovna/rezervace.html',
     17: 'https://www.ulovklienty.cz/provoz-studio/rezervace.html',
+    18: 'https://www.ulovklienty.cz/provoz-franek/rezervace.html',
 }
 
 
 def _je_local_url(url: str) -> bool:
     u = (url or '').strip().lower()
     return (not u) or ('localhost' in u) or u.startswith('http://127.')
+
+
+def _is_staging() -> bool:
+    env = (getattr(settings, 'SENTRY_ENVIRONMENT', '') or '').lower()
+    if env == 'staging':
+        return True
+    api = (getattr(settings, 'API_PUBLIC_BASE_URL', '') or '').lower()
+    return 'staging' in api
+
+
+def _to_staging_booking_url(url: str) -> str:
+    """LIVE Ulov hosty → staging (vlastní domény partnerů nechává)."""
+    u = (url or '').strip()
+    if not u or 'ulovklienty.cz' not in u.lower():
+        return u
+    u = re.sub(
+        r'https://demo(\d)\.ulovklienty\.cz',
+        r'https://www.staging.ulovklienty.cz/salon\1',
+        u,
+        flags=re.IGNORECASE,
+    )
+    u = re.sub(
+        r'https://(?:www\.)?ulovklienty\.cz/',
+        'https://www.staging.ulovklienty.cz/',
+        u,
+        flags=re.IGNORECASE,
+    )
+    return u
 
 
 def _dev_localhost_url(salon_id: int) -> str:
@@ -46,7 +77,8 @@ def resolve_rezervace_web_url(salon) -> str:
     """
     Absolutní URL rezervací pro e-maily.
     Lokálně (DEBUG): DB nebo localhost:{port}.
-    Produkce: DB (nesmí být localhost); jinak mapa dem / prázdno.
+    Produkce / staging: DB (nesmí být localhost); jinak mapa dem.
+    Na stagingu se Ulov LIVE URL přepíšou na staging host.
     """
     try:
         raw = (salon.rezervacni_nastaveni.web_rezervace_url or '').strip()
@@ -62,9 +94,10 @@ def resolve_rezervace_web_url(salon) -> str:
 
     # Produkce / staging bez DEBUG
     if raw and not _je_local_url(raw):
-        return _normalize_booking_base(raw)
+        url = _normalize_booking_base(raw)
+        return _to_staging_booking_url(url) if _is_staging() else url
 
-    mapped = DEMO_LIVE_BOOKING_URLS.get(int(salon.pk))
-    if mapped:
-        return mapped
-    return ''
+    mapped = DEMO_LIVE_BOOKING_URLS.get(int(salon.pk), '')
+    if mapped and _is_staging():
+        return _to_staging_booking_url(mapped)
+    return mapped
