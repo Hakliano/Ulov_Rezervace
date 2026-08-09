@@ -689,12 +689,12 @@ a:hover { color: var(--text); }
 .team-empty { margin-top: 1rem; color: var(--muted); }
 
 .personel-edit-card {
-  border: 1px solid var(--line);
+  border: 2px solid #3a4550;
   border-radius: 12px;
-  padding: 1rem 1.1rem;
-  margin-bottom: 1.15rem;
-  background: var(--paper, #fff);
-  box-shadow: 0 1px 2px rgba(20, 28, 36, 0.06);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.25rem;
+  background: #eef1f4;
+  box-shadow: none;
 }
 .personel-edit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 .role-pill {
@@ -904,12 +904,12 @@ a:hover { color: var(--text); }
 
 .edit-row input { flex: 1; min-width: 80px; }
 .edit-block {
-  margin: 0 0 1.15rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--line);
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.15rem;
+  border: 2px solid #3a4550;
   border-radius: 12px;
-  background: var(--paper, #fff);
-  box-shadow: 0 1px 2px rgba(20, 28, 36, 0.06);
+  background: #eef1f4;
+  box-shadow: none;
 }
 .edit-block .edit-row:last-of-type { border-bottom: none; }
 .cenik-img-actions,
@@ -919,7 +919,7 @@ a:hover { color: var(--text); }
   flex-wrap: wrap;
   margin-top: 0.65rem;
   padding-top: 0.65rem;
-  border-top: 1px dashed var(--line);
+  border-top: 1px solid #9aa3ad;
 }
 
 .novinka-img-preview {
