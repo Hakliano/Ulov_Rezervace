@@ -13,7 +13,11 @@ class CenikPolozkaSerializer(serializers.ModelSerializer):
             'id', 'nazev', 'cena', 'obrazek', 'poradi', 'delka_minut', 'rezerva_minut',
             'aktivni', 'rizikovy',
         ]
-        extra_kwargs = {'obrazek': {'required': False, 'allow_blank': True}}
+        extra_kwargs = {
+            'obrazek': {'required': False, 'allow_blank': True},
+            # Prázdný řádek z „+ Položka“ — frontend odfiltruje; sync stejně přeskočí
+            'nazev': {'required': False, 'allow_blank': True},
+        }
 
 
 class NovinkaSerializer(serializers.ModelSerializer):
@@ -23,7 +27,11 @@ class NovinkaSerializer(serializers.ModelSerializer):
         model = Novinka
         fields = ['id', 'nadpis', 'text', 'obrazek', 'datum']
         read_only_fields = ['datum']
-        extra_kwargs = {'obrazek': {'required': False, 'allow_blank': True}}
+        extra_kwargs = {
+            'obrazek': {'required': False, 'allow_blank': True},
+            'nadpis': {'required': False, 'allow_blank': True},
+            'text': {'required': False, 'allow_blank': True},
+        }
 
 
 class OteviraciDobaSerializer(serializers.Serializer):
@@ -138,6 +146,9 @@ class SalonSerializer(serializers.ModelSerializer):
     def _sync_cenik(self, salon, items):
         existing_ids = []
         for item in items:
+            if not str(item.get('nazev') or '').strip():
+                # Prázdný řádek z omylem přidané položky — neukládat, nepřerušit save
+                continue
             item_id = item.get('id')
             if item_id:
                 try:
@@ -164,6 +175,10 @@ class SalonSerializer(serializers.ModelSerializer):
     def _sync_novinky(self, salon, items):
         existing_ids = []
         for item in items:
+            nadpis = str(item.get('nadpis') or '').strip()
+            text = str(item.get('text') or '').strip()
+            if not nadpis and not text:
+                continue
             item_id = item.get('id')
             if item_id:
                 try:

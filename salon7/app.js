@@ -868,7 +868,8 @@ function cenikEditRow(item) {
     <div class="cenik-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obrázku</span>'}</div>
     <div class="cenik-img-actions">
       <label class="btn btn-secondary btn-sm btn-upload">Nahrát obrázek<input type="file" class="upload-cenik" accept="image/*" hidden></label>
-      <button type="button" class="btn-remove-cenik-img btn-sm">Odebrat</button>
+      <button type="button" class="btn-remove-cenik-img btn-sm">Odebrat obrázek</button>
+      <button type="button" class="btn-remove-cenik-row btn-sm">Odstranit položku</button>
     </div>
   </div>`;
 }
@@ -928,6 +929,21 @@ async function handleCenikUpload(e) {
   input.value = '';
 }
 
+
+function removeCenikRow(btn) {
+  const row = btn.closest('.cenik-edit-item');
+  if (!row) return;
+  if (row.dataset.id && !confirm('Opravdu smazat tuto položku ceníku?')) return;
+  row.remove();
+}
+
+function removeNovinkaRow(btn) {
+  const row = btn.closest('.novinka-edit-item');
+  if (!row) return;
+  if (row.dataset.id && !confirm('Opravdu smazat tuto novinku?')) return;
+  row.remove();
+}
+
 function removeCenikImage(btn) {
   const row = btn.closest('.cenik-edit-item');
   row.dataset.obrazek = '';
@@ -968,7 +984,8 @@ function novinkaEditRow(item) {
     <div class="novinka-img-preview">${url ? `<img src="${esc(url)}" alt="">` : '<span class="placeholder">Bez obrázku</span>'}</div>
     <div class="novinka-img-actions">
       <label class="btn btn-secondary btn-sm btn-upload">Nahrát obrázek<input type="file" class="upload-novinka" accept="image/*" hidden></label>
-      <button type="button" class="btn-remove-novinka-img btn-sm">Odebrat</button>
+      <button type="button" class="btn-remove-novinka-img btn-sm">Odebrat obrázek</button>
+      <button type="button" class="btn-remove-novinka-row btn-sm">Odstranit novinku</button>
     </div>
   </div>`;
 }
@@ -1031,7 +1048,9 @@ function removeNovinkaImage(btn) {
 }
 
 function collectFormData() {
-  const cenik = [...document.querySelectorAll('#cenik-edit .cenik-edit-item')].map((el, i) => {
+  const cenik = [...document.querySelectorAll('#cenik-edit .cenik-edit-item')]
+    .filter(el => (el.querySelector('.cenik-nazev')?.value || '').trim())
+    .map((el, i) => {
     const id = el.dataset.id;
     const item = {
       nazev: el.querySelector('.cenik-nazev').value,
@@ -1048,7 +1067,13 @@ function collectFormData() {
     return item;
   });
 
-  const novinky = [...document.querySelectorAll('#novinky-edit .novinka-edit-item')].map(el => {
+  const novinky = [...document.querySelectorAll('#novinky-edit .novinka-edit-item')]
+    .filter(el => {
+      const n = (el.querySelector('.novinka-nadpis')?.value || '').trim();
+      const t = (el.querySelector('.novinka-text')?.value || '').trim();
+      return n || t;
+    })
+    .map(el => {
     const id = el.dataset.id;
     const item = {
       nadpis: el.querySelector('.novinka-nadpis').value,
@@ -1248,7 +1273,9 @@ document.getElementById('edit-section').addEventListener('change', e => {
 });
 document.getElementById('edit-section').addEventListener('click', e => {
   if (e.target.matches('.btn-remove-cenik-img')) removeCenikImage(e.target);
+  if (e.target.matches('.btn-remove-cenik-row')) removeCenikRow(e.target);
   if (e.target.matches('.btn-remove-novinka-img')) removeNovinkaImage(e.target);
+  if (e.target.matches('.btn-remove-novinka-row')) removeNovinkaRow(e.target);
 });
 
 document.getElementById('admin-toggle').addEventListener('click', openAdmin);
