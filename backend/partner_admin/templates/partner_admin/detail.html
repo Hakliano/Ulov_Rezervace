@@ -81,11 +81,16 @@
       <input type="hidden" name="tab" value="partner">
       {% for field in nastaveni_form %}
         {% if field.name == 'povolit_technicke_nastaveni' %}
-          <label class="full check-label">
-            <span class="check-row">{{ field }} {{ field.label }}</span>
-            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+          <div class="feature-toggle full">
+            <label class="feature-toggle-main">
+              {{ field }}
+              <span class="feature-toggle-copy">
+                <strong>{{ field.label }}</strong>
+                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+              </span>
+            </label>
             {% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}
-          </label>
+          </div>
         {% else %}
           <label>
             {{ field.label }}
