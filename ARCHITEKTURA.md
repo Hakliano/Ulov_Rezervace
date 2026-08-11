@@ -12,7 +12,7 @@ Detailnější technické materiály: `TECHNICKE_NASAZENI.md`, `NASAZENI_PRODUKC
 
 | Vrstva | Funkce |
 |--------|--------|
-| **Prezentační web** (`presentace/`) | Marketing hub, vertikály (beauty, zdraví, řemesla, provozovny), poptávkový formulář |
+| **Prezentační web** (`presentace/`) | Jedna hlavní stránka + podklady + poptávkový formulář |
 | **Web klienta** (`salonN/`, vertikální dema) | Veřejný web — úvod, galerie, personál, ceník, novinky, kontakt |
 | **Rezervace** (`rezervace.html` + JS) | Výběr služby, personálu, termínu; potvrzení e-mailem; storno tokenem |
 | **Administrace** (v rezervačním UI) | Obsah webu, kalendář, personál, nastavení, NO-show, QR platby, statistiky |
@@ -70,7 +70,7 @@ Jeden backend obsluhuje **více salonů** (tenantů). Data jsou izolovaná přes
 | `backend/` | Django API — aplikace `salons`, `rezervace`, `partner_admin` |
 | `salon1/` … `salon8/` | Beauty dema (web + rezervace + admin) |
 | `zdravi-*`, `remesla-*`, `provoz-*` | Vertikální dema (fyzio, veterina, instalatér, autoservis…) |
-| `presentace/` | Hub + landingy vertikál + marketingové stránky |
+| `presentace/` | Hlavní stránka + podklady (bez vertikálních hubů) |
 | `shared/` | Sdílené assety (např. patička tvůrce) |
 | `deploy/` | Deploy skripty, nginx, zálohy, runbooky |
 | `www/` | **Výstup na serveru** — sync z gitu při deployi (není zdroj pravdy) |
@@ -86,7 +86,8 @@ Jeden backend obsluhuje **více salonů** (tenantů). Data jsou izolovaná přes
 | Služba | URL |
 |--------|-----|
 | Hub / presentace | https://www.ulovklienty.cz/ |
-| Vertikály | `/beauty/`, `/zdravi/`, `/remesla/`, `/provozovny/` |
+| Podklady | https://www.ulovklienty.cz/podklady-pro-vas-web.html |
+| Staré vertikály (`/beauty/` …) | přesměrování na hub |
 | Vertikální dema | `/zdravi-fyzio/`, `/provoz-pujcovna/`, … |
 | Beauty dema | `demo1.ulovklienty.cz` … `demo8.ulovklienty.cz` → `salon1` … `salon8` |
 | API | https://api.ulovklienty.cz/api/ |

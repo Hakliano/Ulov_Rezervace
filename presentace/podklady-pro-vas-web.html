@@ -1,23 +1,40 @@
----
-layout: layout-base.njk
-permalink: podklady-pro-vas-web/index.html
-title: Podklady pro váš web — vyplnění pro klienta | ULOV KLIENTY
-description: Interní stránka pro doplnění podkladů k tvorbě webu. Vyplňte texty, barvy, doménu a další informace.
-canonical: https://ulovklienty.cz/podklady-pro-vas-web/
-baseUrl: "../"
-isHome: false
-noindex: true
-briefKlientForm: true
----
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Podklady pro váš web — vyplnění pro klienta | ULOV KLIENTY</title>
+  <meta name="description" content="Interní stránka pro doplnění podkladů k tvorbě webu. Vyplňte texty, barvy, doménu a další informace.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://ulovklienty.cz/podklady-pro-vas-web/">
+  <link rel="icon" type="image/png" href="https://haklweb.b-cdn.net/ULOV_KLIENTA/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="podklady.css?v=2">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="./" class="brand-lockup">
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="ULOV KLIENTY" width="180" height="180">
+        <span>ULOV KLIENTY</span>
+      </a>
+      <div class="header-actions">
+        <a href="./#ceny" class="nav-link">Partnerství</a>
+        <a href="podklady-pro-vas-web.html" class="nav-link">Podklady</a>
+        <a href="./#poptavka" class="nav-cta">Chci nezávazný návrh</a>
+      </div>
+    </div>
+  </header>
 
-  <main id="top" class="brief-klient">
+<main id="top" class="brief-klient">
 
-    <section class="hero-bubble brief-hero">
-      <div class="hero-bubble__bg" aria-hidden="true"></div>
-      <div class="container hero-bubble__grid">
-        <div class="hero-bubble__copy">
-          <h1 class="hero-bubble__title">Podklady pro personalizaci vašeho webu</h1>
-          <p class="hero-bubble__lead">
+    <section class="brief-hero">
+      <div class="container">
+        <div class="brief-hero-copy">
+          <h1>Podklady pro personalizaci vašeho webu</h1>
+          <p class="brief-lead">
             Seznam podkladů, které by mi velmi pomohly při personalizaci vašeho webu, tak aby vás nejlépe vystihoval.
           </p>
           <p class="brief-hero__goal">
@@ -29,21 +46,17 @@ briefKlientForm: true
             <li><a href="#cast-3-popis">3. Popis jednotlivých bodů</a> — vysvětlení k jednotlivým položkám</li>
             <li><a href="#cast-4-doplnky">4. Doplňkové služby a produkty</a> — přehled nabídky</li>
           </ul>
-          <div class="hero-bubble__cta">
-            <a class="btn btn--ghost" href="https://webprosalony.cz/ukazka-kadernictvi" target="_blank" rel="noopener">Podívat se na ukázkový web za 4&nbsp;000&nbsp;Kč</a>
-            <a class="btn btn--ghost" href="#cast-1-formular">Přejít k vyplnění</a>
-          </div>
         </div>
       </div>
     </section>
 
     <!-- ČÁST 1: Formulář -->
-    <section id="cast-1-formular" class="sec sec--light section">
+    <section id="cast-1-formular" class="brief-section">
       <div class="container">
-        <h2 class="sec__title">1. Váš seznam podkladů</h2>
-        <p class="sec__intro">Vyplňte prosím vše, co už máte připravené. U dlouhých textů neváhejte — čím víc detailů, tím lépe.</p>
+        <h2 class="brief-h2">1. Váš seznam podkladů</h2>
+        <p class="brief-intro">Vyplňte prosím vše, co už máte připravené. U dlouhých textů neváhejte — čím víc detailů, tím lépe.</p>
 
-        <div class="contact-card">
+        <div class="brief-card">
           <form id="briefKlientForm" class="brief-form" novalidate data-captcha-lock-hours="4" data-captcha-options='[{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/15.webp","answer":"15"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/1860.webp","answer":"1860"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/333.webp","answer":"333"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/42.webp","answer":"42"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp","answer":"4"}]'>
             <input type="text" name="_gotcha" class="brief-form__hp" tabindex="-1" autocomplete="off" aria-hidden="true">
 
@@ -60,7 +73,7 @@ briefKlientForm: true
             <div class="brief-form__row">
               <label for="brief-barvy">Barvy</label>
               <p class="brief-form__colorhunt-row">
-                <a class="btn btn--small" href="https://colorhunt.co/" target="_blank" rel="noopener">Otevřít Color Hunt a vybrat paletu barvy</a>
+                <a class="btn btn-secondary btn-sm" href="https://colorhunt.co/" target="_blank" rel="noopener">Otevřít Color Hunt a vybrat paletu barvy</a>
               </p>
               <textarea id="brief-barvy" name="barvy" class="brief-form__textarea--tall" rows="8" placeholder="Odkaz na paletu z Color Hunt (tlačítko LINK pod paletou), vlastní barvy, co se vám líbí / nelíbí…"></textarea>
             </div>
@@ -120,9 +133,9 @@ briefKlientForm: true
 
             <fieldset class="brief-form__fieldset">
               <legend>Fotky</legend>
-              <p class="sec__intro" style="margin-top:0;margin-bottom:12px;font-size:14px;">Vyberte jednu možnost.</p>
+              <p class="brief-intro" style="margin-top:0;margin-bottom:12px;font-size:14px;">Vyberte jednu možnost.</p>
               <p class="brief-form__uschovna-btn">
-                <a class="btn btn--small" href="https://uschovna.cz/poslat-zasilku" target="_blank" rel="noopener">Odeslat fotografie přes Úschovnu</a>
+                <a class="btn btn-secondary btn-sm" href="https://uschovna.cz/poslat-zasilku" target="_blank" rel="noopener">Odeslat fotografie přes Úschovnu</a>
               </p>
               <ul class="brief-form__radios">
                 <li>
@@ -225,20 +238,20 @@ briefKlientForm: true
               </div>
             </div>
 
-            <button class="btn btn--large" type="submit" style="width:100%;max-width:400px;">Odeslat podklady</button>
+            <button class="btn btn-primary brief-submit" type="submit" style="width:100%;max-width:400px;">Odeslat podklady</button>
             <p id="briefKlientFormStatus" class="small" style="margin-top:12px;" aria-live="polite"></p>
-            <p class="small" style="margin-top:8px;">Po odeslání vás přesměrujeme na stránku s poděkováním. Data přijdou na <strong>info@ulovklienty.cz</strong>.</p>
+            <p class="small" style="margin-top:8px;">Po odeslání vás přesměrujeme na stránku s poděkováním. Data přijdou na <strong>info@ulovklienty.cz</strong> (přes náš e-mailový systém).</p>
           </form>
         </div>
       </div>
     </section>
 
     <!-- ČÁST 2: Ukázka -->
-    <section id="cast-2-ukazka" class="sec sec--white">
+    <section id="cast-2-ukazka" class="brief-section">
       <div class="container">
-        <h2 class="sec__title">2. Ukázková jednoduchá odpověď</h2>
-        <p class="sec__intro">Příklad toho, jak může vyplnění vypadat — čistě ilustračně.</p>
-        <div class="brief-example brief-example--structured" role="region" aria-label="Ukázková odpověď">
+        <h2 class="brief-h2">2. Ukázková jednoduchá odpověď</h2>
+        <p class="brief-intro">Příklad toho, jak může vyplnění vypadat — čistě ilustračně.</p>
+        <div class="brief-card brief-example brief-example--structured" role="region" aria-label="Ukázková odpověď">
           <div class="brief-example__block">
             <h3>Barvy</h3>
             <p><a href="https://colorhunt.co/palette/7daacbe8dbb3fffdebce2626" target="_blank" rel="noopener">https://colorhunt.co/palette/7daacbe8dbb3fffdebce2626</a></p>
@@ -280,14 +293,14 @@ briefKlientForm: true
     </section>
 
     <!-- ČÁST 3: Popis bodů -->
-    <section id="cast-3-popis" class="sec sec--light">
+    <section id="cast-3-popis" class="brief-section">
       <div class="container">
-        <h2 class="sec__title">3. Popis jednotlivých bodů</h2>
-        <div class="brief-popis" style="max-width: 920px; margin: 0 auto;">
+        <h2 class="brief-h2">3. Popis jednotlivých bodů</h2>
+        <div class="brief-card brief-popis">
           <h3>Barvy</h3>
           <p>Vyberte si 2–4 barvy (poslední může být akcentní — výrazná např. jen na tlačítka). Doporučuji <strong>Color Hunt</strong>. Když najdete kombinaci, pod paletou je tlačítko <strong>LINK</strong> — ten odkaz mi zkopírujte do e-mailu nebo sem do pole Barvy.</p>
           <p class="brief-popis__btn-row">
-            <a class="btn" href="https://colorhunt.co/" target="_blank" rel="noopener">Otevřít Color Hunt a vybrat paletu barvy</a>
+            <a class="btn btn-primary" href="https://colorhunt.co/" target="_blank" rel="noopener">Otevřít Color Hunt a vybrat paletu barvy</a>
           </p>
           <p>Odkaz z tlačítka LINK pak vypadá například takto: <a href="https://colorhunt.co/palette/7daacbe8dbb3fffdebce2626" target="_blank" rel="noopener">https://colorhunt.co/palette/7daacbe8dbb3fffdebce2626</a></p>
 
@@ -315,17 +328,17 @@ briefKlientForm: true
           <h3>Fotky do galerie</h3>
           <p>Fotky z posledních prací, profilovka, cokoli k vaší podnikatelské činnosti. Uložte prosím přes Úschovnu (lze poslat více souborů najednou i celou složku) a pošlete na e-mail <a href="mailto:hakl@ulovklienty.cz">hakl@ulovklienty.cz</a>. Nahoře váš e-mail, komu <strong>hakl@ulovklienty.cz</strong>, do zprávy jen text ve tvaru <strong>web-vaše příjmení</strong>. Soubory nebo složky přetáhněte nahoru a odešlete.</p>
           <p class="brief-popis__btn-row">
-            <a class="btn" href="https://uschovna.cz/poslat-zasilku" target="_blank" rel="noopener">Odeslat fotografie přes Úschovnu</a>
+            <a class="btn btn-primary" href="https://uschovna.cz/poslat-zasilku" target="_blank" rel="noopener">Odeslat fotografie přes Úschovnu</a>
           </p>
         </div>
       </div>
     </section>
 
     <!-- ČÁST 4: Doplňkové služby -->
-    <section id="cast-4-doplnky" class="sec sec--white">
+    <section id="cast-4-doplnky" class="brief-section">
       <div class="container">
-        <h2 class="sec__title">4. Doplňkové služby, které vám můžu nabídnout</h2>
-        <div class="brief-doplnkove" style="max-width: 920px; margin: 0 auto;">
+        <h2 class="brief-h2">4. Doplňkové služby, které vám můžu nabídnout</h2>
+        <div class="brief-card brief-doplnkove">
           <ul>
             <li><strong>Tvorba QR kódu na váš web</strong> — zdarma</li>
             <li class="brief-doplnkove__item-with-btn"><strong>NFC kartu</strong> — 100–200&nbsp;Kč — co to je a k čemu slouží:<br><a class="brief-doplnkove__linkbtn" href="https://www.capturecard.co/" target="_blank" rel="noopener">capturecard.co</a></li>
@@ -334,9 +347,26 @@ briefKlientForm: true
             <li><strong>Reklamní předměty</strong> — propisky, hrnky, trička… ceny závisí na mnoha faktorech</li>
             <li><strong>Jiné programy a IT</strong> — skladové hospodářství, rezervační systém a cokoli dalšího po vzájemné domluvě</li>
           </ul>
-          <p class="brief-doplnkove__home-row"><a class="btn btn--large" href="../index.html">Domovská stránka</a></p>
+          <p class="brief-doplnkove__home-row"><a class="btn btn-primary" href="./">Domovská stránka</a></p>
         </div>
       </div>
     </section>
 
   </main>
+
+  <footer class="site-footer">
+    <div class="container site-footer-inner">
+      <a class="site-footer-brand" href="./">
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="" width="40" height="40" loading="lazy">
+        <span>ULOV KLIENTY</span>
+      </a>
+      <p class="site-footer-legal">© 2026 ULOV KLIENTY</p>
+      <p class="site-footer-meta">
+        Vytvořeno Jiřím Haklem ·
+        <a href="./">ulovklienty.cz</a>
+      </p>
+    </div>
+  </footer>
+  <script src="brief-klient-form.js" defer></script>
+</body>
+</html>
