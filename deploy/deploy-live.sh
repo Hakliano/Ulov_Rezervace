@@ -38,6 +38,9 @@ fi
 if [ -d presentace ]; then
   bash deploy/pre-deploy-check.sh presentace || true
 fi
+if [ -d modernik ]; then
+  bash deploy/pre-deploy-check.sh modernik || true
+fi
 
 echo "### 4) Sync repo → www/ (jen po checklistu)"
 mkdir -p www
@@ -52,6 +55,11 @@ if [ -d presentace ]; then
   mkdir -p www/presentace
   rsync -a presentace/ www/presentace/
   echo "synced presentace"
+fi
+if [ -d modernik ]; then
+  mkdir -p www/modernik
+  rsync -a modernik/ www/modernik/
+  echo "synced modernik"
 fi
 if [ -d shared ]; then
   mkdir -p www/shared

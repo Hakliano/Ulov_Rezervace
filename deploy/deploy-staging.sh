@@ -47,7 +47,7 @@ text = p.read_text(encoding="utf-8")
 lines = []
 overrides = {
     "ALLOWED_HOSTS": "api-staging.ulovklienty.cz,staging.ulovklienty.cz,www.staging.ulovklienty.cz,localhost",
-    "CORS_ALLOWED_ORIGINS": "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz,https://demo1.staging.ulovklienty.cz,https://demo2.staging.ulovklienty.cz,https://demo3.staging.ulovklienty.cz,https://demo4.staging.ulovklienty.cz,https://demo5.staging.ulovklienty.cz,https://demo6.staging.ulovklienty.cz,https://demo7.staging.ulovklienty.cz,https://demo8.staging.ulovklienty.cz",
+    "CORS_ALLOWED_ORIGINS": "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz,https://demo1.staging.ulovklienty.cz,https://demo2.staging.ulovklienty.cz,https://demo3.staging.ulovklienty.cz,https://demo4.staging.ulovklienty.cz,https://demo5.staging.ulovklienty.cz,https://demo6.staging.ulovklienty.cz,https://demo7.staging.ulovklienty.cz,https://demo8.staging.ulovklienty.cz,https://staging.modernik.cz,https://www.modernik.cz,https://modernik.cz",
     "CSRF_TRUSTED_ORIGINS": "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz,https://api-staging.ulovklienty.cz",
     "SENTRY_ENVIRONMENT": "staging",
     "EMAIL_VIA_CELERY": "false",
@@ -99,6 +99,11 @@ if [ -d presentace ]; then
   mkdir -p www-staging/presentace
   rsync -a presentace/ www-staging/presentace/
 fi
+if [ -d modernik ]; then
+  bash deploy/pre-deploy-check.sh modernik || true
+  mkdir -p www-staging/modernik
+  rsync -a modernik/ www-staging/modernik/
+fi
 if [ -d shared ]; then
   mkdir -p www-staging/shared
   rsync -a shared/ www-staging/shared/
@@ -121,6 +126,8 @@ find www-staging -type f \( -name '*.js' -o -name '*.html' \) -print0 \
     -e 's|https://demo\([0-9]\)\.ulovklienty\.cz|https://www.staging.ulovklienty.cz/salon\1|g' \
     -e 's|https://www\.ulovklienty\.cz/|https://www.staging.ulovklienty.cz/|g' \
     -e 's|https://ulovklienty\.cz/|https://www.staging.ulovklienty.cz/|g' \
+    -e 's|https://www\.modernik\.cz|https://staging.modernik.cz|g' \
+    -e 's|https://modernik\.cz|https://staging.modernik.cz|g' \
   || true
 
 # Windows UTF-8 BOM rozbije <script> v prohlížeči (SyntaxError → věčné „Načítám…“)
@@ -167,6 +174,7 @@ docker compose exec -T nginx nginx -s reload
 
 echo "=== STAGING hotovo ==="
 echo "Hub:  https://www.staging.ulovklienty.cz/"
+echo "Moderník: https://staging.modernik.cz/ (po DNS + cert)"
 echo "API:  https://api-staging.ulovklienty.cz/health/"
 echo "Demo: https://www.staging.ulovklienty.cz/salon1/"
 echo "Maily jdou na EMAIL_OVERRIDE_TO (viz .env.staging) — ne ostrým zákazníkům."
