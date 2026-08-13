@@ -21,7 +21,8 @@ body {
   color: var(--text);
   background:
     radial-gradient(ellipse at 10% 0%, rgba(201, 166, 74, 0.14), transparent 45%),
-    linear-gradient(165deg, var(--navy-deep) 0%, var(--navy) 100%);
+    linear-gradient(165deg, rgba(8, 20, 34, 0.88) 0%, rgba(15, 31, 53, 0.9) 100%),
+    url('https://haklweb.b-cdn.net/ULOV_KLIENTA/geralt-particles-7055781_1280.jpg') center / cover no-repeat fixed;
   line-height: 1.55;
 }
 

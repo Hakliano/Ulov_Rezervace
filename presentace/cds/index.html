@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Digital Services — software na míru pro firmy</title>
+  <meta name="description" content="Custom Digital Services (CDS) — jakýkoliv software na míru podle přání firmy. Dolovací programy, sklady, CRM, e-mailoví klienti, integrace a interní systémy. Zakladatel: Jiří Hakl.">
+  <link rel="icon" type="image/webp" href="https://haklweb.b-cdn.net/modernik/cds.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="../cookie-consent.css?v=1">
+</head>
+<body>
+  <canvas id="cdsBinary" class="cds-binary" aria-hidden="true"></canvas>
+  <div class="cds-noise" aria-hidden="true"></div>
+  <div class="cds-scan" aria-hidden="true"></div>
+
+  <header class="cds-header">
+    <div class="cds-wrap cds-header-inner">
+      <a href="./" class="cds-brand" aria-label="Custom Digital Services">
+        <img src="https://haklweb.b-cdn.net/modernik/cds.webp" alt="" width="160" height="64">
+        <span>CDS</span>
+      </a>
+      <nav class="cds-nav" aria-label="Hlavní">
+        <a href="#katalog">Katalog</a>
+        <a href="#zakladatel">Zakladatel</a>
+        <a href="#poptavka">Poptávka</a>
+      </nav>
+      <a href="#poptavka" class="cds-cta">Nezávazná poptávka</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="cds-hero">
+      <div class="cds-hero-grid" aria-hidden="true"></div>
+      <div class="cds-wrap cds-hero-inner">
+        <p class="cds-kicker"><span class="cds-pulse"></span> projekt ULOV KLIENTY · build on demand</p>
+        <img
+          class="cds-hero-logo"
+          src="https://haklweb.b-cdn.net/modernik/cds.webp"
+          alt="Custom Digital Services"
+          width="520"
+          height="220"
+          decoding="async"
+        >
+        <h1>Software, který ještě neexistuje — napíšeme ho přesně podle Vás a pro Vás.</h1>
+        <p class="cds-lead">
+          Custom Digital Services dělá <strong>jakýkoliv software na míru dle přání firmy</strong>.
+          Od nuly, podle procesu, dat a lidí, které máte — ne podle šablony z katalogu.
+        </p>
+        <div class="cds-hero-actions">
+          <a href="#poptavka" class="cds-btn">Popište, co potřebujete</a>
+          <a href="#katalog" class="cds-btn cds-btn-ghost">Prohlédnout katalog</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="cds-section" id="katalog">
+      <div class="cds-wrap">
+        <header class="cds-section-head">
+          <p class="cds-mono">// katalog schopností</p>
+          <h2>Co všechno umíme firmám postavit</h2>
+          <p>
+            Níže je výběr typických zakázek pro menší a střední firmy.
+            Pokud to v seznamu není — stejně to můžeme udělat. Stačí popsat cíl.
+          </p>
+        </header>
+
+        <div class="cds-catalog" id="cdsCatalog">
+          <article class="cds-mod" data-tag="data">
+            <span class="cds-mod-id">01</span>
+            <h3>Dolovací / scrapovací programy</h3>
+            <p>Automatické vyhledávání dat na webu, čištění a skládání do vlastní databáze (kontakty, ceny, nabídky, konkurence).</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">02</span>
+            <h3>Skladové hospodářství</h3>
+            <p>Příjem, výdej, inventury, šarže, lokace, nízké stavy, mobilní režim pro skladníky.</p>
+          </article>
+          <article class="cds-mod" data-tag="comm">
+            <span class="cds-mod-id">03</span>
+            <h3>Firemní e-mailoví klienti</h3>
+            <p>Vlastní schránky, sdílené inboxy, šablony odpovědí, přiřazení ticketů a historie komunikace.</p>
+          </article>
+          <article class="cds-mod" data-tag="crm">
+            <span class="cds-mod-id">04</span>
+            <h3>Custom CRM</h3>
+            <p>Karty zákazníků, pipeline, úkoly a reporty přesně podle vašeho obchodního procesu.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">05</span>
+            <h3>Objednávkové B2B portály</h3>
+            <p>Objednávky pro velkoobchod, ceníky dle role, schvalování a export do účetnictví.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">06</span>
+            <h3>Fakturace a evidence plateb</h3>
+            <p>Vystavování dokladů, párování plateb, upomínky, přehled pohledávek.</p>
+          </article>
+          <article class="cds-mod" data-tag="hr">
+            <span class="cds-mod-id">07</span>
+            <h3>Docházka a směny</h3>
+            <p>Evidence příchodů, plán směn, přesčasy, export pro mzdy.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">08</span>
+            <h3>Evidence majetku a inventáře</h3>
+            <p>Majetek, QR štítky, odpovědné osoby, servisní historie.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">09</span>
+            <h3>Správa vozového parku</h3>
+            <p>Vozidla, tankování, servisy, STK, kniha jízd a náklady na provoz.</p>
+          </article>
+          <article class="cds-mod" data-tag="crm">
+            <span class="cds-mod-id">10</span>
+            <h3>Helpdesk / ticketing</h3>
+            <p>Požadavky od klientů i interní IT, SLA, přiřazení a historie řešení.</p>
+          </article>
+          <article class="cds-mod" data-tag="data">
+            <span class="cds-mod-id">11</span>
+            <h3>Databáze leadů a kontaktů</h3>
+            <p>Sběr, deduplikace, segmentace a export do kampaní nebo CRM.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">12</span>
+            <h3>Cenové kalkulačky a konfigurátory</h3>
+            <p>Online kalkulace zakázek, varianty produktů, generování nabídky PDF.</p>
+          </article>
+          <article class="cds-mod" data-tag="int">
+            <span class="cds-mod-id">13</span>
+            <h3>Integrace a API mosty</h3>
+            <p>Propojení e-shopu, účetnictví, skladu, platebních bran a vlastních systémů.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">14</span>
+            <h3>Dokumentový management</h3>
+            <p>Úložiště smluv a podkladů, verze, oprávnění, fulltextové hledání.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">15</span>
+            <h3>Generátory smluv a PDF</h3>
+            <p>Šablony smluv, objednávek a protokolů vyplněné daty z formuláře nebo CRM.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">16</span>
+            <h3>Interní wiki / knowledge base</h3>
+            <p>Provozní návody, checklisty a firemní know-how na jednom místě.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">17</span>
+            <h3>Rezervační a plánovací systémy</h3>
+            <p>Termíny, kapacity, zdroje, potvrzení e-mailem/SMS, kalendáře týmu.</p>
+          </article>
+          <article class="cds-mod" data-tag="data">
+            <span class="cds-mod-id">18</span>
+            <h3>Reporting dashboards</h3>
+            <p>Živé přehledy prodejů, skladu, marketingu a provozních KPI.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">19</span>
+            <h3>Digitální recepční / chatboty</h3>
+            <p>Automatické odpovědi, sběr poptávek, napojení na kalendář a CRM.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">20</span>
+            <h3>Portály pro dodavatele a partnery</h3>
+            <p>Sdílení ceníků, objednávek, stavů zásilek a dokumentů s partnery.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">21</span>
+            <h3>Offline aplikace pro terén</h3>
+            <p>Mobilní nástroje pro montáže, kontroly a sklad — fungují i bez signálu.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">22</span>
+            <h3>QR / NFC provozní nástroje</h3>
+            <p>Štítky na majetek, rychlé formuláře, evidence úkonů jedním přiložením.</p>
+          </article>
+          <article class="cds-mod" data-tag="int">
+            <span class="cds-mod-id">23</span>
+            <h3>Monitoring a alerty</h3>
+            <p>Hlídání webů, zásob, plateb a kritických procesů s notifikacemi.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">24</span>
+            <h3>Marketing automation (light)</h3>
+            <p>Automatické follow-upy, segmentované kampaně, napojení na databázi kontaktů.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">25</span>
+            <h3>Franšízové / multi-pobočkové systémy</h3>
+            <p>Centrální správa + oddělená data poboček, reporty a oprávnění.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">26</span>
+            <h3>Účetní exporty a mzdové podklady</h3>
+            <p>Automatické výstupy do formátů, které používá váš účetní / mzdová.</p>
+          </article>
+          <article class="cds-mod" data-tag="ops">
+            <span class="cds-mod-id">27</span>
+            <h3>Správa projektů a zakázek</h3>
+            <p>Zakázky, milníky, rozpočty, časové výkazy a fakturace podle odpracovaného.</p>
+          </article>
+          <article class="cds-mod cds-mod-any" data-tag="any">
+            <span class="cds-mod-id">∞</span>
+            <h3>Cokoliv dalšího na míru</h3>
+            <p>Pokud firma potřebuje nástroj, který na trhu není — navrhneme architekturu a postavíme ho.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cds-section cds-founder" id="zakladatel">
+      <div class="cds-wrap cds-founder-grid">
+        <figure class="cds-founder-photo">
+          <img
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/upravena_foto_hakl.webp"
+            alt="Jiří Hakl — zakladatel a hlavní programátor Custom Digital Services"
+            width="640"
+            height="800"
+            loading="lazy"
+            decoding="async"
+          >
+        </figure>
+        <div>
+          <p class="cds-mono">// zakladatel projektu</p>
+          <h2>Jiří Hakl</h2>
+          <p class="cds-founder-role">Hlavní programátor · zakladatel Custom Digital Services</p>
+          <p>
+            CDS vzniklo jako přímá odpověď firmám, které nechtějí „krabicový“ software,
+            ale nástroj přesně podle svého provozu. Od návrhu databáze přes backend a API
+            až po rozhraní, které zvládne běžný uživatel.
+          </p>
+          <p>
+            Projekt je součástí rodiny <a href="../">ULOV KLIENTY</a> —
+            stejné technické zázemí, jiný typ zakázek: plně custom vývoj.
+          </p>
+          <ul class="cds-founder-meta">
+            <li><a href="mailto:info@ulovklienty.cz">info@ulovklienty.cz</a></li>
+            <li><a href="tel:+420797756746">+420 797 756 746</a></li>
+            <li>IČO 24552488</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="cds-section" id="poptavka">
+      <div class="cds-wrap cds-contact-grid">
+        <div>
+          <p class="cds-mono">// poptávka</p>
+          <h2>Popište problém. My navrhneme software.</h2>
+          <p class="cds-lead">
+            Není potřeba technické zadání. Stačí říct, co vám teď bere čas,
+            co chcete automatizovat, nebo jaký výsledek potřebujete.
+          </p>
+          <ul class="cds-contact-list">
+            <li><a href="tel:+420797756746">+420 797 756 746</a></li>
+            <li><a href="mailto:info@ulovklienty.cz">info@ulovklienty.cz</a></li>
+          </ul>
+        </div>
+
+        <form id="poptavka-form" class="cds-form" novalidate
+          data-captcha-lock-hours="4"
+          data-captcha-options='[{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/15.webp","answer":"15"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/1860.webp","answer":"1860"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/333.webp","answer":"333"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/42.webp","answer":"42"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp","answer":"4"}]'>
+          <input type="text" name="_gotcha" class="form-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label>Jméno a příjmení
+            <input type="text" id="p-jmeno" required maxlength="120" autocomplete="name">
+          </label>
+          <label>E-mail
+            <input type="email" id="p-email" required autocomplete="email">
+          </label>
+          <label>Telefon
+            <input type="tel" id="p-telefon" autocomplete="tel" placeholder="Volitelné">
+          </label>
+          <label>Firma / provozovna
+            <input type="text" id="p-salon" maxlength="200" placeholder="Např. název firmy">
+          </label>
+          <label>Typ softwaru / zájem
+            <select id="p-balicek">
+              <option value="">Vyberte (volitelné)</option>
+              <option value="Dolovací / scrapovací systém">Dolovací / scrapovací systém</option>
+              <option value="Skladové hospodářství">Skladové hospodářství</option>
+              <option value="Custom CRM">Custom CRM</option>
+              <option value="E-mailový klient">E-mailový klient</option>
+              <option value="Integrace / API">Integrace / API</option>
+              <option value="Interní systém">Interní systém</option>
+              <option value="Reporting / dashboard">Reporting / dashboard</option>
+              <option value="Nejsem si jistý, poradíte mi" selected>Nejsem si jistý, poradíte mi</option>
+            </select>
+          </label>
+          <label>Zpráva
+            <textarea id="p-zprava" rows="4" placeholder="Co má software umět? Jaký je dnešní proces?"></textarea>
+          </label>
+          <label class="cds-check">
+            <input type="checkbox" id="p-souhlas" required>
+            <span>Souhlasím se zpracováním údajů za účelem odpovědi na poptávku.</span>
+          </label>
+
+          <div class="form-captcha" id="pCaptchaRow">
+            <label for="p-captcha">Zadejte číslo z obrázku</label>
+            <p class="form-captcha-note">
+              Bezpečnostní ochrana před roboty — ověříme, že nám píše reálná osoba.
+            </p>
+            <div class="form-captcha-wrap">
+              <div class="form-captcha-img-wrap">
+                <img
+                  class="form-captcha-img"
+                  id="pCaptchaImg"
+                  src="https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp"
+                  alt="Číslo na obrázku"
+                  width="120"
+                  height="120"
+                  loading="eager"
+                >
+                <button type="button" class="form-captcha-refresh" id="pCaptchaRefresh" aria-label="Zobrazit jiný obrázek">
+                  Jiný obrázek
+                </button>
+              </div>
+              <input
+                id="p-captcha"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="?"
+                maxlength="4"
+                aria-label="Číslo z obrázku"
+                class="form-captcha-input"
+              >
+            </div>
+          </div>
+
+          <p class="form-reassure">Odpovíme zpravidla během 24 hodin.</p>
+          <button type="submit" class="cds-btn cds-btn-block">Odeslat poptávku</button>
+          <p id="form-msg" class="form-msg" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="cds-footer">
+    <div class="cds-wrap cds-footer-inner">
+      <a href="./" class="cds-brand" aria-label="Custom Digital Services">
+        <img src="https://haklweb.b-cdn.net/modernik/cds.webp" alt="" width="120" height="48">
+      </a>
+      <p>
+        © 2026 Custom Digital Services · projekt
+        <a href="../">ULOV KLIENTY</a>
+        · služby poskytuje Jiří Hakl
+      </p>
+      <p>
+        <a href="../dokumentace.html">Dokumentace</a>
+        · <a href="../vop.html">VOP</a>
+        · <a href="../gdpr.html">GDPR</a>
+        · <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    window.ULOV_COOKIE_CONSENT = {
+      gaMeasurementId: "",
+      privacyUrl: "../gdpr.html"
+    };
+  </script>
+  <script src="../cookie-consent.js?v=1" defer></script>
+  <script src="app.js?v=3" defer></script>
+</body>
+</html>
