@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="hub.css?v=5">
+  <link rel="stylesheet" href="hub.css?v=6">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -19,7 +19,10 @@
         <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="" width="52" height="52">
         <span>ULOV KLIENTY</span>
       </a>
-      <a href="mailto:info@ulovklienty.cz" class="hub-header-link">info@ulovklienty.cz</a>
+      <div class="hub-header-actions">
+        <a href="mailto:info@ulovklienty.cz" class="hub-header-link">info@ulovklienty.cz</a>
+        <a href="#poptavka" class="hub-header-cta">Poptávka</a>
+      </div>
     </div>
   </header>
 
@@ -127,49 +130,122 @@
             <h3>Vizitky</h3>
             <p>Tisk vizitek ve stylu vaší provozovny s QR kódem na web a rezervace.</p>
             <p class="hub-extra-price">Přibližně od 3&nbsp;Kč / kus<br><span>podle počtu, kvality a materiálu</span></p>
-            <a class="hub-card-cta" href="mailto:info@ulovklienty.cz?subject=Vizitky%20na%20m%C3%ADru">Chci vizitky →</a>
+            <a class="hub-card-cta" href="#poptavka">Chci vizitky →</a>
           </article>
           <article class="hub-extra-card">
             <h3>QR / NFC materiály</h3>
             <p>Stojánky a kartičky, které zákazníkům usnadní hodnocení na Google.</p>
             <p class="hub-extra-price">Přibližně 200–300&nbsp;Kč / kus<br><span>podle typu a materiálu</span></p>
-            <a class="hub-card-cta" href="mailto:info@ulovklienty.cz?subject=QR%20%2F%20NFC%20materi%C3%A1ly">Chci QR / NFC →</a>
+            <a class="hub-card-cta" href="#poptavka">Chci QR / NFC →</a>
           </article>
           <article class="hub-extra-card">
             <h3>E-poukazy</h3>
             <p>Digitální poukazy pro zákazníky ve stylu vaší značky.</p>
             <p class="hub-extra-price">Cena po domluvě</p>
-            <a class="hub-card-cta" href="mailto:info@ulovklienty.cz?subject=E-poukazy">Chci e-poukazy →</a>
+            <a class="hub-card-cta" href="#poptavka">Chci e-poukazy →</a>
           </article>
           <article class="hub-extra-card">
             <h3>Bannery</h3>
             <p>Grafika se slevami nebo novinkami připravená přímo na váš web.</p>
             <p class="hub-extra-price">Cena po domluvě</p>
-            <a class="hub-card-cta" href="mailto:info@ulovklienty.cz?subject=Bannery%20na%20web">Chci bannery →</a>
+            <a class="hub-card-cta" href="#poptavka">Chci bannery →</a>
           </article>
           <article class="hub-extra-card">
             <h3>Cesta k provozovně</h3>
             <p>Grafické zpracování cesty k provozovně — z videa nebo Google views. Na webu hned, aby se klient neztratil.</p>
             <p class="hub-extra-price">Cena po domluvě</p>
-            <a class="hub-card-cta" href="mailto:info@ulovklienty.cz?subject=Cesta%20k%20provozovn%C4%9B">Chci cestu na web →</a>
+            <a class="hub-card-cta" href="#poptavka">Chci cestu na web →</a>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="hub-contact" id="kontakt">
-      <div class="hub-wrap">
-        <div class="hub-contact-box">
-          <div>
-            <h2>Obecný kontakt k projektu ULOV KLIENTY</h2>
-            <p>Pro poptávku konkrétního produktu použijte web daného projektu (např. Moderník).</p>
-          </div>
-          <div class="hub-contact-links">
-            <a href="mailto:info@ulovklienty.cz">info@ulovklienty.cz</a>
-            <a href="tel:+420797756746">+420 797 756 746</a>
-            <a href="dokumentace.html">Dokumentace</a>
-          </div>
+    <section class="hub-contact" id="poptavka">
+      <div class="hub-wrap hub-contact-grid">
+        <div>
+          <h2>Nezávazná poptávka</h2>
+          <p class="hub-lead">
+            Vyberte projekt, který vás zajímá, nebo napište obecně — poradíme, co sedí vašemu byznysu.
+          </p>
+          <ul class="hub-contact-list">
+            <li><a href="tel:+420797756746">+420 797 756 746</a></li>
+            <li><a href="mailto:info@ulovklienty.cz">info@ulovklienty.cz</a></li>
+            <li><a href="dokumentace.html">Dokumentace</a></li>
+          </ul>
         </div>
+
+        <form id="poptavka-form" class="hub-form" novalidate
+          data-captcha-lock-hours="4"
+          data-captcha-options='[{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/15.webp","answer":"15"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/1860.webp","answer":"1860"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/333.webp","answer":"333"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/42.webp","answer":"42"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp","answer":"4"}]'>
+          <input type="text" name="_gotcha" class="form-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label>Jméno a příjmení
+            <input type="text" id="p-jmeno" required maxlength="120" autocomplete="name">
+          </label>
+          <label>E-mail
+            <input type="email" id="p-email" required autocomplete="email">
+          </label>
+          <label>Telefon
+            <input type="tel" id="p-telefon" autocomplete="tel" placeholder="Volitelné">
+          </label>
+          <label>Firma / provozovna
+            <input type="text" id="p-salon" maxlength="200" placeholder="Např. název firmy">
+          </label>
+          <label>Projekt / produkt
+            <select id="p-balicek">
+              <option value="">Vyberte (volitelné)</option>
+              <option value="Moderník">Moderník</option>
+              <option value="FLOW CRM">FLOW CRM</option>
+              <option value="Web pro salony">Web pro salony</option>
+              <option value="Custom Digital Services">Custom Digital Services</option>
+              <option value="ULOV Salon">ULOV Salon (připravujeme)</option>
+              <option value="Nejsem si jistý, poradíte mi" selected>Nejsem si jistý, poradíte mi</option>
+            </select>
+          </label>
+          <label>Zpráva
+            <textarea id="p-zprava" rows="4" placeholder="Co vás zajímá?"></textarea>
+          </label>
+          <label class="hub-check">
+            <input type="checkbox" id="p-souhlas" required>
+            <span>Souhlasím se zpracováním údajů za účelem odpovědi na poptávku.</span>
+          </label>
+
+          <div class="form-captcha" id="pCaptchaRow">
+            <label for="p-captcha">Zadejte číslo z obrázku</label>
+            <p class="form-captcha-note">
+              Bezpečnostní ochrana před roboty — ověříme, že nám píše reálná osoba.
+            </p>
+            <div class="form-captcha-wrap">
+              <div class="form-captcha-img-wrap">
+                <img
+                  class="form-captcha-img"
+                  id="pCaptchaImg"
+                  src="https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp"
+                  alt="Číslo na obrázku"
+                  width="120"
+                  height="120"
+                  loading="eager"
+                >
+                <button type="button" class="form-captcha-refresh" id="pCaptchaRefresh" aria-label="Zobrazit jiný obrázek">
+                  Jiný obrázek
+                </button>
+              </div>
+              <input
+                id="p-captcha"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="?"
+                maxlength="4"
+                aria-label="Číslo z obrázku"
+                class="form-captcha-input"
+              >
+            </div>
+          </div>
+
+          <p class="form-reassure">Odpovíme zpravidla během 24 hodin.</p>
+          <button type="submit" class="hub-btn">Odeslat poptávku</button>
+          <p id="form-msg" class="form-msg" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </section>
   </main>
@@ -193,5 +269,6 @@
     };
   </script>
   <script src="cookie-consent.js?v=1" defer></script>
+  <script src="hub-form.js?v=1" defer></script>
 </body>
 </html>
