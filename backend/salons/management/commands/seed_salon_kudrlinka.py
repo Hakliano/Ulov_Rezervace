@@ -1,11 +1,8 @@
-"""Salon Kudrlinka (pk 19) — čisté demo k ukázce zakládání od nuly.
-
-Lokálně a na stagingu. Na LIVE nespouštět.
-"""
+"""Salon Kudrlinka (pk 19) — čisté demo k ukázce zakládání od nuly."""
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from rezervace.models import RezervacniNastaveni, Zamestnanec
@@ -16,6 +13,7 @@ OWNER_EMAIL = 'majitel.salon19@ulov.local'
 OWNER_PASSWORD = 'majitelka123'
 LOCAL_URL = 'http://localhost:5518/salon19/'
 STAGING_URL = 'https://www.staging.ulovklienty.cz/salon19/'
+LIVE_URL = 'https://www.ulovklienty.cz/salon19/'
 
 
 def _env() -> str:
@@ -25,17 +23,15 @@ def _env() -> str:
 def _public_url() -> str:
     if settings.DEBUG:
         return LOCAL_URL
-    return STAGING_URL
+    if _env() == 'staging':
+        return STAGING_URL
+    return LIVE_URL
 
 
 class Command(BaseCommand):
-    help = 'Vytvoří prázdné demo Salon Kudrlinka (pk 19) — jen DEBUG/staging'
+    help = 'Vytvoří prázdné demo Salon Kudrlinka (pk 19)'
 
     def handle(self, *args, **options):
-        env = _env()
-        if not settings.DEBUG and env == 'production':
-            raise CommandError('Kudrlinka se na LIVE neseeduje.')
-
         existing = Salon.objects.filter(pk=SALON_PK).first()
         if existing:
             if existing.name != 'Salon Kudrlinka':

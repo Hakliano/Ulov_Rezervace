@@ -1,4 +1,4 @@
-"""Zkopíruje SMTP nastavení ze salonu 2 (Studio Krása) do salonů 3 a 4."""
+"""Zkopíruje SMTP (+ IMAP) ze salonu 2 (Studio Krása) do dalších demo salonů."""
 
 from django.core.management.base import BaseCommand
 
@@ -6,7 +6,11 @@ from rezervace.models import RezervacniNastaveni
 from rezervace.services.emails import get_email_config
 from salons.models import Salon
 
-SMTP_FIELDS = ('smtp_host', 'smtp_port', 'smtp_use_ssl', 'smtp_user', 'smtp_password')
+SMTP_FIELDS = (
+    'smtp_host', 'smtp_port', 'smtp_use_ssl', 'smtp_user', 'smtp_password',
+    'imap_host', 'imap_port', 'imap_use_ssl', 'imap_enabled',
+)
+TARGET_PKS = (3, 4, 19)
 
 
 class Command(BaseCommand):
@@ -36,7 +40,7 @@ class Command(BaseCommand):
             src_nast.smtp_password = cfg['password']
             src_nast.save(update_fields=list(SMTP_FIELDS))
 
-        for pk in (3, 4):
+        for pk in TARGET_PKS:
             try:
                 salon = Salon.objects.get(pk=pk)
             except Salon.DoesNotExist:
@@ -45,7 +49,9 @@ class Command(BaseCommand):
             nast, _ = RezervacniNastaveni.objects.get_or_create(salon=salon)
             for field in SMTP_FIELDS:
                 setattr(nast, field, getattr(src_nast, field))
-            nast.save(update_fields=list(SMTP_FIELDS))
+            nast.email_odesilatel = src_nast.smtp_user or nast.email_odesilatel
+            nast.email_jmeno_odesilatele = salon.name
+            nast.save(update_fields=[*SMTP_FIELDS, 'email_odesilatel', 'email_jmeno_odesilatele'])
             self.stdout.write(self.style.SUCCESS(
                 f'SMTP zkopirovano -> salon {pk} ({salon.name}), odesilatel: {salon.email}',
             ))
