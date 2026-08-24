@@ -15,6 +15,7 @@ DEMOS = [
     "salon6",
     "salon7",
     "salon8",
+    "salon19",
     "provoz-autoservis",
     "provoz-pujcovna",
     "provoz-studio",

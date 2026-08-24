@@ -282,6 +282,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5503',
     'http://localhost:5510',
     'http://127.0.0.1:5510',
+    'http://localhost:5518',
+    'http://127.0.0.1:5518',
 ]
 _extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 if _extra_csrf:
