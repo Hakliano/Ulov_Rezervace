@@ -4,10 +4,10 @@
 # Zdroj: presentace/materialnik/
 
 map $host $materialnik_www_root {
-    default /var/www/sites/presentace/materialnik;
+    default /var/www/sites-staging/presentace/materialnik;
     staging.materialnik.cz /var/www/sites-staging/presentace/materialnik;
-    materialnik.cz /var/www/sites/presentace/materialnik;
-    www.materialnik.cz /var/www/sites/presentace/materialnik;
+    materialnik.cz /var/www/sites-staging/presentace/materialnik;
+    www.materialnik.cz /var/www/sites-staging/presentace/materialnik;
 }
 
 server {
