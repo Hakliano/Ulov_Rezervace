@@ -56,6 +56,21 @@ def drop_tenant_uuid_unique(apps, schema_editor):
         )
 
 
+def add_tenant_uuid_column(apps, schema_editor):
+    table = 'partner_admin_partnernastaveni'
+    connection = schema_editor.connection
+    if connection.vendor == 'postgresql':
+        schema_editor.execute(
+            f'ALTER TABLE {table} ADD COLUMN IF NOT EXISTS tenant_uuid uuid NULL'
+        )
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(f'PRAGMA table_info({table})')
+        cols = {row[1] for row in cursor.fetchall()}
+        if 'tenant_uuid' not in cols:
+            cursor.execute(f'ALTER TABLE {table} ADD COLUMN tenant_uuid char(32) NULL')
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -63,10 +78,17 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='partnernastaveni',
-            name='tenant_uuid',
-            field=models.UUIDField(null=True, editable=False, verbose_name='veřejné ID tenanta'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(add_tenant_uuid_column, migrations.RunPython.noop),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='partnernastaveni',
+                    name='tenant_uuid',
+                    field=models.UUIDField(null=True, editable=False, verbose_name='veřejné ID tenanta'),
+                ),
+            ],
         ),
         migrations.RunPython(fill_tenant_uuid, migrations.RunPython.noop),
         migrations.RunPython(make_tenant_uuid_unique, drop_tenant_uuid_unique),
