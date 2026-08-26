@@ -88,10 +88,32 @@ class FlowPrehledStatistikyTests(TestCase):
         self.assertEqual(anna['trzba'], 500)
         self.assertEqual(anna['dokonceno'], 1)
 
-    def test_staff_bez_overview_403(self):
+    def test_staff_bez_overview_vidi_svoje(self):
+        jina = Zamestnanec.objects.create(
+            salon=self.salon,
+            jmeno='Bára Cizí',
+            role=Zamestnanec.ROLE_ZAMESTNANEC,
+            prihlasovaci_jmeno='bara-prehled',
+            aktivni=True,
+        )
+        now = timezone.now()
+        cizi = Rezervace.objects.create(
+            salon=self.salon,
+            zamestnanec=jina,
+            zacatek=now + timedelta(hours=2),
+            konec=now + timedelta(hours=3),
+            stav='dokonceno',
+            jmeno_host='Cizí klient',
+        )
+        RezervaceSluzba.objects.create(rezervace=cizi, sluzba=self.sluzba)
         token = self._login('anna-prehled@test.local', 'Staff1234')
         r = self.client.get('/api/flow/owner/statistiky/', HTTP_X_FLOW_TOKEN=token)
-        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body['rozsah'], 'moje')
+        self.assertEqual(body['trzba_celkem'], 500)
+        self.assertEqual(body['dokonceno'], 1)
+        self.assertEqual(body['zamestnanci'], [])
 
     def test_staff_s_overview_ok(self):
         self.flow_staff.visible_overview = True

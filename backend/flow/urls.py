@@ -122,6 +122,11 @@ urlpatterns = [
         name='flow-rezervace-materialnik-spotreba',
     ),
     path(
+        'flow/materialnik-prehled/',
+        views_materialnik.FlowMaterialnikPrehledView.as_view(),
+        name='flow-materialnik-prehled',
+    ),
+    path(
         'flow/rezervace/<int:rezervace_id>/noshow/',
         provoz_views.FlowRezervaceNoShowView.as_view(),
         name='flow-rezervace-noshow',

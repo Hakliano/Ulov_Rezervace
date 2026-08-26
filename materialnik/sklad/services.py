@@ -21,9 +21,72 @@ from .models import (
 from .tenant import set_tenant_id, bypass_tenant
 
 
+def row_status(material, qty):
+    min_q = material.min_quantity or Decimal('0')
+    crit = material.critical_quantity
+    if qty <= 0:
+        return 'critical', 'Kriticky nízké', 4
+    if crit is not None and qty <= crit:
+        return 'critical', 'Kriticky nízké', 12
+    if min_q > 0 and qty < (min_q * Decimal('0.5')):
+        return 'low', 'Nízké', 28
+    if min_q > 0 and qty < min_q:
+        return 'warn', 'Pod minimem', max(8, int((qty / min_q) * 100))
+    pct = 100
+    if min_q > 0:
+        pct = min(100, int((qty / min_q) * 100))
+    return 'ok', 'V pořádku', pct
+
+
 def stock_qty(material):
     agg = StockMovement.objects.filter(material=material).aggregate(s=Sum('quantity_delta'))
     return agg['s'] or Decimal('0')
+
+
+def _fmt_qty(q):
+    s = format(q or Decimal('0'), 'f')
+    if '.' in s:
+        s = s.rstrip('0').rstrip('.')
+    return s or '0'
+
+
+def stock_summary(tenant, limit=8):
+    with_tenant(tenant.id)
+    materials = list(Material.objects.filter(active=True).select_related('unit'))
+    items = []
+    critical = 0
+    below = 0
+    for m in materials:
+        qty = stock_qty(m)
+        kind, label, _pct = row_status(m, qty)
+        if kind == 'ok':
+            continue
+        below += 1
+        if kind == 'critical':
+            critical += 1
+        items.append({
+            'material_id': m.id,
+            'name': m.name,
+            'qty': _fmt_qty(qty),
+            'min_quantity': _fmt_qty(m.min_quantity or Decimal('0')),
+            'critical_quantity': _fmt_qty(m.critical_quantity) if m.critical_quantity is not None else '',
+            'unit': m.unit.code if m.unit_id else '',
+            'status': kind,
+            'status_label': label,
+        })
+    rank = {'critical': 0, 'low': 1, 'warn': 2}
+    items.sort(key=lambda x: (rank.get(x['status'], 9), x['name'].lower()))
+    shopping = ShoppingListItem.objects.filter(status=ShoppingListItem.STAV_OPEN).count()
+    return {
+        'unavailable': False,
+        'kpi': {
+            'below': below,
+            'critical': critical,
+            'shopping': shopping,
+            'total': len(materials),
+        },
+        'items': items[:limit],
+    }
 
 
 def _dec(value, default='0'):

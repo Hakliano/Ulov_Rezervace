@@ -9,6 +9,7 @@ urlpatterns = [
     path('v1/internal/tenants/<uuid:tenant_uuid>/deactivate', internal_views.deactivate_tenant),
     path('v1/internal/consume-preview', internal_views.consume_preview),
     path('v1/internal/consume', internal_views.consume_confirm),
+    path('v1/internal/stock-summary', internal_views.stock_summary_view),
     path('v1/events', internal_views.ingest_event),
     path('prihlaseni/', views.login_view, name='login'),
     path('odhlaseni/', views.logout_view, name='logout'),

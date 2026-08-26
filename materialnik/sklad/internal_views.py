@@ -24,6 +24,7 @@ from .services import (
     confirm_consume,
     preview_consume,
     seed_units,
+    stock_summary,
     with_tenant,
 )
 from .tenant import bypass_tenant, set_tenant_id
@@ -149,6 +150,19 @@ def consume_confirm(request):
     if err:
         return err
     return JsonResponse(confirm_consume(tenant, data))
+
+
+@csrf_exempt
+def stock_summary_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed'}, status=405)
+    if not _m2m_ok(request):
+        return JsonResponse({'detail': 'Neplatný klíč.'}, status=401)
+    data = _json(request)
+    tenant, err = _bind_tenant_or_401(data)
+    if err:
+        return err
+    return JsonResponse(stock_summary(tenant))
 
 
 @csrf_exempt

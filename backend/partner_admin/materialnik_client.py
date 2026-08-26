@@ -84,6 +84,12 @@ def _stub(method, path, payload):
         return {'lines': payload.get('services', []) if payload else [], 'empty': True}
     if path.endswith('/consume') or path.endswith('/events'):
         return {'ok': True, 'duplicate': False}
+    if path.endswith('/stock-summary'):
+        return {
+            'unavailable': False,
+            'kpi': {'below': 0, 'critical': 0, 'shopping': 0, 'total': 0},
+            'items': [],
+        }
     return {'ok': True}
 
 
@@ -131,6 +137,18 @@ def confirm_consume(*, tenant_uuid, hmac_key, payload):
             'tenant_uuid': str(tenant_uuid),
             'hmac_key': hmac_key,
             **payload,
+        },
+        timeout=3,
+    )
+
+
+def stock_summary(*, tenant_uuid, hmac_key):
+    return _request(
+        'POST',
+        '/v1/internal/stock-summary',
+        {
+            'tenant_uuid': str(tenant_uuid),
+            'hmac_key': hmac_key,
         },
         timeout=3,
     )

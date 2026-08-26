@@ -101,3 +101,18 @@ class MaterialnikIntegrationsTests(TestCase):
         names = [s['name'] for s in r.json()['services']]
         self.assertEqual(names, ['Střih'])
         self.assertTrue(all(s['external_service_id'].startswith('cenik:') for s in r.json()['services']))
+
+    def test_prehled_bez_modulu_je_404(self):
+        token = self._login_flow()
+        r = self.client.get('/api/flow/materialnik-prehled/', HTTP_X_FLOW_TOKEN=token)
+        self.assertEqual(r.status_code, 404)
+
+    def test_prehled_s_modulem_vraci_polozky(self):
+        nastav_modul(self.salon, 'materialnik', True, Actor())
+        token = self._login_flow()
+        r = self.client.get('/api/flow/materialnik-prehled/', HTTP_X_FLOW_TOKEN=token)
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body.get('unavailable'))
+        self.assertEqual(body.get('items'), [])
+        self.assertIn('kpi', body)

@@ -90,6 +90,25 @@ class IsolationTests(TestCase):
         self.assertEqual(r.json()['status'], 'active')
         self.assertTrue(Tenant.objects.filter(pk=uid).exists())
 
+    def test_stock_summary_vraci_jen_vlastni_pod_minimem(self):
+        r = self.client.post(
+            '/v1/internal/stock-summary',
+            data={
+                'tenant_uuid': str(self.tenant_a.id),
+                'hmac_key': self.secret_a,
+            },
+            content_type='application/json',
+            HTTP_X_ULOV_M2M_KEY='test-m2m',
+        )
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        names = [i['name'] for i in body['items']]
+        self.assertIn('Barva A', names)
+        self.assertNotIn('Barva B', names)
+        self.assertEqual(body['kpi']['critical'], 1)
+        self.assertEqual(body['kpi']['below'], 1)
+        self.assertEqual(body['items'][0]['status'], 'critical')
+
     def test_event_cizi_sluzby_je_odmitnut(self):
         payload = {
             'event_id': 'evt-1' + 'a' * 58,

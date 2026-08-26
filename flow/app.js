@@ -396,6 +396,10 @@ function isOwnerUser(user = currentUser) {
   return z?.je_owner === true || z?.je_majitel === true || z?.role === 'majitel';
 }
 
+function canSeeSalonOverview(user = currentUser) {
+  return isOwnerUser(user) || !!user?.visible_overview;
+}
+
 function isManagerAccount(user = currentUser) {
   return !!user?.persona?.muze_prepinat
     || !!user?.persona?.pracovnik?.id
@@ -513,7 +517,7 @@ function setTab(name) {
   pushFlowNav(name);
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
   $$('.pane').forEach((p) => p.classList.add('hidden'));
-  $('#btn-nova-rez')?.classList.toggle('hidden', !TABS_WITH_NOVA.includes(name));
+  $('#flow-top-row')?.classList.toggle('hidden', !TABS_WITH_NOVA.includes(name));
   if (OWNER_MENU_TABS.includes(name)) {
     $('#pane-sprava')?.classList.remove('hidden');
     openOwnerSection(name);
@@ -548,11 +552,38 @@ function applyFlowBanner(salon) {
   }
 }
 
+let flowClockTimer = null;
+
+function tickFlowToday() {
+  const clock = $('#flow-today-clock');
+  const svatekEl = $('#flow-today-svatek');
+  if (!clock && !svatekEl) return;
+  const when = typeof flowDnesniDatumCas === 'function'
+    ? flowDnesniDatumCas()
+    : { datum: '—', cas: '—' };
+  const svatek = typeof flowDnesniSvatek === 'function' ? flowDnesniSvatek() : '—';
+  if (clock) clock.textContent = `${when.datum} · ${when.cas}`;
+  if (svatekEl) svatekEl.textContent = svatek;
+}
+
+function startFlowClock() {
+  tickFlowToday();
+  if (flowClockTimer) clearInterval(flowClockTimer);
+  flowClockTimer = setInterval(tickFlowToday, 10000);
+}
+
+function stopFlowClock() {
+  if (flowClockTimer) {
+    clearInterval(flowClockTimer);
+    flowClockTimer = null;
+  }
+}
+
 function showLoggedIn(user) {
   currentUser = user;
   $('#view-login').classList.add('hidden');
   $('#view-home').classList.remove('hidden');
-  $('#btn-logout').classList.remove('hidden');
+  $$('#btn-logout, #btn-logout-ucet').forEach((b) => b.classList.remove('hidden'));
   $('#shell').classList.add('app-mode');
   $('#hero-brand').classList.add('compact');
   const owner = isOwnerUser(user);
@@ -574,11 +605,9 @@ function showLoggedIn(user) {
   $('#home-email').textContent = user.email || '—';
   $('#home-overview').textContent = user.visible_overview ? 'zapnuto' : 'vypnuto';
   applyFlowBanner(user.salon);
+  startFlowClock();
   const ovTab = $('#tab-overview');
-  if (ovTab) {
-    const showOv = owner || !!user.visible_overview;
-    ovTab.classList.toggle('hidden', !showOv);
-  }
+  if (ovTab) ovTab.classList.remove('hidden');
   $('#pwd-box-staff')?.classList.toggle('hidden', owner);
   $('#pwd-box-owner')?.classList.toggle('hidden', !owner);
   $$('.tab-owner').forEach((t) => {
@@ -624,7 +653,7 @@ function showLoggedIn(user) {
   }
   resetFlowNav(null);
   flowNavSilent = true;
-  const startTab = (owner || user.visible_overview) ? 'overview' : 'mujden';
+  const startTab = 'overview';
   setTab(startTab);
   flowNavSilent = false;
   flowNavCurrent = startTab;
@@ -638,6 +667,7 @@ function showLogin() {
   mailUnseenCount = 0;
   resetFlowNav(null);
   applyFlowBanner(null);
+  stopFlowClock();
   const alerts = $('#flow-alerts');
   if (alerts) {
     alerts.classList.add('hidden');
@@ -645,10 +675,11 @@ function showLogin() {
   }
   $('#view-login').classList.remove('hidden');
   $('#view-home').classList.add('hidden');
-  $('#btn-logout').classList.add('hidden');
+  $$('#btn-logout, #btn-logout-ucet').forEach((b) => b.classList.add('hidden'));
   $('#shell').classList.remove('app-mode');
   $('#hero-brand').classList.remove('compact');
   $('#btn-materialnik')?.classList.add('hidden');
+  $('#ov-stock-card')?.classList.add('hidden');
   closeMaterialnikModal();
 }
 
@@ -729,6 +760,13 @@ function renderAbsenceBlocks(absences, { withName = false, canDelete = false } =
 }
 
 function renderOverviewStats(data) {
+  const mine = data.rozsah === 'moje';
+  $('#ov-mine-hint')?.classList.toggle('hidden', !mine);
+  $('#ov-staff-card')?.classList.toggle('hidden', mine);
+  const dnesLabel = $('#ov-kpi-dnes-label');
+  if (dnesLabel) dnesLabel.textContent = mine ? 'Dnes u vás' : 'Dnes v salonu';
+  const todayTitle = $('#ov-today-title');
+  if (todayTitle) todayTitle.textContent = mine ? 'Dnes u vás' : 'Dnes v salonu';
   const setText = (id, n) => {
     const el = $(id);
     if (el) el.textContent = n;
@@ -811,27 +849,108 @@ async function loadOverviewToday() {
   listEl.innerHTML = '<p class="empty">Načítám…</p>';
   try {
     const q = new URLSearchParams({ od: range.od, do: range.do });
-    if (!isOwnerUser()) q.set('overview', '1');
+    const salonOv = canSeeSalonOverview();
+    if (salonOv && !isOwnerUser()) q.set('overview', '1');
     const data = await api(`/flow/kalendar/?${q}`);
     rememberRez(data.rezervace);
     listEl.innerHTML = '';
     const holder = document.createElement('div');
     renderRezervaceList(holder, data.rezervace || [], {
-      readonly: !isOwnerUser(),
-      withStaff: true,
-      emptyText: 'Dnes v kalendáři nikdo není.',
+      readonly: salonOv && !isOwnerUser(),
+      withStaff: salonOv,
+      emptyText: salonOv ? 'Dnes v kalendáři nikdo není.' : 'Dnes nemáte žádnou rezervaci.',
     });
     listEl.appendChild(holder);
-    if (isOwnerUser()) bindCalActions(holder, () => loadOverview());
+    if (isOwnerUser() || !salonOv) bindCalActions(holder, () => loadOverview());
   } catch (err) {
     listEl.innerHTML = '';
     if (msgEl) showMsg(msgEl, err.message, false);
   }
 }
 
+function hideOverviewStock() {
+  $('#ov-stock-card')?.classList.add('hidden');
+}
+
+function renderOverviewStock(data) {
+  const card = $('#ov-stock-card');
+  const body = $('#ov-stock-body');
+  const hint = $('#ov-stock-hint');
+  const link = $('#ov-stock-link');
+  if (!card || !body) return;
+  card.classList.remove('hidden');
+  const info = materialnikInfo();
+  if (link) {
+    if (info?.url) {
+      link.href = info.url;
+      link.classList.remove('hidden');
+    } else {
+      link.classList.add('hidden');
+    }
+  }
+  if (data?.unavailable) {
+    if (hint) hint.textContent = 'Stav skladu teď nejde načíst. Rezervace to neovlivní.';
+    body.innerHTML = '<p class="empty">Zkuste to za chvíli, nebo otevřete Materiálník.</p>';
+    return;
+  }
+  const kpi = data?.kpi || {};
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const below = Number(kpi.below) || 0;
+  const critical = Number(kpi.critical) || 0;
+  const shopping = Number(kpi.shopping) || 0;
+  if (!below) {
+    if (hint) {
+      hint.textContent = shopping
+        ? `Nic nechybí. Na nákupním seznamu: ${shopping}.`
+        : 'Nic nechybí — vše je nad minimem.';
+    }
+    body.innerHTML = '<p class="ov-stock-ok">Sklad je v pořádku.</p>';
+    return;
+  }
+  const parts = [];
+  if (critical) parts.push(`${critical} v kritickém minimu`);
+  const rest = below - critical;
+  if (rest > 0) parts.push(`${rest} pod minimem`);
+  if (shopping) parts.push(`nákupní seznam: ${shopping}`);
+  if (hint) hint.textContent = parts.join(' · ');
+  const extra = below > items.length
+    ? `<p class="hint tiny">A další ${below - items.length} v Materiálníku.</p>`
+    : '';
+  body.innerHTML = `<ul class="ov-stock-list">${items.map((it) => {
+    const unit = it.unit ? ` ${esc(it.unit)}` : '';
+    const min = it.min_quantity ? ` · min. ${esc(String(it.min_quantity))}${unit}` : '';
+    const kind = it.status === 'critical' || it.status === 'low' || it.status === 'warn'
+      ? it.status
+      : 'warn';
+    return `<li class="ov-stock-row">
+      <span class="ov-stock-name">${esc(it.name || '')}</span>
+      <span class="ov-stock-qty">${esc(String(it.qty ?? '0'))}${esc(unit)}${min}</span>
+      <span class="ov-stock-pill ${kind}">${esc(it.status_label || '')}</span>
+    </li>`;
+  }).join('')}</ul>${extra}`;
+}
+
+async function loadOverviewStock() {
+  if (!materialnikInfo()) {
+    hideOverviewStock();
+    return;
+  }
+  const card = $('#ov-stock-card');
+  const body = $('#ov-stock-body');
+  if (card) card.classList.remove('hidden');
+  if (body) body.innerHTML = '<p class="empty">Načítám…</p>';
+  try {
+    const data = await api('/flow/materialnik-prehled/');
+    renderOverviewStock(data);
+  } catch (_) {
+    hideOverviewStock();
+  }
+}
+
 function loadOverview() {
   loadOverviewStats();
   loadOverviewToday();
+  loadOverviewStock();
 }
 
 async function loadWeekList(overview) {
@@ -1611,12 +1730,16 @@ $('#form-login')?.addEventListener('submit', async (e) => {
   }
 });
 
-$('#btn-logout')?.addEventListener('click', async () => {
+async function flowLogout() {
   try {
     await api('/flow/odhlaseni/', { method: 'POST' });
   } catch (_) { /* ignore */ }
   setToken('');
   showLogin();
+}
+
+$$('#btn-logout, #btn-logout-ucet').forEach((btn) => {
+  btn.addEventListener('click', flowLogout);
 });
 
 let mailCache = [];
@@ -2240,6 +2363,7 @@ function applyMaterialnikUi(user = currentUser) {
   if (!info || !info.url) {
     btn.classList.add('hidden');
     btn.removeAttribute('href');
+    $('#ov-stock-card')?.classList.add('hidden');
     return;
   }
   btn.classList.remove('hidden');
@@ -2910,6 +3034,49 @@ function renderOwnerPersonal(list) {
   if (z) detail.appendChild(buildOwnerPersonalCard(z));
 }
 
+function flowSwitchRowHtml(inputClass, checked, title, hint = '') {
+  return `<div class="flow-switch-row">
+    <div class="flow-switch-copy">
+      <span class="flow-switch-title">${title}</span>
+      ${hint ? `<span class="flow-switch-hint">${hint}</span>` : ''}
+    </div>
+    <label class="flow-switch">
+      <input type="checkbox" class="${inputClass}" ${checked ? 'checked' : ''} aria-label="${title}">
+      <span class="flow-switch-ui" aria-hidden="true"></span>
+    </label>
+  </div>`;
+}
+
+function syncFlowSwitchLabel(input, onText = 'Zapnuto', offText = 'Vypnuto') {
+  const text = input?.closest('.flow-switch')?.querySelector('.flow-switch-text');
+  if (text) text.textContent = input.checked ? onText : offText;
+}
+
+function staffFlowBlockHtml(z, ucet) {
+  if (ucet) {
+    return `<section class="own-block own-block-flow-main">
+      <h4>FLOW</h4>
+      ${flowSwitchRowHtml('op-flow-on', !!ucet.aktivni, 'Může se přihlásit', 'Bez toho se do FLOW nedostane.')}
+      ${flowSwitchRowHtml('op-flow-overview', !!ucet.visible_overview, 'Vidí přehled celé provozovny', 'Jinak vidí jen svoje termíny a čísla.')}
+      <p class="hint tiny">E-mail: <strong>${esc(ucet.email)}</strong></p>
+      <div class="owner-personal-actions" data-flow-reset-actions>
+        <button type="button" class="btn ghost sm op-flow-reset">Resetovat heslo FLOW</button>
+      </div>
+    </section>`;
+  }
+  return `<section class="own-block own-block-flow-main">
+    <h4>FLOW</h4>
+    <p class="hint tiny">Zatím vypnuto — zadejte e-mail a zapněte přístup.</p>
+    <label>E-mail pro FLOW
+      <input type="email" class="op-flow-email" placeholder="pracovnik@salon.cz">
+    </label>
+    ${flowSwitchRowHtml('op-flow-overview-new', false, 'Vidí přehled celé provozovny', 'Jinak vidí jen svoje termíny a čísla.')}
+    <div class="owner-personal-actions" data-flow-create-actions>
+      <button type="button" class="btn primary sm op-flow-create">Zapnout FLOW</button>
+    </div>
+  </section>`;
+}
+
 function buildOwnerPersonalCard(z) {
   const isOwner = z.role === 'majitel';
   const workId = currentUser?.persona?.pracovnik?.id;
@@ -2948,6 +3115,7 @@ function buildOwnerPersonalCard(z) {
     ${isOwner ? '<p class="hint tiny">Účet pro správu. Obsluhu zákazníků zapnete v menu Personál → Manager obsluhuje.</p>' : ''}
     ${isManagerStaff ? '<p class="hint tiny">Pracovní profil Managera — stejný login, nahoře přepínač Manager / Staff.</p>' : ''}
     ${isOwner ? '' : `
+    ${staffFlowBlockHtml(z, ucet)}
     <section class="own-block">
       <h4>Údaje</h4>
       <label>Jméno
@@ -2973,34 +3141,6 @@ function buildOwnerPersonalCard(z) {
       </table>
       <button type="button" class="btn primary sm op-save">Uložit pracovní dobu</button>
     </section>
-    <section class="own-block">
-      <h4>Přístup do FLOW</h4>
-    ${ucet ? `
-      <p class="hint tiny">E-mail: <strong>${esc(ucet.email)}</strong></p>
-      <p class="hint tiny">Přihlášení: <strong>${ucet.aktivni ? 'povoleno' : 'zablokováno'}</strong>
-        · přehled salonu ${ucet.visible_overview ? 'zapnutý' : 'vypnutý'}</p>
-      <div class="owner-personal-actions">
-        <div class="flow-access-btns" role="group" aria-label="Přihlášení do FLOW">
-          <button type="button" class="btn sm op-flow-allow ${ucet.aktivni ? 'primary is-active' : 'ghost'}" ${ucet.aktivni ? 'disabled' : ''}>Povolit vstup</button>
-          <button type="button" class="btn sm op-flow-block ${!ucet.aktivni ? 'danger is-active' : 'ghost'}" ${!ucet.aktivni ? 'disabled' : ''}>Zablokovat vstup</button>
-        </div>
-        <label class="check-row tight"><input type="checkbox" class="op-flow-overview" ${ucet.visible_overview ? 'checked' : ''}> Vidí přehled všech rezervací</label>
-        <button type="button" class="btn ghost sm op-flow-save">Uložit přehled</button>
-        <div class="owner-personal-actions" data-flow-reset-actions>
-          <button type="button" class="btn ghost sm op-flow-reset">Resetovat heslo FLOW</button>
-        </div>
-      </div>
-    ` : `
-      <p class="hint tiny">Zatím bez FLOW přístupu — zadejte e-mail a vytvořte účet.</p>
-      <label>E-mail pro FLOW
-        <input type="email" class="op-flow-email" placeholder="pracovnik@salon.cz">
-      </label>
-      <label class="check-row tight"><input type="checkbox" class="op-flow-overview-new"> Vidí přehled všech rezervací</label>
-      <div class="owner-personal-actions" data-flow-create-actions>
-        <button type="button" class="btn primary sm op-flow-create">Vytvořit FLOW přístup</button>
-      </div>
-    `}
-    </section>
     `}
   `;
 
@@ -3017,12 +3157,26 @@ function buildOwnerPersonalCard(z) {
     });
     wireOwnerStaffSluzby(card, z.id);
     card.querySelector('.op-flow-create')?.addEventListener('click', () => askCreateOwnerStaffFlow(card, z.id));
-    card.querySelector('.op-flow-save')?.addEventListener('click', () => patchOwnerStaffFlow(card, z.id));
-    card.querySelector('.op-flow-allow')?.addEventListener('click', (e) => {
-      askOwnerStaffFlowAccess(e.currentTarget.closest('.flow-access-btns'), z.id, true);
+    card.querySelector('.op-flow-on')?.addEventListener('change', async (e) => {
+      const on = e.target.checked;
+      syncFlowSwitchLabel(e.target);
+      const ok = await setOwnerStaffFlowAccess(z.id, on);
+      if (!ok) {
+        e.target.checked = !on;
+        syncFlowSwitchLabel(e.target);
+      }
     });
-    card.querySelector('.op-flow-block')?.addEventListener('click', (e) => {
-      askOwnerStaffFlowAccess(e.currentTarget.closest('.flow-access-btns'), z.id, false);
+    card.querySelector('.op-flow-overview')?.addEventListener('change', async (e) => {
+      syncFlowSwitchLabel(e.target);
+      try {
+        await patchOwnerStaffFlow(card, z.id);
+      } catch (err) {
+        e.target.checked = !e.target.checked;
+        syncFlowSwitchLabel(e.target);
+      }
+    });
+    card.querySelector('.op-flow-overview-new')?.addEventListener('change', (e) => {
+      syncFlowSwitchLabel(e.target);
     });
     card.querySelector('.op-flow-reset')?.addEventListener('click', () => {
       askResetOwnerStaffFlow(card.querySelector('[data-flow-reset-actions]'), z.id);
@@ -3177,10 +3331,11 @@ async function patchOwnerStaffFlow(card, id) {
         visible_overview: !!card.querySelector('.op-flow-overview')?.checked,
       }),
     });
-    showMsg(msg, 'Overview uložen.', true);
+    showMsg(msg, 'Přehled uložen.', true);
     await loadOwnerPersonal();
   } catch (err) {
     showMsg(msg, err.message, false);
+    throw err;
   }
 }
 
@@ -3219,10 +3374,12 @@ async function setOwnerStaffFlowAccess(id, allow) {
       method: 'PATCH',
       body: JSON.stringify({ aktivni: !!allow }),
     });
-    showMsg(msg, allow ? 'Vstup do FLOW povolen.' : 'Vstup do FLOW zablokován.', true);
+    showMsg(msg, allow ? 'FLOW zapnuto.' : 'FLOW vypnuto.', true);
     await loadOwnerPersonal();
+    return true;
   } catch (err) {
     showMsg(msg, err.message, false);
+    return false;
   }
 }
 

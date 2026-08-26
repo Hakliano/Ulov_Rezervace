@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=57">
+  <link rel="stylesheet" href="style.css?v=61">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -59,14 +59,16 @@
           <button type="button" class="tab" data-tab="ucet"><span class="tab-label">Účet</span></button>
         </div>
       </nav>
-      <a id="btn-materialnik" class="btn-gold materialnik-link hidden" href="#" target="_blank" rel="noopener">Materiálník — sklad</a>
+      <a id="btn-materialnik" class="btn-gold materialnik-link hidden" href="#" target="_blank" rel="noopener">Sklad — Materiálník</a>
       <div class="userbox">
-        <div class="avatar" id="sidebar-initials">F</div>
-        <div>
-          <strong id="sidebar-name">—</strong>
-          <span id="sidebar-salon">—</span>
+        <div class="userbox-who">
+          <div class="avatar" id="sidebar-initials">F</div>
+          <div>
+            <strong id="sidebar-name">—</strong>
+            <span id="sidebar-salon">—</span>
+          </div>
         </div>
-        <button type="button" id="btn-logout" class="icon-btn hidden" title="Odhlásit">⎋</button>
+        <button type="button" id="btn-logout" class="btn-logout hidden">Odhlásit se</button>
       </div>
     </aside>
     <div class="flow-main">
@@ -124,10 +126,17 @@
           </button>
         </div>
 
-        <button type="button" id="btn-nova-rez" class="btn cta-nova">
-          <span class="cta-plus" aria-hidden="true">＋</span>
-          Zadat rezervaci
-        </button>
+        <div class="flow-top-row" id="flow-top-row">
+          <button type="button" id="btn-nova-rez" class="btn cta-nova">
+            <span class="cta-plus" aria-hidden="true">＋</span>
+            Zadat rezervaci
+          </button>
+          <aside class="flow-today-card" aria-live="polite">
+            <p class="flow-today-clock" id="flow-today-clock">—</p>
+            <p class="flow-today-label">Kdo má dneska svátek</p>
+            <p class="flow-today-svatek" id="flow-today-svatek">—</p>
+          </aside>
+        </div>
 
         <div id="pane-mujden" class="pane">
           <div id="risky-inbox" class="risky-inbox hidden"></div>
@@ -165,9 +174,10 @@
         </div>
 
         <div id="pane-overview" class="pane pane-dash hidden">
+          <p class="hint tiny hidden" id="ov-mine-hint">Jen vaše termíny a tržby. Přehled celé provozovny zapíná Manager.</p>
           <section class="kpis" id="ov-kpis">
             <article class="kpi">
-              <div class="label">Dnes v salonu</div>
+              <div class="label" id="ov-kpi-dnes-label">Dnes v salonu</div>
               <div class="value" id="ov-kpi-dnes">—</div>
               <div class="hint">rezervace v kalendáři</div>
             </article>
@@ -198,6 +208,15 @@
             </article>
           </section>
 
+          <section class="card-lite ov-stock-card hidden" id="ov-stock-card">
+            <div class="ov-stock-head">
+              <h2 class="list-h" style="margin-top:0">Sklad</h2>
+              <a class="ov-stock-link hidden" id="ov-stock-link" href="#" target="_blank" rel="noopener">Otevřít Materiálník</a>
+            </div>
+            <p class="hint tiny" id="ov-stock-hint">Položky, které docházejí nebo jsou v kritickém minimu.</p>
+            <div id="ov-stock-body"><p class="empty">Načítám…</p></div>
+          </section>
+
           <div class="dash">
             <section class="card-lite">
               <h2 class="list-h" style="margin-top:0">Rezervace v tomto týdnu</h2>
@@ -209,14 +228,14 @@
             </section>
           </div>
 
-          <section class="card-lite ov-staff-card">
+          <section class="card-lite ov-staff-card" id="ov-staff-card">
             <h2 class="list-h" style="margin-top:0">Personál</h2>
             <p class="hint tiny">Dokončené služby a tržba podle ceníku. Fotka z webu provozovny.</p>
             <div id="ov-staff" class="staff-stats"></div>
           </section>
 
           <section class="card-lite">
-            <h2 class="list-h" style="margin-top:0">Dnes v salonu</h2>
+            <h2 class="list-h" style="margin-top:0" id="ov-today-title">Dnes v salonu</h2>
             <p id="ov-msg" class="msg" hidden></p>
             <div id="ov-list" class="list"></div>
           </section>
@@ -387,7 +406,7 @@
               <div class="staff-head">
                 <div>
                   <h2 class="owner-section-title">Staff</h2>
-                  <p class="hint tiny">Vyberte člověka vlevo. Údaje, služby, pracovní doba a přístup do FLOW jsou zvlášť.</p>
+                  <p class="hint tiny">Vlevo vyberte pracovníka. Vpravo u něj upravíte všechno — jméno, služby, směny i přístup do FLOW. Každý blok uložte jeho tlačítkem.</p>
                 </div>
                 <button type="button" class="btn primary sm" id="btn-own-add-staff">+ Přidat pracovníka</button>
               </div>
@@ -402,10 +421,16 @@
                 <label>E-mail pracovníka
                   <input type="email" id="own-add-flow-email" required placeholder="jeji@email.cz" autocomplete="off">
                 </label>
-                <label class="check-row tight">
-                  <input type="checkbox" id="own-add-flow-overview">
-                  <span>Vidí přehled všech rezervací</span>
-                </label>
+                <div class="flow-switch-row">
+                  <div class="flow-switch-copy">
+                    <span class="flow-switch-title">Vidí přehled celé provozovny</span>
+                    <span class="flow-switch-hint">Jinak vidí jen svoje termíny a čísla.</span>
+                  </div>
+                  <label class="flow-switch">
+                    <input type="checkbox" id="own-add-flow-overview" aria-label="Vidí přehled celé provozovny">
+                    <span class="flow-switch-ui" aria-hidden="true"></span>
+                  </label>
+                </div>
                 <div class="owner-personal-actions row">
                   <button type="submit" class="btn primary sm">Uložit a vytvořit FLOW</button>
                   <button type="button" class="btn ghost sm" id="btn-own-add-cancel">Zrušit</button>
@@ -466,8 +491,9 @@
             <div id="owner-section-hrisnici" class="owner-section hidden">
               <h2 class="owner-section-title">Hříšníci</h2>
               <p class="hint tiny">
-                2× Hříšníci = problematický, 3× = automatická blokace online rezervací.
-                Můžete zablokovat / odblokovat ručně, nebo přidat e-mail přímo.
+                Nedorazil 2× → uvidíte ho tady jako varování.
+                Nedorazil 3× → z webu si už termín nerezervuje.
+                E-mail můžete kdykoli zablokovat nebo odblokovat ručně.
               </p>
               <form id="form-own-blok-email" class="form own-add-staff-form">
                 <h3 class="own-subh">Zablokovat e-mail</h3>
@@ -532,6 +558,7 @@
               (záložka Heslo). Ve FLOW se nemění.
             </p>
           </div>
+          <button type="button" id="btn-logout-ucet" class="btn-logout hidden">Odhlásit se</button>
         </div>
       </section>
     </main>
@@ -728,7 +755,8 @@
     </div>
   </div>
 
-  <script src="app.js?v=69"></script>
+  <script src="svatky.js?v=1"></script>
+  <script src="app.js?v=74"></script>
   <script src="customer-card.js?v=4"></script>
 
 </body>

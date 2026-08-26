@@ -40,15 +40,10 @@ def require_flow_owner(request):
 
 
 def require_flow_overview(request):
-    """Přehled a statistiky — Manager, nebo Staff s Visible Overview."""
+    """Přehled statistik — každý přihlášený. Bez Visible Overview jen vlastní data."""
     user = get_flow_user_from_request(request)
     if not user:
         return None, Response({'detail': 'Nejste přihlášeni.'}, status=status.HTTP_401_UNAUTHORIZED)
-    if not flow_je_owner(user) and not user.visible_overview:
-        return None, Response(
-            {'detail': 'Nemáte zapnuté Visible Overview.'},
-            status=status.HTTP_403_FORBIDDEN,
-        )
     return user, None
 
 
@@ -800,7 +795,10 @@ class FlowOwnerStatistikyView(APIView):
         user, err = require_flow_overview(request)
         if err:
             return err
+        salon_scope = flow_je_owner(user) or bool(user.visible_overview)
         qs = Rezervace.objects.filter(salon=user.salon)
+        if not salon_scope:
+            qs = qs.filter(zamestnanec_id=flow_zam(user).id)
         now = timezone.localtime()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today_start + timedelta(days=1)
@@ -840,28 +838,30 @@ class FlowOwnerStatistikyView(APIView):
             for row in sluzby_qs
         ]
         people = []
-        staff = (
-            Zamestnanec.objects.filter(salon=user.salon, aktivni=True)
-            .order_by('poradi', 'id')
-        )
-        for z in staff:
-            z_done = done.filter(zamestnanec=z)
-            z_month = done_month.filter(zamestnanec=z)
-            people.append({
-                'id': z.id,
-                'jmeno': z.jmeno,
-                'fotka': z.fotka or '',
-                'dokonceno': z_done.count(),
-                'dokonceno_mesic': z_month.count(),
-                'trzba': _trzba_dokoncenych(z_done),
-                'trzba_mesic': _trzba_dokoncenych(z_month),
-            })
+        if salon_scope:
+            staff = (
+                Zamestnanec.objects.filter(salon=user.salon, aktivni=True)
+                .order_by('poradi', 'id')
+            )
+            for z in staff:
+                z_done = done.filter(zamestnanec=z)
+                z_month = done_month.filter(zamestnanec=z)
+                people.append({
+                    'id': z.id,
+                    'jmeno': z.jmeno,
+                    'fotka': z.fotka or '',
+                    'dokonceno': z_done.count(),
+                    'dokonceno_mesic': z_month.count(),
+                    'trzba': _trzba_dokoncenych(z_done),
+                    'trzba_mesic': _trzba_dokoncenych(z_month),
+                })
         tyden_pocty = []
         for i in range(7):
             d0 = week_start + timedelta(days=i)
             d1 = d0 + timedelta(days=1)
             tyden_pocty.append(tyden_qs.filter(zacatek__gte=d0, zacatek__lt=d1).count())
         return Response({
+            'rozsah': 'salon' if salon_scope else 'moje',
             'celkem_rezervaci': total,
             'dokonceno': dokonceno,
             'dokonceno_mesic': done_month.count(),

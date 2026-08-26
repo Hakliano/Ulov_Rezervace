@@ -11,6 +11,7 @@ from partner_admin.materialnik_client import (
     MaterialnikUnavailable,
     confirm_consume,
     consume_preview,
+    stock_summary,
 )
 from partner_admin.models import MODUL_MATERIALNIK, PartnerModul
 from partner_admin.services_moduly import partner_modul
@@ -103,4 +104,35 @@ class FlowMaterialnikSpotrebaView(APIView):
             )
         except MaterialnikRejected as exc:
             return Response({'detail': exc.detail}, status=exc.status_code if exc.status_code < 500 else 400)
+        return Response(data)
+
+
+class FlowMaterialnikPrehledView(APIView):
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def get(self, request):
+        user = _flow_user(request)
+        row, err = _aktivni_modul_nebo_404(user.salon)
+        if err:
+            return err
+        partner = user.salon.partner_nastaveni
+        empty = {
+            'unavailable': True,
+            'kpi': {'below': 0, 'critical': 0, 'shopping': 0, 'total': 0},
+            'items': [],
+        }
+        try:
+            data = stock_summary(
+                tenant_uuid=partner.tenant_uuid,
+                hmac_key=row.hmac_key,
+            )
+        except MaterialnikUnavailable:
+            return Response(empty, status=200)
+        except MaterialnikRejected:
+            return Response(empty, status=200)
+        data = data or {}
+        data.setdefault('unavailable', False)
+        data.setdefault('items', [])
+        data.setdefault('kpi', empty['kpi'])
         return Response(data)

@@ -23,7 +23,7 @@ from .models import (
     Tenant,
     Unit,
 )
-from .services import stock_qty, apply_lines, seed_units
+from .services import stock_qty, apply_lines, seed_units, row_status as _row_status
 from .tenant import set_tenant_id
 from .ulov import UlovAuthError, ulov_catalog, ulov_session
 
@@ -77,23 +77,6 @@ def logout_view(request):
     response = redirect('sklad:login')
     response.delete_cookie('materialnik_token')
     return response
-
-
-def _row_status(material, qty):
-    min_q = material.min_quantity or Decimal('0')
-    crit = material.critical_quantity
-    if qty <= 0:
-        return 'critical', 'Kriticky nízké', 4
-    if crit is not None and qty <= crit:
-        return 'critical', 'Kriticky nízké', 12
-    if min_q > 0 and qty < (min_q * Decimal('0.5')):
-        return 'low', 'Nízké', 28
-    if min_q > 0 and qty < min_q:
-        return 'warn', 'Pod minimem', max(8, int((qty / min_q) * 100))
-    pct = 100
-    if min_q > 0:
-        pct = min(100, int((qty / min_q) * 100))
-    return 'ok', 'V pořádku', pct
 
 
 @login_required_sklad
