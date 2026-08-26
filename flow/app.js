@@ -2742,9 +2742,11 @@ async function loadOwnerHrisnici(page = ownerHrisniciPage) {
       let stav = 'V seznamu';
       if (z.blokovan_v_salonu) stav = 'Blokován';
       else if (z.problematicky) stav = 'Problematický';
+      const krat = Number(z.pocet_no_show) || 0;
+      const kratLabel = krat > 0 ? `${krat}× Hříšníci` : 'Ručně zablokován';
       const info = document.createElement('div');
       info.innerHTML = `<strong>${esc(z.email || '—')}</strong>
-        <span>${esc(z.jmeno || '')} · ${esc(z.pocet_no_show)}× Hříšníci · ${esc(stav)} · ${formatOwnerDateTime(z.posledni)}</span>`;
+        <span>${esc(z.jmeno || '')} · ${esc(kratLabel)} · ${esc(stav)} · ${formatOwnerDateTime(z.posledni)}</span>`;
       row.appendChild(info);
       if (z.email) {
         const btn = document.createElement('button');

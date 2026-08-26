@@ -123,12 +123,14 @@ def hledat_hrisniky(q='', page=1, page_size=25, salon_id=None):
             'pravidlo_blokovani': BLOKOVAN_OD,
         }
 
+    q = (q or '').strip()
     qs = NoShowZaznam.objects.filter(salon_id=salon_id)
     if q:
         qs = qs.filter(Q(jmeno__icontains=q) | Q(email__icontains=q))
 
     by_key = defaultdict(lambda: {
         'email': '', 'jmeno': '', 'pocet': 0, 'posledni': None, 'hash': '',
+        'blokovan': False,
     })
     for z in qs.order_by('-vytvoreno'):
         key = normalize_email(z.email) or z.email_hash or f'row-{z.id}'
@@ -142,8 +144,45 @@ def hledat_hrisniky(q='', page=1, page_size=25, salon_id=None):
         if rec['posledni'] is None:
             rec['posledni'] = z.vytvoreno
 
+    blocked_zaks = list(Zakaznik.objects.filter(salon_id=salon_id, blokovan=True))
+    blocked_emails = {normalize_email(z.email) for z in blocked_zaks if z.email}
+    blocked_hashes = {z.email_hash for z in blocked_zaks if z.email_hash}
+    q_lower = q.lower()
+
+    for zak in blocked_zaks:
+        key = normalize_email(zak.email) or zak.email_hash or f'zak-{zak.id}'
+        if key in by_key:
+            rec = by_key[key]
+            rec['blokovan'] = True
+            if zak.email and not rec['email']:
+                rec['email'] = zak.email
+            if not rec['jmeno']:
+                rec['jmeno'] = zak.nick
+            continue
+        if q_lower:
+            hay = f'{zak.email} {zak.nick}'.lower()
+            if q_lower not in hay:
+                continue
+        rec = by_key[key]
+        rec['email'] = zak.email or rec['email']
+        rec['jmeno'] = zak.nick or rec['jmeno']
+        rec['hash'] = zak.email_hash or rec['hash']
+        rec['blokovan'] = True
+        rec['posledni'] = zak.vytvoreno
+
     hrisnici = list(by_key.values())
-    hrisnici.sort(key=lambda x: (-x['pocet'], -(x['posledni'].timestamp() if x['posledni'] else 0)))
+    for rec in hrisnici:
+        e = normalize_email(rec['email'])
+        rec['blokovan'] = bool(
+            rec.get('blokovan')
+            or (e and e in blocked_emails)
+            or (rec['hash'] and rec['hash'] in blocked_hashes)
+        )
+    hrisnici.sort(key=lambda x: (
+        0 if x['blokovan'] else 1,
+        -x['pocet'],
+        -(x['posledni'].timestamp() if x['posledni'] else 0),
+    ))
 
     total = len(hrisnici)
     page = max(1, page)
@@ -152,20 +191,14 @@ def hledat_hrisniky(q='', page=1, page_size=25, salon_id=None):
 
     vysledky = []
     for item in page_items:
-        e = normalize_email(item['email'])
         pocet = item['pocet']
-        blokovan = je_blokovan_v_salonu(e, salon_id) if e else False
-        if not blokovan and item['hash']:
-            blokovan = Zakaznik.objects.filter(
-                salon_id=salon_id, email_hash=item['hash'], blokovan=True,
-            ).exists()
         vysledky.append({
             'email': item['email'],
             'jmeno': item['jmeno'],
             'pocet_no_show': pocet,
             'problematicky': pocet >= PROBLEMATICKY_OD,
             'kriticky': pocet >= BLOKOVAN_OD,
-            'blokovan_v_salonu': blokovan,
+            'blokovan_v_salonu': item['blokovan'],
             'posledni': item['posledni'],
         })
 
