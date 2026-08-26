@@ -165,6 +165,17 @@ def prepnout_personu(user, persona: str):
     raise ValueError('Neplatná persona. Použijte majitel nebo pracovnik.')
 
 
+def _flow_moduly(user):
+    """Jen aktivní moduly — vypnutý Materiálník ve FLOW neexistuje."""
+    from partner_admin.services_moduly import materialnik_pro_me
+
+    out = {}
+    info = materialnik_pro_me(user.salon)
+    if info:
+        out['materialnik'] = info
+    return out
+
+
 def flow_user_do_dict(user):
     active = flow_zam(user)
     primary = getattr(user, '_primary_zamestnanec', None) or user.zamestnanec
@@ -199,6 +210,7 @@ def flow_user_do_dict(user):
         'ceka_volno_pocet': ceka_volno,
         'po_splatnosti_dni': po_splatnosti_dni,
         'povolit_technicke_nastaveni': povolit_technicke_nastaveni,
+        'moduly': _flow_moduly(user),
         'salon': {
             'id': user.salon_id,
             'name': user.salon.name,

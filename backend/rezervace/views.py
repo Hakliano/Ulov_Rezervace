@@ -1061,16 +1061,17 @@ class AdminRezervaceDokoncenoView(APIView):
         denied = _kontrola_rezervace(request, pk, rezervace)
         if denied:
             return denied
-        if rezervace.stav in ('zakaznik_storno', 'salon_storno', 'dokonceno', 'no_show'):
-            return Response({'detail': 'Tuto rezervaci nelze dokončit.'}, status=400)
+        from rezervace.services.dokonceni import NelzeDokoncit, oznacit_dokonceno
 
-        pred = AdminRezervaceSerializer(rezervace).data
-        rezervace.stav = 'dokonceno'
-        if not rezervace.dokonceno_at:
-            rezervace.dokonceno_at = timezone.now()
-        rezervace.save(update_fields=['stav', 'dokonceno_at', 'aktualizovano'])
-        po = AdminRezervaceSerializer(rezervace).data
-        log_historie(rezervace, 'admin', 'rezervace proběhla', pred, po, request=request)
+        try:
+            _, po = oznacit_dokonceno(
+                rezervace,
+                log_fn=lambda r, pred, po: log_historie(
+                    r, 'admin', 'rezervace proběhla', pred, po, request=request,
+                ),
+            )
+        except NelzeDokoncit as exc:
+            return Response({'detail': str(exc)}, status=400)
         return Response(po)
 
 

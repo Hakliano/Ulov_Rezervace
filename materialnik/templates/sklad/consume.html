@@ -1,0 +1,18 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Odečet spotřeby{% endblock %}
+{% block content %}
+<p class="muted">Když po službě zadáváte spotřebu ručně, vyplňte, od čeho kolik jste vzali.</p>
+<section class="card">
+  <form method="post" class="row">
+    {% csrf_token %}
+    <label>Materiál
+      <select name="material" required>
+        {% for m in materials %}<option value="{{ m.pk }}">{{ m.name }} ({{ m.unit.code }})</option>{% endfor %}
+      </select>
+    </label>
+    <label>Množství <input name="quantity" required></label>
+    <label>Poznámka <input name="note" placeholder="např. jiný materiál než v receptuře"></label>
+    <button type="submit">Odečíst</button>
+  </form>
+</section>
+{% endblock %}

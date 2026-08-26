@@ -73,6 +73,13 @@ class PartnerNastaveni(models.Model):
             '(rezervační pravidla, e-mailové šablony, audit log).'
         ),
     )
+    tenant_uuid = models.UUIDField(
+        'veřejné ID tenanta',
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        help_text='Stabilní identita salonu vůči Materiálníku a dalším modulům. Není to interní salon.id.',
+    )
     aktualizovano = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -207,3 +214,90 @@ class TechnickaChyba(models.Model):
 
     def __str__(self):
         return f'{self.cas:%d.%m.%Y %H:%M} — {self.typ_chyby}'
+
+
+MODUL_MATERIALNIK = 'materialnik'
+
+
+class ModulKatalog(models.Model):
+    kod = models.SlugField('kód', max_length=40, unique=True)
+    nazev = models.CharField('název', max_length=80)
+    popis = models.CharField('popis', max_length=300, blank=True)
+    razeni = models.PositiveSmallIntegerField('pořadí', default=0)
+
+    class Meta:
+        verbose_name = 'modul v katalogu'
+        verbose_name_plural = 'katalog modulů'
+        ordering = ['razeni', 'kod']
+
+    def __str__(self):
+        return self.nazev
+
+
+class PartnerModul(models.Model):
+    STAV_PENDING = 'pending'
+    STAV_ACTIVE = 'active'
+    STAV_INACTIVE = 'inactive'
+    STAV_ERROR = 'error'
+    STAVY = [
+        (STAV_PENDING, 'Zapíná se'),
+        (STAV_ACTIVE, 'Aktivní'),
+        (STAV_INACTIVE, 'Vypnuto'),
+        (STAV_ERROR, 'Chyba'),
+    ]
+
+    salon = models.ForeignKey(Salon, related_name='moduly', on_delete=models.CASCADE)
+    modul = models.ForeignKey(ModulKatalog, related_name='partneri', on_delete=models.PROTECT)
+    status = models.CharField(max_length=20, choices=STAVY, default=STAV_INACTIVE, db_index=True)
+    hmac_key = models.CharField(max_length=128, blank=True)
+    provisioning_error = models.TextField('chyba provisioningu', blank=True)
+    activated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    aktualizovano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'modul partnera'
+        verbose_name_plural = 'moduly partnerů'
+        unique_together = [('salon', 'modul')]
+
+    def __str__(self):
+        return f'{self.salon_id}:{self.modul.kod}={self.status}'
+
+    @property
+    def je_aktivni(self):
+        return self.status == self.STAV_ACTIVE
+
+
+class IntegrationOutbox(models.Model):
+    STAV_PENDING = 'pending'
+    STAV_SENT = 'sent'
+    STAV_FAILED = 'failed'
+    STAV_SKIPPED = 'skipped'
+    STAVY = [
+        (STAV_PENDING, 'Čeká'),
+        (STAV_SENT, 'Odesláno'),
+        (STAV_FAILED, 'Chyba'),
+        (STAV_SKIPPED, 'Přeskočeno'),
+    ]
+
+    salon = models.ForeignKey(Salon, related_name='integration_outbox', on_delete=models.CASCADE)
+    event_id = models.CharField(max_length=64, unique=True)
+    event_type = models.CharField(max_length=80)
+    payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=20, choices=STAVY, default=STAV_PENDING, db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    last_error = models.CharField(max_length=400, blank=True)
+    next_attempt_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'integration outbox'
+        verbose_name_plural = 'integration outbox'
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['status', 'next_attempt_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.event_type}:{self.event_id[:12]}'

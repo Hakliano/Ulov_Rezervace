@@ -1,0 +1,33 @@
+{% extends 'sklad/base.html' %}
+{% block content %}
+<div class="page-head">
+  <p class="muted" style="margin:0">Katalog skladu. Stav se počítá z pohybů, nepřepisuje se.</p>
+  <a class="btn" href="{% url 'sklad:material_new' %}">Přidat materiál</a>
+</div>
+<section class="card">
+  <table>
+    <tr><th>Název</th><th>Stav</th><th>Min.</th><th>Jedn.</th><th>Dodavatel</th><th></th><th></th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>
+        <span class="mat-name">{{ r.m.name }}</span>
+        {% if not r.m.active %}<span class="mat-sub">neaktivní</span>{% endif %}
+      </td>
+      <td>
+        <div class="row" style="align-items:center">
+          {{ r.qty }}
+          <div class="bar {{ r.status }}"><span style="width:{{ r.pct }}%"></span></div>
+        </div>
+      </td>
+      <td>{{ r.m.min_quantity }}</td>
+      <td>{{ r.m.unit.code }}</td>
+      <td>{{ r.m.primary_supplier.name|default:"—" }}</td>
+      <td><span class="pill {{ r.status }}">{{ r.status_label }}</span></td>
+      <td><a href="{% url 'sklad:material_edit' r.m.pk %}">Upravit</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="muted">Zatím žádné materiály.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

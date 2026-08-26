@@ -132,3 +132,52 @@ class FlowOwnerPersonalTests(TestCase):
         self.assertTrue(flow.json()['docasne_heslo'])
         self.assertIn('detail', flow.json())
 
+    def test_owner_sets_staff_services_without_wiping_others(self):
+        from rezervace.models import ZamestnanecSluzba
+        from salons.models import CenikPolozka
+
+        strih = CenikPolozka.objects.create(
+            salon=self.salon, nazev='Střih', cena=500, delka_minut=30, aktivni=True, poradi=1,
+        )
+        barva = CenikPolozka.objects.create(
+            salon=self.salon, nazev='Barva', cena=900, delka_minut=60, aktivni=True, poradi=2,
+        )
+        other = Zamestnanec.objects.create(
+            salon=self.salon,
+            jmeno='Other',
+            role=Zamestnanec.ROLE_ZAMESTNANEC,
+            prihlasovaci_jmeno='other-i4',
+            aktivni=True,
+        )
+        ZamestnanecSluzba.objects.create(zamestnanec=other, sluzba=strih)
+
+        token = self._login('owner-i4@test.local', 'Heslo1234')
+        listing = self.client.get('/api/flow/owner/personal/', HTTP_X_FLOW_TOKEN=token)
+        self.assertEqual(listing.status_code, 200)
+        body = listing.json()
+        self.assertEqual({s['nazev'] for s in body['sluzby']}, {'Střih', 'Barva'})
+
+        put = self.client.put(
+            f'/api/flow/owner/personal/{self.staff.id}/',
+            data={'sluzby_ids': [barva.id]},
+            content_type='application/json',
+            HTTP_X_FLOW_TOKEN=token,
+        )
+        self.assertEqual(put.status_code, 200, put.content)
+        self.assertEqual(put.json()['sluzby_ids'], [barva.id])
+        self.assertEqual(
+            set(ZamestnanecSluzba.objects.filter(zamestnanec=other).values_list('sluzba_id', flat=True)),
+            {strih.id},
+        )
+
+        reset = self.client.put(
+            f'/api/flow/owner/personal/{self.staff.id}/',
+            data={'sluzby_ids': []},
+            content_type='application/json',
+            HTTP_X_FLOW_TOKEN=token,
+        )
+        self.assertEqual(reset.status_code, 200)
+        self.assertEqual(reset.json()['sluzby_ids'], [])
+        self.assertFalse(ZamestnanecSluzba.objects.filter(zamestnanec=self.staff).exists())
+        self.assertTrue(ZamestnanecSluzba.objects.filter(zamestnanec=other, sluzba=strih).exists())
+

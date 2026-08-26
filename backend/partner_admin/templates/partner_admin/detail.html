@@ -105,6 +105,54 @@
       </div>
     </form>
   </section>
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Moduly</p>
+        <h2>Materiálník</h2>
+      </div>
+      {% if materialnik_modul %}
+        <span class="badge badge-{% if materialnik_modul.status == 'active' %}active{% elif materialnik_modul.status == 'error' %}overdue{% else %}neutral{% endif %}">
+          {{ materialnik_modul.get_status_display }}
+        </span>
+      {% else %}
+        <span class="badge badge-neutral">Vypnuto</span>
+      {% endif %}
+    </div>
+    <p class="muted">
+      Samostatný sklad. Funguje i bez FLOW. Personál se přihlásí stejným e-mailem a heslem.
+      Když je vypnutý, ve FLOW o něm není žádná zmínka a nic se neposílá.
+    </p>
+    {% if materialnik_modul and materialnik_modul.status == 'error' and materialnik_modul.provisioning_error %}
+      <p class="dev-warning">{{ materialnik_modul.provisioning_error }}</p>
+    {% endif %}
+    {% if materialnik_modul and materialnik_modul.status == 'active' and materialnik_public_url %}
+      <p class="form-note">Odkaz pro partnera: <a href="{{ materialnik_public_url }}" target="_blank" rel="noopener">{{ materialnik_public_url }}</a></p>
+    {% endif %}
+    <div class="form-actions">
+      {% if not materialnik_modul or materialnik_modul.status != 'active' %}
+        <form method="post" action="{% url 'partner_admin:nastavit_materialnik' salon.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="zapnout" value="1">
+          <button class="btn btn-primary" type="submit">Zapnout Materiálník</button>
+        </form>
+      {% endif %}
+      {% if materialnik_modul and materialnik_modul.status == 'active' %}
+        <form method="post" action="{% url 'partner_admin:nastavit_materialnik' salon.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="zapnout" value="0">
+          <button class="btn btn-secondary" type="submit">Vypnout Materiálník</button>
+        </form>
+      {% endif %}
+      {% if materialnik_modul and materialnik_modul.status == 'error' %}
+        <form method="post" action="{% url 'partner_admin:nastavit_materialnik' salon.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="zapnout" value="1">
+          <button class="btn btn-secondary" type="submit">Zkusit znovu</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
   {% endif %}
 
   {% if active_tab == 'parovani' %}

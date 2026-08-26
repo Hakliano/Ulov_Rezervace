@@ -1,0 +1,14 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Kategorie{% endblock %}
+{% block content %}
+<section class="card">
+  <ul class="plain-list">
+    {% for c in categories %}<li>{{ c.name }}</li>{% empty %}<li class="muted">Zatím žádné.</li>{% endfor %}
+  </ul>
+  <form method="post" class="row" style="margin-top:1rem">
+    {% csrf_token %}
+    <label>Název <input name="name" required></label>
+    <button type="submit">Přidat</button>
+  </form>
+</section>
+{% endblock %}

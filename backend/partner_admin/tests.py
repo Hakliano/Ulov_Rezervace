@@ -184,7 +184,10 @@ class PartnerAdminTests(TestCase):
 
     def test_detail_ma_sablony_upozorneni(self):
         self.client.force_login(self.superuser)
-        response = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        response = self.client.get(
+            reverse('partner_admin:detail', args=[self.salon.id]),
+            {'tab': 'upozorneni'},
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '1. upomínka')
         self.assertContains(response, '2. upomínka')
@@ -312,3 +315,32 @@ class PartnerAdminTests(TestCase):
         self.assertEqual(response.status_code, 302)
         platba.refresh_from_db()
         self.assertFalse(platba.faktura_pdf)
+
+    def test_detail_ukazuje_materialnik_vypnuto(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Materiálník')
+        self.assertContains(response, 'Zapnout Materiálník')
+
+    def test_zapnout_materialnik_stub(self):
+        self.client.force_login(self.superuser)
+        with self.settings(MATERIALNIK_STUB=True, MATERIALNIK_PUBLIC_URL='http://127.0.0.1:8001'):
+            response = self.client.post(
+                reverse('partner_admin:nastavit_materialnik', args=[self.salon.id]),
+                {'zapnout': '1'},
+            )
+        self.assertEqual(response.status_code, 302)
+        from partner_admin.models import PartnerModul
+        row = PartnerModul.objects.get(salon=self.salon, modul__kod='materialnik')
+        self.assertEqual(row.status, PartnerModul.STAV_ACTIVE)
+        self.assertTrue(row.hmac_key)
+
+        with self.settings(MATERIALNIK_STUB=True):
+            response = self.client.post(
+                reverse('partner_admin:nastavit_materialnik', args=[self.salon.id]),
+                {'zapnout': '0'},
+            )
+        self.assertEqual(response.status_code, 302)
+        row.refresh_from_db()
+        self.assertEqual(row.status, PartnerModul.STAV_INACTIVE)

@@ -1,0 +1,16 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Upozornění{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="feed">
+    {% for a in items %}
+    <article>
+      <strong>{{ a.material.name }}</strong>
+      <span class="muted">{{ a.type }} · {{ a.created_at|timesince }}</span>
+    </article>
+    {% empty %}
+    <p class="muted">Žádná otevřená upozornění.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

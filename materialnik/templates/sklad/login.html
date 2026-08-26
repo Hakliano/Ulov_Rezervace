@@ -1,0 +1,17 @@
+{% extends 'sklad/base.html' %}
+{% block title %}Přihlášení{% endblock %}
+{% block login %}
+<div class="login-wrap">
+  <section class="card login-card">
+    <img src="https://haklweb.b-cdn.net/modernik/materialnik_logo.webp" alt="Materiálník" width="248" height="106">
+    <p class="muted">Stejný e-mail a heslo jako do FLOW / správy webu.</p>
+    {% if error %}<p class="msg error">{{ error }}</p>{% endif %}
+    <form method="post" class="stack">
+      {% csrf_token %}
+      <label>E-mail <input type="email" name="email" value="{{ email|default:'' }}" required autocomplete="username"></label>
+      <label>Heslo <input type="password" name="password" required autocomplete="current-password"></label>
+      <button type="submit">Přihlásit</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Materiály ke službě{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="muted" style="margin:0">Seznam toho, co se u služby může spotřebovat. Množství personál zadá po práci — typické číslo je jen nápověda, nic se samo neodečte.</p>
+  <a class="btn" href="{% url 'sklad:recipe_new' %}">Přidat ke službě</a>
+</div>
+
+{% for rec in recipes %}
+<section class="card recipe-card">
+  <div class="recipe-card-head">
+    <div>
+      <h2>{{ rec.service_mapping.name_snapshot }}</h2>
+      <p class="muted">{% with n=rec.lines.all|length %}{{ n }} {% if n == 1 %}materiál{% elif n > 1 and n < 5 %}materiály{% else %}materiálů{% endif %}{% endwith %}</p>
+    </div>
+    <a class="btn ghost" href="{% url 'sklad:recipe_edit' rec.pk %}">Upravit</a>
+  </div>
+  <ul class="plain-list">
+    {% for line in rec.lines.all %}
+      <li>{{ line.material.name }}{% if line.quantity is not None %} — obvykle {{ line.quantity|floatformat:"-3" }} {{ line.unit.code }}{% else %} <span class="muted">· množství po práci</span>{% endif %}</li>
+    {% empty %}
+      <li class="muted">Zatím bez materiálů.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% empty %}
+<section class="card">
+  <p class="muted">Zatím žádný seznam. Přidejte ke službě materiály, které se u ní můžou použít.</p>
+</section>
+{% endfor %}
+
+{% if unused_mappings %}
+<section class="card">
+  <h2>Služby bez seznamu</h2>
+  <ul class="plain-list">
+    {% for map in unused_mappings %}
+      <li>{{ map.name_snapshot }}</li>
+    {% endfor %}
+  </ul>
+  <a class="btn ghost" href="{% url 'sklad:recipe_new' %}">Přidat ke službě</a>
+</section>
+{% endif %}
+{% endblock %}

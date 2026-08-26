@@ -9,10 +9,12 @@ const STAV_LABEL = {
   zakaznik_storno: 'Zrušeno zákazníkem',
   salon_storno: 'Zrušeno salonem',
   dokonceno: 'Dokončeno',
-  no_show: 'NO-show',
+  no_show: 'Hříšníci',
 };
 
 const DEN_SHORT = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+const OWNER_MENU_TABS = ['personal', 'persona', 'volno', 'hrisnici', 'platby', 'pravidla', 'sablony', 'audit'];
+const TABS_WITH_NOVA = ['mujden', 'mesic', 'overview', 'karty'];
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -20,7 +22,7 @@ const $$ = (sel) => [...document.querySelectorAll(sel)];
 let ownerPersonalCache = [];
 let ownerPersonalSelectedId = null;
 let ownerStaffOptionsCache = null;
-let ownerPrirazeniCache = null;
+let ownerSluzbyCache = [];
 
 let currentUser = null;
 let dayOffset = 0;
@@ -80,6 +82,42 @@ function showMsg(el, text, ok) {
   el.hidden = false;
   el.textContent = text;
   el.className = ok ? 'msg ok' : 'msg error';
+}
+
+let flowConfirmResolver = null;
+
+function askFlowConfirm({
+  title = 'Potvrdit',
+  text = '',
+  okLabel = 'Ano',
+  cancelLabel = 'Zpět',
+} = {}) {
+  return new Promise((resolve) => {
+    if (flowConfirmResolver) flowConfirmResolver(false);
+    const modal = $('#flow-confirm-modal');
+    const titleEl = $('#flow-confirm-title');
+    const textEl = $('#flow-confirm-text');
+    const okBtn = $('#flow-confirm-ok');
+    const cancelBtn = $('#flow-confirm-cancel');
+    if (!modal || !okBtn) {
+      resolve(window.confirm(text || title));
+      return;
+    }
+    if (titleEl) titleEl.textContent = title;
+    if (textEl) textEl.textContent = text;
+    okBtn.textContent = okLabel;
+    if (cancelBtn) cancelBtn.textContent = cancelLabel;
+    flowConfirmResolver = resolve;
+    modal.classList.remove('hidden');
+    okBtn.focus();
+  });
+}
+
+function closeFlowConfirm(ok) {
+  $('#flow-confirm-modal')?.classList.add('hidden');
+  const resolve = flowConfirmResolver;
+  flowConfirmResolver = null;
+  if (resolve) resolve(!!ok);
 }
 
 /** Výrazné varování po stornu rezervace se zaplacenou zálohou (partner ↔ zákazník). */
@@ -170,8 +208,7 @@ async function previewFlowEmail(rezervaceId, typ, extra = {}) {
 /** Náhled → úprava → výsledek { predmet, text } | null (zrušeno). */
 async function reviewCustomerEmail(rezervaceId, typ, extra = {}, sheetOpts = {}) {
   const draft = await previewFlowEmail(rezervaceId, typ, extra);
-  if (!draft?.ma_email && typ !== 'storno') {
-    // U plateb / NO-show bez e-mailu nemá smysl odesílat
+  if (!draft?.ma_email && typ !== 'storno' && typ !== 'platba' && typ !== 'zaloha') {
     throw new Error('Rezervace nemá e-mail zákazníka.');
   }
   let hint = sheetOpts.hint || '';
@@ -378,7 +415,7 @@ function applyAbsenceFormUi(user = currentUser) {
     form.classList.add('hidden');
     if (hint) {
       hint.classList.remove('hidden');
-      hint.textContent = 'Účet Manager nepracuje — dovolená sem nepatří. Zapněte „Manager také pracuje“, nebo zadejte absenci Staff ve Správě.';
+      hint.textContent = 'Účet Manager nepracuje — dovolená sem nepatří. Zapněte „Manager obsluhuje“, nebo zadejte absenci ve Volno.';
     }
     return;
   }
@@ -469,21 +506,27 @@ function goFlowBack() {
 }
 
 function setTab(name) {
-  if (name === 'sprava' && !isOwnerUser()) {
+  if (name === 'sprava') name = isOwnerUser() ? 'personal' : 'mujden';
+  if (OWNER_MENU_TABS.includes(name) && !isOwnerUser()) {
     name = 'mujden';
   }
   pushFlowNav(name);
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
   $$('.pane').forEach((p) => p.classList.add('hidden'));
+  $('#btn-nova-rez')?.classList.toggle('hidden', !TABS_WITH_NOVA.includes(name));
+  if (OWNER_MENU_TABS.includes(name)) {
+    $('#pane-sprava')?.classList.remove('hidden');
+    openOwnerSection(name);
+    return;
+  }
   const pane = $(`#pane-${name}`);
   if (pane) pane.classList.remove('hidden');
   if (name === 'mujden') loadWeekList(false);
   if (name === 'mesic') loadMonth();
   if (name === 'rozvrh') loadRozvrh();
-  if (name === 'overview') loadWeekList(true);
+  if (name === 'overview') loadOverview();
   if (name === 'absence') loadAbsence();
   if (name === 'mail') loadMailList();
-  if (name === 'sprava') showOwnerAdminHome();
 }
 
 function applyFlowBanner(salon) {
@@ -518,18 +561,36 @@ function showLoggedIn(user) {
     ? 'Manager'
     : (user.zamestnanec?.jmeno || 'Staff');
   $('#home-salon').textContent = user.salon?.name || '—';
+  const displayName = $('#home-name').textContent;
+  const salonName = $('#home-salon').textContent;
+  if ($('#sidebar-name')) $('#sidebar-name').textContent = displayName;
+  if ($('#sidebar-salon')) $('#sidebar-salon').textContent = salonName;
+  if ($('#sidebar-initials')) {
+    const parts = displayName.split(/\s+/).filter(Boolean);
+    $('#sidebar-initials').textContent = parts.length >= 2
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : displayName.slice(0, 2).toUpperCase();
+  }
   $('#home-email').textContent = user.email || '—';
   $('#home-overview').textContent = user.visible_overview ? 'zapnuto' : 'vypnuto';
   applyFlowBanner(user.salon);
   const ovTab = $('#tab-overview');
-  if (user.visible_overview) ovTab.classList.remove('hidden');
-  else ovTab.classList.add('hidden');
+  if (ovTab) {
+    const showOv = owner || !!user.visible_overview;
+    ovTab.classList.toggle('hidden', !showOv);
+  }
   $('#pwd-box-staff')?.classList.toggle('hidden', owner);
   $('#pwd-box-owner')?.classList.toggle('hidden', !owner);
-  $('#tab-sprava')?.classList.toggle('hidden', !owner);
+  $$('.tab-owner').forEach((t) => {
+    const tech = t.classList.contains('tab-tech');
+    const allow = owner && (!tech || !!user.povolit_technicke_nastaveni);
+    t.classList.toggle('hidden', !allow);
+  });
+  $('#tab-sprava')?.classList.add('hidden');
+  $('#tab-rozvrh')?.classList.toggle('hidden', owner);
   // Badge vedle salonu je redundantní, když je nadpis už „Manager“.
   $('#home-role-badge')?.classList.add('hidden');
-  // Manager: dovolená jen ve Správě → Žádosti o volno. Staff (včetně pracovní persony) má záložku Dovolená.
+  // Manager: dovolená ve Volno. Staff má záložku Dovolená.
   const absTab = $('#tab-absence');
   if (absTab) {
     absTab.classList.toggle('hidden', owner);
@@ -546,25 +607,27 @@ function showLoggedIn(user) {
   if (roleEl) roleEl.textContent = owner ? 'Manager' : 'Staff';
   applyPersonaUi(user);
   applyTechnickeNastaveniUi(user);
-  // Staff: pracovní doba jen view; majitel ji mění ve Správě → Staff
+  applyMaterialnikUi(user);
+  // Staff: pracovní doba jen view; majitel ji mění ve Staff
   const rozHint = $('#rozvrh-hint');
   const rozSave = $('#btn-rozvrh-save');
   if (!owner) {
     if (rozHint) {
-      rozHint.textContent = 'Vaše pracovní doba (jen náhled). Změnu může udělat jen Manager ve Správě.';
+      rozHint.textContent = 'Vaše pracovní doba (jen náhled). Změnu může udělat jen Manager ve Staff.';
     }
     rozSave?.classList.add('hidden');
   } else {
     if (rozHint) {
-      rozHint.textContent = 'Účet Manager nemá vlastní rozvrh služeb. Rozvrh Staff upravíte ve Správě → Staff.';
+      rozHint.textContent = 'Účet Manager nemá vlastní rozvrh služeb. Rozvrh Staff upravíte v Personál → Staff.';
     }
     rozSave?.classList.add('hidden');
   }
   resetFlowNav(null);
   flowNavSilent = true;
-  setTab('mujden');
+  const startTab = (owner || user.visible_overview) ? 'overview' : 'mujden';
+  setTab(startTab);
   flowNavSilent = false;
-  flowNavCurrent = 'mujden';
+  flowNavCurrent = startTab;
   updateFlowBackBtn();
   refreshTopAlerts();
 }
@@ -585,6 +648,8 @@ function showLogin() {
   $('#btn-logout').classList.add('hidden');
   $('#shell').classList.remove('app-mode');
   $('#hero-brand').classList.remove('compact');
+  $('#btn-materialnik')?.classList.add('hidden');
+  closeMaterialnikModal();
 }
 
 function renderRezervaceList(container, items, { readonly = false, emptyText = 'Žádné rezervace.', withStaff = false } = {}) {
@@ -612,7 +677,7 @@ function renderRezervaceList(container, items, { readonly = false, emptyText = '
     const actions = (!readonly && canAct(r))
       ? `<div class="actions">
           <button type="button" class="btn tiny primary" data-act="done" data-id="${r.id}">Proběhla</button>
-          <button type="button" class="btn tiny danger" data-act="noshow" data-id="${r.id}">NO-show</button>
+          <button type="button" class="btn tiny danger" data-act="noshow" data-id="${r.id}">Hříšníci</button>
           <button type="button" class="btn tiny ghost" data-act="platba" data-id="${r.id}">Platba QR</button>
           ${showZalohaAsk ? `<button type="button" class="btn tiny ghost" data-act="zaloha" data-id="${r.id}">Požádat o zálohu</button>` : ''}
           ${showZalohaSkip ? `<button type="button" class="btn tiny ghost" data-act="zaloha-skip" data-id="${r.id}">Nepožadujeme zálohu</button>` : ''}
@@ -663,7 +728,117 @@ function renderAbsenceBlocks(absences, { withName = false, canDelete = false } =
   }).join('');
 }
 
+function renderOverviewStats(data) {
+  const setText = (id, n) => {
+    const el = $(id);
+    if (el) el.textContent = n;
+  };
+  setText('#ov-kpi-dnes', String(data.dnes ?? '—'));
+  setText('#ov-kpi-tyden', String(data.tyden ?? '—'));
+  setText('#ov-kpi-zaloha', String(data.ceka_zaloha ?? '—'));
+  setText('#ov-kpi-hotovo', String(data.dokonceno ?? '—'));
+  const hotovoHint = $('#ov-kpi-hotovo-hint');
+  if (hotovoHint && data.dokonceno_mesic != null) {
+    hotovoHint.textContent = `tento měsíc ${data.dokonceno_mesic}`;
+  }
+  setText('#ov-kpi-trzba-mesic', fmtMoneyCz(data.trzba_mesic));
+  setText('#ov-kpi-trzba', fmtMoneyCz(data.trzba_celkem));
+
+  const chart = $('#ov-chart');
+  if (chart) {
+    const counts = Array.isArray(data.tyden_pocty) ? data.tyden_pocty : [0, 0, 0, 0, 0, 0, 0];
+    const max = Math.max(1, ...counts);
+    chart.innerHTML = counts.map((n, i) => {
+      const h = Math.max(4, Math.round((n / max) * 100));
+      return `<div class="col"><b style="height:${h}px"></b><span>${DEN_SHORT[i]}</span></div>`;
+    }).join('');
+  }
+
+  const sluzbyEl = $('#ov-sluzby');
+  if (sluzbyEl) {
+    const rows = data.nejprodavanejsi_sluzby || [];
+    if (!rows.length) {
+      sluzbyEl.innerHTML = '<p class="empty">Zatím žádné dokončené služby.</p>';
+    } else {
+      sluzbyEl.innerHTML = rows.map((s) => (
+        `<div class="rank-row"><b>${esc(s.sluzba__nazev || '—')}</b>`
+        + `<span>${esc(s.pocet)}× · ${fmtMoneyCz(s.trzba)}</span></div>`
+      )).join('');
+    }
+  }
+
+  const staffEl = $('#ov-staff');
+  if (staffEl) {
+    const people = data.zamestnanci || [];
+    if (!people.length) {
+      staffEl.innerHTML = '<p class="empty">Žádný personál.</p>';
+    } else {
+      staffEl.innerHTML = people.map((p) => {
+        const name = p.jmeno || '—';
+        const parts = String(name).split(/\s+/).filter(Boolean);
+        const ini = parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : String(name).slice(0, 2).toUpperCase();
+        const avatar = p.fotka
+          ? `<img src="${esc(p.fotka)}" alt="" width="44" height="44">`
+          : `<span class="ph">${esc(ini)}</span>`;
+        return `<article class="staff-stat">${avatar}<div>
+          <strong>${esc(name)}</strong>
+          <span>${esc(p.dokonceno_mesic || 0)} tento měsíc · ${fmtMoneyCz(p.trzba_mesic)}</span>
+          <span>celkem ${esc(p.dokonceno || 0)} · ${fmtMoneyCz(p.trzba)}</span>
+        </div></article>`;
+      }).join('');
+    }
+  }
+}
+
+async function loadOverviewStats() {
+  try {
+    const data = await api('/flow/owner/statistiky/');
+    renderOverviewStats(data);
+  } catch (err) {
+    const msg = $('#ov-msg');
+    if (msg) showMsg(msg, err.message, false);
+  }
+}
+
+async function loadOverviewToday() {
+  const range = dayRange(0);
+  const listEl = $('#ov-list');
+  const msgEl = $('#ov-msg');
+  if (!listEl) return;
+  if (msgEl) msgEl.hidden = true;
+  listEl.innerHTML = '<p class="empty">Načítám…</p>';
+  try {
+    const q = new URLSearchParams({ od: range.od, do: range.do });
+    if (!isOwnerUser()) q.set('overview', '1');
+    const data = await api(`/flow/kalendar/?${q}`);
+    rememberRez(data.rezervace);
+    listEl.innerHTML = '';
+    const holder = document.createElement('div');
+    renderRezervaceList(holder, data.rezervace || [], {
+      readonly: !isOwnerUser(),
+      withStaff: true,
+      emptyText: 'Dnes v kalendáři nikdo není.',
+    });
+    listEl.appendChild(holder);
+    if (isOwnerUser()) bindCalActions(holder, () => loadOverview());
+  } catch (err) {
+    listEl.innerHTML = '';
+    if (msgEl) showMsg(msgEl, err.message, false);
+  }
+}
+
+function loadOverview() {
+  loadOverviewStats();
+  loadOverviewToday();
+}
+
 async function loadWeekList(overview) {
+  if (overview) {
+    loadOverview();
+    return;
+  }
   const range = overview ? weekRange(ovWeekOffset) : dayRange(dayOffset);
   const labelEl = overview ? $('#ov-week-label') : $('#week-label');
   const listEl = overview ? $('#ov-list') : $('#cal-list');
@@ -673,7 +848,7 @@ async function loadWeekList(overview) {
   listEl.innerHTML = '<p class="empty">Načítám…</p>';
   try {
     const q = new URLSearchParams({ od: range.od, do: range.do });
-    if (overview) q.set('overview', '1');
+    if (overview && !isOwnerUser()) q.set('overview', '1');
     const data = await api(`/flow/kalendar/?${q}`);
     rememberRez(data.rezervace);
     const absHtml = renderAbsenceBlocks(data.absence || [], {
@@ -687,13 +862,13 @@ async function loadWeekList(overview) {
     listEl.innerHTML += `<h3 class="list-h">Rezervace</h3>`;
     const holder = document.createElement('div');
     renderRezervaceList(holder, data.rezervace || [], {
-      readonly: overview,
+      readonly: false,
       withStaff: isOwnerUser(),
-      emptyText: overview ? 'Žádné rezervace v tomto týdnu.' : 'Žádné rezervace v tento den.',
+      emptyText: 'Žádné rezervace v tento den.',
     });
     listEl.appendChild(holder);
-    if (!overview) bindCalActions(holder, () => loadWeekList(false));
-    if (!overview) refreshRiskyInbox();
+    bindCalActions(holder, () => loadWeekList(false));
+    refreshRiskyInbox();
   } catch (err) {
     listEl.innerHTML = '';
     showMsg(msgEl, err.message, false);
@@ -706,10 +881,17 @@ function bindCalActions(root, onDone) {
       const id = Number(btn.dataset.id);
       const act = btn.dataset.act;
       if (act === 'done') {
-        if (!confirm('Označit rezervaci jako proběhlou?')) return;
+        const ok = await askFlowConfirm({
+          title: 'Proběhlá služba',
+          text: 'Označit rezervaci jako proběhlou?',
+          okLabel: 'Ano, proběhla',
+          cancelLabel: 'Zpět',
+        });
+        if (!ok) return;
         try {
           await api(`/flow/rezervace/${id}/dokonceno/`, { method: 'POST', body: '{}' });
           onDone?.();
+          if (materialnikInfo()) await openMaterialnikSpotreba(id);
         } catch (err) {
           showMsg($('#cal-msg'), err.message, false);
         }
@@ -979,18 +1161,29 @@ function closeNoshow() {
   $('#noshow-modal').classList.add('hidden');
 }
 
+function maKontaktniEmail(r) {
+  return !!(r && String(r.kontaktni_email || '').trim());
+}
+
 async function openPlatba(id, asZaloha = false) {
   const r = findRezervace(id);
   platbaTarget = r || { id };
   platbaIsZaloha = !!asZaloha;
+  const hasEmail = maKontaktniEmail(r);
   const title = $('#platba-modal h2');
   if (title) title.textContent = asZaloha ? 'Žádost o zálohu' : 'Žádost o platbu';
+  let extra = '';
+  if (asZaloha && hasEmail) extra = ' · záloha (lhůtu uveďte v e-mailové šabloně)';
+  else if (asZaloha && !hasEmail) extra = ' · záloha — QR ukážete na obrazovce';
+  else if (!hasEmail) extra = ' · QR ukážete zákazníkovi na obrazovce';
   $('#platba-info').textContent = r
-    ? `${r.kontaktni_jmeno || 'Zákazník'} — ${formatDateTime(r.zacatek)}${asZaloha ? ' · záloha (lhůtu uveďte v e-mailové šabloně)' : ''}`
+    ? `${r.kontaktni_jmeno || 'Zákazník'} — ${formatDateTime(r.zacatek)}${extra}`
     : `Rezervace #${id}`;
   $('#platba-castka').value = r?.zaloha_castka || '';
   $('#platba-ucet').value = r?.zamestnanec_cislo_uctu || '';
   $('#platba-vs').value = String(id);
+  const submitBtn = $('#platba-submit') || $('#form-platba button[type=submit]');
+  if (submitBtn) submitBtn.textContent = hasEmail ? 'Odeslat QR e-mail' : 'Zobrazit QR';
   $('#platba-msg').hidden = true;
   $('#platba-modal').classList.remove('hidden');
 }
@@ -1028,7 +1221,7 @@ function renderTopAlerts(riskyN, mailN, mailOk, volnoN = 0, platbyDni = 0) {
     parts.push(`<div class="flow-alert platby">
       <div class="flow-alert-text">
         <strong>Platba ULOV po splatnosti: +${platbyDni} dní</strong>
-        <span>Zkontrolujte účet, VS a splatnost ve Správě</span>
+        <span>Zkontrolujte účet, VS a splatnost v Platbách</span>
       </div>
       <button type="button" class="btn primary sm" id="alert-goto-platby">Otevřít</button>
     </div>`);
@@ -1067,14 +1260,8 @@ function renderTopAlerts(riskyN, mailN, mailOk, volnoN = 0, platbyDni = 0) {
   }
   box.classList.remove('hidden');
   box.innerHTML = parts.join('');
-  $('#alert-goto-platby')?.addEventListener('click', () => {
-    setTab('sprava');
-    openOwnerSection('platby');
-  });
-  $('#alert-goto-volno')?.addEventListener('click', () => {
-    setTab('sprava');
-    openOwnerSection('volno');
-  });
+  $('#alert-goto-platby')?.addEventListener('click', () => setTab('platby'));
+  $('#alert-goto-volno')?.addEventListener('click', () => setTab('volno'));
   $('#alert-goto-risky')?.addEventListener('click', () => {
     setTab('mujden');
     requestAnimationFrame(() => {
@@ -1131,7 +1318,8 @@ async function refreshTopAlerts() {
   refreshRiskyInbox();
   const mailTab = $('#tab-mail');
   if (mailTab) {
-    mailTab.textContent = (mailOk && unseen > 0) ? `Mail (${unseen})` : 'Mail';
+    const label = mailTab.querySelector('.tab-label') || mailTab;
+    label.textContent = (mailOk && unseen > 0) ? `Mail (${unseen})` : 'Mail';
   }
 }
 
@@ -1387,7 +1575,7 @@ function refreshAfterNova() {
   const active = $$('.tab.active')[0]?.dataset.tab;
   if (active === 'mujden') loadWeekList(false);
   else if (active === 'mesic') loadMonth();
-  else if (active === 'overview') loadWeekList(true);
+  else if (active === 'overview') loadOverview();
 }
 
 async function boot() {
@@ -1947,7 +2135,7 @@ $('#noshow-confirm')?.addEventListener('click', async () => {
     let emailPayload = { odeslat_upozorneni: !!sendMail };
     if (sendMail) {
       const reviewed = await reviewCustomerEmail(targetId, 'noshow', {}, {
-        confirmLabel: 'Uložit NO-show a odeslat',
+        confirmLabel: 'Uložit Hříšníci a odeslat',
       });
       if (!reviewed) return;
       emailPayload = {
@@ -1981,22 +2169,30 @@ $('#form-platba')?.addEventListener('submit', async (e) => {
     zaloha: platbaIsZaloha,
   };
   try {
-    const reviewed = await reviewCustomerEmail(
-      targetId,
-      platbaIsZaloha ? 'zaloha' : 'platba',
-      payload,
-      { confirmLabel: 'Odeslat e-mail s QR' },
-    );
-    if (!reviewed) return;
-    closePlatba();
+    const hasEmail = maKontaktniEmail(platbaTarget);
+    const body = { ...payload };
+    if (hasEmail) {
+      const reviewed = await reviewCustomerEmail(
+        targetId,
+        platbaIsZaloha ? 'zaloha' : 'platba',
+        payload,
+        { confirmLabel: 'Odeslat e-mail s QR' },
+      );
+      if (!reviewed) return;
+      body.email_predmet = reviewed.predmet;
+      body.email_text = reviewed.text;
+    }
     const data = await api(`/flow/rezervace/${targetId}/platba/`, {
       method: 'POST',
-      body: JSON.stringify({
-        ...payload,
-        email_predmet: reviewed.predmet,
-        email_text: reviewed.text,
-      }),
+      body: JSON.stringify(body),
     });
+    closePlatba();
+    const qrTitle = $('#platba-qr-title') || $('#platba-qr-modal h2');
+    if (qrTitle) {
+      qrTitle.textContent = data.email_odeslan
+        ? 'QR platba odeslána'
+        : 'Ukažte kód zákazníkovi';
+    }
     $('#platba-qr-info').textContent = `${data.castka} Kč · účet ${data.ucet} · VS ${data.variabilni_symbol}`;
     $('#platba-qr-image').src = `data:image/png;base64,${data.qr_png_base64}`;
     $('#platba-qr-modal').classList.remove('hidden');
@@ -2015,7 +2211,7 @@ let ownerNastaveniCache = null;
 const OWN_NOTIF_POPISY = [
   'Připomínka před termínem (doporučeno +24 h) — odesílá se automaticky',
   'Poděkování po návštěvě a prosba o recenzi (doporučeno -2 h po službě) — automaticky',
-  'Upozornění na neuskutečněnou rezervaci — pouze ručně u NO-show',
+  'Upozornění na neuskutečněnou rezervaci — pouze ručně u Hříšníci',
   'Žádost o úhradu po návštěvě (QR) — FLOW: Platba QR',
   'Žádost o zálohu před termínem (QR) — FLOW: Požádat o zálohu',
   'Storno rezervace — při zrušení salonem / ve FLOW',
@@ -2024,30 +2220,130 @@ const OWN_NOTIF_POPISY = [
 ];
 
 function showOwnerAdminHome() {
-  $('#owner-admin-home')?.classList.remove('hidden');
-  $('#owner-admin-detail')?.classList.add('hidden');
-  $$('.owner-section').forEach((el) => el.classList.add('hidden'));
-  const msg = $('#owner-admin-msg');
+  setTab('personal');
+}
+
+function applyTechnickeNastaveniUi(user = currentUser) {
+  const allowed = !!user?.povolit_technicke_nastaveni && isOwnerUser(user);
+  $$('.tab-tech').forEach((t) => t.classList.toggle('hidden', !allowed));
+  $('#owner-zone-tech')?.classList.toggle('hidden', !allowed);
+}
+
+function materialnikInfo(user = currentUser) {
+  return user?.moduly?.materialnik || null;
+}
+
+function applyMaterialnikUi(user = currentUser) {
+  const btn = $('#btn-materialnik');
+  if (!btn) return;
+  const info = materialnikInfo(user);
+  if (!info || !info.url) {
+    btn.classList.add('hidden');
+    btn.removeAttribute('href');
+    return;
+  }
+  btn.classList.remove('hidden');
+  btn.href = info.url;
+}
+
+function closeMaterialnikModal() {
+  $('#materialnik-modal')?.classList.add('hidden');
+  const body = $('#materialnik-body');
+  if (body) body.innerHTML = '';
+}
+
+async function openMaterialnikSpotreba(rezervaceId) {
+  if (!materialnikInfo()) return;
+  const modal = $('#materialnik-modal');
+  const body = $('#materialnik-body');
+  const msg = $('#materialnik-msg');
+  const saveBtn = $('#materialnik-save');
+  if (!modal || !body) return;
+  modal.dataset.rezervaceId = String(rezervaceId);
+  modal.classList.remove('hidden');
+  body.innerHTML = '<p class="hint">Načítám předpis…</p>';
   if (msg) {
     msg.hidden = true;
     msg.textContent = '';
   }
-  $('#own-volno-konflikt')?.classList.add('hidden');
-  refreshOwnerVolnoBadge(currentUser);
-  applyTechnickeNastaveniUi(currentUser);
-  const card = $('#owner-card-persona');
-  if (card) {
-    const on = canSwitchPersona(currentUser);
-    const st = card.querySelector('.owner-admin-status');
-    if (st) st.textContent = on ? 'Zapnuto' : 'Nastavit';
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    const data = await api(`/flow/rezervace/${rezervaceId}/materialnik-spotreba/`);
+    if (data?.unavailable) {
+      body.innerHTML = `<p class="hint">${esc(data.detail || 'Spotřebu teď nelze načíst. Rezervaci to neovlivní.')}</p>`;
+      return;
+    }
+    const lines = Array.isArray(data?.lines) ? data.lines : [];
+    if (!lines.length) {
+      body.innerHTML = '<p class="hint">Pro tuto službu zatím není seznam materiálů. Spotřebu zadejte v Materiálníku.</p>';
+      return;
+    }
+    body.innerHTML = `
+      <label class="mat-filter">Najít materiál
+        <input type="search" id="mat-filter" placeholder="např. 6.1">
+      </label>
+      <div class="table-wrap">
+        <table class="materialnik-table">
+          <thead>
+            <tr><th>Služba</th><th>Materiál</th><th>Kolik jste vzali</th></tr>
+          </thead>
+          <tbody>
+            ${lines.map((line, i) => `
+              <tr data-i="${i}" data-search="${esc(((line.material_name || '') + ' ' + (line.service_name || '')).toLowerCase())}">
+                <td>${esc(line.service_name || '')}</td>
+                <td>
+                  ${esc(line.material_name || '')}
+                  ${line.recipe_qty ? `<div class="muted">obvykle ${esc(line.recipe_qty)} ${esc(line.unit || '')}</div>` : ''}
+                </td>
+                <td>
+                  <input type="number" step="any" min="0" class="mat-qty"
+                    value=""
+                    placeholder="${esc(line.recipe_qty || '')}"
+                    data-material-id="${esc(line.material_id || '')}"
+                    data-service-id="${esc(line.external_service_id || '')}"
+                    data-unit="${esc(line.unit || '')}">
+                  <span class="muted">${esc(line.unit || '')}</span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    const filter = body.querySelector('#mat-filter');
+    filter?.addEventListener('input', () => {
+      const q = (filter.value || '').trim().toLowerCase();
+      body.querySelectorAll('.materialnik-table tbody tr').forEach((tr) => {
+        tr.hidden = !!(q && !(tr.dataset.search || '').includes(q));
+      });
+    });
+    if (saveBtn) saveBtn.disabled = false;
+  } catch (err) {
+    body.innerHTML = `<p class="hint">${esc(err.message || 'Spotřebu teď nelze načíst.')}</p>`;
   }
 }
 
-function applyTechnickeNastaveniUi(user = currentUser) {
-  const zone = $('#owner-zone-tech');
-  if (!zone) return;
-  const allowed = !!user?.povolit_technicke_nastaveni && isOwnerUser(user);
-  zone.classList.toggle('hidden', !allowed);
+async function saveMaterialnikSpotreba() {
+  const modal = $('#materialnik-modal');
+  const id = Number(modal?.dataset.rezervaceId || 0);
+  const msg = $('#materialnik-msg');
+  if (!id) return;
+  const lines = [...(modal.querySelectorAll('.mat-qty') || [])]
+    .map((inp) => ({
+      material_id: inp.dataset.materialId,
+      external_service_id: inp.dataset.serviceId,
+      unit: inp.dataset.unit,
+      quantity: inp.value,
+    }))
+    .filter((line) => String(line.quantity || '').trim() !== '' && Number(line.quantity) > 0);
+  try {
+    await api(`/flow/rezervace/${id}/materialnik-spotreba/`, {
+      method: 'POST',
+      body: JSON.stringify({ lines }),
+    });
+    closeMaterialnikModal();
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
 }
 
 async function loadOwnerPersona() {
@@ -2055,18 +2351,19 @@ async function loadOwnerPersona() {
   const stav = $('#own-persona-stav');
   const check = $('#own-persona-check');
   const wrap = $('#own-persona-jmeno-wrap');
+  const save = $('#own-persona-save');
+  const lab = $('#own-persona-switch-label');
   try {
     const p = await api('/flow/owner/pracovni-persona/');
     const linked = !!p?.ano;
     if (check) check.checked = linked;
+    if (lab) lab.textContent = linked ? 'Ano' : 'Ne';
     if (stav) {
-      stav.textContent = linked
-        ? `Zapnuto — na webu: ${p.pracovni?.jmeno || 'pracovní profil'}. Doplňte rozvrh a služby ve Správě → Staff.`
-        : 'Vypnuto — účet Manager je jen pro správu.';
+      stav.textContent = linked && p.pracovni?.jmeno ? `Na webu: ${p.pracovni.jmeno}` : '';
     }
-    wrap?.classList.toggle('hidden', linked);
+    wrap?.classList.add('hidden');
+    save?.classList.add('hidden');
     if (!linked) {
-      // Nepředvyplňovat „Majitelka“ — pracovní jméno zadá Manager sám.
       const inp = $('#own-persona-jmeno');
       if (inp && !inp.value) inp.value = '';
       inp?.setAttribute('placeholder', 'Jméno na webu a v rezervacích');
@@ -2079,14 +2376,9 @@ async function loadOwnerPersona() {
 function refreshOwnerVolnoBadge(user = currentUser) {
   const n = Number(user?.ceka_volno_pocet || 0);
   const badge = $('#owner-volno-badge');
-  const tab = $('#tab-sprava');
   if (badge) {
     badge.textContent = String(n);
     badge.classList.toggle('hidden', n <= 0);
-  }
-  if (tab && isOwnerUser(user)) {
-    const base = 'Správa';
-    tab.textContent = n > 0 ? `${base} (${n})` : base;
   }
 }
 
@@ -2259,10 +2551,9 @@ async function openOwnerSection(section) {
   if (section === 'persona' && !isOwnerUser()) return;
   const techSections = ['pravidla', 'sablony', 'audit'];
   if (techSections.includes(section) && !currentUser?.povolit_technicke_nastaveni) {
-    showOwnerAdminHome();
     return;
   }
-  const ok = ['persona', 'pravidla', 'sablony', 'personal', 'prirazeni', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
+  const ok = ['persona', 'pravidla', 'sablony', 'personal', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
   if (!ok.includes(section)) return;
   $('#owner-admin-home')?.classList.add('hidden');
   $('#owner-admin-detail')?.classList.remove('hidden');
@@ -2275,10 +2566,6 @@ async function openOwnerSection(section) {
     }
     if (section === 'personal') {
       await loadOwnerPersonal();
-      return;
-    }
-    if (section === 'prirazeni') {
-      await loadOwnerPrirazeni();
       return;
     }
     if (section === 'volno') {
@@ -2457,7 +2744,7 @@ async function loadOwnerHrisnici(page = ownerHrisniciPage) {
       else if (z.problematicky) stav = 'Problematický';
       const info = document.createElement('div');
       info.innerHTML = `<strong>${esc(z.email || '—')}</strong>
-        <span>${esc(z.jmeno || '')} · ${esc(z.pocet_no_show)}× NO-show · ${esc(stav)} · ${formatOwnerDateTime(z.posledni)}</span>`;
+        <span>${esc(z.jmeno || '')} · ${esc(z.pocet_no_show)}× Hříšníci · ${esc(stav)} · ${formatOwnerDateTime(z.posledni)}</span>`;
       row.appendChild(info);
       if (z.email) {
         const btn = document.createElement('button');
@@ -2531,8 +2818,10 @@ async function loadOwnerStatistiky() {
   box.innerHTML = `<dl>
     <dt>Rezervací celkem</dt><dd>${esc(data.celkem_rezervaci)}</dd>
     <dt>Dokončené</dt><dd>${esc(data.dokonceno)}</dd>
+    <dt>Tržba celkem</dt><dd>${fmtMoneyCz(data.trzba_celkem)}</dd>
+    <dt>Tržba tento měsíc</dt><dd>${fmtMoneyCz(data.trzba_mesic)}</dd>
     <dt>Storno</dt><dd>${esc(data.storno)} (${esc(data.storno_procent)} %)</dd>
-    <dt>NO-show</dt><dd>${esc(data.no_show)}</dd>
+    <dt>Hříšníci</dt><dd>${esc(data.no_show)}</dd>
     <dt>Top služby</dt><dd>${sluzby}</dd>
     <dt>Top Staff</dt><dd>${staff}</dd>
   </dl>`;
@@ -2540,62 +2829,9 @@ async function loadOwnerStatistiky() {
 
 const DEN_LABELS = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
-async function loadOwnerPrirazeni() {
-  const data = await api('/flow/owner/prirazeni-sluzeb/');
-  ownerPrirazeniCache = data;
-  const hint = $('#own-prirazeni-hint');
-  if (hint && data.hint) hint.textContent = data.hint;
-  renderOwnerPrirazeni(data);
-}
-
-function renderOwnerPrirazeni(data) {
-  const wrap = $('#own-prirazeni-wrap');
-  if (!wrap) return;
-  const staff = data.zamestnanci || [];
-  const sluzby = data.sluzby || [];
-  const prirazeni = data.prirazeni || {};
-  if (!staff.length) {
-    wrap.innerHTML = '<p class="empty">Nejdřív přidejte Staff ve Správě → Staff.</p>';
-    return;
-  }
-  if (!sluzby.length) {
-    wrap.innerHTML = '<p class="empty">V ceníku nejsou aktivní služby. Přidejte je ve web-adminu.</p>';
-    return;
-  }
-  const head = staff.map((z) => `<th scope="col" title="${esc(z.jmeno)}">${esc(z.jmeno)}</th>`).join('');
-  const rows = sluzby.map((s) => {
-    const cells = staff.map((z) => {
-      const ids = prirazeni[String(z.id)] || prirazeni[z.id] || [];
-      const checked = ids.map(Number).includes(Number(s.id)) ? ' checked' : '';
-      return `<td><input type="checkbox" class="own-prirazeni-cb" data-zid="${z.id}" data-sid="${s.id}"${checked} aria-label="${esc(z.jmeno)} — ${esc(s.nazev)}"></td>`;
-    }).join('');
-    return `<tr><th scope="row">${esc(s.nazev)} <span class="muted">(${s.delka_minut} min)</span></th>${cells}</tr>`;
-  }).join('');
-  wrap.innerHTML = `
-    <div class="own-prirazeni-scroll">
-      <table class="own-prirazeni-table">
-        <thead><tr><th scope="col">Služba</th>${head}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-}
-
-function collectOwnerPrirazeni() {
-  const out = {};
-  (ownerPrirazeniCache?.zamestnanci || []).forEach((z) => {
-    out[String(z.id)] = [];
-  });
-  $$('.own-prirazeni-cb:checked').forEach((cb) => {
-    const zid = String(cb.dataset.zid);
-    const sid = Number(cb.dataset.sid);
-    if (!out[zid]) out[zid] = [];
-    out[zid].push(sid);
-  });
-  return out;
-}
-
 async function loadOwnerPersonal() {
   const data = await api('/flow/owner/personal/');
+  ownerSluzbyCache = data.sluzby || [];
   ownerStaffOptionsCache = (data.zamestnanci || []).filter((z) => z.role !== 'majitel');
   renderOwnerPersonal(data.zamestnanci || []);
 }
@@ -2610,12 +2846,34 @@ function personalNavLabel(z) {
   return z.jmeno;
 }
 
+function staffAvatarHtml(z, name) {
+  const label = name || z?.jmeno || '?';
+  const parts = String(label).split(/\s+/).filter(Boolean);
+  const ini = parts.length >= 2
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : String(label).slice(0, 2).toUpperCase();
+  if (z?.fotka) {
+    return `<img src="${esc(z.fotka)}" alt="" width="44" height="44">`;
+  }
+  return `<span class="ph">${esc(ini)}</span>`;
+}
+
+function staffFlowStatus(z) {
+  const flow = z.flow || {};
+  const ucet = flow.ucet || null;
+  if (!flow.ma_flow || !ucet) return { cls: 'is-off', text: 'bez FLOW' };
+  if (!ucet.aktivni) return { cls: 'is-blocked', text: 'zablokováno' };
+  return { cls: 'is-on', text: 'přihlášení OK' };
+}
+
 function renderOwnerPersonal(list) {
-  const box = $('#own-personal-list');
-  if (!box) return;
+  const nav = $('#own-staff-nav');
+  const detail = $('#own-staff-detail');
+  if (!nav || !detail) return;
   ownerPersonalCache = list || [];
   if (!ownerPersonalCache.length) {
-    box.innerHTML = '<p class="empty">Zatím žádný Staff.</p>';
+    nav.innerHTML = '';
+    detail.innerHTML = '<p class="empty">Zatím žádný Staff. Přidejte prvního pracovníka tlačítkem nahoře.</p>';
     return;
   }
   if (
@@ -2625,26 +2883,29 @@ function renderOwnerPersonal(list) {
     const firstStaff = ownerPersonalCache.find((z) => z.role !== 'majitel');
     ownerPersonalSelectedId = (firstStaff || ownerPersonalCache[0]).id;
   }
-  box.replaceChildren();
-
-  const nav = document.createElement('div');
-  nav.className = 'own-personal-nav';
+  nav.replaceChildren();
   ownerPersonalCache.forEach((z) => {
+    const isOwner = z.role === 'majitel';
+    const name = isOwner ? 'Manager' : z.jmeno;
+    const st = isOwner
+      ? { cls: 'is-muted', text: 'správa' }
+      : staffFlowStatus(z);
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `own-personal-nav-btn${z.id === ownerPersonalSelectedId ? ' is-active' : ''}`;
-    btn.textContent = personalNavLabel(z);
+    btn.className = `staff-person${z.id === ownerPersonalSelectedId ? ' is-active' : ''}`;
+    btn.innerHTML = `${staffAvatarHtml(z, name)}<span class="staff-person-copy">
+      <strong>${esc(personalNavLabel(z))}</strong>
+      <span class="staff-status ${st.cls}">${esc(st.text)}</span>
+    </span>`;
     btn.addEventListener('click', () => {
       ownerPersonalSelectedId = z.id;
       renderOwnerPersonal(ownerPersonalCache);
     });
     nav.appendChild(btn);
   });
-  box.appendChild(nav);
-
   const z = ownerPersonalCache.find((x) => x.id === ownerPersonalSelectedId);
-  if (!z) return;
-  box.appendChild(buildOwnerPersonalCard(z));
+  detail.replaceChildren();
+  if (z) detail.appendChild(buildOwnerPersonalCard(z));
 }
 
 function buildOwnerPersonalCard(z) {
@@ -2676,48 +2937,59 @@ function buildOwnerPersonalCard(z) {
 
   card.innerHTML = `
     <div class="own-personal-head">
+      ${staffAvatarHtml(z, displayName)}
       <div>
         <h3>${esc(displayName)}${roleBadge}</h3>
-        <p class="hint tiny">${esc(z.specializace || '')}</p>
+        <p class="hint tiny">${esc(z.specializace || (isOwner ? 'Účet pro správu salonu' : ''))}</p>
       </div>
     </div>
-    ${isOwner ? '<p class="hint tiny">Manager zde nemá provozní rozvrh ani FLOW reset — heslo mění ve web-adminu. Pokud Manager také obsluhuje, upravujte rozvrh u položky Staff · Manager.</p>' : ''}
-    ${isManagerStaff ? '<p class="hint tiny">Toto je pracovní profil Managera (web + rezervace). Stejný login — nahoře přepínač Manager / Staff.</p>' : ''}
+    ${isOwner ? '<p class="hint tiny">Účet pro správu. Obsluhu zákazníků zapnete v menu Personál → Manager obsluhuje.</p>' : ''}
+    ${isManagerStaff ? '<p class="hint tiny">Pracovní profil Managera — stejný login, nahoře přepínač Manager / Staff.</p>' : ''}
     ${isOwner ? '' : `
-    <label>Jméno
-      <input type="text" class="op-jmeno" value="${esc(z.jmeno || '')}">
-    </label>
-    <label>Specializace
-      <input type="text" class="op-spec" value="${esc(z.specializace || '')}">
-    </label>
-    <label>Číslo účtu (QR pro zákazníky)
-      <input type="text" class="op-ucet" value="${esc(z.cislo_uctu || '')}" placeholder="123456789/0100">
-    </label>
-    <h4 class="own-subh">Pracovní doba</h4>
-    <table class="own-rozvrh-table">
-      <thead><tr><th>Den</th><th></th><th>Od</th><th>Do</th></tr></thead>
-      <tbody>${rozvrhRows}</tbody>
-    </table>
-    <button type="button" class="btn primary sm op-save">Uložit údaje</button>
-    <h4 class="own-subh">FLOW přístup</h4>
+    <section class="own-block">
+      <h4>Údaje</h4>
+      <label>Jméno
+        <input type="text" class="op-jmeno" value="${esc(z.jmeno || '')}">
+      </label>
+      <label>Specializace
+        <input type="text" class="op-spec" value="${esc(z.specializace || '')}">
+      </label>
+      <label>Číslo účtu (QR pro zákazníky)
+        <input type="text" class="op-ucet" value="${esc(z.cislo_uctu || '')}" placeholder="123456789/0100">
+      </label>
+      <button type="button" class="btn primary sm op-save">Uložit údaje</button>
+    </section>
+    <section class="own-block">
+      <h4>Služby</h4>
+      ${staffSluzbyBlockHtml(z)}
+    </section>
+    <section class="own-block">
+      <h4>Pracovní doba</h4>
+      <table class="own-rozvrh-table">
+        <thead><tr><th>Den</th><th></th><th>Od</th><th>Do</th></tr></thead>
+        <tbody>${rozvrhRows}</tbody>
+      </table>
+      <button type="button" class="btn primary sm op-save">Uložit pracovní dobu</button>
+    </section>
+    <section class="own-block">
+      <h4>Přístup do FLOW</h4>
     ${ucet ? `
-      <p class="hint tiny">E-mail: <strong>${esc(ucet.email)}</strong>
-        · overview ${ucet.visible_overview ? 'zapnuto' : 'vypnuto'}
-      </p>
-      <p class="hint tiny"><strong>Přihlášení do FLOW:</strong> ${ucet.aktivni ? 'povoleno' : 'zablokováno'}</p>
+      <p class="hint tiny">E-mail: <strong>${esc(ucet.email)}</strong></p>
+      <p class="hint tiny">Přihlášení: <strong>${ucet.aktivni ? 'povoleno' : 'zablokováno'}</strong>
+        · přehled salonu ${ucet.visible_overview ? 'zapnutý' : 'vypnutý'}</p>
       <div class="owner-personal-actions">
         <div class="flow-access-btns" role="group" aria-label="Přihlášení do FLOW">
           <button type="button" class="btn sm op-flow-allow ${ucet.aktivni ? 'primary is-active' : 'ghost'}" ${ucet.aktivni ? 'disabled' : ''}>Povolit vstup</button>
           <button type="button" class="btn sm op-flow-block ${!ucet.aktivni ? 'danger is-active' : 'ghost'}" ${!ucet.aktivni ? 'disabled' : ''}>Zablokovat vstup</button>
         </div>
         <label class="check-row tight"><input type="checkbox" class="op-flow-overview" ${ucet.visible_overview ? 'checked' : ''}> Vidí přehled všech rezervací</label>
-        <button type="button" class="btn ghost sm op-flow-save">Uložit overview</button>
+        <button type="button" class="btn ghost sm op-flow-save">Uložit přehled</button>
         <div class="owner-personal-actions" data-flow-reset-actions>
           <button type="button" class="btn ghost sm op-flow-reset">Resetovat heslo FLOW</button>
         </div>
       </div>
     ` : `
-      <p class="hint tiny">Zatím bez FLOW přístupu.</p>
+      <p class="hint tiny">Zatím bez FLOW přístupu — zadejte e-mail a vytvořte účet.</p>
       <label>E-mail pro FLOW
         <input type="email" class="op-flow-email" placeholder="pracovnik@salon.cz">
       </label>
@@ -2726,6 +2998,7 @@ function buildOwnerPersonalCard(z) {
         <button type="button" class="btn primary sm op-flow-create">Vytvořit FLOW přístup</button>
       </div>
     `}
+    </section>
     `}
   `;
 
@@ -2737,7 +3010,10 @@ function buildOwnerPersonalCard(z) {
         row.querySelector('.op-do').disabled = cb.checked;
       });
     });
-    card.querySelector('.op-save')?.addEventListener('click', () => saveOwnerStaff(card, z.id));
+    card.querySelectorAll('.op-save').forEach((btn) => {
+      btn.addEventListener('click', () => saveOwnerStaff(card, z.id));
+    });
+    wireOwnerStaffSluzby(card, z.id);
     card.querySelector('.op-flow-create')?.addEventListener('click', () => askCreateOwnerStaffFlow(card, z.id));
     card.querySelector('.op-flow-save')?.addEventListener('click', () => patchOwnerStaffFlow(card, z.id));
     card.querySelector('.op-flow-allow')?.addEventListener('click', (e) => {
@@ -2751,6 +3027,39 @@ function buildOwnerPersonalCard(z) {
     });
   }
   return card;
+}
+
+function staffSluzbyBlockHtml(z) {
+  const catalog = ownerSluzbyCache || [];
+  if (!catalog.length) {
+    return '<p class="hint tiny">V ceníku zatím nejsou aktivní služby. Přidejte je ve web-adminu.</p>';
+  }
+  const assigned = (z.sluzby_ids || []).map(Number);
+  const allServices = assigned.length === 0;
+  const items = catalog.map((s) => {
+    const checked = !allServices && assigned.includes(Number(s.id)) ? ' checked' : '';
+    return `<label class="op-sluzby-item">
+      <input type="checkbox" class="op-sluzba-cb" value="${s.id}"${checked}>
+      <span>${esc(s.nazev)} <span class="muted">(${s.delka_minut} min)</span></span>
+    </label>`;
+  }).join('');
+  return `
+    <label class="op-all-sluzby-row">
+      <input type="checkbox" class="op-all-sluzby"${allServices ? ' checked' : ''}>
+      <span>Všechny služby</span>
+    </label>
+    <div class="op-sluzby-list${allServices ? ' hidden' : ''}">${items}</div>
+    <button type="button" class="btn primary sm op-save-sluzby">Uložit služby</button>
+  `;
+}
+
+function wireOwnerStaffSluzby(card, id) {
+  const allCb = card.querySelector('.op-all-sluzby');
+  const list = card.querySelector('.op-sluzby-list');
+  allCb?.addEventListener('change', () => {
+    list?.classList.toggle('hidden', allCb.checked);
+  });
+  card.querySelector('.op-save-sluzby')?.addEventListener('click', () => saveOwnerStaffSluzby(card, id));
 }
 
 function collectOwnerStaffRozvrh(card) {
@@ -2778,6 +3087,29 @@ async function saveOwnerStaff(card, id) {
       }),
     });
     showMsg(msg, 'Údaje pracovníka uloženy.', true);
+    await loadOwnerPersonal();
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
+}
+
+async function saveOwnerStaffSluzby(card, id) {
+  const msg = $('#owner-admin-msg');
+  const all = !!card.querySelector('.op-all-sluzby')?.checked;
+  let ids = [];
+  if (!all) {
+    ids = [...card.querySelectorAll('.op-sluzba-cb:checked')].map((cb) => Number(cb.value));
+    if (!ids.length) {
+      showMsg(msg, 'Vyberte aspoň jednu službu, nebo zapněte Všechny služby.', false);
+      return;
+    }
+  }
+  try {
+    await api(`/flow/owner/personal/${id}/`, {
+      method: 'PUT',
+      body: JSON.stringify({ sluzby_ids: ids }),
+    });
+    showMsg(msg, all ? 'Umí všechny služby.' : 'Služby uloženy.', true);
     await loadOwnerPersonal();
   } catch (err) {
     showMsg(msg, err.message, false);
@@ -3138,13 +3470,10 @@ $$('#persona-switch .persona-btn').forEach((btn) => {
   });
 });
 
-$('#form-owner-persona')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-});
-
-$('#own-persona-save')?.addEventListener('click', async () => {
+async function saveOwnerPersona(ano) {
   const msg = $('#owner-admin-msg');
-  const ano = !!$('#own-persona-check')?.checked;
+  const check = $('#own-persona-check');
+  const lab = $('#own-persona-switch-label');
   try {
     const data = await api('/flow/owner/pracovni-persona/', {
       method: ano ? 'POST' : 'DELETE',
@@ -3160,28 +3489,41 @@ $('#own-persona-save')?.addEventListener('click', async () => {
     applyPersonaUi(data);
     showMsg(msg, ano ? 'Zapnuto — přepínač nahoře ve FLOW.' : 'Vypnuto.', true);
     await loadOwnerPersona();
-    showOwnerAdminHome();
+    return true;
   } catch (err) {
     showMsg(msg, err.message, false);
+    if (!ano && check) {
+      check.checked = true;
+      if (lab) lab.textContent = 'Ano';
+    }
+    return false;
   }
+}
+
+$('#own-persona-check')?.addEventListener('change', async () => {
+  const check = $('#own-persona-check');
+  const wrap = $('#own-persona-jmeno-wrap');
+  const save = $('#own-persona-save');
+  const lab = $('#own-persona-switch-label');
+  const ano = !!check?.checked;
+  if (lab) lab.textContent = ano ? 'Ano' : 'Ne';
+  if (!ano) {
+    wrap?.classList.add('hidden');
+    save?.classList.add('hidden');
+    await saveOwnerPersona(false);
+    return;
+  }
+  wrap?.classList.remove('hidden');
+  save?.classList.remove('hidden');
+  $('#own-persona-jmeno')?.focus();
 });
 
-$('#own-persona-off')?.addEventListener('click', async () => {});
+$('#form-owner-persona')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+});
 
-$('#btn-own-prirazeni-save')?.addEventListener('click', async () => {
-  const msg = $('#owner-admin-msg');
-  try {
-    const data = await api('/flow/owner/prirazeni-sluzeb/', {
-      method: 'PUT',
-      body: JSON.stringify({ prirazeni: collectOwnerPrirazeni() }),
-    });
-    ownerPrirazeniCache = data;
-    ownerStaffOptionsCache = null;
-    renderOwnerPrirazeni(data);
-    showMsg(msg, 'Přiřazení uloženo.', true);
-  } catch (err) {
-    showMsg(msg, err.message, false);
-  }
+$('#own-persona-save')?.addEventListener('click', async () => {
+  await saveOwnerPersona(true);
 });
 
 $('#form-owner-pravidla')?.addEventListener('submit', async (e) => {
@@ -3224,4 +3566,19 @@ $('#btn-own-sablony-save')?.addEventListener('click', async () => {
 });
 
 wireEmailPreviewSheet();
+$('#flow-confirm-ok')?.addEventListener('click', () => closeFlowConfirm(true));
+$('#flow-confirm-cancel')?.addEventListener('click', () => closeFlowConfirm(false));
+$('#flow-confirm-modal')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeFlowConfirm(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#flow-confirm-modal')?.classList.contains('hidden')) {
+    closeFlowConfirm(false);
+  }
+});
+$('#materialnik-close')?.addEventListener('click', closeMaterialnikModal);
+$('#materialnik-skip')?.addEventListener('click', closeMaterialnikModal);
+$('#materialnik-save')?.addEventListener('click', () => {
+  saveMaterialnikSpotreba().catch(() => {});
+});
 boot();

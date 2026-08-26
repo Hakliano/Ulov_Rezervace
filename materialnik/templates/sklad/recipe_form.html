@@ -1,0 +1,115 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}{% if recipe %}Upravit seznam{% else %}Materiály ke službě{% endif %}{% endblock %}
+{% block content %}
+<section class="card">
+  <form method="post" class="stack recipe-form" id="recipe-form">
+    {% csrf_token %}
+    {% if recipe %}
+      <p class="muted" style="margin:0">Služba: <strong>{{ recipe.service_mapping.name_snapshot }}</strong></p>
+    {% else %}
+      <label>Služba z ceníku
+        <select name="mapping" id="recipe-mapping">
+          <option value="">— vyberte, nebo zadejte vlastní název —</option>
+          {% for map in unused_mappings %}
+            <option value="{{ map.pk }}" {% if mapping_id == map.pk|stringformat:"s" %}selected{% endif %}>{{ map.name_snapshot }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Vlastní název (když služba v ceníku není)
+        <input name="custom_name" value="{{ custom_name }}" placeholder="např. Melír + střih" maxlength="200">
+      </label>
+    {% endif %}
+
+    <h2 class="recipe-lines-title">Co se u služby může použít</h2>
+    <p class="muted">Množství nechte prázdné. Typické číslo je jen nápověda po práci, ze skladu se samo nic neodečte.</p>
+    {% if not materials %}
+      <p class="muted">Nejdřív přidejte materiály ve skladu, pak je sem můžete doplnit.</p>
+    {% endif %}
+    <div id="recipe-lines" class="recipe-lines">
+      {% for line in lines %}
+      <div class="recipe-line">
+        <label>Materiál
+          <select name="material" class="js-mat">
+            <option value="">—</option>
+            {% for m in materials %}
+              <option value="{{ m.pk }}" data-unit="{{ m.unit.code }}" {% if line.material_id == m.pk|stringformat:"s" %}selected{% endif %}>{{ m.name }}{% if not m.active %} (neaktivní){% endif %}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Typicky (volitelné)
+          <input name="quantity" value="{{ line.quantity|default:'' }}" inputmode="decimal" placeholder="po práci">
+        </label>
+        <span class="recipe-unit js-unit">{% for m in materials %}{% if line.material_id == m.pk|stringformat:"s" %}{{ m.unit.code }}{% endif %}{% endfor %}</span>
+        <button type="button" class="btn ghost js-remove-line">Odebrat</button>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn ghost" id="js-add-line">+ Přidat materiál</button>
+
+    <div class="row">
+      <button type="submit">Uložit seznam</button>
+      <a class="btn ghost" href="{% url 'sklad:recipes' %}">Zpět</a>
+    </div>
+  </form>
+
+  {% if recipe %}
+  <form method="post" class="recipe-delete" onsubmit="return confirm('Smazat tenhle seznam materiálů?');">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete">
+    <button type="submit" class="btn ghost">Smazat seznam</button>
+  </form>
+  {% endif %}
+</section>
+
+<template id="recipe-line-tpl">
+  <div class="recipe-line">
+    <label>Materiál
+      <select name="material" class="js-mat">
+        <option value="">—</option>
+        {% for m in materials %}
+          <option value="{{ m.pk }}" data-unit="{{ m.unit.code }}">{{ m.name }}{% if not m.active %} (neaktivní){% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Typicky (volitelné)
+      <input name="quantity" value="" inputmode="decimal" placeholder="po práci">
+    </label>
+    <span class="recipe-unit js-unit"></span>
+    <button type="button" class="btn ghost js-remove-line">Odebrat</button>
+  </div>
+</template>
+
+<script>
+(function () {
+  const box = document.getElementById('recipe-lines');
+  const tpl = document.getElementById('recipe-line-tpl');
+  const addBtn = document.getElementById('js-add-line');
+  function syncUnit(row) {
+    const sel = row.querySelector('.js-mat');
+    const unit = row.querySelector('.js-unit');
+    const opt = sel && sel.options[sel.selectedIndex];
+    if (unit) unit.textContent = (opt && opt.dataset.unit) || '';
+  }
+  function wire(row) {
+    row.querySelector('.js-mat')?.addEventListener('change', () => syncUnit(row));
+    row.querySelector('.js-remove-line')?.addEventListener('click', () => {
+      if (box.querySelectorAll('.recipe-line').length <= 1) {
+        row.querySelector('.js-mat').value = '';
+        row.querySelector('input[name="quantity"]').value = '';
+        syncUnit(row);
+        return;
+      }
+      row.remove();
+    });
+    syncUnit(row);
+  }
+  box.querySelectorAll('.recipe-line').forEach(wire);
+  addBtn?.addEventListener('click', () => {
+    const node = tpl.content.firstElementChild.cloneNode(true);
+    box.appendChild(node);
+    wire(node);
+    node.querySelector('.js-mat')?.focus();
+  });
+})();
+</script>
+{% endblock %}

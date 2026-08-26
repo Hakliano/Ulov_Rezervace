@@ -1,0 +1,134 @@
+{% extends 'sklad/base.html' %}
+{% block content %}
+<section class="kpis">
+  <article class="kpi">
+    <div class="label">Hodnota zásob</div>
+    <div class="value">{% if kpi_value_fmt %}{{ kpi_value_fmt }} Kč{% else %}—{% endif %}</div>
+    <div class="hint">podle posledních nákupních cen</div>
+    <div class="kpi-ico" aria-hidden="true">◆</div>
+  </article>
+  <article class="kpi">
+    <div class="label">Pod minimem</div>
+    <div class="value">{{ kpi_below }}</div>
+    <div class="hint warn">z {{ kpi_total }} materiálů</div>
+    <div class="kpi-ico" aria-hidden="true">!</div>
+  </article>
+  <article class="kpi">
+    <div class="label">Kriticky nízké</div>
+    <div class="value">{{ kpi_critical }}</div>
+    <div class="hint crit">{% if kpi_critical %}vyžaduje pozornost{% else %}v pořádku{% endif %}</div>
+    <div class="kpi-ico crit" aria-hidden="true">●</div>
+  </article>
+  <article class="kpi">
+    <div class="label">Nákupní seznam</div>
+    <div class="value">{{ kpi_shopping }}</div>
+    <div class="hint ok">otevřené položky</div>
+    <div class="kpi-ico ok" aria-hidden="true">🛒</div>
+  </article>
+</section>
+
+<div class="dash">
+  <section class="card">
+    <h2>Materiály pod minimem</h2>
+    {% if below %}
+    <table>
+      <thead>
+        <tr><th>Materiál</th><th>Kategorie</th><th>Stav</th><th>Minimum</th><th>Jedn.</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for r in below %}
+        <tr>
+          <td>
+            <span class="mat-name">{{ r.m.name }}</span>
+            {% if r.m.primary_supplier %}<span class="mat-sub">{{ r.m.primary_supplier.name }}</span>{% endif %}
+          </td>
+          <td>{{ r.m.category.name|default:"—" }}</td>
+          <td>
+            <div class="row" style="align-items:center">
+              <span>{{ r.qty }}</span>
+              <div class="bar {{ r.status }}"><span style="width:{{ r.pct }}%"></span></div>
+            </div>
+          </td>
+          <td>{{ r.m.min_quantity }}</td>
+          <td>{{ r.m.unit.code }}</td>
+          <td><span class="pill {{ r.status }}">{{ r.status_label }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nic nechybí. Až zásoby klesnou pod minimum, objeví se tady.</p>
+    {% endif %}
+  </section>
+
+  <div>
+    <section class="card">
+      <h2>Rychlé akce</h2>
+      <div class="actions">
+        <a class="btn-gold" href="{% url 'sklad:material_new' %}">＋ Přidat materiál</a>
+        <a class="btn-gold" href="{% url 'sklad:consume' %}">− Odečet spotřeby</a>
+        <a class="btn-gold" href="{% url 'sklad:inventory' %}">☑ Zapsat inventuru</a>
+        <a class="btn-gold" href="{% url 'sklad:shopping' %}">🛒 Na nákupní seznam</a>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Nejnovější upozornění</h2>
+      <div class="feed">
+        {% for a in alerts %}
+        <article>
+          <span class="dot-status {{ a.type }}"></span>
+          <strong>{{ a.material.name }}</strong>
+          <span class="muted">
+            {% if a.type == 'critical' or a.type == 'zero' %}kriticky nízké
+            {% elif a.type == 'low' %}pod minimem
+            {% else %}{{ a.type }}{% endif %}
+            · {{ a.created_at|timesince }}
+          </span>
+        </article>
+        {% empty %}
+        <p class="muted">Žádná otevřená upozornění.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="bottom">
+  <section class="card">
+    <h2>Spotřeba za posledních 7 dní</h2>
+    <div class="chart">
+      {% for d in week_days %}
+      <div class="col"><b style="height:{% if d.pct %}{{ d.pct }}px{% else %}4px{% endif %}"></b><span>{{ d.label }}</span></div>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="card">
+    <h2>Nejvíce spotřebovávané</h2>
+    <div class="rank">
+      {% for t in top_consumed %}
+      <div class="line">
+        <span>{{ t.name }}</span>
+        <span>{{ t.amount }} {{ t.unit }}</span>
+        <div class="track"><span style="width:{{ t.pct }}%"></span></div>
+      </div>
+      {% empty %}
+      <p class="muted">Zatím bez spotřeby.</p>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="card">
+    <h2>Nákupní seznam</h2>
+    {% for i in shopping %}
+    <div class="shop-row">
+      <div>
+        <strong>{{ i.material.name }}</strong>
+        <span class="mat-sub">{{ i.supplier.name|default:"—" }} · {{ i.quantity_to_buy }} {{ i.unit.code }}</span>
+      </div>
+      <span class="pill open">Otevřená</span>
+    </div>
+    {% empty %}
+    <p class="muted">Seznam je prázdný.</p>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Jednotky{% endblock %}
+{% block content %}
+<section class="card">
+  <p class="muted">Společný číselník. V první verzi bez převodů — spotřeba používá stejnou jednotku jako materiál.</p>
+  <ul class="plain-list">
+    {% for u in units %}<li><strong>{{ u.code }}</strong> — {{ u.name }}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

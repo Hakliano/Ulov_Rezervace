@@ -26,8 +26,9 @@ from .forms import (
     ResetHeslaForm,
     UpozorneniForm,
 )
-from .models import PartnerNastaveni, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
+from .models import MODUL_MATERIALNIK, PartnerNastaveni, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
 from .services import log_superadmin, oznac_platbu, vytvor_noveho_partnera
+from .services_moduly import nastav_modul, partner_modul
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
 
@@ -438,6 +439,8 @@ def detail_partnera(request, salon_id):
             'majitele': salon.zamestnanci.filter(role=Zamestnanec.ROLE_MAJITEL).order_by('jmeno'),
             'reset_form': ResetHeslaForm(),
             'owner_flow': owner_flow_stav(salon),
+            'materialnik_modul': partner_modul(salon, MODUL_MATERIALNIK),
+            'materialnik_public_url': (getattr(settings, 'MATERIALNIK_PUBLIC_URL', '') or '').rstrip('/'),
             'platby': salon.partnerske_platby.select_related('oznacil')[:24],
             'posledni_platba': salon.partnerske_platby.select_related('oznacil').first(),
             'upozorneni': salon.upozorneni_plateb.select_related('odeslal')[:20],
@@ -471,6 +474,23 @@ def ulozit_nastaveni(request, salon_id):
             error for errors in form.errors.values() for error in errors
         ))
     return _detail_redirect(salon.id, _tab_z_request(request, 'partner'))
+
+
+@superadmin_required
+@require_POST
+def nastavit_materialnik(request, salon_id):
+    salon = get_object_or_404(Salon, pk=salon_id)
+    zapnout = request.POST.get('zapnout') == '1'
+    row = nastav_modul(salon, MODUL_MATERIALNIK, zapnout, request.user)
+    if zapnout and row.status == row.STAV_ACTIVE:
+        messages.success(request, 'Materiálník je zapnutý. Partner se přihlásí stejným účtem.')
+    elif zapnout and row.status == row.STAV_ERROR:
+        messages.error(request, f'Materiálník se nepodařilo zapnout: {row.provisioning_error}')
+    elif not zapnout:
+        messages.success(request, 'Materiálník je vypnutý. Data skladu zůstávají, ve FLOW o něm není zmínka.')
+    else:
+        messages.info(request, f'Stav Materiálníku: {row.get_status_display()}.')
+    return _detail_redirect(salon.id, 'partner')
 
 
 @superadmin_required

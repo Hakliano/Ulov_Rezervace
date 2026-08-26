@@ -1,0 +1,22 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Inventura{% endblock %}
+{% block content %}
+<p class="muted">Zadejte skutečné fyzické množství. Systém vytvoří korekční pohyb.</p>
+<section class="card">
+  <table>
+    <tr><th>Materiál</th><th>V systému</th></tr>
+    {% for r in rows %}
+    <tr><td>{{ r.m.name }}</td><td>{{ r.qty }} {{ r.m.unit.code }}</td></tr>
+    {% endfor %}
+  </table>
+  <form method="post" class="row" style="margin-top:1rem">
+    {% csrf_token %}
+    <label>Materiál
+      <select name="material">{% for r in rows %}<option value="{{ r.m.pk }}">{{ r.m.name }}</option>{% endfor %}</select>
+    </label>
+    <label>Skutečný stav <input name="actual" required></label>
+    <label>Důvod <input name="reason" value="Inventura"></label>
+    <button type="submit">Uložit inventuru</button>
+  </form>
+</section>
+{% endblock %}

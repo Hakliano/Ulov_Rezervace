@@ -34,6 +34,12 @@ class NovyPartnerForm(forms.Form):
         required=False,
         initial=True,
     )
+    aktivovat_materialnik = forms.BooleanField(
+        label='Hned aktivovat Materiálník (sklad, i bez FLOW)',
+        required=False,
+        initial=False,
+        help_text='Personál se přihlásí stejným e-mailem a heslem. Web ani FLOW k tomu nejsou potřeba.',
+    )
 
     domena = forms.CharField(
         label='Vlastní doména',

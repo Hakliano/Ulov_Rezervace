@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=13">
+  <link rel="stylesheet" href="marketing-v2.css?v=17">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -461,10 +461,31 @@
 
                 <p class="tile-closing">FLOW není jen rezervační systém. Je to každodenní pracovní prostředí, které propojuje kalendář, zákazníky, komunikaci i provoz vaší firmy do jedné aplikace.</p>
 
-                <div class="tile-shots">
-                  <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/flow1.webp" alt="FLOW — přehled pracovního dne" loading="lazy" decoding="async">
-                  <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/flow2.webp" alt="FLOW — kalendář a rezervace" loading="lazy" decoding="async">
-                  <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/flow3.webp" alt="FLOW — správa provozovny" loading="lazy" decoding="async">
+                <div class="tile-shots tile-shots-wide">
+                  <img
+                    src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ui_flow1.webp"
+                    alt="FLOW — přehled provozovny, statistiky a dnešní rezervace"
+                    width="1600"
+                    height="900"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                  <img
+                    src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ui_flow2.webp"
+                    alt="FLOW — pracovní den, rizikové rezervace a stavy návštěv"
+                    width="1600"
+                    height="900"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                  <img
+                    src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ui_flow3.webp"
+                    alt="FLOW — správa personálu, služeb a pracovní doby"
+                    width="1600"
+                    height="900"
+                    loading="lazy"
+                    decoding="async"
+                  >
                 </div>
 
                 <div class="tile-actions">
@@ -881,6 +902,60 @@
               </div>
             </div>
           </article>
+
+          <article class="tile tile-addon" data-tile="materialnik" id="materialnik">
+            <img class="tile-icon tile-icon-wordmark" src="https://haklweb.b-cdn.net/modernik/materialnik_logo.webp" alt="Materiálník" width="240" height="110">
+            <p class="tile-addon-badge">Za příplatek 99&nbsp;Kč / měsíc</p>
+            <h3>Materiálník</h3>
+            <p class="tile-teaser">Sklad, receptury a spotřeba. Má přehled o tom, co spotřebujete.</p>
+            <button type="button" class="tile-probe" aria-expanded="false" aria-label="Prozkoumat detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+              <span class="tile-probe-label">Prozkoumat</span>
+            </button>
+            <div class="tile-expand tile-expand-rich">
+              <div class="tile-detail">
+                <h4>Materiálník — sklad, který nebrzdí kalendář</h4>
+                <p>Hlídá materiál, receptury služeb a nákup. Po dokončení služby ve FLOW nabídne odečet spotřeby. Rezervace se dokončí i tehdy, když sklad zrovna nesedí.</p>
+
+                <div class="tile-feature-grid">
+                  <div class="tile-feature">
+                    <h5>Sklad</h5>
+                    <p>Materiály, dodavatelé, minimum a kritický stav. Stav se počítá z pohybů, ne z odhadu.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Receptury</h5>
+                    <p>Ke každé službě předpis spotřeby. Personál může množství na místě upravit.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Nákup a upozornění</h5>
+                    <p>Pod minimem se položka objeví na nákupním seznamu. Kriticky nízké zásoby jdou hned vidět.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Stejné přihlášení</h5>
+                    <p>E-mail a heslo jako do FLOW. Zapíná se u partnera v administraci.</p>
+                  </div>
+                </div>
+
+                <p class="tile-closing">Samostatně stojí 499&nbsp;Kč / měsíc (do 31. 12. 2026 akce 299&nbsp;Kč). Společně s Moderníkem je to příplatek 99&nbsp;Kč / měsíc.</p>
+
+                <div class="tile-shots tile-shots-wide">
+                  <img
+                    src="https://haklweb.b-cdn.net/modernik/materialnik_ukazkaUI.webp"
+                    alt="Ukázka prostředí Materiálník — přehled skladu, minima a nákupní seznam"
+                    width="1600"
+                    height="900"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                </div>
+
+                <div class="tile-actions">
+                  <a href="#poptavka" class="btn btn-gold" data-package="Materiálník k partnerství MODERNÍK">Chci Materiálník k Moderníku →</a>
+                  <a href="https://www.materialnik.cz/" class="btn btn-outline" target="_blank" rel="noopener">Více o Materiálníku</a>
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -912,6 +987,7 @@
             <li>Osobní podpora zakladatele</li>
             <li>Statistiky a reporty</li>
             <li>Kartotéka klientů</li>
+            <li>Volitelně Materiálník — sklad a spotřeba za 99&nbsp;Kč / měsíc</li>
           </ul>
           <a href="#poptavka" class="btn btn-gold" style="margin-top:1.1rem;" data-package="Kompletní partnerství MODERNÍK">Chci partnerství →</a>
         </div>
@@ -1169,6 +1245,39 @@
       </div>
     </section>
 
+    <section class="section partaci-section" id="partaci">
+      <div class="wrap-wide partaci-grid">
+        <div class="partaci-copy">
+          <p class="partaci-kicker">Společně v jedné provozovně</p>
+          <h2>Moderník a Materiálník jako společní parťáci Vaší provozovny.</h2>
+          <p>
+            Web, rezervace a FLOW hlídají zákazníky. Materiálník hlídá, co u toho spotřebujete.
+            Jeden tým, jedno přihlášení, jeden provoz — bez přehazování mezi dvěma světy.
+          </p>
+          <ul class="partaci-list">
+            <li>Po službě ve FLOW nabídne odečet spotřeby. Kalendář se kvůli skladu nezastaví.</li>
+            <li>Stejný e-mail a heslo jako do FLOW. Personál se neučí druhý systém.</li>
+            <li>K partnerství Moderník je to příplatek 99&nbsp;Kč / měsíc — ne druhý drahý sklad.</li>
+            <li>Vidíte termíny, tržby i materiál na jednom místě. Méně dohadů, méně nákupů naslepo.</li>
+          </ul>
+          <div class="partaci-actions">
+            <a href="#poptavka" class="btn btn-gold" data-package="Materiálník k partnerství MODERNÍK">Chci oba parťáky →</a>
+            <a href="https://www.materialnik.cz/" class="btn btn-outline" target="_blank" rel="noopener">Více o Materiálníku</a>
+          </div>
+        </div>
+        <div class="partaci-visual">
+          <img
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/spojeni3v1.webp"
+            alt="Moderník a Materiálník — společní parťáci vaší provozovny"
+            width="720"
+            height="720"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="poptavka">
       <div class="wrap-wide contact-grid">
         <div>
@@ -1215,6 +1324,7 @@
               <option value="Partnerský web">Partnerský web (199 Kč akce / běžně 299 Kč)</option>
               <option value="Kompletní partnerství MODERNÍK" selected>Kompletní partnerství MODERNÍK (499 Kč akce / běžně 799 Kč)</option>
               <option value="Kompletní partnerství MODERNÍK + Program růstu">Kompletní partnerství MODERNÍK + Program růstu</option>
+              <option value="Materiálník k partnerství MODERNÍK">Materiálník k partnerství (+99 Kč / měsíc)</option>
               <option value="Výroční servis">Výroční servis</option>
               <option value="Nejsem si jistý, poradíte mi">Nejsem si jistý, poradíte mi</option>
             </select>

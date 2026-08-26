@@ -10,7 +10,14 @@ from flow.emails import email_flow_pristup, flow_pristup_payload, generate_heslo
 from flow.models import FlowUser, heslo_je_platne
 from flow.permissions import FlowPermission
 from flow.serializers import FlowUserPublicSerializer
-from rezervace.models import Rezervace, RezervacniNastaveni, Zamestnanec, ZamestnanecAbsence
+from rezervace.models import (
+    Rezervace,
+    RezervacniNastaveni,
+    Zamestnanec,
+    ZamestnanecAbsence,
+    ZamestnanecSluzba,
+)
+from salons.models import CenikPolozka
 from rezervace.serializers import (
     RezervacniNastaveniSerializer,
     ZamestnanecAbsenceSerializer,
@@ -27,6 +34,19 @@ def require_flow_owner(request):
     if not flow_je_owner(user):
         return None, Response(
             {'detail': 'Tuto část Správy může používat jen Manager.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return user, None
+
+
+def require_flow_overview(request):
+    """Přehled a statistiky — Manager, nebo Staff s Visible Overview."""
+    user = get_flow_user_from_request(request)
+    if not user:
+        return None, Response({'detail': 'Nejste přihlášeni.'}, status=status.HTTP_401_UNAUTHORIZED)
+    if not flow_je_owner(user) and not user.visible_overview:
+        return None, Response(
+            {'detail': 'Nemáte zapnuté Visible Overview.'},
             status=status.HTTP_403_FORBIDDEN,
         )
     return user, None
@@ -64,6 +84,51 @@ def _personal_payload(z):
     except FlowUser.DoesNotExist:
         data['flow'] = {'ma_flow': False, 'ucet': None}
     return data
+
+
+def _salon_sluzby_katalog(salon):
+    return [
+        {'id': s.id, 'nazev': s.nazev, 'delka_minut': s.delka_minut}
+        for s in CenikPolozka.objects.filter(salon=salon, aktivni=True).order_by('poradi', 'id')
+    ]
+
+
+def _nastav_prirazene_sluzby(zam, sluzby_ids, salon):
+    """Prázdné pole = umí všechny služby. Vrací Response při chybě, jinak None."""
+    if zam.role == Zamestnanec.ROLE_MAJITEL:
+        return None
+    if sluzby_ids is None:
+        sluzby_ids = []
+    if not isinstance(sluzby_ids, list):
+        return Response(
+            {'detail': 'Očekáváno pole sluzby_ids: [id, …].'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    valid = set(
+        CenikPolozka.objects.filter(salon=salon, aktivni=True).values_list('id', flat=True),
+    )
+    clean = []
+    for sid in sluzby_ids:
+        try:
+            sid_i = int(sid)
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': f'Neplatné ID služby: {sid}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if sid_i not in valid:
+            return Response(
+                {'detail': f'Služba {sid_i} nepatří k salonu.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if sid_i not in clean:
+            clean.append(sid_i)
+    ZamestnanecSluzba.objects.filter(zamestnanec=zam).delete()
+    if clean:
+        ZamestnanecSluzba.objects.bulk_create([
+            ZamestnanecSluzba(zamestnanec=zam, sluzba_id=sid) for sid in clean
+        ])
+    return None
 
 
 def _actor(user):
@@ -137,7 +202,10 @@ class FlowOwnerPersonalListCreateView(APIView):
             .prefetch_related('rozvrh', 'absence', 'prirazene_sluzby')
             .order_by('poradi', 'id')
         )
-        return Response({'zamestnanci': [_personal_payload(z) for z in qs]})
+        return Response({
+            'zamestnanci': [_personal_payload(z) for z in qs],
+            'sluzby': _salon_sluzby_katalog(user.salon),
+        })
 
     def post(self, request):
         user, err = require_flow_owner(request)
@@ -179,12 +247,18 @@ class FlowOwnerPersonalDetailView(APIView):
         data.pop('zobrazit_na_webu', None)
         data.pop('fotka', None)
         data.pop('popis', None)
+        has_sluzby = 'sluzby_ids' in request.data
+        sluzby_ids = data.pop('sluzby_ids', None) if has_sluzby else None
         pred = _personal_payload(z)
         ser = ZamestnanecWriteSerializer(
             z, data=data, partial=True, context={'salon': user.salon},
         )
         ser.is_valid(raise_exception=True)
         ser.save()
+        if has_sluzby:
+            err = _nastav_prirazene_sluzby(z, sluzby_ids, user.salon)
+            if err:
+                return err
         z.refresh_from_db()
         po = _personal_payload(z)
         log_audit(
@@ -698,43 +772,114 @@ class FlowOwnerNoShowOdblokovatView(APIView):
         return Response({'ok': True, 'detail': f'E-mail {email} odblokován v tomto salonu.'})
 
 
+def _trzba_dokoncenych(dokoncene_qs):
+    from django.db.models import Sum
+
+    from rezervace.models import RezervaceSluzba
+
+    val = (
+        RezervaceSluzba.objects.filter(rezervace__in=dokoncene_qs)
+        .aggregate(s=Sum('sluzba__cena'))['s']
+    )
+    return int(val or 0)
+
+
 class FlowOwnerStatistikyView(APIView):
     authentication_classes = []
     permission_classes = [FlowPermission]
 
     def get(self, request):
-        from django.db.models import Count
+        from calendar import monthrange
+        from datetime import timedelta
+
+        from django.db.models import Count, Sum
+        from django.utils import timezone
 
         from rezervace.models import Rezervace, RezervaceSluzba
 
-        user, err = require_flow_owner(request)
+        user, err = require_flow_overview(request)
         if err:
             return err
         qs = Rezervace.objects.filter(salon=user.salon)
+        now = timezone.localtime()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow = today_start + timedelta(days=1)
+        week_start = today_start - timedelta(days=today_start.weekday())
+        week_end = week_start + timedelta(days=7)
+        last_day = monthrange(now.year, now.month)[1]
+        month_start = today_start.replace(day=1)
+        month_end = month_start.replace(day=last_day) + timedelta(days=1)
+
+        done = qs.filter(stav='dokonceno')
+        done_month = done.filter(zacatek__gte=month_start, zacatek__lt=month_end)
+        live_stavy = ('ceka', 'potvrzeno', 'dokonceno')
+        dnes_qs = qs.filter(zacatek__gte=today_start, zacatek__lt=tomorrow, stav__in=live_stavy)
+        tyden_qs = qs.filter(zacatek__gte=week_start, zacatek__lt=week_end, stav__in=live_stavy)
+        zaloha_qs = qs.filter(
+            zaloha_vyzadana_at__isnull=False,
+            zaloha_ok_at__isnull=True,
+            zaloha_nepozadovana_at__isnull=True,
+            stav__in=('ceka', 'potvrzeno'),
+        )
         total = qs.count()
-        dokonceno = qs.filter(stav='dokonceno').count()
+        dokonceno = done.count()
         storno = qs.filter(stav__in=('zakaznik_storno', 'salon_storno')).count()
         no_show = qs.filter(stav='no_show').count()
-        sluzby_stats = (
-            RezervaceSluzba.objects.filter(rezervace__in=qs)
+        sluzby_qs = (
+            RezervaceSluzba.objects.filter(rezervace__in=done)
             .values('sluzba__nazev')
-            .annotate(pocet=Count('id'))
+            .annotate(pocet=Count('id'), trzba=Sum('sluzba__cena'))
             .order_by('-pocet')[:5]
         )
-        zamestnanec_stats = (
-            qs.filter(zamestnanec__isnull=False)
-            .values('zamestnanec__jmeno')
-            .annotate(pocet=Count('id'))
-            .order_by('-pocet')[:5]
+        sluzby_stats = [
+            {
+                'sluzba__nazev': row['sluzba__nazev'],
+                'pocet': row['pocet'],
+                'trzba': int(row['trzba'] or 0),
+            }
+            for row in sluzby_qs
+        ]
+        people = []
+        staff = (
+            Zamestnanec.objects.filter(salon=user.salon, aktivni=True)
+            .order_by('poradi', 'id')
         )
+        for z in staff:
+            z_done = done.filter(zamestnanec=z)
+            z_month = done_month.filter(zamestnanec=z)
+            people.append({
+                'id': z.id,
+                'jmeno': z.jmeno,
+                'fotka': z.fotka or '',
+                'dokonceno': z_done.count(),
+                'dokonceno_mesic': z_month.count(),
+                'trzba': _trzba_dokoncenych(z_done),
+                'trzba_mesic': _trzba_dokoncenych(z_month),
+            })
+        tyden_pocty = []
+        for i in range(7):
+            d0 = week_start + timedelta(days=i)
+            d1 = d0 + timedelta(days=1)
+            tyden_pocty.append(tyden_qs.filter(zacatek__gte=d0, zacatek__lt=d1).count())
         return Response({
             'celkem_rezervaci': total,
             'dokonceno': dokonceno,
+            'dokonceno_mesic': done_month.count(),
             'storno': storno,
             'storno_procent': round(storno / total * 100, 1) if total else 0,
             'no_show': no_show,
-            'nejprodavanejsi_sluzby': list(sluzby_stats),
-            'nejvytizenejsi_zamestnanci': list(zamestnanec_stats),
+            'dnes': dnes_qs.count(),
+            'tyden': tyden_qs.count(),
+            'ceka_zaloha': zaloha_qs.count(),
+            'trzba_celkem': _trzba_dokoncenych(done),
+            'trzba_mesic': _trzba_dokoncenych(done_month),
+            'tyden_pocty': tyden_pocty,
+            'zamestnanci': people,
+            'nejprodavanejsi_sluzby': sluzby_stats,
+            'nejvytizenejsi_zamestnanci': [
+                {'zamestnanec__jmeno': p['jmeno'], 'pocet': p['dokonceno']}
+                for p in sorted(people, key=lambda x: -x['dokonceno'])[:5]
+            ],
         })
 
 

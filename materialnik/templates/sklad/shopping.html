@@ -1,0 +1,35 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Nákupní seznam{% endblock %}
+{% block content %}
+<section class="card">
+  <table>
+    <tr><th>Materiál</th><th>Koupit</th><th>Dodavatel</th><th>Původ</th><th></th></tr>
+    {% for i in items %}
+    <tr>
+      <td>{{ i.material.name }}</td>
+      <td>{{ i.quantity_to_buy }} {{ i.unit.code }}</td>
+      <td>{{ i.supplier.name|default:"—" }}</td>
+      <td>{{ i.origin }}</td>
+      <td class="row">
+        <form method="post">{% csrf_token %}<input type="hidden" name="pk" value="{{ i.pk }}"><input type="hidden" name="action" value="bought"><button type="submit">Koupeno</button></form>
+        <form method="post">{% csrf_token %}<input type="hidden" name="pk" value="{{ i.pk }}"><input type="hidden" name="action" value="dismissed"><button class="btn ghost" type="submit">Vyřešeno</button></form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="muted">Seznam je prázdný.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+<section class="card">
+  <h2>Přidat ručně</h2>
+  <form method="post" class="row">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <label>Materiál
+      <select name="material">{% for m in materials %}<option value="{{ m.pk }}">{{ m.name }}</option>{% endfor %}</select>
+    </label>
+    <label>Množství <input name="quantity" value="1"></label>
+    <button type="submit">Přidat</button>
+  </form>
+</section>
+{% endblock %}

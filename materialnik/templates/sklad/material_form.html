@@ -1,0 +1,41 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}{% if material %}Upravit materiál{% else %}Nový materiál{% endif %}{% endblock %}
+{% block content %}
+<section class="card">
+  <form method="post" class="stack">
+    {% csrf_token %}
+    <label>Název <input name="name" value="{{ material.name|default:'' }}" required></label>
+    <label>Jednotka
+      <select name="unit" required>
+        {% for u in units %}
+          <option value="{{ u.pk }}" {% if material and material.unit_id == u.pk %}selected{% endif %}>{{ u.code }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Kategorie
+      <select name="category">
+        <option value="">—</option>
+        {% for c in categories %}
+          <option value="{{ c.pk }}" {% if material and material.category_id == c.pk %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Dodavatel
+      <select name="supplier">
+        <option value="">—</option>
+        {% for s in suppliers %}
+          <option value="{{ s.pk }}" {% if material and material.primary_supplier_id == s.pk %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Minimální stav <input name="min_quantity" value="{{ material.min_quantity|default:'0' }}"></label>
+    <label>Kritický stav <input name="critical_quantity" value="{{ material.critical_quantity|default:'' }}" placeholder="volitelné"></label>
+    <label>Poslední nákupní cena <input name="last_purchase_price" value="{{ material.last_purchase_price|default:'' }}"></label>
+    <label>SKU <input name="sku" value="{{ material.sku|default:'' }}"></label>
+    <label>Čárový kód <input name="barcode" value="{{ material.barcode|default:'' }}"></label>
+    <label>Poznámka <textarea name="note">{{ material.note|default:'' }}</textarea></label>
+    <label class="check"><input type="checkbox" name="active" {% if not material or material.active %}checked{% endif %}> Aktivní</label>
+    <button type="submit">Uložit</button>
+  </form>
+</section>
+{% endblock %}

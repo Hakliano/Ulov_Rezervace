@@ -1,0 +1,21 @@
+{% extends 'sklad/base.html' %}
+{% block heading %}Pohyby / Historie{% endblock %}
+{% block content %}
+<section class="card">
+  <table>
+    <tr><th>Kdy</th><th>Materiál</th><th>Změna</th><th>Typ</th><th>Proč</th><th>Rezervace</th></tr>
+    {% for m in movements %}
+    <tr>
+      <td>{{ m.created_at|date:"d.m.Y H:i" }}</td>
+      <td>{{ m.material.name }}</td>
+      <td>{{ m.quantity_delta }} {{ m.unit.code }}</td>
+      <td>{{ m.get_type_display }}</td>
+      <td>{{ m.reason|default:m.note }}</td>
+      <td>{{ m.reservation_ref|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="muted">Zatím žádné pohyby.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

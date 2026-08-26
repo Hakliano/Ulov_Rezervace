@@ -84,6 +84,10 @@ def vytvor_noveho_partnera(*, data: dict, actor):
     if data.get('aktivovat_flow', True):
         flow_user, _ = ensure_owner_flow_user(salon, email=data['majitel_email'])
 
+    if data.get('aktivovat_materialnik'):
+        from .services_moduly import nastav_modul
+        nastav_modul(salon, 'materialnik', True, actor)
+
     log_superadmin(
         salon,
         actor,

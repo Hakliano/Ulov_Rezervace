@@ -196,6 +196,13 @@ GDPR_UCHOVAVANI_MESICU_DEFAULT = int(os.environ.get('GDPR_UCHOVAVANI_MESICU', '1
 # Bez REDIS_URL zůstane LocMem (lokální vývoj). V Dockeru: redis://redis:6379/0
 REDIS_URL = os.environ.get('REDIS_URL', '').strip()
 
+# Materiálník — samostatná aplikace (vlastní DB). Prázdné URL = aktivace hlásí chybu.
+# STUB=true jen pro testy: provisioning nevolá HTTP.
+MATERIALNIK_URL = os.environ.get('MATERIALNIK_URL', '').strip()
+MATERIALNIK_PUBLIC_URL = os.environ.get('MATERIALNIK_PUBLIC_URL', MATERIALNIK_URL).strip()
+MATERIALNIK_M2M_KEY = os.environ.get('MATERIALNIK_M2M_KEY', '').strip()
+MATERIALNIK_STUB = _env_bool('MATERIALNIK_STUB', False)
+
 # E-maily přes frontu (Celery). false = sync SMTP jako dřív (rollback / nouzový režim).
 # Zapínejte jen když běží služba `worker` a Redis.
 EMAIL_VIA_CELERY = _env_bool('EMAIL_VIA_CELERY', False)

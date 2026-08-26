@@ -24,7 +24,7 @@ from rezervace.serializers import (
 )
 from rezervace.services.audit import log_audit, log_rezervace_audit
 from rezervace.services.availability import volni_zamestnanci
-from rezervace.services.emails import email_storno, email_zmena_obsluhy
+from rezervace.services.emails import email_storno, email_zmena_obsluhy, ma_kontaktni_email
 
 
 def _flow_user(request):
@@ -131,12 +131,12 @@ class FlowKalendarView(APIView):
         user = _flow_user(request)
         od, do = _parse_range(request)
         overview = str(request.query_params.get('overview', '')).lower() in ('1', 'true', 'yes')
-        if overview and not user.visible_overview:
+        je_majitel = flow_je_owner(user)
+        if overview and not user.visible_overview and not je_majitel:
             return Response({'detail': 'Nemáte zapnuté Visible Overview.'}, status=403)
 
         salon = user.salon
         qs = Rezervace.objects.filter(salon=salon).prefetch_related('polozky__sluzba', 'zamestnanec')
-        je_majitel = flow_je_owner(user)
         if overview:
             mode = 'overview'
         elif je_majitel:
@@ -189,15 +189,15 @@ class FlowRezervaceDokoncenoView(APIView):
         denied = _own_rezervace_or_403(user, rezervace)
         if denied:
             return denied
-        if rezervace.stav in ('zakaznik_storno', 'salon_storno', 'dokonceno', 'no_show'):
-            return Response({'detail': 'Tuto rezervaci nelze dokončit.'}, status=400)
-        pred = AdminRezervaceSerializer(rezervace).data
-        rezervace.stav = 'dokonceno'
-        if not rezervace.dokonceno_at:
-            rezervace.dokonceno_at = timezone.now()
-        rezervace.save(update_fields=['stav', 'dokonceno_at', 'aktualizovano'])
-        po = AdminRezervaceSerializer(rezervace).data
-        _log_flow(user, rezervace, 'rezervace proběhla', pred, po)
+        from rezervace.services.dokonceni import NelzeDokoncit, oznacit_dokonceno
+
+        try:
+            _, po = oznacit_dokonceno(
+                rezervace,
+                log_fn=lambda r, pred, po: _log_flow(user, r, 'rezervace proběhla', pred, po),
+            )
+        except NelzeDokoncit as exc:
+            return Response({'detail': str(exc)}, status=400)
         return Response(po)
 
 
@@ -212,7 +212,7 @@ class FlowRezervaceNoShowView(APIView):
         if denied:
             return denied
         if rezervace.stav in ('zakaznik_storno', 'salon_storno', 'dokonceno', 'no_show'):
-            return Response({'detail': 'Tuto rezervaci nelze označit jako NO-show.'}, status=400)
+            return Response({'detail': 'Tuto rezervaci nelze označit jako Hříšníci.'}, status=400)
 
         # FLOW: žádná blokace e-mailu — to zůstává majitelce v rezervacích
         odeslat_upozorneni = bool(request.data.get('odeslat_upozorneni'))
@@ -266,13 +266,13 @@ class FlowRezervaceNoShowView(APIView):
                     zaznam.save(update_fields=['email_upozorneni_odeslan'])
             except Exception as exc:
                 return Response({
-                    'detail': f'NO-show uložen, ale e-mail se nepodařilo odeslat: {exc}',
+                    'detail': f'Hříšníci uloženi, ale e-mail se nepodařilo odeslat: {exc}',
                     'rezervace': AdminRezervaceSerializer(rezervace).data,
                     'zaznam': NoShowZaznamSerializer(zaznam).data,
                 }, status=502)
 
         po = AdminRezervaceSerializer(rezervace).data
-        _log_flow(user, rezervace, 'NO-show', pred, po)
+        _log_flow(user, rezervace, 'Hříšníci', pred, po)
         return Response({
             'rezervace': po,
             'zaznam': NoShowZaznamSerializer(zaznam).data,
@@ -392,9 +392,6 @@ class FlowRezervacePlatbaView(APIView):
         denied = _own_rezervace_or_403(user, rezervace)
         if denied:
             return denied
-        if not rezervace.kontaktni_email:
-            return Response({'detail': 'Rezervace nemá e-mail zákazníka.'}, status=400)
-
         castka = request.data.get('castka')
         ucet = (request.data.get('ucet') or request.data.get('cislo_uctu') or '').strip()
         vs = request.data.get('variabilni_symbol') or request.data.get('vs')
@@ -402,28 +399,36 @@ class FlowRezervacePlatbaView(APIView):
         if not castka or not ucet or vs is None or str(vs).strip() == '':
             return Response({'detail': 'Vyplňte částku, číslo účtu a variabilní symbol.'}, status=400)
 
-        try:
-            nastaveni = user.salon.rezervacni_nastaveni
-            typ_mailu = MANUAL_TYP_ZALOHA if je_zaloha else MANUAL_TYP_PLATBA
-            platba = get_manual_notifikace(nastaveni.notifikace, typ_mailu)
-            if not platba:
-                return Response({
-                    'detail': 'Chybí nastavení e-mailu (záloha QR).' if je_zaloha else 'Chybí nastavení e-mailu (platba QR).',
-                }, status=400)
-            from rezervace.services.notifikace_email import email_platba_qr
-            from rezervace.services.platba_qr import generuj_platbu_qr
-            import base64
+        from rezervace.services.platba_qr import generuj_platbu_qr
+        import base64
 
+        try:
             platba_data = generuj_platbu_qr(ucet, castka, vs, zprava=user.salon.name)
-            ep, et = _email_override(request)
-            email_platba_qr(
-                rezervace, platba, castka, ucet, vs,
-                platba_data=platba_data, predmet=ep, text=et,
-            )
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=400)
-        except Exception as exc:
-            return Response({'detail': f'E-mail se nepodařilo odeslat: {exc}'}, status=502)
+
+        email_odeslan = False
+        if ma_kontaktni_email(rezervace):
+            try:
+                nastaveni = user.salon.rezervacni_nastaveni
+                typ_mailu = MANUAL_TYP_ZALOHA if je_zaloha else MANUAL_TYP_PLATBA
+                platba = get_manual_notifikace(nastaveni.notifikace, typ_mailu)
+                if not platba:
+                    return Response({
+                        'detail': 'Chybí nastavení e-mailu (záloha QR).' if je_zaloha else 'Chybí nastavení e-mailu (platba QR).',
+                    }, status=400)
+                from rezervace.services.notifikace_email import email_platba_qr
+
+                ep, et = _email_override(request)
+                email_platba_qr(
+                    rezervace, platba, castka, ucet, vs,
+                    platba_data=platba_data, predmet=ep, text=et,
+                )
+                email_odeslan = True
+            except ValueError as exc:
+                return Response({'detail': str(exc)}, status=400)
+            except Exception as exc:
+                return Response({'detail': f'E-mail se nepodařilo odeslat: {exc}'}, status=502)
 
         if je_zaloha:
             rezervace.zaloha_vyzadana_at = timezone.now()
@@ -435,15 +440,30 @@ class FlowRezervacePlatbaView(APIView):
             rezervace.save(update_fields=[
                 'zaloha_vyzadana_at', 'zaloha_nepozadovana_at', 'zaloha_castka', 'aktualizovano',
             ])
-            _log_flow(user, rezervace, f'žádost o zálohu {castka} Kč')
-            msg = 'E-mail s QR zálohou odeslán.'
+            _log_flow(
+                user, rezervace,
+                f'žádost o zálohu {castka} Kč' if email_odeslan else f'QR záloha zobrazena {castka} Kč',
+            )
+            msg = (
+                'E-mail s QR zálohou odeslán.'
+                if email_odeslan
+                else 'QR kód je připraven — ukažte ho zákazníkovi.'
+            )
         else:
-            _log_flow(user, rezervace, f'odeslání žádosti o platbu {castka} Kč')
-            msg = 'E-mail s QR platbou odeslán.'
+            _log_flow(
+                user, rezervace,
+                f'odeslání žádosti o platbu {castka} Kč' if email_odeslan else f'QR platba zobrazena {castka} Kč',
+            )
+            msg = (
+                'E-mail s QR platbou odeslán.'
+                if email_odeslan
+                else 'QR kód je připraven — ukažte ho zákazníkovi.'
+            )
 
         return Response({
             'ok': True,
             'message': msg,
+            'email_odeslan': email_odeslan,
             'qr_png_base64': base64.b64encode(platba_data['qr_png']).decode('ascii'),
             'castka': platba_data['castka_display'],
             'ucet': platba_data['ucet'],
@@ -576,7 +596,7 @@ class FlowEmailPreviewView(APIView):
             'rezervace_id': rezervace.id,
             'title': {
                 'storno': 'E-mail storna',
-                'noshow': 'E-mail NO-show',
+                'noshow': 'E-mail Hříšníci',
                 'platba': 'E-mail platby QR',
                 'zaloha': 'E-mail zálohy QR',
                 'zaloha_ok': 'E-mail — záloha přijata',

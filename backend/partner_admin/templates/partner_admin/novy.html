@@ -24,8 +24,8 @@
         <div class="full">{{ form.non_field_errors }}</div>
       {% endif %}
       {% for field in form %}
-        <label class="{% if field.name == 'aktivovat_flow' %}full check-label{% endif %}">
-          {% if field.name == 'aktivovat_flow' %}
+        <label class="{% if field.name == 'aktivovat_flow' or field.name == 'aktivovat_materialnik' %}full check-label{% endif %}">
+          {% if field.name == 'aktivovat_flow' or field.name == 'aktivovat_materialnik' %}
             <span class="check-row">{{ field }} {{ field.label }}</span>
           {% else %}
             {{ field.label }}

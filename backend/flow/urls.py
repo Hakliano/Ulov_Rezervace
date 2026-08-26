@@ -2,8 +2,20 @@ from django.urls import path
 
 from flow import mail_views, owner_views, provoz_views, views
 from flow import customer_card_views
+from flow import materialnik_views as views_materialnik
+from flow import integrations_views
 
 urlpatterns = [
+    path(
+        'integrations/v1/materialnik/session',
+        integrations_views.MaterialnikSessionView.as_view(),
+        name='integrations-materialnik-session',
+    ),
+    path(
+        'integrations/v1/materialnik/catalog',
+        integrations_views.MaterialnikCatalogView.as_view(),
+        name='integrations-materialnik-catalog',
+    ),
     path('salon/<int:pk>/flow/aktivace/', views.FlowAktivaceView.as_view(), name='flow-aktivace'),
     path(
         'salon/<int:pk>/flow/majitelka-pracuje/',
@@ -103,6 +115,11 @@ urlpatterns = [
         'flow/rezervace/<int:rezervace_id>/dokonceno/',
         provoz_views.FlowRezervaceDokoncenoView.as_view(),
         name='flow-rezervace-dokonceno',
+    ),
+    path(
+        'flow/rezervace/<int:rezervace_id>/materialnik-spotreba/',
+        views_materialnik.FlowMaterialnikSpotrebaView.as_view(),
+        name='flow-rezervace-materialnik-spotreba',
     ),
     path(
         'flow/rezervace/<int:rezervace_id>/noshow/',

@@ -12,6 +12,11 @@ urlpatterns = [
     path('salon/<int:salon_id>/', views.detail_partnera, name='detail'),
     path('salon/<int:salon_id>/platby.csv', views.export_platby_csv, name='export_platby_csv'),
     path('salon/<int:salon_id>/nastaveni/', views.ulozit_nastaveni, name='ulozit_nastaveni'),
+    path(
+        'salon/<int:salon_id>/materialnik/',
+        views.nastavit_materialnik,
+        name='nastavit_materialnik',
+    ),
     path('salon/<int:salon_id>/blokovat/', views.blokovat, name='blokovat'),
     path('salon/<int:salon_id>/aktivovat/', views.aktivovat, name='aktivovat'),
     path('salon/<int:salon_id>/platba/', views.potvrdit_platbu, name='potvrdit_platbu'),

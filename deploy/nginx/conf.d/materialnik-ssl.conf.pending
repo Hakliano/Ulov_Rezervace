@@ -1,0 +1,41 @@
+# Materiálník HTTPS — zapne deploy/issue-materialnik-cert.sh po Let's Encrypt.
+#
+# DNS: materialnik.cz, www.materialnik.cz, staging.materialnik.cz
+# Zdroj: presentace/materialnik/
+
+map $host $materialnik_www_root {
+    default /var/www/sites/presentace/materialnik;
+    staging.materialnik.cz /var/www/sites-staging/presentace/materialnik;
+    materialnik.cz /var/www/sites/presentace/materialnik;
+    www.materialnik.cz /var/www/sites/presentace/materialnik;
+}
+
+server {
+    listen 80;
+    server_name materialnik.cz www.materialnik.cz staging.materialnik.cz;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name staging.materialnik.cz materialnik.cz www.materialnik.cz;
+
+    ssl_certificate     /etc/letsencrypt/live/materialnik.cz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/materialnik.cz/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    root $materialnik_www_root;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
