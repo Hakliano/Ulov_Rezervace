@@ -553,7 +553,7 @@ label {
   color: var(--gold-soft);
 }
 
-input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 select {
   width: 100%;
   padding: 12px 14px;
@@ -1306,6 +1306,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   text-transform: uppercase;
 }
 
+label.flow-switch,
 .flow-switch {
   position: relative;
   display: inline-flex;
@@ -1315,21 +1316,27 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   user-select: none;
   margin: 1rem 0 0.45rem;
   min-height: 44px;
+  width: auto;
 }
-.flow-switch input {
+.flow-switch input[type="checkbox"] {
   position: absolute;
   opacity: 0;
   width: 1px;
   height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
 .flow-switch-ui {
-  width: 58px;
-  height: 34px;
+  display: block;
+  width: 52px;
+  height: 32px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #0b1a2c;
+  border: 2px solid rgba(232, 212, 140, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
   position: relative;
   flex-shrink: 0;
   transition: background 0.2s, border-color 0.2s;
@@ -1339,19 +1346,19 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   transition: transform 0.2s;
 }
 .flow-switch input:checked + .flow-switch-ui {
   background: #c9a227;
-  border-color: #c9a227;
+  border-color: #e8d48b;
 }
 .flow-switch input:checked + .flow-switch-ui::after {
-  transform: translateX(24px);
+  transform: translateX(20px);
 }
 .flow-switch input:focus-visible + .flow-switch-ui {
   outline: 2px solid var(--gold-bright, #e8d48b);
@@ -1369,23 +1376,28 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.7rem 0;
+  padding: 0.75rem 0.15rem 0.75rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .flow-switch-row:last-of-type {
   border-bottom: 0;
   padding-bottom: 0.15rem;
 }
-.flow-switch-row .flow-switch {
+.own-personal-card label.flow-switch,
+.own-add-staff-form label.flow-switch,
+.flow-switch-row label.flow-switch {
+  display: inline-flex;
   margin: 0;
-  min-height: 28px;
+  min-height: 32px;
   gap: 0;
+  flex-shrink: 0;
 }
 .flow-switch-copy {
   display: flex;
   flex-direction: column;
   gap: 0.18rem;
   min-width: 0;
+  flex: 1;
 }
 .flow-switch-title {
   font-weight: 650;
@@ -1405,19 +1417,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 .own-block-flow-main h4 {
   margin-bottom: 0.35rem;
-}
-.flow-switch-row .flow-switch-ui {
-  width: 46px;
-  height: 28px;
-}
-.flow-switch-row .flow-switch-ui::after {
-  top: 2px;
-  left: 2px;
-  width: 22px;
-  height: 22px;
-}
-.flow-switch-row .flow-switch input:checked + .flow-switch-ui::after {
-  transform: translateX(18px);
 }
 
 .op-all-sluzby-row {

@@ -160,7 +160,7 @@ def _seed(tenant):
             critical_quantity=_d(crit),
             last_purchase_price=_d(price),
             sku=sku,
-            note='Demo položka pro Studio Krása Nebezká',
+            note=f'Demo položka pro {tenant.name_snapshot}',
         )
         materials[name] = m
         targets[name] = _d(stock)
@@ -229,6 +229,13 @@ def _seed(tenant):
             ('Papírové ručníky', None),
         ],
     }
+    palettes['Barvení vlasů'] = palettes['Barvení celá hlava']
+    palettes['Balayage'] = palettes['Melír fólie']
+    palettes['Dámský střih'] = palettes['Střih dámský']
+    palettes['Pánský střih'] = palettes['Střih dámský']
+    palettes['Dětský střih'] = palettes['Střih dámský']
+    palettes['Regenerační péče'] = palettes['Keratinová kúra']
+    palettes['Společenský styling'] = palettes['Střih + foukaná']
 
     def add_recipe(mapping, lines):
         rec = Recipe.objects.create(tenant=tenant, service_mapping=mapping, active=True)
