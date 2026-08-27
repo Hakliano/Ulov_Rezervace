@@ -1,0 +1,188 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}KAM{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Obchod</p>
+      <h1>Key Account Manager</h1>
+      <p class="muted">Kdo partnera ulovil. Údaje se mění jen po kliknutí na Upravit. Tady je přehled lidí, výdělků a salonů.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="{% url 'partner_admin:partneri' %}">← Partneři</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Seznam</p>
+        <h2>KAM a provozovny</h2>
+      </div>
+    </div>
+    {% if karty %}
+      <div class="kam-list">
+        {% for karta in karty %}
+          <article class="kam-card{% if karta.edituje %} is-editing{% endif %}">
+            <header class="kam-card-head">
+              <div class="kam-identity">
+                <div class="kam-avatar" aria-hidden="true">{{ karta.kam.jmeno|slice:":1"|upper }}</div>
+                <div>
+                  <h3>{{ karta.kam.jmeno }}</h3>
+                  <p class="kam-meta">
+                    {% if karta.kam.email %}{{ karta.kam.email }}{% else %}<span class="muted">bez e-mailu</span>{% endif %}
+                    <span class="kam-dot">·</span>
+                    {% if karta.kam.telefon %}{{ karta.kam.telefon }}{% else %}<span class="muted">bez telefonu</span>{% endif %}
+                  </p>
+                </div>
+              </div>
+              <div class="badges">
+                {% if karta.kam.aktivni %}
+                  <span class="badge badge-active">Aktivní</span>
+                {% else %}
+                  <span class="badge badge-neutral">Neaktivní</span>
+                {% endif %}
+              </div>
+            </header>
+
+            <div class="kam-earn">
+              <article>
+                <span>Vydělal tento měsíc</span>
+                <strong>{{ karta.mesic|floatformat:0 }} Kč</strong>
+              </article>
+              <article>
+                <span>Celkem</span>
+                <strong>{{ karta.celkem|floatformat:0 }} Kč</strong>
+              </article>
+            </div>
+
+            <dl class="kam-facts">
+              <div>
+                <dt>Číslo účtu</dt>
+                <dd>{% if karta.kam.cislo_uctu %}{{ karta.kam.cislo_uctu }}{% else %}—{% endif %}</dd>
+              </div>
+              <div>
+                <dt>E-mail</dt>
+                <dd>{% if karta.kam.email %}{{ karta.kam.email }}{% else %}—{% endif %}</dd>
+              </div>
+              <div>
+                <dt>Telefon</dt>
+                <dd>{% if karta.kam.telefon %}{{ karta.kam.telefon }}{% else %}—{% endif %}</dd>
+              </div>
+            </dl>
+
+            {% if karta.edituje %}
+              <form method="post" class="form-grid compact kam-edit" autocomplete="off">
+                {% csrf_token %}
+                <input type="hidden" name="akce" value="ulozit">
+                <input type="hidden" name="id" value="{{ karta.kam.id }}">
+                <label>
+                  Jméno
+                  {{ karta.form.jmeno }}
+                  {% if karta.form.jmeno.errors %}<span class="field-error">{{ karta.form.jmeno.errors|striptags }}</span>{% endif %}
+                </label>
+                <label>
+                  E-mail
+                  {{ karta.form.email }}
+                </label>
+                <label>
+                  Telefon
+                  {{ karta.form.telefon }}
+                </label>
+                <label>
+                  Číslo účtu
+                  {{ karta.form.cislo_uctu }}
+                </label>
+                <label>
+                  Pořadí
+                  {{ karta.form.razeni }}
+                </label>
+                <label class="check-label">
+                  <span class="check-row">{{ karta.form.aktivni }} Aktivní</span>
+                </label>
+                <div class="form-actions kam-edit-actions">
+                  <button class="btn btn-primary" type="submit">Uložit</button>
+                  <a class="btn btn-quiet" href="{% url 'partner_admin:kam' %}">Zrušit</a>
+                  <a class="btn btn-quiet" href="{% url 'partner_admin:kam_vypis' karta.kam.id %}">Výpis provizí</a>
+                </div>
+              </form>
+              <form method="post" class="tarif-delete" onsubmit="return confirm('Smazat KAM {{ karta.kam.jmeno }}? U partnerů se KAM jen odpojí.');">
+                {% csrf_token %}
+                <input type="hidden" name="akce" value="smazat">
+                <input type="hidden" name="id" value="{{ karta.kam.id }}">
+                <button class="btn btn-quiet" type="submit">Smazat</button>
+              </form>
+            {% else %}
+              <div class="kam-card-actions">
+                <a class="btn btn-primary" href="{% url 'partner_admin:kam' %}?upravit={{ karta.kam.id }}">Upravit</a>
+                <a class="btn btn-quiet" href="{% url 'partner_admin:kam_vypis' karta.kam.id %}">Výpis provizí</a>
+              </div>
+            {% endif %}
+
+            <div class="kam-salony">
+              <p class="eyebrow">Provozovny{% if karta.partneri %} · {{ karta.partneri|length }}{% endif %}</p>
+              {% if karta.partneri %}
+                <div class="kam-salon-chips">
+                  {% for nast in karta.partneri %}
+                    <a class="kam-salon-chip" href="{% url 'partner_admin:detail' nast.salon_id %}">
+                      <span class="kam-salon-dot" aria-hidden="true"></span>
+                      <span>
+                        <strong>{{ nast.salon.name }}</strong>
+                        {% if nast.tarif %}<small>{{ nast.tarif }}</small>{% endif %}
+                      </span>
+                    </a>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="muted">Zatím bez provozovny.</p>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Zatím žádný KAM. Přidej ho níže.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Nový</p>
+        <h2>Přidat KAM</h2>
+      </div>
+    </div>
+    <form method="post" class="form-grid compact" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="akce" value="pridat">
+      <label>
+        Jméno
+        {{ novy_form.jmeno }}
+        {% if novy_form.jmeno.errors %}<span class="field-error">{{ novy_form.jmeno.errors|striptags }}</span>{% endif %}
+      </label>
+      <label>
+        E-mail
+        {{ novy_form.email }}
+      </label>
+      <label>
+        Telefon
+        {{ novy_form.telefon }}
+      </label>
+      <label>
+        Číslo účtu
+        {{ novy_form.cislo_uctu }}
+      </label>
+      <label>
+        Pořadí
+        {{ novy_form.razeni }}
+      </label>
+      <label class="check-label">
+        <span class="check-row">{{ novy_form.aktivni }} Aktivní</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Přidat KAM</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

@@ -583,7 +583,10 @@ def _partner_platby_payload(salon):
         })
 
     qr = None
-    ucet = (nast.ulov_cislo_uctu or '').strip()
+    from partner_admin.services import primarni_ulov_ucet, seznam_ulov_uctu
+
+    ucty_global = seznam_ulov_uctu()
+    ucet = primarni_ulov_ucet() or (nast.ulov_cislo_uctu or '').strip()
     vs = (nast.variabilni_symbol or '').strip()
     if ucet and vs and nast.castka and nast.castka > 0:
         try:
@@ -614,7 +617,11 @@ def _partner_platby_payload(salon):
     )
     return {
         'nastaveno': ma_platbu,
-        'ulov_cislo_uctu': nast.ulov_cislo_uctu or '',
+        'ulov_cislo_uctu': ucet,
+        'ulov_cisla_uctu': [
+            {'cislo': u.cislo, 'popisek': u.popisek or '', 'primarni': bool(u.primarni)}
+            for u in ucty_global
+        ],
         'variabilni_symbol': nast.variabilni_symbol or '',
         'castka': str(nast.castka),
         'periodicita': nast.periodicita,

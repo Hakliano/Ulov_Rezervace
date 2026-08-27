@@ -1,9 +1,10 @@
 from decimal import Decimal
 
 from django import forms
+from django.db.models import Q
 from django.utils import timezone
 
-from .models import PartnerNastaveni, PartnerTarif
+from .models import KeyAccountManager, PartnerNastaveni, PartnerTarif, UlovCisloUctu, vychozi_variabilni_symbol
 
 
 class CeskaCastkaField(forms.DecimalField):
@@ -44,6 +45,33 @@ def nastav_tarif_pole(field, aktualni_nazev=''):
         ceny=ceny,
         attrs={'autocomplete': 'off', 'class': 'tarif-select'},
     )
+
+
+def nastav_castku(form, name, label=None, help_text=None, initial=None):
+    field = form.fields[name]
+    form.fields[name] = CeskaCastkaField(
+        label=label or field.label,
+        max_digits=getattr(field, 'max_digits', 10),
+        decimal_places=2,
+        min_value=Decimal('0.00'),
+        required=False,
+        localize=False,
+        initial=initial if initial is not None else getattr(field, 'initial', None),
+        help_text=help_text if help_text is not None else field.help_text,
+        widget=forms.TextInput(attrs={
+            'inputmode': 'decimal',
+            'autocomplete': 'off',
+            'lang': 'en',
+        }),
+    )
+    instance = getattr(form, 'instance', None)
+    if (
+        not form.is_bound
+        and instance is not None
+        and getattr(instance, name, None) is not None
+    ):
+        hodnota = getattr(instance, name)
+        form.initial[name] = f'{hodnota:.2f}'.replace('.', ',')
 
 
 class PartnerTarifForm(forms.ModelForm):
@@ -142,7 +170,7 @@ class NovyPartnerForm(forms.Form):
         label='Variabilní symbol',
         max_length=10,
         required=False,
-        help_text='1–10 číslic. Nechte prázdné a doplníte později.',
+        help_text='Prázdné = 80 a ID partnera (např. 8019). Lze přepsat.',
     )
     periodicita = forms.ChoiceField(
         label='Periodicita',
@@ -164,10 +192,49 @@ class NovyPartnerForm(forms.Form):
         widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
         help_text='Volitelné. Typicky po instalaci / 1. měsíci v poplatku.',
     )
-    ulov_cislo_uctu = forms.CharField(
-        label='Účet ULOV (QR / převod)',
-        max_length=34,
+    kam = forms.ModelChoiceField(
+        label='KAM',
+        queryset=KeyAccountManager.objects.filter(aktivni=True),
         required=False,
+        empty_label='— bez KAM —',
+    )
+    prvni_platba = forms.DecimalField(
+        label='První platba (Kč)',
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        initial=Decimal('0.00'),
+        min_value=Decimal('0.00'),
+        help_text='Co salon zaplatí poprvé (0 / 499 / 2000…). V tom měsíci už nenačítáme tarif.',
+    )
+    kam_provize = forms.DecimalField(
+        label='Provize KAM (Kč)',
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        initial=Decimal('0.00'),
+        min_value=Decimal('0.00'),
+        help_text='Kolik dostane KAM po zaplacení první platby. 0 = nepočítat.',
+    )
+    kam_procento = forms.DecimalField(
+        label='Provize KAM z dalších plateb (%)',
+        max_digits=5,
+        decimal_places=2,
+        required=False,
+        initial=Decimal('0.00'),
+        min_value=Decimal('0.00'),
+        help_text='Volitelné. Z přijatých plateb po první platbě.',
+    )
+    ico = forms.CharField(
+        label='IČO odběratele',
+        max_length=12,
+        required=False,
+    )
+    je_testovaci = forms.BooleanField(
+        label='Testovací partner (interní demo, ne zákazník)',
+        required=False,
+        initial=False,
+        help_text='Zařadí provozovnu do Testovacích přístupů. U ostrých partnerů nechte vypnuté.',
     )
 
     def clean_variabilni_symbol(self):
@@ -210,20 +277,10 @@ class NovyPartnerForm(forms.Form):
             self.fields['tarif'],
             (self.data.get('tarif') if self.is_bound else '') or '',
         )
-        self.fields['castka'] = CeskaCastkaField(
-            label='Částka (Kč)',
-            max_digits=10,
-            decimal_places=2,
-            min_value=Decimal('0.00'),
-            required=False,
-            localize=False,
-            initial=self.fields['castka'].initial,
-            widget=forms.TextInput(attrs={
-                'inputmode': 'decimal',
-                'autocomplete': 'off',
-                'lang': 'en',
-            }),
-        )
+        nastav_castku(self, 'castka', label='Částka (Kč)', initial=self.fields['castka'].initial)
+        nastav_castku(self, 'prvni_platba')
+        nastav_castku(self, 'kam_provize')
+        nastav_castku(self, 'kam_procento')
 
 
 class PartnerNastaveniForm(forms.ModelForm):
@@ -232,13 +289,18 @@ class PartnerNastaveniForm(forms.ModelForm):
         fields = [
             'domena',
             'tarif',
+            'kam',
+            'prvni_platba',
+            'kam_provize',
+            'kam_procento',
+            'ico',
             'fakturacni_email',
             'variabilni_symbol',
             'periodicita',
             'castka',
             'dalsi_splatnost',
-            'ulov_cislo_uctu',
             'povolit_technicke_nastaveni',
+            'je_testovaci',
         ]
         widgets = {
             'domena': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
@@ -248,7 +310,6 @@ class PartnerNastaveniForm(forms.ModelForm):
                 'inputmode': 'numeric',
                 'maxlength': '10',
             }),
-            'ulov_cislo_uctu': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
             # HTML5 type=date vyžaduje ISO YYYY-MM-DD; bez format se v CS locale
             # vykreslí prázdné pole a uložení pak omylem smaže splatnost.
             'dalsi_splatnost': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
@@ -269,25 +330,24 @@ class PartnerNastaveniForm(forms.ModelForm):
         self.fields['fakturacni_email'].required = False
         self.fields['variabilni_symbol'].required = False
         self.fields['variabilni_symbol'].empty_value = None
-        self.fields['ulov_cislo_uctu'].required = False
-        self.fields['castka'] = CeskaCastkaField(
-            label=self.fields['castka'].label,
-            max_digits=10,
-            decimal_places=2,
-            min_value=Decimal('0.00'),
-            required=False,
-            localize=False,
-            widget=forms.TextInput(attrs={
-                'inputmode': 'decimal',
-                'autocomplete': 'off',
-                'lang': 'en',
-            }),
+        self.fields['variabilni_symbol'].help_text = (
+            'Výchozí je 80 a ID partnera'
+            + (f' ({vychozi_variabilni_symbol(self.instance.salon_id)})' if getattr(self.instance, 'salon_id', None) else '')
+            + '. Lze přepsat.'
         )
-        if (
-            not self.is_bound
-            and getattr(self.instance, 'castka', None) is not None
-        ):
-            self.initial['castka'] = f'{self.instance.castka:.2f}'.replace('.', ',')
+        self.fields['kam'].required = False
+        self.fields['kam'].queryset = KeyAccountManager.objects.filter(aktivni=True)
+        if getattr(self.instance, 'kam_id', None):
+            self.fields['kam'].queryset = KeyAccountManager.objects.filter(
+                Q(aktivni=True) | Q(pk=self.instance.kam_id)
+            )
+        self.fields['kam'].empty_label = '— bez KAM —'
+        self.fields['je_testovaci'].required = False
+        self.fields['ico'].required = False
+        nastav_castku(self, 'castka')
+        nastav_castku(self, 'prvni_platba')
+        nastav_castku(self, 'kam_provize')
+        nastav_castku(self, 'kam_procento')
 
     def clean_domena(self):
         domena = (self.cleaned_data.get('domena') or '').strip().lower()
@@ -305,6 +365,8 @@ class PartnerNastaveniForm(forms.ModelForm):
     def clean_variabilni_symbol(self):
         vs = (self.cleaned_data.get('variabilni_symbol') or '').strip()
         if not vs:
+            vs = vychozi_variabilni_symbol(getattr(self.instance, 'salon_id', None))
+        if not vs:
             return None
         if not vs.isdigit() or len(vs) > 10:
             raise forms.ValidationError('Variabilní symbol musí obsahovat 1 až 10 číslic.')
@@ -320,6 +382,18 @@ class PartnerNastaveniForm(forms.ModelForm):
         if value is None:
             return Decimal('0.00')
         return value
+
+    def clean_prvni_platba(self):
+        return self.cleaned_data.get('prvni_platba') or Decimal('0.00')
+
+    def clean_kam_provize(self):
+        return self.cleaned_data.get('kam_provize') or Decimal('0.00')
+
+    def clean_kam_procento(self):
+        return self.cleaned_data.get('kam_procento') or Decimal('0.00')
+
+    def clean_ico(self):
+        return (self.cleaned_data.get('ico') or '').strip()
 
 
 class PlatbaForm(forms.Form):
@@ -338,10 +412,52 @@ class PlatbaForm(forms.Form):
     )
     poznamka = forms.CharField(label='Poznámka', max_length=300, required=False)
     faktura_pdf = forms.FileField(
-        label='Faktura PDF (volitelné)',
+        label='Vlastní PDF faktury (volitelné)',
         required=False,
-        help_text='PDF se zobrazí majitelce ve FLOW ke stažení.',
+        help_text='Když nic nenahrajete, faktura UHRAZENO se vygeneruje sama hned po spárování.',
     )
+
+
+class FakturaEditForm(forms.Form):
+    """Šablona faktury k úpravě před vygenerováním PDF."""
+
+    cislo = forms.CharField(label='Číslo faktury', max_length=30)
+    datum_vystaveni = forms.CharField(label='Datum vystavení', max_length=20)
+    datum_uhrady = forms.CharField(label='Datum úhrady', max_length=20)
+    zpusob_uhrady = forms.CharField(label='Způsob úhrady', max_length=40, initial='převodem')
+    stav = forms.CharField(label='Stav', max_length=20, initial='UHRAZENO')
+    dodavatel_jmeno = forms.CharField(label='Dodavatel — jméno', max_length=120)
+    dodavatel_znacka = forms.CharField(label='Dodavatel — značka', max_length=80, required=False)
+    dodavatel_ico = forms.CharField(label='Dodavatel — IČO', max_length=12)
+    dodavatel_sidlo = forms.CharField(label='Dodavatel — sídlo', max_length=300)
+    dodavatel_evidence = forms.CharField(label='Dodavatel — evidence', max_length=80, required=False)
+    odberatel_nazev = forms.CharField(label='Odběratel — název', max_length=200)
+    odberatel_ico = forms.CharField(label='Odběratel — IČO', max_length=12, required=False)
+    odberatel_adresa = forms.CharField(label='Odběratel — adresa', max_length=300, required=False)
+    odberatel_email = forms.EmailField(label='Odběratel — e-mail', required=False)
+    polozka = forms.CharField(label='Položka', max_length=200)
+    obdobi = forms.CharField(label='Období služby', max_length=80)
+    castka = CeskaCastkaField(
+        label='Částka (Kč)',
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal('0.00'),
+        localize=False,
+        widget=forms.TextInput(attrs={
+            'inputmode': 'decimal',
+            'autocomplete': 'off',
+            'lang': 'en',
+        }),
+    )
+    vs = forms.CharField(label='Variabilní symbol', max_length=10, required=False)
+    ucet = forms.CharField(label='Číslo účtu ULOV', max_length=34, required=False)
+    poznamka = forms.CharField(label='Poznámka', max_length=300, required=False)
+
+    def data_pro_pdf(self):
+        data = dict(self.cleaned_data)
+        data['castka'] = f"{data['castka']:.2f}".replace('.', ',')
+        data['popis'] = f"{data.get('polozka') or ''} | období {data.get('obdobi') or ''}".strip(' |')
+        return data
 
 
 class FakturaPlatbyForm(forms.Form):
@@ -404,6 +520,47 @@ class ResetHeslaForm(forms.Form):
         widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
         help_text='Alespoň 10 znaků. Původní heslo nelze zobrazit.',
     )
+
+
+class KeyAccountManagerForm(forms.ModelForm):
+    class Meta:
+        model = KeyAccountManager
+        fields = ['jmeno', 'email', 'telefon', 'cislo_uctu', 'razeni', 'aktivni']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].required = False
+        self.fields['telefon'].required = False
+        self.fields['cislo_uctu'].required = False
+        self.fields['razeni'].required = False
+        self.fields['aktivni'].required = False
+        if not getattr(self.instance, 'pk', None):
+            self.fields['aktivni'].initial = True
+
+    def clean_jmeno(self):
+        return (self.cleaned_data.get('jmeno') or '').strip()
+
+
+class UlovCisloUctuForm(forms.ModelForm):
+    class Meta:
+        model = UlovCisloUctu
+        fields = ['cislo', 'popisek', 'primarni', 'razeni', 'aktivni']
+        widgets = {
+            'cislo': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
+            'popisek': forms.TextInput(attrs={'autocomplete': 'off'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['popisek'].required = False
+        self.fields['razeni'].required = False
+        self.fields['primarni'].required = False
+        self.fields['aktivni'].required = False
+        if not getattr(self.instance, 'pk', None):
+            self.fields['aktivni'].initial = True
+
+    def clean_cislo(self):
+        return (self.cleaned_data.get('cislo') or '').strip()
 
 
 class BlokaceForm(forms.Form):

@@ -22,7 +22,7 @@ class Command(BaseCommand):
             partner.domena = f'demo{salon.id}.ulovklienty.cz'
             partner.tarif = 'Partner pro váš salon'
             partner.fakturacni_email = salon.email
-            partner.variabilni_symbol = str(8000000000 + salon.id)
+            partner.variabilni_symbol = f'80{salon.id}'
             partner.periodicita = (
                 PartnerNastaveni.PERIODA_ROK
                 if salon.id % 3 == 0

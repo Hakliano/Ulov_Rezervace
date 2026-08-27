@@ -99,13 +99,18 @@
         <div><dt>VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
         <div><dt>Částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč / {{ partner.get_periodicita_display|lower }}</dd></div>
         <div><dt>Splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
+        <div><dt>KAM</dt><dd>{{ partner.kam.jmeno|default:"—" }}</dd></div>
+        <div><dt>První platba</dt><dd>{% if partner.prvni_platba %}{{ partner.prvni_platba|floatformat:2 }} Kč{% else %}—{% endif %}</dd></div>
+        <div><dt>Provize KAM</dt><dd>{% if partner.kam_provize %}{{ partner.kam_provize|floatformat:2 }} Kč{% else %}0 Kč{% endif %}{% if partner.kam_procento %} · {{ partner.kam_procento|floatformat:2 }} %{% endif %}</dd></div>
+        <div><dt>IČO</dt><dd>{{ partner.ico|default:"—" }}</dd></div>
+        <div><dt>Účet ULOV</dt><dd>{% if ulov_ucty %}{% for u in ulov_ucty %}{{ u.cislo }}{% if u.popisek %} ({{ u.popisek }}){% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}{% else %}{{ partner.ulov_cislo_uctu|default:"—" }}{% endif %} <a href="{% url 'partner_admin:ucty' %}">upravit globálně</a></dd></div>
       </dl>
       <p class="form-note full">Tohle je uložené v databázi. Tarif poznáš i podle loga vpravo nahoře.</p>
       {% if nastaveni_form.non_field_errors %}
         <p class="field-error full">{{ nastaveni_form.non_field_errors|striptags }}</p>
       {% endif %}
       {% for field in nastaveni_form %}
-        {% if field.name == 'povolit_technicke_nastaveni' %}
+        {% if field.name == 'povolit_technicke_nastaveni' or field.name == 'je_testovaci' %}
           <div class="feature-toggle full">
             <label class="feature-toggle-main">
               {{ field }}
@@ -211,10 +216,32 @@
           VS {{ posledni_platba.variabilni_symbol|default:"—" }}
         </span>
       </div>
+      <div class="faktura-now">
+        {% if posledni_platba.faktura_pdf %}
+          <p>
+            <strong>Faktura {{ posledni_platba.cislo_faktury|default:"UHRAZENO" }}</strong>
+            je u této platby uložená.
+          </p>
+          <a class="btn btn-primary" href="{% url 'partner_admin:stahnout_fakturu' salon.id posledni_platba.id %}" target="_blank" rel="noopener">Otevřít PDF</a>
+        {% else %}
+          <p>PDF faktury k této platbě ještě není. Vygeneruje se jen jednou, až po spárování.</p>
+          <form class="inline-form" method="post" action="{% url 'partner_admin:vygenerovat_fakturu' salon.id posledni_platba.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="tab" value="parovani">
+            <button class="btn btn-primary" type="submit">Vygenerovat fakturu</button>
+          </form>
+        {% endif %}
+        <form class="inline-form faktura-upload" method="post" action="{% url 'partner_admin:nahrat_fakturu' salon.id posledni_platba.id %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="tab" value="parovani">
+          <input type="file" name="faktura_pdf" accept="application/pdf,.pdf" required>
+          <button class="btn btn-secondary" type="submit">{% if posledni_platba.faktura_pdf %}Nahradit PDF{% else %}Nahrát PDF{% endif %}</button>
+        </form>
+      </div>
     {% endif %}
 
     <dl class="payment-summary">
-      <div><dt>Částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč</dd></div>
+      <div><dt>Částka</dt><dd>{% if je_prvni_platba and partner.prvni_platba %}{{ partner.prvni_platba|floatformat:2 }} Kč <small>(první platba)</small>{% else %}{{ partner.castka|floatformat:2 }} Kč{% endif %}</dd></div>
       <div><dt>VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
       <div><dt>Splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
       <div>
@@ -269,12 +296,18 @@
                     <input type="hidden" name="tab" value="platby">
                     <button class="btn btn-danger btn-tiny" type="submit">Smazat</button>
                   </form>
+                {% else %}
+                  <form class="inline-form" method="post" action="{% url 'partner_admin:vygenerovat_fakturu' salon.id platba.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="tab" value="platby">
+                    <button class="btn btn-primary btn-tiny" type="submit">Vygenerovat</button>
+                  </form>
                 {% endif %}
                 <form class="inline-form faktura-upload" method="post" action="{% url 'partner_admin:nahrat_fakturu' salon.id platba.id %}" enctype="multipart/form-data">
                   {% csrf_token %}
                   <input type="hidden" name="tab" value="platby">
                   <input type="file" name="faktura_pdf" accept="application/pdf,.pdf" required>
-                  <button class="btn btn-secondary btn-tiny" type="submit">{% if platba.faktura_pdf %}Nahradit{% else %}Nahrát PDF{% endif %}</button>
+                  <button class="btn btn-secondary btn-tiny" type="submit">{% if platba.faktura_pdf %}Nahradit{% else %}Nahrát{% endif %}</button>
                 </form>
               </td>
             </tr>

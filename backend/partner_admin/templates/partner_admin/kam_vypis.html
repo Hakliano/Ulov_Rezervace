@@ -1,0 +1,113 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Výpis {{ kam.jmeno }} — {{ mesic_nazev }} {{ rok }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .vypis-sheet { max-width: 210mm; }
+  .vypis-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0 0 1.2rem; }
+  .vypis-meta dt { color: var(--muted); font-size: .75rem; font-weight: 700; }
+  .vypis-meta dd { margin: .2rem 0 0; font-weight: 750; }
+  .vypis-total { font-size: 1.35rem; font-weight: 800; margin: 1rem 0 0; }
+  @media print {
+    .sidebar, .chrome, .head-actions, .no-print, .sidebar-logout { display: none !important; }
+    .shell { display: block; background: #fff; }
+    .workspace { margin: 0; padding: 0; width: 100%; }
+    .panel { box-shadow: none; border: none; }
+    body { background: #fff; color: #1a1a1a; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head no-print">
+    <div>
+      <p class="eyebrow">KAM</p>
+      <h1>Výpis provizí</h1>
+      <p class="muted">Přehled k tisku. Provize z první platby se uvolní až po označení zaplaceno.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="{% url 'partner_admin:kam_vypis' kam.id %}?rok={{ pred_rok }}&amp;mesic={{ pred_mesic }}">← {{ pred_mesic }}/{{ pred_rok }}</a>
+      <a class="btn btn-quiet" href="{% url 'partner_admin:kam_vypis' kam.id %}?rok={{ dalsi_rok }}&amp;mesic={{ dalsi_mesic }}">{{ dalsi_mesic }}/{{ dalsi_rok }} →</a>
+      <button class="btn btn-secondary" type="button" onclick="window.print()">Tisk</button>
+      <a class="btn btn-quiet" href="{% url 'partner_admin:kam' %}">Seznam KAM</a>
+    </div>
+  </div>
+
+  <section class="panel vypis-sheet">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">ULOV KLIENTY</p>
+        <h2>Výpis provizí — {{ kam.jmeno }}</h2>
+      </div>
+      <span class="muted">{{ mesic_nazev }} {{ rok }}</span>
+    </div>
+
+    <dl class="vypis-meta">
+      <div>
+        <dt>KAM</dt>
+        <dd>{{ kam.jmeno }}</dd>
+      </div>
+      <div>
+        <dt>Období</dt>
+        <dd>{{ mesic_nazev }} {{ rok }}</dd>
+      </div>
+      <div>
+        <dt>Číslo účtu</dt>
+        <dd>{{ kam.cislo_uctu|default:"— doplňte u KAM —" }}</dd>
+      </div>
+      <div>
+        <dt>Kontakt</dt>
+        <dd>{{ kam.email|default:"—" }}{% if kam.telefon %} · {{ kam.telefon }}{% endif %}</dd>
+      </div>
+    </dl>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Provozovna</th>
+            <th>Typ</th>
+            <th>Poznámka</th>
+            <th>Stav</th>
+            <th>Částka</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for radek in radky %}
+            <tr>
+              <td>{{ radek.salon.name }}</td>
+              <td>{{ radek.get_typ_display }}</td>
+              <td>{% if radek.typ == 'prvni' %}První platba {{ radek.prvni_platba|floatformat:2 }} Kč{% else %}{{ radek.poznamka|default:"—" }}{% endif %}</td>
+              <td>{{ radek.get_stav_display }}</td>
+              <td>{{ radek.castka|floatformat:2 }} Kč</td>
+            </tr>
+          {% endfor %}
+          {% for radek in procenta_radky %}
+            <tr>
+              <td>{{ radek.salon.name }}</td>
+              <td>Procento z přijatého</td>
+              <td>{{ radek.procento|floatformat:2 }} % z {{ radek.zaklad|floatformat:2 }} Kč</td>
+              <td>K výplatě</td>
+              <td>{{ radek.castka|floatformat:2 }} Kč</td>
+            </tr>
+          {% endfor %}
+          {% if not radky and not procenta_radky %}
+            <tr><td colspan="5">V tomto měsíci žádná provize.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="vypis-total">K výplatě: {{ k_vyplate|floatformat:2 }} Kč</p>
+
+    {% if k_vyplate > 0 %}
+      <form method="post" action="{% url 'partner_admin:kam_vyplatit' kam.id %}" class="form-actions no-print" onsubmit="return confirm('Označit {{ mesic_nazev }} {{ rok }} jako vyplacený?');">
+        {% csrf_token %}
+        <input type="hidden" name="rok" value="{{ rok }}">
+        <input type="hidden" name="mesic" value="{{ mesic }}">
+        <button class="btn btn-success" type="submit">Označit měsíc jako vyplacený</button>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

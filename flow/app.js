@@ -2399,7 +2399,8 @@ async function openMaterialnikSpotreba(rezervaceId) {
     }
     const lines = Array.isArray(data?.lines) ? data.lines : [];
     if (!lines.length) {
-      body.innerHTML = '<p class="hint">Pro tuto službu zatím není seznam materiálů. Spotřebu zadejte v Materiálníku.</p>';
+      const detail = (data?.detail || '').trim();
+      body.innerHTML = `<p class="hint">${esc(detail || 'Pro tuto službu zatím není seznam materiálů. Spotřebu zadejte v Materiálníku.')}</p>`;
       return;
     }
     body.innerHTML = `
@@ -2775,8 +2776,11 @@ async function loadOwnerPlatby() {
       const stavLabel = data.je_po_splatnosti
         ? `Nezaplaceno · +${esc(data.dni_po_splatnosti)} dní`
         : (data.platebni_stav === 'v_poradku' ? 'V pořádku' : 'Nenastaveno');
+      const ucty = Array.isArray(data.ulov_cisla_uctu) && data.ulov_cisla_uctu.length
+        ? data.ulov_cisla_uctu.map((u) => esc(u.cislo) + (u.popisek ? ` (${esc(u.popisek)})` : '')).join('<br>')
+        : esc(data.ulov_cislo_uctu || '—');
       summary.innerHTML = `<dl>
-        <dt>Účet ULOV</dt><dd>${esc(data.ulov_cislo_uctu || '—')}</dd>
+        <dt>Účet ULOV</dt><dd>${ucty}</dd>
         <dt>Variabilní symbol</dt><dd>${esc(data.variabilni_symbol || '—')}</dd>
         <dt>Částka</dt><dd>${fmtMoneyCz(data.castka)}</dd>
         <dt>Periodicita</dt><dd>${esc(data.periodicita_label || data.periodicita || '—')}</dd>

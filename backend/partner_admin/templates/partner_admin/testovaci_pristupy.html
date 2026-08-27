@@ -1,0 +1,98 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Testovací přístupy{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Prezentace · {{ prostredi }}</p>
+      <h1>Testovací přístupy</h1>
+      <p class="muted">
+        Jen interní dema, ne ostrí zákazníci. Heslo se neukládá v čitelné podobě — vygeneruj nové, když ho potřebuješ ukázat.
+      </p>
+    </div>
+  </div>
+
+  <section class="demo-grid" aria-label="Testovací partneři">
+    {% for karta in karty %}
+      <article class="demo-card">
+        <div class="demo-card-head">
+          <div>
+            <p class="eyebrow">#{{ karta.salon.id }}{% if karta.partner.kam %} · KAM {{ karta.partner.kam.jmeno }}{% endif %}</p>
+            <h2>{{ karta.salon.name }}</h2>
+          </div>
+          <div class="badges">
+            {% if karta.materialnik %}<span class="badge badge-active">Materiálník</span>{% endif %}
+            <span class="badge badge-{{ karta.partner.stav }}">{{ karta.partner.get_stav_display }}</span>
+          </div>
+        </div>
+
+        <dl class="demo-urls">
+          <div>
+            <dt>Web — staging</dt>
+            <dd>{% if karta.web_staging %}<a href="{{ karta.web_staging }}" target="_blank" rel="noopener">{{ karta.web_staging }}</a>{% else %}—{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Web — lokál</dt>
+            <dd>{% if karta.web_local %}<a href="{{ karta.web_local }}" target="_blank" rel="noopener">{{ karta.web_local }}</a>{% else %}—{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Rezervace — staging</dt>
+            <dd>{% if karta.rezervace_staging %}<a href="{{ karta.rezervace_staging }}" target="_blank" rel="noopener">{{ karta.rezervace_staging }}</a>{% else %}—{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Rezervace — lokál</dt>
+            <dd><a href="{{ karta.rezervace_local }}" target="_blank" rel="noopener">{{ karta.rezervace_local }}</a></dd>
+          </div>
+          <div>
+            <dt>FLOW</dt>
+            <dd>
+              <a href="{{ karta.flow_staging }}" target="_blank" rel="noopener">staging</a>
+              ·
+              <a href="{{ karta.flow_local }}" target="_blank" rel="noopener">lokál</a>
+            </dd>
+          </div>
+          {% if karta.materialnik %}
+            <div>
+              <dt>Materiálník</dt>
+              <dd>
+                <a href="{{ karta.sklad_staging }}" target="_blank" rel="noopener">staging</a>
+                ·
+                <a href="{{ karta.sklad_local }}" target="_blank" rel="noopener">lokál</a>
+              </dd>
+            </div>
+          {% endif %}
+        </dl>
+
+        <div class="demo-login">
+          <div>
+            <small>Přihlášení (web ⚙, FLOW{% if karta.materialnik %}, Materiálník{% endif %})</small>
+            <strong class="mono">{{ karta.email|default:"Chybí e-mail majitele" }}</strong>
+          </div>
+          {% if karta.nove_heslo %}
+            <div class="demo-heslo">
+              <small>Nové heslo — zkopíruj teď</small>
+              <strong class="mono">{{ karta.nove_heslo }}</strong>
+            </div>
+          {% else %}
+            <p class="muted demo-heslo-hidden">Heslo je skryté.</p>
+          {% endif %}
+        </div>
+
+        <div class="form-actions">
+          {% if karta.majitel %}
+            <form method="post" action="{% url 'partner_admin:regenerovat_demo_heslo' karta.salon.id %}" onsubmit="return confirm('Vygenerovat nové heslo pro {{ karta.salon.name }}? Staré přestane platit.');">
+              {% csrf_token %}
+              <button class="btn btn-primary" type="submit">Vygenerovat heslo</button>
+            </form>
+          {% endif %}
+          <a class="btn btn-quiet" href="{% url 'partner_admin:detail' karta.salon.id %}">Partner</a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty">
+        Žádný testovací partner. U dema zaškrtni „Testovací partner“ v kartě partnera.
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

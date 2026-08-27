@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import HromadnyEmail, PartnerNastaveni, PlatbaPartnera, TechnickaChyba
+from .services import kam_naklady_mesic, top_kam_mesic
 
 
 def _castka_plateb(od_dne, do_dne):
@@ -156,9 +157,18 @@ def data_prehledu(dnes=None):
             'odkaz': 'chyby',
         })
 
+    prijato = _castka_plateb(_zacatek, dnes)
+    kam_mesic = kam_naklady_mesic(_zacatek, dnes)
+    prijato_minuly = _castka_plateb(_zacatek_mesice(minuly), _konec_mesice(minuly))
+    kam_minuly = kam_naklady_mesic(_zacatek_mesice(minuly), _konec_mesice(minuly))
+
     return {
-        'prijato_mesic': _castka_plateb(_zacatek, dnes),
-        'prijato_minuly': _castka_plateb(_zacatek_mesice(minuly), _konec_mesice(minuly)),
+        'prijato_mesic': prijato,
+        'prijato_minuly': prijato_minuly,
+        'kam_mesic': kam_mesic,
+        'zisk_mesic': prijato - kam_mesic,
+        'zisk_minuly': prijato_minuly - kam_minuly,
+        'top_kam': top_kam_mesic(dnes, 3),
         'mesicni_tarif': mesicni_tarif.quantize(Decimal('0.01')),
         'partneru': len(partneri),
         'po_splatnosti_pocet': len(po_splatnosti),

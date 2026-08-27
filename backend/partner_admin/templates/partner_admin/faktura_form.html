@@ -1,0 +1,45 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Faktura {{ platba.splatnost|date:"d.m.Y" }}{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Fakturace</p>
+      <h1>Připravit fakturu</h1>
+      <p class="muted">
+        Šablona se předvyplní. Faktura UHRAZENO vzniká až po spárování platby, ne jako výzva k úhradě.
+      </p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="{% url 'partner_admin:detail' salon.id %}?tab=platby">← Zpět k platbám</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">{{ salon.name }}</p>
+        <h2>Platba splatná {{ platba.splatnost|date:"d.m.Y" }}</h2>
+      </div>
+    </div>
+    <form class="form-grid" method="post" autocomplete="off">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <p class="field-error full">{{ form.non_field_errors|striptags }}</p>
+      {% endif %}
+      {% for field in form %}
+        <label class="{% if field.name == 'popis' or field.name == 'dodavatel_sidlo' or field.name == 'odberatel_adresa' %}full{% endif %}">
+          {{ field.label }}
+          {{ field }}
+          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+          {% if field.errors %}<span class="field-error">{{ field.errors|striptags }}</span>{% endif %}
+        </label>
+      {% endfor %}
+      <div class="form-actions">
+        <a class="btn btn-quiet" href="{% url 'partner_admin:detail' salon.id %}?tab=platby">Zrušit</a>
+        <button class="btn btn-primary" type="submit">Vygenerovat PDF</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

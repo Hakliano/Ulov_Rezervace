@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.db.models import Case, Count, IntegerField, Q, When
+from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Q, When
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -20,27 +20,47 @@ from salons.models import Salon
 
 from .forms import (
     BlokaceForm,
+    FakturaEditForm,
     FakturaPlatbyForm,
     HromadnyEmailForm,
+    KeyAccountManagerForm,
     NovyPartnerForm,
     PartnerNastaveniForm,
     PartnerTarifForm,
     PlatbaForm,
     ResetHeslaForm,
+    UlovCisloUctuForm,
     UpozorneniForm,
 )
 from .loga import logo_url_pro_tarif, tarif_loga_pro_sablonu
 from .models import (
     MODUL_MATERIALNIK,
     HromadnyEmail,
+    KeyAccountManager,
+    PartnerModul,
     PartnerNastaveni,
     PartnerTarif,
     PlatbaPartnera,
     TechnickaChyba,
+    UlovCisloUctu,
     UpozorneniPlatby,
+    vychozi_variabilni_symbol,
 )
 from .prehled import data_prehledu, prijemci_hromadneho_emailu
-from .services import log_superadmin, oznac_platbu, vytvor_noveho_partnera
+from .pristupy import karty_testovacich_pristupu, prostredi_navesti
+from .services import (
+    kam_vydelal_celkem,
+    kam_vydelal_mesic,
+    kam_vypis_data,
+    log_superadmin,
+    oznac_kam_mesic_vyplaceny,
+    oznac_platbu,
+    resetuj_heslo_majitele,
+    seznam_ulov_uctu,
+    synchronizuj_ulov_ucty,
+    vygeneruj_demo_heslo,
+    vytvor_noveho_partnera,
+)
 from .services_moduly import nastav_modul, partner_modul
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
@@ -84,10 +104,17 @@ def _detail_redirect(salon_id, tab='partner'):
 
 
 def _partner(salon):
-    partner, _ = PartnerNastaveni.objects.get_or_create(
+    partner, created = PartnerNastaveni.objects.get_or_create(
         salon=salon,
-        defaults={'fakturacni_email': salon.email},
+        defaults={
+            'fakturacni_email': salon.email,
+            'variabilni_symbol': vychozi_variabilni_symbol(salon.id) or None,
+        },
     )
+    if not created and not partner.variabilni_symbol:
+        partner.variabilni_symbol = vychozi_variabilni_symbol(salon.id) or None
+        if partner.variabilni_symbol:
+            partner.save(update_fields=['variabilni_symbol', 'aktualizovano'])
     return partner
 
 
@@ -99,7 +126,11 @@ def _zajisti_partner_nastaveni():
         return
     PartnerNastaveni.objects.bulk_create(
         [
-            PartnerNastaveni(salon_id=salon.id, fakturacni_email=salon.email or '')
+            PartnerNastaveni(
+                salon_id=salon.id,
+                fakturacni_email=salon.email or '',
+                variabilni_symbol=vychozi_variabilni_symbol(salon.id) or None,
+            )
             for salon in chybejici
         ]
     )
@@ -175,7 +206,10 @@ def _sablony_upozorneni(salon, partner):
 def _salon_queryset(dnes=None):
     dnes = dnes or timezone.localdate()
     zacatek_mesice = dnes.replace(day=1)
-    return Salon.objects.select_related('partner_nastaveni').annotate(
+    return Salon.objects.select_related(
+        'partner_nastaveni',
+        'partner_nastaveni__kam',
+    ).annotate(
         rezervace_celkem=Count('rezervace', distinct=True),
         rezervace_mesic=Count(
             'rezervace',
@@ -194,6 +228,13 @@ def _salon_queryset(dnes=None):
             'rezervace',
             filter=Q(rezervace__stav='no_show'),
             distinct=True,
+        ),
+        materialnik_aktivni=Exists(
+            PartnerModul.objects.filter(
+                salon_id=OuterRef('pk'),
+                modul__kod=MODUL_MATERIALNIK,
+                status=PartnerModul.STAV_ACTIVE,
+            )
         ),
         platebni_priorita=Case(
             When(partner_nastaveni__dalsi_splatnost__lt=dnes, then=0),
@@ -219,12 +260,15 @@ def _aplikuj_filtry(salons, filtry, dnes=None):
     platba = filtry.get('platba', '')
 
     if hledat:
-        salons = salons.filter(
+        shoda = (
             Q(name__icontains=hledat)
             | Q(partner_nastaveni__domena__icontains=hledat)
             | Q(partner_nastaveni__variabilni_symbol__icontains=hledat)
             | Q(partner_nastaveni__fakturacni_email__icontains=hledat)
         )
+        if hledat.isdigit():
+            shoda |= Q(pk=int(hledat))
+        salons = salons.filter(shoda)
     if stav in {PartnerNastaveni.STAV_ACTIVE, PartnerNastaveni.STAV_BLOCKED}:
         salons = salons.filter(partner_nastaveni__stav=stav)
     if platba == 'po_splatnosti':
@@ -312,6 +356,212 @@ def tarify(request):
     )
 
 
+def _katalog_crud(request, *, model, form_cls, template, redirect_name, smazat_ok=True, po_ulozeni=None):
+    if request.method == 'POST':
+        akce = request.POST.get('akce')
+        if smazat_ok and akce == 'smazat':
+            row = get_object_or_404(model, pk=request.POST.get('id'))
+            nazev = str(row)
+            row.delete()
+            if po_ulozeni:
+                po_ulozeni()
+            messages.success(request, f'„{nazev}“ byl smazán.')
+            return redirect(redirect_name)
+        instance = None
+        if akce == 'ulozit':
+            instance = get_object_or_404(model, pk=request.POST.get('id'))
+        form = form_cls(request.POST, instance=instance)
+        if form.is_valid():
+            ulozeno = form.save()
+            if po_ulozeni:
+                po_ulozeni()
+            messages.success(request, f'„{ulozeno}“ je uložené.')
+            return redirect(redirect_name)
+        messages.error(request, 'Nepodařilo se uložit: ' + _chyby_formulare(form))
+        novy_form = form if akce != 'ulozit' else form_cls()
+    else:
+        novy_form = form_cls()
+    qs = model.objects.all()
+    if model is KeyAccountManager:
+        qs = qs.prefetch_related('partneri__salon')
+    radky = [(row, form_cls(instance=row)) for row in qs]
+    return render(request, template, {'radky': radky, 'novy_form': novy_form})
+
+
+@superadmin_required
+def testovaci_pristupy(request):
+    nove_heslo = request.session.pop('demo_nove_heslo', '')
+    nove_id = request.session.pop('demo_nove_heslo_salon_id', None)
+    return render(
+        request,
+        'partner_admin/testovaci_pristupy.html',
+        {
+            'karty': karty_testovacich_pristupu(nove_id, nove_heslo),
+            'prostredi': prostredi_navesti(),
+        },
+    )
+
+
+@superadmin_required
+@require_POST
+def regenerovat_demo_heslo(request, salon_id):
+    salon = get_object_or_404(Salon, pk=salon_id, partner_nastaveni__je_testovaci=True)
+    majitel = (
+        salon.zamestnanci.filter(role=Zamestnanec.ROLE_MAJITEL)
+        .order_by('id')
+        .first()
+    )
+    if not majitel:
+        messages.error(request, 'Tento testovací salon nemá účet majitele.')
+        return redirect('partner_admin:testovaci_pristupy')
+    nove = vygeneruj_demo_heslo()
+    resetuj_heslo_majitele(majitel, nove, request.user)
+    request.session['demo_nove_heslo'] = nove
+    request.session['demo_nove_heslo_salon_id'] = salon.id
+    messages.success(
+        request,
+        f'Nové heslo pro {salon.name} je vygenerované níže. Zkopíruj ho teď — znovu ho neuvidíš.',
+    )
+    return redirect('partner_admin:testovaci_pristupy')
+
+
+@superadmin_required
+def kamove(request):
+    edit_form = None
+    edit_id = None
+    novy_form = KeyAccountManagerForm()
+    if request.method == 'POST':
+        akce = request.POST.get('akce')
+        if akce == 'smazat':
+            row = get_object_or_404(KeyAccountManager, pk=request.POST.get('id'))
+            nazev = str(row)
+            row.delete()
+            messages.success(request, f'„{nazev}“ byl smazán.')
+            return redirect('partner_admin:kam')
+        instance = None
+        if akce == 'ulozit':
+            instance = get_object_or_404(KeyAccountManager, pk=request.POST.get('id'))
+        form = KeyAccountManagerForm(request.POST, instance=instance)
+        if form.is_valid():
+            ulozeno = form.save()
+            messages.success(request, f'„{ulozeno}“ je uložené.')
+            return redirect('partner_admin:kam')
+        messages.error(request, 'Nepodařilo se uložit: ' + _chyby_formulare(form))
+        if akce == 'ulozit' and instance:
+            edit_form = form
+            edit_id = instance.pk
+        else:
+            novy_form = form
+    else:
+        try:
+            edit_id = int(request.GET.get('upravit') or 0) or None
+        except (TypeError, ValueError):
+            edit_id = None
+
+    karty = []
+    for kam in KeyAccountManager.objects.prefetch_related('partneri__salon').all():
+        if edit_id == kam.pk and edit_form is not None:
+            form = edit_form
+        else:
+            form = KeyAccountManagerForm(instance=kam)
+        karty.append({
+            'kam': kam,
+            'form': form,
+            'edituje': edit_id == kam.pk,
+            'partneri': list(kam.partneri.all()),
+            'mesic': kam_vydelal_mesic(kam),
+            'celkem': kam_vydelal_celkem(kam),
+        })
+    return render(
+        request,
+        'partner_admin/kam.html',
+        {
+            'karty': karty,
+            'novy_form': novy_form,
+            'edit_id': edit_id,
+        },
+    )
+
+
+MESICE_CS = [
+    '', 'leden', 'únor', 'březen', 'duben', 'květen', 'červen',
+    'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec',
+]
+
+
+def _posun_mesic(rok, mesic, delta):
+    mesic += delta
+    while mesic < 1:
+        mesic += 12
+        rok -= 1
+    while mesic > 12:
+        mesic -= 12
+        rok += 1
+    return rok, mesic
+
+
+@superadmin_required
+def kam_vypis(request, kam_id):
+    kam = get_object_or_404(KeyAccountManager, pk=kam_id)
+    dnes = timezone.localdate()
+    try:
+        rok = int(request.GET.get('rok') or dnes.year)
+        mesic = int(request.GET.get('mesic') or dnes.month)
+    except (TypeError, ValueError):
+        rok, mesic = dnes.year, dnes.month
+    if mesic < 1 or mesic > 12 or rok < 2000 or rok > 2100:
+        rok, mesic = dnes.year, dnes.month
+    data = kam_vypis_data(kam, rok, mesic)
+    pred_rok, pred_mesic = _posun_mesic(rok, mesic, -1)
+    dalsi_rok, dalsi_mesic = _posun_mesic(rok, mesic, 1)
+    data.update({
+        'mesic_nazev': MESICE_CS[mesic],
+        'pred_rok': pred_rok,
+        'pred_mesic': pred_mesic,
+        'dalsi_rok': dalsi_rok,
+        'dalsi_mesic': dalsi_mesic,
+    })
+    return render(request, 'partner_admin/kam_vypis.html', data)
+
+
+@superadmin_required
+@require_POST
+def kam_vyplatit(request, kam_id):
+    kam = get_object_or_404(KeyAccountManager, pk=kam_id)
+    dnes = timezone.localdate()
+    try:
+        rok = int(request.POST.get('rok') or dnes.year)
+        mesic = int(request.POST.get('mesic') or dnes.month)
+    except (TypeError, ValueError):
+        rok, mesic = dnes.year, dnes.month
+    castka = oznac_kam_mesic_vyplaceny(kam, rok, mesic)
+    messages.success(
+        request,
+        f'Měsíc {mesic:02d}/{rok} u {kam.jmeno} označen jako vyplacený ({castka} Kč).',
+    )
+    return redirect(f"{reverse('partner_admin:kam_vypis', args=[kam.id])}?rok={rok}&mesic={mesic}")
+
+
+def _po_ulozeni_ulov_uctu():
+    if not UlovCisloUctu.objects.filter(aktivni=True, primarni=True).exists():
+        prvni = UlovCisloUctu.objects.filter(aktivni=True).order_by('razeni', 'id').first()
+        if prvni:
+            UlovCisloUctu.objects.filter(pk=prvni.pk).update(primarni=True)
+    synchronizuj_ulov_ucty()
+
+
+@superadmin_required
+def ulov_ucty(request):
+    return _katalog_crud(
+        request,
+        model=UlovCisloUctu,
+        form_cls=UlovCisloUctuForm,
+        template='partner_admin/ucty.html',
+        redirect_name='partner_admin:ucty',
+        po_ulozeni=_po_ulozeni_ulov_uctu,
+    )
+
+
 @superadmin_required
 def dashboard(request):
     _zajisti_partner_nastaveni()
@@ -376,6 +626,8 @@ def export_csv(request):
         'Dní po splatnosti',
         'Fakturační e-mail',
         'Tarif',
+        'KAM',
+        'Materiálník',
     ])
     for salon in salons:
         partner = salon.partner_nastaveni
@@ -397,6 +649,8 @@ def export_csv(request):
             partner.dni_po_splatnosti if partner.je_po_splatnosti else '',
             partner.fakturacni_email,
             partner.tarif,
+            partner.kam.jmeno if partner.kam_id else '',
+            'ano' if getattr(salon, 'materialnik_aktivni', False) else 'ne',
         ])
     return response
 
@@ -485,6 +739,11 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
     api_session = create_partner_session(request.user, days=1)
     form = nastaveni_form or PartnerNastaveniForm(instance=partner)
     tarif_nazev = form['tarif'].value() or partner.tarif or ''
+    je_prvni_platba = not salon.partnerske_platby.exists()
+    if je_prvni_platba and partner.prvni_platba and partner.prvni_platba > 0:
+        castka_platby = partner.prvni_platba
+    else:
+        castka_platby = partner.castka
     return render(
         request,
         'partner_admin/detail.html',
@@ -499,7 +758,8 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
             'tarif_logo_url': logo_url_pro_tarif(tarif_nazev),
             'tarif_logo_nazev': tarif_nazev or '—',
             'tarif_loga': tarif_loga_pro_sablonu(),
-            'platba_form': PlatbaForm(initial={'prijata_castka': partner.castka}),
+            'je_prvni_platba': je_prvni_platba,
+            'platba_form': PlatbaForm(initial={'prijata_castka': castka_platby}),
             'upozorneni_form': UpozorneniForm(
                 initial={'predmet': vychozi_predmet, 'text': vychozi_text},
             ),
@@ -511,6 +771,7 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
             'owner_flow': owner_flow_stav(salon),
             'materialnik_modul': partner_modul(salon, MODUL_MATERIALNIK),
             'materialnik_public_url': (getattr(settings, 'MATERIALNIK_PUBLIC_URL', '') or '').rstrip('/'),
+            'ulov_ucty': seznam_ulov_uctu(),
             'platby': salon.partnerske_platby.select_related('oznacil')[:24],
             'posledni_platba': salon.partnerske_platby.select_related('oznacil').first(),
             'upozorneni': salon.upozorneni_plateb.select_related('odeslal')[:20],
@@ -539,7 +800,12 @@ def ulozit_nastaveni(request, salon_id):
         'periodicita': partner.periodicita,
         'castka': str(partner.castka),
         'dalsi_splatnost': partner.dalsi_splatnost.isoformat() if partner.dalsi_splatnost else None,
-        'ulov_cislo_uctu': partner.ulov_cislo_uctu,
+        'kam': partner.kam_id,
+        'prvni_platba': str(partner.prvni_platba),
+        'kam_provize': str(partner.kam_provize),
+        'kam_procento': str(partner.kam_procento),
+        'ico': partner.ico,
+        'je_testovaci': partner.je_testovaci,
     }
     form = PartnerNastaveniForm(request.POST, instance=partner)
     if not form.is_valid():
@@ -560,7 +826,12 @@ def ulozit_nastaveni(request, salon_id):
         'periodicita': ulozeno.periodicita,
         'castka': str(ulozeno.castka),
         'dalsi_splatnost': ulozeno.dalsi_splatnost.isoformat() if ulozeno.dalsi_splatnost else None,
-        'ulov_cislo_uctu': ulozeno.ulov_cislo_uctu,
+        'kam': ulozeno.kam_id,
+        'prvni_platba': str(ulozeno.prvni_platba),
+        'kam_provize': str(ulozeno.kam_provize),
+        'kam_procento': str(ulozeno.kam_procento),
+        'ico': ulozeno.ico,
+        'je_testovaci': ulozeno.je_testovaci,
     }
     log_superadmin(salon, request.user, 'Upraveno nastavení partnera.', pred=pred, po=po)
     messages.success(
@@ -633,7 +904,7 @@ def potvrdit_platbu(request, salon_id):
     form = PlatbaForm(request.POST, request.FILES)
     if form.is_valid():
         try:
-            oznac_platbu(
+            platba = oznac_platbu(
                 salon,
                 request.user,
                 form.cleaned_data['zaplaceno_dne'],
@@ -641,10 +912,19 @@ def potvrdit_platbu(request, salon_id):
                 form.cleaned_data['poznamka'],
                 faktura_pdf=form.cleaned_data.get('faktura_pdf'),
             )
-            messages.success(
-                request,
-                'Hotovo: období označeno jako ZAPLACENO. Aktuální období je nové NEZAPLACENO.',
-            )
+            zprava = 'Hotovo: období označeno jako ZAPLACENO. Aktuální období je nové NEZAPLACENO.'
+            if platba.faktura_pdf:
+                from .faktura import odesli_fakturu_partnerovi
+                ok, detail = odesli_fakturu_partnerovi(platba)
+                if ok:
+                    zprava += f' Faktura {platba.cislo_faktury} je vygenerovaná a odeslaná na {detail}.'
+                elif detail == 'chybí fakturační e-mail':
+                    zprava += f' Faktura {platba.cislo_faktury} je vygenerovaná. Doplňte fakturační e-mail, ať ji můžeme poslat.'
+                else:
+                    zprava += f' Faktura {platba.cislo_faktury} je vygenerovaná, e-mail se nepodařilo odeslat: {detail}.'
+            else:
+                zprava += ' PDF faktury se nepodařilo vygenerovat — použijte tlačítko níže.'
+            messages.success(request, zprava)
         except Exception as exc:
             messages.error(request, f'Platbu nelze uložit: {exc}')
     else:
@@ -661,10 +941,11 @@ def nahrat_fakturu_platby(request, salon_id, platba_id):
     form = FakturaPlatbyForm(request.POST, request.FILES)
     if not form.is_valid():
         messages.error(request, 'Nahrajte platný PDF soubor faktury.')
-        return _detail_redirect(salon.id, 'platby')
+        return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
 
     pdf = form.cleaned_data['faktura_pdf']
     if platba.faktura_pdf:
+        platba.faktura_pdf.close()
         platba.faktura_pdf.delete(save=False)
     platba.faktura_pdf = pdf
     platba.save(update_fields=['faktura_pdf'])
@@ -678,7 +959,80 @@ def nahrat_fakturu_platby(request, salon_id, platba_id):
         po={'soubor': getattr(pdf, 'name', '')},
     )
     messages.success(request, 'Faktura PDF uložena.')
-    return _detail_redirect(salon.id, 'platby')
+    return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
+
+
+@superadmin_required
+@require_POST
+def vygenerovat_fakturu(request, salon_id, platba_id):
+    """Jedno kliknutí po spárování. K platbě vznikne nejvýš jedna faktura."""
+    from .faktura import odesli_fakturu_partnerovi, zajisti_fakturu
+
+    salon = get_object_or_404(Salon, pk=salon_id)
+    platba = get_object_or_404(PlatbaPartnera, pk=platba_id, salon=salon)
+    try:
+        platba, nova = zajisti_fakturu(platba)
+    except Exception as exc:
+        messages.error(request, f'PDF se nepodařilo vygenerovat: {exc}')
+        return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
+    if not nova:
+        messages.info(request, f'Faktura {platba.cislo_faktury} k této platbě už existuje.')
+        return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
+    log_superadmin(
+        salon,
+        request.user,
+        f'Vygenerována faktura {platba.cislo_faktury} k platbě {platba.splatnost:%d.%m.%Y}.',
+        kategorie='platby',
+        objekt_typ='PlatbaPartnera',
+        objekt_id=platba.id,
+        po={'cislo': platba.cislo_faktury},
+    )
+    ok, detail = odesli_fakturu_partnerovi(platba)
+    if ok:
+        messages.success(request, f'Faktura {platba.cislo_faktury} je vygenerovaná a odeslaná na {detail}.')
+    else:
+        messages.success(request, f'Faktura {platba.cislo_faktury} je vygenerovaná. E-mail: {detail}.')
+    return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
+
+
+@superadmin_required
+def pripravit_fakturu(request, salon_id, platba_id):
+    """Šablona faktury k úpravě. PDF vznikne až po potvrzení."""
+    from .faktura import uloz_fakturu_k_platbe, vychozi_data_faktury
+
+    salon = get_object_or_404(Salon, pk=salon_id)
+    platba = get_object_or_404(PlatbaPartnera, pk=platba_id, salon=salon)
+    if request.method == 'POST':
+        form = FakturaEditForm(request.POST)
+        if form.is_valid():
+            try:
+                uloz_fakturu_k_platbe(platba, form.data_pro_pdf())
+            except Exception as exc:
+                messages.error(request, f'PDF se nepodařilo vygenerovat: {exc}')
+                return render(
+                    request,
+                    'partner_admin/faktura_form.html',
+                    {'salon': salon, 'platba': platba, 'form': form},
+                )
+            log_superadmin(
+                salon,
+                request.user,
+                f'Vygenerována faktura {platba.cislo_faktury} k platbě {platba.splatnost:%d.%m.%Y}.',
+                kategorie='platby',
+                objekt_typ='PlatbaPartnera',
+                objekt_id=platba.id,
+                po={'cislo': platba.cislo_faktury},
+            )
+            messages.success(request, f'Faktura {platba.cislo_faktury} je vygenerovaná.')
+            return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
+        messages.error(request, 'Upravte červená pole a zkuste to znovu.')
+    else:
+        form = FakturaEditForm(initial=vychozi_data_faktury(platba))
+    return render(
+        request,
+        'partner_admin/faktura_form.html',
+        {'salon': salon, 'platba': platba, 'form': form},
+    )
 
 
 @superadmin_required
@@ -708,6 +1062,7 @@ def smazat_fakturu_platby(request, salon_id, platba_id):
         messages.error(request, 'U této platby není žádná faktura.')
         return _detail_redirect(salon.id, 'platby')
 
+    platba.faktura_pdf.close()
     platba.faktura_pdf.delete(save=False)
     platba.faktura_pdf = None
     platba.save(update_fields=['faktura_pdf'])
@@ -720,7 +1075,7 @@ def smazat_fakturu_platby(request, salon_id, platba_id):
         objekt_id=platba.id,
     )
     messages.success(request, 'Faktura PDF smazána.')
-    return _detail_redirect(salon.id, 'platby')
+    return _detail_redirect(salon.id, _tab_z_request(request, 'platby'))
 
 
 @superadmin_required
@@ -789,25 +1144,7 @@ def reset_hesla(request, salon_id, zamestnanec_id):
     form = ResetHeslaForm(request.POST)
     if form.is_valid():
         nove = form.cleaned_data['nove_heslo']
-        majitel.set_password(nove)
-        majitel.save(update_fields=['password_hash'])
-        majitel.sessiony.all().delete()
-        from rezervace.services.staff_auth import sync_owner_heslo_do_flow
-        from flow.auth import zrusit_vsechny_sessiony as zrusit_flow_sessiony
-        from flow.models import FlowUser
-        sync_owner_heslo_do_flow(majitel, nove)
-        try:
-            zrusit_flow_sessiony(majitel.flow_ucet)
-        except FlowUser.DoesNotExist:
-            pass
-        log_superadmin(
-            salon,
-            request.user,
-            f'Resetováno heslo účtu {majitel.prihlasovaci_jmeno}; všechny relace zrušeny.',
-            kategorie='ucty',
-            objekt_typ='Zamestnanec',
-            objekt_id=majitel.id,
-        )
+        resetuj_heslo_majitele(majitel, nove, request.user)
         messages.success(request, f'Heslo účtu {majitel.prihlasovaci_jmeno} bylo resetováno.')
     else:
         messages.error(request, 'Heslo musí mít alespoň 10 znaků.')

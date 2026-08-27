@@ -41,7 +41,7 @@
   <form class="filters" method="get">
     <label>
       Hledat
-      <input type="search" name="q" value="{{ filtry.q }}" placeholder="Salon, doména, VS nebo e-mail">
+      <input type="search" name="q" value="{{ filtry.q }}" placeholder="Salon, VS 80…, doména nebo e-mail">
     </label>
     <label>
       Stav služby
@@ -69,6 +69,7 @@
     <div class="ledger-head" aria-hidden="true">
       <span>Partner</span>
       <span>Tarif</span>
+      <span>Materiálník</span>
       <span>VS</span>
       <span>Částka</span>
       <span>Splatnost</span>
@@ -81,6 +82,7 @@
           <div class="ledger-id">
             <div class="badges">
               <span class="badge badge-{{ partner.stav }}">{{ partner.get_stav_display }}</span>
+              {% if partner.je_testovaci %}<span class="badge badge-neutral">test</span>{% endif %}
               {% if partner.je_po_splatnosti %}
                 <span class="badge badge-overdue">+{{ partner.dni_po_splatnosti }} dní</span>
               {% elif partner.dalsi_splatnost %}
@@ -91,13 +93,23 @@
             </div>
             <a class="ledger-name" href="{% url 'partner_admin:detail' salon.id %}">{{ salon.name }}</a>
             <span class="ledger-domain">{{ partner.domena|default:"Doména není nastavena" }}</span>
+            <span class="ledger-vs mono">VS {{ partner.variabilni_symbol|default:"—" }}</span>
+            {% if partner.kam %}<span class="ledger-kam">KAM {{ partner.kam.jmeno }}</span>{% endif %}
           </div>
           <div class="ledger-cell">
             <small>Tarif</small>
             <strong>{{ partner.tarif|default:"—" }}</strong>
           </div>
           <div class="ledger-cell">
-            <small>VS</small>
+            <small>Materiálník</small>
+            {% if salon.materialnik_aktivni %}
+              <strong class="success-text">Aktivní</strong>
+            {% else %}
+              <strong class="muted">Ne</strong>
+            {% endif %}
+          </div>
+          <div class="ledger-cell ledger-vs-cell">
+            <small>Variabilní symbol</small>
             <strong class="mono">{{ partner.variabilni_symbol|default:"—" }}</strong>
           </div>
           <div class="ledger-cell">

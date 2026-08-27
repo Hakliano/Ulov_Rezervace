@@ -23,6 +23,11 @@
       <div class="hint">označené platby partnerů</div>
     </article>
     <article class="kpi">
+      <div class="label">Zisk tento měsíc</div>
+      <div class="value">{{ zisk_mesic|floatformat:0 }} Kč</div>
+      <div class="hint">přijato {{ prijato_mesic|floatformat:0 }} − KAM {{ kam_mesic|floatformat:0 }}</div>
+    </article>
+    <article class="kpi">
       <div class="label">Přijato minulý měsíc</div>
       <div class="value">{{ prijato_minuly|floatformat:0 }} Kč</div>
       <div class="hint">pro srovnání</div>
@@ -121,6 +126,28 @@
             <p class="muted">Nic naléhavého.</p>
           {% endfor %}
         </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Obchod</p>
+            <h2>KAM k výplatě</h2>
+          </div>
+          <a class="btn btn-quiet" href="{% url 'partner_admin:kam' %}">Všichni</a>
+        </div>
+        {% if top_kam %}
+          <div class="feed">
+            {% for radek in top_kam %}
+              <a class="feed-item" href="{% url 'partner_admin:kam_vypis' radek.kam.id %}">
+                <strong>{{ radek.kam.jmeno }}</strong>
+                <span>{{ radek.dluh|floatformat:0 }} Kč</span>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted">Tento měsíc nikomu nic nechybí k výplatě.</p>
+        {% endif %}
       </section>
 
       <section class="panel">

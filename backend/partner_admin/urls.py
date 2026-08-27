@@ -10,6 +10,16 @@ urlpatterns = [
     path('partneri/', views.partneri, name='partneri'),
     path('novy/', views.novy_partner, name='novy'),
     path('tarify/', views.tarify, name='tarify'),
+    path('testovaci-pristupy/', views.testovaci_pristupy, name='testovaci_pristupy'),
+    path(
+        'testovaci-pristupy/<int:salon_id>/heslo/',
+        views.regenerovat_demo_heslo,
+        name='regenerovat_demo_heslo',
+    ),
+    path('kam/', views.kamove, name='kam'),
+    path('kam/<int:kam_id>/vypis/', views.kam_vypis, name='kam_vypis'),
+    path('kam/<int:kam_id>/vypis/vyplatit/', views.kam_vyplatit, name='kam_vyplatit'),
+    path('ucty/', views.ulov_ucty, name='ucty'),
     path('emaily/', views.hromadne_emaily, name='emaily'),
     path('chyby/', views.seznam_chyb, name='chyby'),
     path('chyby/<int:chyba_id>/', views.detail_chyby, name='chyba_detail'),
@@ -29,6 +39,16 @@ urlpatterns = [
         'salon/<int:salon_id>/platba/<int:platba_id>/faktura/',
         views.nahrat_fakturu_platby,
         name='nahrat_fakturu',
+    ),
+    path(
+        'salon/<int:salon_id>/platba/<int:platba_id>/faktura/vygenerovat/',
+        views.vygenerovat_fakturu,
+        name='vygenerovat_fakturu',
+    ),
+    path(
+        'salon/<int:salon_id>/platba/<int:platba_id>/faktura/pripravit/',
+        views.pripravit_fakturu,
+        name='pripravit_fakturu',
     ),
     path(
         'salon/<int:salon_id>/platba/<int:platba_id>/faktura/stahnout/',

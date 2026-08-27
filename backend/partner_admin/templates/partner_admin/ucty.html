@@ -1,0 +1,106 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Účty ULOV{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Platby</p>
+      <h1>Čísla účtů ULOV</h1>
+      <p class="muted">
+        Zadáváš je jen tady. Primární účet se automaticky zapíše všem salonům (QR ve FLOW).
+        Může jich být víc — partner uvidí seznam, QR jde na primární.
+      </p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="{% url 'partner_admin:partneri' %}">← Partneři</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Seznam</p>
+        <h2>Uložené účty</h2>
+      </div>
+    </div>
+    {% if radky %}
+      <div class="tarif-list">
+        {% for ucet, form in radky %}
+          <article class="tarif-row">
+            <form method="post" class="form-grid compact" autocomplete="off">
+              {% csrf_token %}
+              <input type="hidden" name="akce" value="ulozit">
+              <input type="hidden" name="id" value="{{ ucet.id }}">
+              <label>
+                Číslo účtu
+                {{ form.cislo }}
+                {% if form.cislo.errors %}<span class="field-error">{{ form.cislo.errors|striptags }}</span>{% endif %}
+              </label>
+              <label>
+                Popisek
+                {{ form.popisek }}
+              </label>
+              <label>
+                Pořadí
+                {{ form.razeni }}
+              </label>
+              <label class="check-label">
+                <span class="check-row">{{ form.primarni }} Primární (QR)</span>
+              </label>
+              <label class="check-label">
+                <span class="check-row">{{ form.aktivni }} Aktivní</span>
+              </label>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Uložit</button>
+              </div>
+            </form>
+            <form method="post" class="tarif-delete" onsubmit="return confirm('Smazat účet {{ ucet.cislo }}?');">
+              {% csrf_token %}
+              <input type="hidden" name="akce" value="smazat">
+              <input type="hidden" name="id" value="{{ ucet.id }}">
+              <button class="btn btn-quiet" type="submit">Smazat</button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Zatím žádný účet. Přidej ho níže — zapíše se všem partnerům.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Nový</p>
+        <h2>Přidat účet</h2>
+      </div>
+    </div>
+    <form method="post" class="form-grid compact" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="akce" value="pridat">
+      <label>
+        Číslo účtu
+        {{ novy_form.cislo }}
+        {% if novy_form.cislo.errors %}<span class="field-error">{{ novy_form.cislo.errors|striptags }}</span>{% endif %}
+      </label>
+      <label>
+        Popisek
+        {{ novy_form.popisek }}
+      </label>
+      <label>
+        Pořadí
+        {{ novy_form.razeni }}
+      </label>
+      <label class="check-label">
+        <span class="check-row">{{ novy_form.primarni }} Primární (QR)</span>
+      </label>
+      <label class="check-label">
+        <span class="check-row">{{ novy_form.aktivni }} Aktivní</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Přidat účet</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

@@ -17,6 +17,52 @@ variabilni_symbol_validator = RegexValidator(
 )
 
 
+def vychozi_variabilni_symbol(salon_id):
+    """80 a hned ID partnera, např. salon 19 → 8019."""
+    if not salon_id:
+        return ''
+    vs = f'80{salon_id}'
+    return vs if len(vs) <= 10 else ''
+
+
+class KeyAccountManager(models.Model):
+    jmeno = models.CharField('jméno', max_length=120, unique=True)
+    email = models.EmailField('e-mail', blank=True)
+    telefon = models.CharField('telefon', max_length=50, blank=True)
+    cislo_uctu = models.CharField('číslo účtu', max_length=34, blank=True)
+    aktivni = models.BooleanField('aktivní', default=True)
+    razeni = models.PositiveSmallIntegerField('pořadí', default=0)
+
+    class Meta:
+        verbose_name = 'KAM'
+        verbose_name_plural = 'KAM'
+        ordering = ['razeni', 'jmeno']
+
+    def __str__(self):
+        return self.jmeno
+
+
+class UlovCisloUctu(models.Model):
+    cislo = models.CharField('číslo účtu', max_length=34, unique=True)
+    popisek = models.CharField('kam / poznámka', max_length=80, blank=True)
+    primarni = models.BooleanField('primární (QR)', default=False)
+    aktivni = models.BooleanField('aktivní', default=True)
+    razeni = models.PositiveSmallIntegerField('pořadí', default=0)
+
+    class Meta:
+        verbose_name = 'číslo účtu ULOV'
+        verbose_name_plural = 'čísla účtů ULOV'
+        ordering = ['-primarni', 'razeni', 'id']
+
+    def __str__(self):
+        return self.cislo
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.primarni and self.pk:
+            UlovCisloUctu.objects.exclude(pk=self.pk).update(primarni=False)
+
+
 class PartnerNastaveni(models.Model):
     STAV_ACTIVE = 'active'
     STAV_BLOCKED = 'blocked'
@@ -79,6 +125,42 @@ class PartnerNastaveni(models.Model):
         unique=True,
         editable=False,
         help_text='Stabilní identita salonu vůči Materiálníku a dalším modulům. Není to interní salon.id.',
+    )
+    kam = models.ForeignKey(
+        'KeyAccountManager',
+        verbose_name='KAM',
+        related_name='partneri',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    prvni_platba = models.DecimalField(
+        'první platba',
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text='Instalační balíček nebo první tarif. V tom měsíci se už nenačítá další 499/598.',
+    )
+    kam_provize = models.DecimalField(
+        'provize KAM',
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text='Kolik dostane KAM po zaplacení první platby. 0 = nepočítat.',
+    )
+    kam_procento = models.DecimalField(
+        'provize KAM z dalších plateb (%)',
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text='Volitelné. Z přijatých plateb po první platbě.',
+    )
+    ico = models.CharField('IČO odběratele', max_length=12, blank=True)
+    je_testovaci = models.BooleanField(
+        'testovací partner',
+        default=False,
+        db_index=True,
+        help_text='Jen interní dema. Noví zákazníci sem nepatří. Viditelné v Testovacích přístupech.',
     )
     zalozeno = models.DateTimeField('založeno', default=timezone.now, db_index=True, editable=False)
     aktualizovano = models.DateTimeField(auto_now=True)
@@ -165,6 +247,7 @@ class PlatbaPartnera(models.Model):
         blank=True,
         null=True,
     )
+    cislo_faktury = models.CharField('číslo faktury', max_length=30, blank=True)
     oznacil = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -184,6 +267,57 @@ class PlatbaPartnera(models.Model):
 
     def __str__(self):
         return f'{self.salon.name}: {self.splatnost:%d.%m.%Y}'
+
+
+class KamProvize(models.Model):
+    TYP_PRVNI = 'prvni'
+    TYP_PROCENTO = 'procento'
+    TYPY = [
+        (TYP_PRVNI, 'První platba'),
+        (TYP_PROCENTO, 'Procento z přijatého'),
+    ]
+    STAV_K_VYPLATE = 'k_vyplate'
+    STAV_VYPLACENO = 'vyplaceno'
+    STAVY = [
+        (STAV_K_VYPLATE, 'K výplatě'),
+        (STAV_VYPLACENO, 'Vyplaceno'),
+    ]
+
+    kam = models.ForeignKey(
+        KeyAccountManager,
+        related_name='provize',
+        on_delete=models.CASCADE,
+    )
+    salon = models.ForeignKey(Salon, related_name='kam_provize', on_delete=models.CASCADE)
+    platba = models.OneToOneField(
+        PlatbaPartnera,
+        related_name='kam_provize',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    typ = models.CharField(max_length=20, choices=TYPY, default=TYP_PRVNI)
+    obdobi = models.DateField('období (1. den měsíce)', db_index=True)
+    castka = models.DecimalField(max_digits=10, decimal_places=2)
+    prvni_platba = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    stav = models.CharField(max_length=20, choices=STAVY, default=STAV_K_VYPLATE, db_index=True)
+    uvolneno_dne = models.DateField()
+    vyplaceno_dne = models.DateField(null=True, blank=True)
+    poznamka = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = 'provize KAM'
+        verbose_name_plural = 'provize KAM'
+        ordering = ['-obdobi', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['kam', 'salon', 'typ', 'obdobi'],
+                name='unique_kam_provize_obdobi',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.kam}: {self.castka} ({self.obdobi:%m/%Y})'
 
 
 class UpozorneniPlatby(models.Model):

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Iterable
 
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.utils import timezone
 
 from rezervace.models import (
@@ -19,6 +19,8 @@ from salons.models import CenikPolozka, Salon
 
 
 AKTIVNI_STAVY = ('ceka', 'potvrzeno')
+VYTEZ_STAVY = ('ceka', 'potvrzeno', 'dokonceno')
+_NIKDY = datetime(1970, 1, 1)
 
 
 def _combine(d, t):
@@ -223,12 +225,76 @@ def generuj_terminy(
     return terminy
 
 
+def _smena_minuty(zamestnanec, datum):
+    okno = zamestnanec_okno(zamestnanec, datum)
+    if not okno:
+        return 0
+    od, do = okno
+    return max((datetime.combine(datum, do) - datetime.combine(datum, od)).total_seconds() / 60, 0)
+
+
+def _obsazene_minuty_den(staff_ids, salon, datum):
+    if not staff_ids:
+        return {}
+    den_od = timezone.make_aware(datetime.combine(datum, datetime.min.time()))
+    den_do = den_od + timedelta(days=1)
+    minuty = {sid: 0.0 for sid in staff_ids}
+    radky = Rezervace.objects.filter(
+        salon=salon,
+        zamestnanec_id__in=staff_ids,
+        stav__in=VYTEZ_STAVY,
+        zacatek__lt=den_do,
+        konec__gt=den_od,
+    ).values_list('zamestnanec_id', 'zacatek', 'konec')
+    for zid, zacatek, konec in radky:
+        start = max(zacatek, den_od)
+        end = min(konec, den_do)
+        if end > start:
+            minuty[zid] += (end - start).total_seconds() / 60
+    return minuty
+
+
+def _posledni_rezervace_map(staff_ids):
+    if not staff_ids:
+        return {}
+    radky = (
+        Rezervace.objects.filter(
+            zamestnanec_id__in=staff_ids,
+            stav__in=VYTEZ_STAVY,
+        )
+        .values('zamestnanec_id')
+        .annotate(posledni=Max('zacatek'))
+    )
+    return {r['zamestnanec_id']: r['posledni'] for r in radky}
+
+
+def _vyber_spravedlive(volni, salon, datum):
+    """Nejnižší % vytížení ten den, při shodě kdo čeká nejdéle, pak pořadí."""
+    if not volni:
+        return None
+    if len(volni) == 1:
+        return volni[0]
+    ids = [z.id for z in volni]
+    obsazeno = _obsazene_minuty_den(ids, salon, datum)
+    posledni = _posledni_rezervace_map(ids)
+    smeny = {z.id: _smena_minuty(z, datum) for z in volni}
+
+    def klic(z):
+        smena = smeny.get(z.id) or 0
+        vytez = (obsazeno.get(z.id, 0) / smena) if smena else 1.0
+        cekal_od = posledni.get(z.id) or _NIKDY
+        if timezone.is_aware(cekal_od):
+            cekal_od = timezone.make_naive(cekal_od)
+        return (vytez, cekal_od, z.poradi, z.id)
+
+    return min(volni, key=klic)
+
+
 def prirad_zamestnance(salon, datum, start, end, preferovany_id=None, sluzby_ids=None):
+    volni = volni_zamestnanci(salon, datum, start, end, sluzby_ids=sluzby_ids)
     if preferovany_id:
-        volni = volni_zamestnanci(salon, datum, start, end, sluzby_ids=sluzby_ids)
         for z in volni:
             if z.id == preferovany_id:
                 return z
         return None
-    volni = volni_zamestnanci(salon, datum, start, end, sluzby_ids=sluzby_ids)
-    return volni[0] if volni else None
+    return _vyber_spravedlive(volni, salon, datum)
