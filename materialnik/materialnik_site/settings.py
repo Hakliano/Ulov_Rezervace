@@ -118,6 +118,8 @@ FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME', '').strip() or None
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 if FORCE_SCRIPT_NAME:
+    # FileSystemStorage by jinak dal STATIC_URL na /static/ a ignoroval prefix /sklad.
+    STATIC_URL = f'{FORCE_SCRIPT_NAME.rstrip("/")}/static/'
     SESSION_COOKIE_PATH = FORCE_SCRIPT_NAME
     CSRF_COOKIE_PATH = FORCE_SCRIPT_NAME
     LOGIN_URL = f'{FORCE_SCRIPT_NAME}/prihlaseni/'

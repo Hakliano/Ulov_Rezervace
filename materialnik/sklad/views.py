@@ -2,6 +2,7 @@ from decimal import Decimal, InvalidOperation
 from functools import wraps
 from uuid import uuid4
 
+from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum
@@ -62,11 +63,20 @@ def login_view(request):
         )
     session = StaffSession.issue(tenant, data.get('staff') or {})
     response = redirect('sklad:home')
-    response.set_cookie(
-        'materialnik_token', session.token,
-        httponly=True, samesite='Lax', max_age=14 * 24 * 3600,
-    )
+    response.set_cookie('materialnik_token', session.token, **_token_cookie_kwargs())
     return response
+
+
+def _token_cookie_kwargs():
+    kwargs = {
+        'httponly': True,
+        'samesite': 'Lax',
+        'max_age': 14 * 24 * 3600,
+        'secure': not settings.DEBUG,
+    }
+    if settings.FORCE_SCRIPT_NAME:
+        kwargs['path'] = settings.FORCE_SCRIPT_NAME
+    return kwargs
 
 
 @require_POST
@@ -75,7 +85,12 @@ def logout_view(request):
     if token:
         StaffSession.objects.filter(token=token).delete()
     response = redirect('sklad:login')
-    response.delete_cookie('materialnik_token')
+    cookie_kw = _token_cookie_kwargs()
+    response.delete_cookie(
+        'materialnik_token',
+        path=cookie_kw.get('path', '/'),
+        samesite=cookie_kw.get('samesite'),
+    )
     return response
 
 
