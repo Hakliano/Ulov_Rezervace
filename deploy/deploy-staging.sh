@@ -47,6 +47,7 @@ text = p.read_text(encoding="utf-8")
 lines = []
 overrides = {
     "ALLOWED_HOSTS": "api-staging.ulovklienty.cz,staging.ulovklienty.cz,www.staging.ulovklienty.cz,localhost,127.0.0.1,ulov-staging-api,staging-api",
+    "SECURE_SSL_REDIRECT": "false",
     "CORS_ALLOWED_ORIGINS": "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz,https://demo1.staging.ulovklienty.cz,https://demo2.staging.ulovklienty.cz,https://demo3.staging.ulovklienty.cz,https://demo4.staging.ulovklienty.cz,https://demo5.staging.ulovklienty.cz,https://demo6.staging.ulovklienty.cz,https://demo7.staging.ulovklienty.cz,https://demo8.staging.ulovklienty.cz,https://staging.modernik.cz,https://www.modernik.cz,https://modernik.cz,https://staging.materialnik.cz,https://www.materialnik.cz,https://materialnik.cz",
     "CSRF_TRUSTED_ORIGINS": "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz,https://api-staging.ulovklienty.cz",
     "SENTRY_ENVIRONMENT": "staging",
