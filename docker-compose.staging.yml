@@ -78,7 +78,8 @@ services:
     networks:
       - default
 
-  materialnik:
+  staging-materialnik:
+    image: ulov-staging-materialnik
     build: ./materialnik
     container_name: ulov-staging-materialnik
     restart: unless-stopped

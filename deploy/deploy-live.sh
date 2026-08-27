@@ -98,7 +98,12 @@ fi
 
 echo "### 5) API / služby"
 docker compose up -d --build
-docker compose exec -T api python manage.py migrate --noinput
+# api už migrate dělá při startu; druhý běh v souběhu umí DuplicateTable
+sleep 8
+docker compose exec -T api python manage.py migrate --noinput || true
+# po recreate api má nginx starý IP v upstream — bez restartu 502
+docker compose restart nginx
+sleep 2
 docker compose exec -T nginx nginx -t
 docker compose exec -T nginx nginx -s reload
 

@@ -37,8 +37,8 @@ services:
     restart: unless-stopped
     env_file: ./.env
     environment:
-      MATERIALNIK_URL: http://materialnik:8000
-      MATERIALNIK_PUBLIC_URL: https://www.ulovklienty.cz/sklad
+      MATERIALNIK_URL: http://ulov-materialnik:8000
+      MATERIALNIK_PUBLIC_URL: https://www.ulovklienty.cz/sklad/
       MATERIALNIK_STUB: "false"
       MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY}
     depends_on:
@@ -60,8 +60,8 @@ services:
     restart: unless-stopped
     env_file: ./.env
     environment:
-      MATERIALNIK_URL: http://materialnik:8000
-      MATERIALNIK_PUBLIC_URL: https://www.ulovklienty.cz/sklad
+      MATERIALNIK_URL: http://ulov-materialnik:8000
+      MATERIALNIK_PUBLIC_URL: https://www.ulovklienty.cz/sklad/
       MATERIALNIK_STUB: "false"
       MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY}
     depends_on:
