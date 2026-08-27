@@ -1,0 +1,101 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Tarify{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Katalog</p>
+      <h1>Tarify</h1>
+      <p class="muted">
+        Tady jsou názvy a výchozí ceny. U partnera vybereš tarif, cena se doplní a můžeš ji přepsat.
+      </p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-quiet" href="{% url 'partner_admin:partneri' %}">← Partneři</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Seznam</p>
+        <h2>Uložené tarify</h2>
+      </div>
+    </div>
+    {% if radky %}
+      <div class="tarif-list">
+        {% for tarif, form in radky %}
+          <article class="tarif-row">
+            <form method="post" class="form-grid compact" autocomplete="off">
+              {% csrf_token %}
+              <input type="hidden" name="akce" value="ulozit">
+              <input type="hidden" name="id" value="{{ tarif.id }}">
+              <label>
+                Název
+                {{ form.nazev }}
+                {% if form.nazev.errors %}<span class="field-error">{{ form.nazev.errors|striptags }}</span>{% endif %}
+              </label>
+              <label>
+                Výchozí cena (Kč)
+                {{ form.castka }}
+                {% if form.castka.errors %}<span class="field-error">{{ form.castka.errors|striptags }}</span>{% endif %}
+              </label>
+              <label>
+                Pořadí
+                {{ form.razeni }}
+              </label>
+              <label class="check-label">
+                <span class="check-row">{{ form.aktivni }} Aktivní</span>
+              </label>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Uložit</button>
+              </div>
+            </form>
+            <form method="post" class="tarif-delete" onsubmit="return confirm('Smazat tarif {{ tarif.nazev }}?');">
+              {% csrf_token %}
+              <input type="hidden" name="akce" value="smazat">
+              <input type="hidden" name="id" value="{{ tarif.id }}">
+              <button class="btn btn-quiet" type="submit">Smazat</button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Zatím žádný tarif. Přidej ho níže.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Nový</p>
+        <h2>Přidat tarif</h2>
+      </div>
+    </div>
+    <form method="post" class="form-grid compact" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="akce" value="pridat">
+      <label>
+        Název
+        {{ novy_form.nazev }}
+        {% if novy_form.nazev.errors %}<span class="field-error">{{ novy_form.nazev.errors|striptags }}</span>{% endif %}
+      </label>
+      <label>
+        Výchozí cena (Kč)
+        {{ novy_form.castka }}
+        {% if novy_form.castka.errors %}<span class="field-error">{{ novy_form.castka.errors|striptags }}</span>{% endif %}
+      </label>
+      <label>
+        Pořadí
+        {{ novy_form.razeni }}
+      </label>
+      <label class="check-label">
+        <span class="check-row">{{ novy_form.aktivni }} Aktivní</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Přidat tarif</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

@@ -4,7 +4,7 @@
 {% block title %}{{ salon.name }}{% endblock %}
 
 {% block content %}
-  <div class="breadcrumbs"><a href="{% url 'partner_admin:dashboard' %}">← Všichni partneři</a></div>
+  <div class="breadcrumbs"><a href="{% url 'partner_admin:partneri' %}">← Všichni partneři</a></div>
 
   <div class="page-head detail-head">
     <div>
@@ -19,7 +19,7 @@
     </div>
     <div class="head-actions">
       {% if partner.domena %}
-        <a class="btn btn-secondary" href="https://{{ partner.domena }}" target="_blank" rel="noopener">Otevřít web</a>
+        <a class="btn btn-ink" href="https://{{ partner.domena }}" target="_blank" rel="noopener">Otevřít web</a>
       {% endif %}
       {% if partner.stav == 'blocked' %}
         <form method="post" action="{% url 'partner_admin:aktivovat' salon.id %}">
@@ -40,54 +40,67 @@
     <article><span>NO-show</span><strong>{{ statistiky.no_show }}</strong></article>
   </section>
 
-  <nav class="detail-tabs" role="tablist" aria-label="Sekce partnera">
-    <div class="tab-group">
-      <span class="tab-group-label">ULOV</span>
-      <a class="tab{% if active_tab == 'partner' %} is-active{% endif %}" href="?tab=partner">Partner</a>
-      <a class="tab{% if active_tab == 'parovani' %} is-active{% endif %}" href="?tab=parovani">Párování plateb</a>
-      <a class="tab{% if active_tab == 'platby' %} is-active{% endif %}" href="?tab=platby">Historie plateb</a>
-      <a class="tab{% if active_tab == 'upozorneni' %} is-active{% endif %}" href="?tab=upozorneni">Upozornění</a>
-      <a class="tab{% if active_tab == 'pristupy' %} is-active{% endif %}" href="?tab=pristupy">Přístupy</a>
-      <a class="tab{% if active_tab == 'stav' %} is-active{% endif %}" href="?tab=stav">ACTIVE / BLOCKED</a>
-      <a class="tab{% if active_tab == 'audit' %} is-active{% endif %}" href="?tab=audit">Audit</a>
-      <a class="tab{% if active_tab == 'chyby' %} is-active{% endif %}" href="?tab=chyby">Chyby</a>
+  {% if partner.je_po_splatnosti %}
+    <div class="alert-banner">
+      <span>Platba je {{ partner.dni_po_splatnosti }} dní po splatnosti.</span>
+      <a class="btn btn-danger" href="?tab=parovani">Vyřešit platbu</a>
     </div>
-    <div class="tab-group">
-      <span class="tab-group-label">Za majitelku</span>
-      <a class="tab{% if active_tab == 'web' %} is-active{% endif %}" href="?tab=web">Web</a>
-      <a class="tab{% if active_tab == 'banner' %} is-active{% endif %}" href="?tab=banner">Banner</a>
-      <a class="tab{% if active_tab == 'cenik' %} is-active{% endif %}" href="?tab=cenik">Ceník</a>
-      <a class="tab{% if active_tab == 'novinky' %} is-active{% endif %}" href="?tab=novinky">Novinky</a>
-      <a class="tab{% if active_tab == 'personal' %} is-active{% endif %}" href="?tab=personal">Personál + FLOW</a>
-      <a class="tab{% if active_tab == 'rezervace' %} is-active{% endif %}" href="?tab=rezervace">Rezervace</a>
-      <a class="tab{% if active_tab == 'emaily' %} is-active{% endif %}" href="?tab=emaily">E-maily</a>
-      <a class="tab{% if active_tab == 'smtp' %} is-active{% endif %}" href="?tab=smtp">SMTP / IMAP</a>
-      <a class="tab{% if active_tab == 'odkazy' %} is-active{% endif %}" href="?tab=odkazy">Odkazy</a>
-    </div>
+  {% endif %}
+
+  <div class="detail-layout">
+  <nav class="detail-side" aria-label="Sekce partnera">
+    <p class="nav-label">ULOV</p>
+    <a class="tab{% if active_tab == 'partner' %} is-active{% endif %}" href="?tab=partner">Partner</a>
+    <a class="tab{% if active_tab == 'parovani' %} is-active{% endif %}" href="?tab=parovani">Párování plateb</a>
+    <a class="tab{% if active_tab == 'platby' %} is-active{% endif %}" href="?tab=platby">Historie plateb</a>
+    <a class="tab{% if active_tab == 'upozorneni' %} is-active{% endif %}" href="?tab=upozorneni">Upozornění</a>
+    <a class="tab{% if active_tab == 'pristupy' %} is-active{% endif %}" href="?tab=pristupy">Přístupy</a>
+    <a class="tab{% if active_tab == 'stav' %} is-active{% endif %}" href="?tab=stav">ACTIVE / BLOCKED</a>
+    <a class="tab{% if active_tab == 'audit' %} is-active{% endif %}" href="?tab=audit">Audit</a>
+    <a class="tab{% if active_tab == 'chyby' %} is-active{% endif %}" href="?tab=chyby">Chyby</a>
+    <p class="nav-label">Za majitelku</p>
+    <a class="tab{% if active_tab == 'web' %} is-active{% endif %}" href="?tab=web">Web</a>
+    <a class="tab{% if active_tab == 'banner' %} is-active{% endif %}" href="?tab=banner">Banner</a>
+    <a class="tab{% if active_tab == 'cenik' %} is-active{% endif %}" href="?tab=cenik">Ceník</a>
+    <a class="tab{% if active_tab == 'novinky' %} is-active{% endif %}" href="?tab=novinky">Novinky</a>
+    <a class="tab{% if active_tab == 'personal' %} is-active{% endif %}" href="?tab=personal">Personál + FLOW</a>
+    <a class="tab{% if active_tab == 'rezervace' %} is-active{% endif %}" href="?tab=rezervace">Rezervace</a>
+    <a class="tab{% if active_tab == 'emaily' %} is-active{% endif %}" href="?tab=emaily">E-maily</a>
+    <a class="tab{% if active_tab == 'smtp' %} is-active{% endif %}" href="?tab=smtp">SMTP / IMAP</a>
+    <a class="tab{% if active_tab == 'odkazy' %} is-active{% endif %}" href="?tab=odkazy">Odkazy</a>
   </nav>
+  <div class="detail-main">
 
   <p id="ops-msg" class="ops-msg" hidden></p>
 
   {% if active_tab == 'partner' %}
   <section class="panel">
-    <div class="panel-head">
+    <div class="panel-head panel-head-tarif">
       <div>
         <p class="eyebrow">Partner</p>
         <h2>Doména a platební nastavení</h2>
       </div>
+      <div class="tarif-brand">
+        <a class="btn btn-quiet" href="{% url 'partner_admin:tarify' %}">Katalog tarifů</a>
+        <figure class="tarif-logo-wrap">
+          <img id="tarif-logo" src="{{ tarif_logo_url }}" alt="{{ tarif_logo_nazev }}" referrerpolicy="no-referrer">
+          <figcaption id="tarif-logo-caption">{{ tarif_logo_nazev }}</figcaption>
+        </figure>
+      </div>
     </div>
+    {{ tarif_loga|json_script:"tarif-loga" }}
     <form class="form-grid" method="post" action="{% url 'partner_admin:ulozit_nastaveni' salon.id %}" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="tab" value="partner">
       <dl class="saved-snapshot full">
-        <div><dt>Uložená doména</dt><dd>{{ partner.domena|default:"—" }}</dd></div>
-        <div><dt>Uložený tarif</dt><dd>{{ partner.tarif|default:"—" }}</dd></div>
-        <div><dt>Uložený e-mail</dt><dd>{{ partner.fakturacni_email|default:"—" }}</dd></div>
-        <div><dt>Uložený VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
-        <div><dt>Uložená částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč / {{ partner.get_periodicita_display|lower }}</dd></div>
-        <div><dt>Uložená splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
+        <div><dt>Doména</dt><dd>{{ partner.domena|default:"—" }}</dd></div>
+        <div><dt>Tarif</dt><dd>{{ partner.tarif|default:"—" }}</dd></div>
+        <div><dt>E-mail</dt><dd>{{ partner.fakturacni_email|default:"—" }}</dd></div>
+        <div><dt>VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
+        <div><dt>Částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč / {{ partner.get_periodicita_display|lower }}</dd></div>
+        <div><dt>Splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
       </dl>
-      <p class="form-note full">Horní řádek je to, co je teď v databázi. Po uložení se musí shodovat s poli níže — když je tam pomlčka, hodnota se neuložila.</p>
+      <p class="form-note full">Tohle je uložené v databázi. Tarif poznáš i podle loga vpravo nahoře.</p>
       {% if nastaveni_form.non_field_errors %}
         <p class="field-error full">{{ nastaveni_form.non_field_errors|striptags }}</p>
       {% endif %}
@@ -112,8 +125,9 @@
           </label>
         {% endif %}
       {% endfor %}
-      <div class="form-actions">
-        <button class="btn btn-primary" type="submit">Uložit nastavení</button>
+      <div class="form-actions form-actions-sticky">
+        <a class="btn btn-quiet" href="?tab=partner">Zrušit změny</a>
+        <button class="btn btn-primary" type="submit">Uložit změny</button>
       </div>
     </form>
   </section>
@@ -452,32 +466,40 @@
 
   {% if active_tab == 'chyby' %}
   <section class="panel">
-    <div class="panel-head"><h2>Technické chyby</h2><span class="muted">Bez request body, hesel a HTTP hlaviček</span></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Čas</th><th>Typ</th><th>Cesta</th><th>Stav</th><th></th></tr></thead>
-        <tbody>
-          {% for chyba in chyby %}
-            <tr>
-              <td>{{ chyba.cas|date:"d.m.Y H:i" }}</td>
-              <td><strong>{{ chyba.typ_chyby }}</strong><br><small>{{ chyba.detail }}</small></td>
-              <td><code>{{ chyba.metoda }} {{ chyba.cesta }}</code></td>
-              <td>{% if chyba.vyreseno %}Vyřešeno{% else %}<span class="danger-text">Nová</span>{% endif %}</td>
-              <td>
-                {% if not chyba.vyreseno %}
-                  <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="tab" value="chyby">
-                    <button class="btn btn-quiet" type="submit">Vyřešit</button>
-                  </form>
-                {% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="5">Pro tento salon nejsou zaznamenané technické chyby.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="panel-head">
+      <h2>Technické chyby tohoto partnera</h2>
+      <a class="btn btn-quiet" href="{% url 'partner_admin:chyby' %}">Všechny chyby</a>
+    </div>
+    <div class="bug-list">
+      {% for chyba in chyby %}
+        <article class="bug-card {% if chyba.vyreseno %}is-done{% endif %}">
+          <div class="bug-card-head">
+            <div>
+              <p class="eyebrow">{{ chyba.cas|date:"d.m.Y H:i:s" }}{% if chyba.status_kod %} · HTTP {{ chyba.status_kod }}{% endif %}</p>
+              <h3>{{ chyba.typ_chyby }}</h3>
+            </div>
+            {% if chyba.vyreseno %}
+              <span class="badge badge-ok">Vyřešeno</span>
+            {% else %}
+              <span class="badge badge-overdue">Nová</span>
+            {% endif %}
+          </div>
+          <p class="bug-detail">{{ chyba.detail|default:"Bez textu výjimky." }}</p>
+          <p class="mono">{{ chyba.metoda }} {{ chyba.cesta }}{% if chyba.query %}?{{ chyba.query }}{% endif %}</p>
+          <div class="form-actions-row">
+            <a class="btn btn-secondary" href="{% url 'partner_admin:chyba_detail' chyba.id %}">Celý traceback</a>
+            {% if not chyba.vyreseno %}
+              <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="tab" value="chyby">
+                <button class="btn btn-quiet" type="submit">Vyřešit</button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% empty %}
+        <p class="empty">Pro tento salon nejsou zaznamenané technické chyby.</p>
+      {% endfor %}
     </div>
   </section>
   {% endif %}
@@ -644,4 +666,6 @@
       });
     })();
   </script>
+  </div>
+  </div>
 {% endblock %}

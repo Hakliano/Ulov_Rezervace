@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import PartnerNastaveni, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
+from .models import HromadnyEmail, PartnerNastaveni, PartnerTarif, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
+
+
+@admin.register(PartnerTarif)
+class PartnerTarifAdmin(admin.ModelAdmin):
+    list_display = ['nazev', 'castka', 'razeni', 'aktivni']
+    list_editable = ['castka', 'razeni', 'aktivni']
+    ordering = ['razeni', 'id']
 
 
 @admin.register(PartnerNastaveni)
@@ -41,4 +48,13 @@ class TechnickaChybaAdmin(admin.ModelAdmin):
     list_display = ['cas', 'salon', 'typ_chyby', 'cesta', 'vyreseno']
     list_filter = ['vyreseno', 'typ_chyby']
     search_fields = ['salon__name', 'cesta', 'typ_chyby', 'request_id']
-    readonly_fields = ['salon', 'request_id', 'cas', 'metoda', 'cesta', 'typ_chyby', 'detail']
+    readonly_fields = ['salon', 'request_id', 'cas', 'metoda', 'cesta', 'query', 'status_kod', 'typ_chyby', 'detail', 'stopa']
+
+
+@admin.register(HromadnyEmail)
+class HromadnyEmailAdmin(admin.ModelAdmin):
+    list_display = ['vytvoreno', 'predmet', 'okruh', 'odeslano_pocet', 'odeslal']
+    readonly_fields = [
+        'predmet', 'text', 'okruh', 'tarif',
+        'odeslano_pocet', 'preskoceno_pocet', 'chyba_pocet', 'odeslal', 'vytvoreno',
+    ]

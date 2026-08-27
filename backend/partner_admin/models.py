@@ -80,6 +80,7 @@ class PartnerNastaveni(models.Model):
         editable=False,
         help_text='Stabilní identita salonu vůči Materiálníku a dalším modulům. Není to interní salon.id.',
     )
+    zalozeno = models.DateTimeField('založeno', default=timezone.now, db_index=True, editable=False)
     aktualizovano = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -131,6 +132,23 @@ class PartnerNastaveni(models.Model):
         if self.je_po_splatnosti:
             return 'po_splatnosti'
         return 'v_poradku'
+
+
+class PartnerTarif(models.Model):
+    """Katalog tarifů pro partner-admin. U partnera se uloží název + (případně upravená) cena."""
+
+    nazev = models.CharField('název', max_length=100, unique=True)
+    castka = models.DecimalField('výchozí cena', max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    razeni = models.PositiveSmallIntegerField('pořadí', default=0)
+    aktivni = models.BooleanField('aktivní', default=True)
+
+    class Meta:
+        verbose_name = 'tarif'
+        verbose_name_plural = 'tarify'
+        ordering = ['razeni', 'id']
+
+    def __str__(self):
+        return self.nazev
 
 
 class PlatbaPartnera(models.Model):
@@ -203,8 +221,11 @@ class TechnickaChyba(models.Model):
     cas = models.DateTimeField(auto_now_add=True, db_index=True)
     metoda = models.CharField(max_length=10, blank=True)
     cesta = models.CharField(max_length=500)
+    query = models.CharField('query bez tajemství', max_length=400, blank=True)
+    status_kod = models.PositiveSmallIntegerField('HTTP stav', null=True, blank=True)
     typ_chyby = models.CharField(max_length=200)
-    detail = models.CharField(max_length=500, blank=True)
+    detail = models.TextField(blank=True)
+    stopa = models.TextField('traceback', blank=True)
     vyreseno = models.BooleanField(default=False, db_index=True)
 
     class Meta:
@@ -301,3 +322,40 @@ class IntegrationOutbox(models.Model):
 
     def __str__(self):
         return f'{self.event_type}:{self.event_id[:12]}'
+
+
+class HromadnyEmail(models.Model):
+    OKRUH_VSICHNI = 'vsichni'
+    OKRUH_PO_SPLATNOSTI = 'po_splatnosti'
+    OKRUH_ACTIVE = 'active'
+    OKRUH_TARIF = 'tarif'
+    OKRUHY = [
+        (OKRUH_VSICHNI, 'Všichni partneři s e-mailem'),
+        (OKRUH_PO_SPLATNOSTI, 'Jen po splatnosti'),
+        (OKRUH_ACTIVE, 'Jen ACTIVE'),
+        (OKRUH_TARIF, 'Podle tarifu'),
+    ]
+
+    predmet = models.CharField(max_length=200)
+    text = models.TextField()
+    okruh = models.CharField(max_length=20, choices=OKRUHY, default=OKRUH_VSICHNI)
+    tarif = models.CharField(max_length=100, blank=True)
+    odeslano_pocet = models.PositiveIntegerField(default=0)
+    preskoceno_pocet = models.PositiveIntegerField(default=0)
+    chyba_pocet = models.PositiveIntegerField(default=0)
+    odeslal = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='hromadne_emaily',
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'hromadný e-mail'
+        verbose_name_plural = 'hromadné e-maily'
+        ordering = ['-vytvoreno']
+
+    def __str__(self):
+        return f'{self.predmet} ({self.odeslano_pocet})'

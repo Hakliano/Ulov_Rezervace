@@ -3,7 +3,92 @@ from decimal import Decimal
 from django import forms
 from django.utils import timezone
 
-from .models import PartnerNastaveni
+from .models import PartnerNastaveni, PartnerTarif
+
+
+class CeskaCastkaField(forms.DecimalField):
+    """Částka z textového pole: 499,00 i 499.00. type=number v CS locale umí odeslat prázdno."""
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = value.strip().replace('\xa0', '').replace(' ', '').replace(',', '.')
+        return super().to_python(value)
+
+
+class TarifSelect(forms.Select):
+    def __init__(self, ceny=None, *args, **kwargs):
+        self.ceny = ceny or {}
+        super().__init__(*args, **kwargs)
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(
+            name, value, label, selected, index, subindex=subindex, attrs=attrs,
+        )
+        if value in self.ceny:
+            option['attrs']['data-cena'] = f'{self.ceny[value]:.2f}'.replace('.', ',')
+        return option
+
+
+def nastav_tarif_pole(field, aktualni_nazev=''):
+    """Rolovací tarif z katalogu. Cena se u partnera jen předvyplní, jde přepsat."""
+    tarify = list(PartnerTarif.objects.filter(aktivni=True).order_by('razeni', 'id'))
+    ceny = {row.nazev: row.castka for row in tarify}
+    choices = [('', '— vyberte tarif —')] + [(row.nazev, row.nazev) for row in tarify]
+    aktualni = (aktualni_nazev or '').strip()
+    if aktualni and aktualni not in ceny:
+        choices.append((aktualni, f'{aktualni} (mimo katalog)'))
+    field.required = False
+    field.help_text = 'Po výběru se doplní výchozí cena. Částku můžeš hned přepsat.'
+    field.widget = TarifSelect(
+        choices=choices,
+        ceny=ceny,
+        attrs={'autocomplete': 'off', 'class': 'tarif-select'},
+    )
+
+
+class PartnerTarifForm(forms.ModelForm):
+    class Meta:
+        model = PartnerTarif
+        fields = ['nazev', 'castka', 'razeni', 'aktivni']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['castka'] = CeskaCastkaField(
+            label='Výchozí cena (Kč)',
+            max_digits=10,
+            decimal_places=2,
+            min_value=Decimal('0.00'),
+            required=False,
+            localize=False,
+            widget=forms.TextInput(attrs={
+                'inputmode': 'decimal',
+                'autocomplete': 'off',
+                'lang': 'en',
+            }),
+        )
+        self.fields['razeni'].required = False
+        self.fields['aktivni'].required = False
+        if not getattr(self.instance, 'pk', None):
+            self.fields['aktivni'].initial = True
+        if (
+            not self.is_bound
+            and getattr(self.instance, 'pk', None)
+            and self.instance.castka is not None
+        ):
+            self.initial['castka'] = f'{self.instance.castka:.2f}'.replace('.', ',')
+
+    def clean_nazev(self):
+        return (self.cleaned_data.get('nazev') or '').strip()
+
+    def clean_castka(self):
+        value = self.cleaned_data.get('castka')
+        if value is None:
+            return Decimal('0.00')
+        return value
+
+    def clean_razeni(self):
+        value = self.cleaned_data.get('razeni')
+        return 0 if value is None else value
 
 
 class NovyPartnerForm(forms.Form):
@@ -51,7 +136,6 @@ class NovyPartnerForm(forms.Form):
         label='Tarif',
         max_length=100,
         required=False,
-        initial='Partner pro vaši provozovnu',
     )
     fakturacni_email = forms.EmailField(label='Fakturační e-mail', required=False)
     variabilni_symbol = forms.CharField(
@@ -120,14 +204,26 @@ class NovyPartnerForm(forms.Form):
             raise forms.ValidationError('Tento e-mail už používá jiný FLOW účet.')
         return email
 
-
-class CeskaCastkaField(forms.DecimalField):
-    """Částka z textového pole: 499,00 i 499.00. type=number v CS locale umí odeslat prázdno."""
-
-    def to_python(self, value):
-        if isinstance(value, str):
-            value = value.strip().replace('\xa0', '').replace(' ', '').replace(',', '.')
-        return super().to_python(value)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        nastav_tarif_pole(
+            self.fields['tarif'],
+            (self.data.get('tarif') if self.is_bound else '') or '',
+        )
+        self.fields['castka'] = CeskaCastkaField(
+            label='Částka (Kč)',
+            max_digits=10,
+            decimal_places=2,
+            min_value=Decimal('0.00'),
+            required=False,
+            localize=False,
+            initial=self.fields['castka'].initial,
+            widget=forms.TextInput(attrs={
+                'inputmode': 'decimal',
+                'autocomplete': 'off',
+                'lang': 'en',
+            }),
+        )
 
 
 class PartnerNastaveniForm(forms.ModelForm):
@@ -146,7 +242,6 @@ class PartnerNastaveniForm(forms.ModelForm):
         ]
         widgets = {
             'domena': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
-            'tarif': forms.TextInput(attrs={'autocomplete': 'off'}),
             'fakturacni_email': forms.EmailInput(attrs={'autocomplete': 'off'}),
             'variabilni_symbol': forms.TextInput(attrs={
                 'autocomplete': 'off',
@@ -163,7 +258,14 @@ class PartnerNastaveniForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['dalsi_splatnost'].input_formats = ['%Y-%m-%d', '%d.%m.%Y']
         self.fields['dalsi_splatnost'].required = False
-        self.fields['tarif'].required = False
+        nastav_tarif_pole(
+            self.fields['tarif'],
+            (
+                (self.data.get(self.add_prefix('tarif')) if self.is_bound else None)
+                or getattr(self.instance, 'tarif', '')
+                or ''
+            ),
+        )
         self.fields['fakturacni_email'].required = False
         self.fields['variabilni_symbol'].required = False
         self.fields['variabilni_symbol'].empty_value = None
@@ -266,6 +368,32 @@ class UpozorneniForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 7}),
         max_length=5000,
     )
+
+
+class HromadnyEmailForm(UpozorneniForm):
+    okruh = forms.ChoiceField(
+        label='Komu',
+        choices=(),
+    )
+    tarif = forms.ChoiceField(label='Tarif', required=False)
+
+    def __init__(self, *args, tarify=None, **kwargs):
+        from .models import HromadnyEmail, PartnerTarif
+
+        super().__init__(*args, **kwargs)
+        self.fields['okruh'].choices = HromadnyEmail.OKRUHY
+        tarify = tarify if tarify is not None else PartnerTarif.objects.filter(aktivni=True)
+        volby = [('', '— vyberte tarif —')] + [(row.nazev, row.nazev) for row in tarify]
+        self.fields['tarif'].choices = volby
+        self.fields['text'].widget.attrs['rows'] = 10
+
+    def clean(self):
+        from .models import HromadnyEmail
+
+        data = super().clean()
+        if data.get('okruh') == HromadnyEmail.OKRUH_TARIF and not (data.get('tarif') or '').strip():
+            self.add_error('tarif', 'Pro okruh podle tarifu vyberte tarif.')
+        return data
 
 
 class ResetHeslaForm(forms.Form):

@@ -21,13 +21,25 @@ from salons.models import Salon
 from .forms import (
     BlokaceForm,
     FakturaPlatbyForm,
+    HromadnyEmailForm,
     NovyPartnerForm,
     PartnerNastaveniForm,
+    PartnerTarifForm,
     PlatbaForm,
     ResetHeslaForm,
     UpozorneniForm,
 )
-from .models import MODUL_MATERIALNIK, PartnerNastaveni, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
+from .loga import logo_url_pro_tarif, tarif_loga_pro_sablonu
+from .models import (
+    MODUL_MATERIALNIK,
+    HromadnyEmail,
+    PartnerNastaveni,
+    PartnerTarif,
+    PlatbaPartnera,
+    TechnickaChyba,
+    UpozorneniPlatby,
+)
+from .prehled import data_prehledu, prijemci_hromadneho_emailu
 from .services import log_superadmin, oznac_platbu, vytvor_noveho_partnera
 from .services_moduly import nastav_modul, partner_modul
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
@@ -262,7 +274,52 @@ def novy_partner(request):
 
 
 @superadmin_required
+def tarify(request):
+    if request.method == 'POST':
+        akce = request.POST.get('akce')
+        if akce == 'smazat':
+            tarif = get_object_or_404(PartnerTarif, pk=request.POST.get('id'))
+            nazev = tarif.nazev
+            tarif.delete()
+            messages.success(
+                request,
+                f'Tarif „{nazev}“ byl smazán. U partnerů zůstává dříve uložený název a cena.',
+            )
+            return redirect('partner_admin:tarify')
+        instance = None
+        if akce == 'ulozit':
+            instance = get_object_or_404(PartnerTarif, pk=request.POST.get('id'))
+        form = PartnerTarifForm(request.POST, instance=instance)
+        if form.is_valid():
+            ulozeno = form.save()
+            messages.success(request, f'Tarif „{ulozeno.nazev}“ je uložený.')
+            return redirect('partner_admin:tarify')
+        messages.error(request, 'Tarif se nepodařilo uložit: ' + _chyby_formulare(form))
+        novy_form = form if akce != 'ulozit' else PartnerTarifForm()
+    else:
+        novy_form = PartnerTarifForm()
+    radky = [
+        (row, PartnerTarifForm(instance=row))
+        for row in PartnerTarif.objects.all()
+    ]
+    return render(
+        request,
+        'partner_admin/tarify.html',
+        {
+            'radky': radky,
+            'novy_form': novy_form,
+        },
+    )
+
+
+@superadmin_required
 def dashboard(request):
+    _zajisti_partner_nastaveni()
+    return render(request, 'partner_admin/dashboard.html', data_prehledu())
+
+
+@superadmin_required
+def partneri(request):
     dnes = timezone.localdate()
     _zajisti_partner_nastaveni()
     filtry = _nacti_filtry(request)
@@ -279,14 +336,13 @@ def dashboard(request):
     }
     return render(
         request,
-        'partner_admin/dashboard.html',
+        'partner_admin/partneri.html',
         {
             'salony': salons,
             'souhrn': souhrn,
             'dnes': dnes,
             'filtry': filtry,
             'export_qs': _export_querystring(filtry),
-            'chyby': TechnickaChyba.objects.select_related('salon').filter(vyreseno=False)[:20],
         },
     )
 
@@ -427,6 +483,8 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
         vychozi_predmet = sablony[0]['predmet']
         vychozi_text = sablony[0]['text']
     api_session = create_partner_session(request.user, days=1)
+    form = nastaveni_form or PartnerNastaveniForm(instance=partner)
+    tarif_nazev = form['tarif'].value() or partner.tarif or ''
     return render(
         request,
         'partner_admin/detail.html',
@@ -437,7 +495,10 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
             'partner_api_token': str(api_session.token),
             'dnes': dnes,
             'statistiky': statistiky,
-            'nastaveni_form': nastaveni_form or PartnerNastaveniForm(instance=partner),
+            'nastaveni_form': form,
+            'tarif_logo_url': logo_url_pro_tarif(tarif_nazev),
+            'tarif_logo_nazev': tarif_nazev or '—',
+            'tarif_loga': tarif_loga_pro_sablonu(),
             'platba_form': PlatbaForm(initial={'prijata_castka': partner.castka}),
             'upozorneni_form': UpozorneniForm(
                 initial={'predmet': vychozi_predmet, 'text': vychozi_text},
@@ -789,6 +850,96 @@ def vyresit_chybu(request, chyba_id):
     chyba = get_object_or_404(TechnickaChyba, pk=chyba_id)
     chyba.vyreseno = True
     chyba.save(update_fields=['vyreseno'])
-    if not chyba.salon_id:
-        return redirect('partner_admin:dashboard')
+    if request.POST.get('zpet') == 'seznam' or not chyba.salon_id:
+        return redirect('partner_admin:chyby')
     return _detail_redirect(chyba.salon_id, 'chyby')
+
+
+@superadmin_required
+def seznam_chyb(request):
+    qs = TechnickaChyba.objects.select_related('salon')
+    jen_nove = request.GET.get('stav') != 'vse'
+    if jen_nove:
+        qs = qs.filter(vyreseno=False)
+    return render(
+        request,
+        'partner_admin/chyby.html',
+        {
+            'chyby': qs[:80],
+            'jen_nove': jen_nove,
+            'pocet': qs.count(),
+        },
+    )
+
+
+@superadmin_required
+def detail_chyby(request, chyba_id):
+    chyba = get_object_or_404(TechnickaChyba.objects.select_related('salon'), pk=chyba_id)
+    return render(request, 'partner_admin/chyba_detail.html', {'chyba': chyba})
+
+
+@superadmin_required
+def hromadne_emaily(request):
+    tarify = PartnerTarif.objects.filter(aktivni=True)
+    if request.method == 'POST':
+        form = HromadnyEmailForm(request.POST, tarify=tarify)
+        if form.is_valid():
+            prijemci, preskoceno = prijemci_hromadneho_emailu(
+                form.cleaned_data['okruh'],
+                form.cleaned_data.get('tarif') or '',
+            )
+            if not prijemci:
+                messages.error(request, 'V tomto okruhu není žádný partner s e-mailem.')
+            else:
+                odeslano = 0
+                chyby_pocet = 0
+                predmet = form.cleaned_data['predmet']
+                zprava = form.cleaned_data['text']
+                for _partner, adresa in prijemci:
+                    try:
+                        send_mail(
+                            predmet,
+                            zprava,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [adresa],
+                            fail_silently=False,
+                        )
+                        odeslano += 1
+                    except Exception:
+                        chyby_pocet += 1
+                HromadnyEmail.objects.create(
+                    predmet=predmet,
+                    text=zprava,
+                    okruh=form.cleaned_data['okruh'],
+                    tarif=form.cleaned_data.get('tarif') or '',
+                    odeslano_pocet=odeslano,
+                    preskoceno_pocet=preskoceno,
+                    chyba_pocet=chyby_pocet,
+                    odeslal=request.user,
+                )
+                if odeslano:
+                    messages.success(
+                        request,
+                        f'E-mail odeslán na {odeslano} adres.'
+                        + (f' Bez e-mailu: {preskoceno}.' if preskoceno else '')
+                        + (f' Selhalo: {chyby_pocet}.' if chyby_pocet else ''),
+                    )
+                    return redirect('partner_admin:emaily')
+                messages.error(request, 'E-mail se nepodařilo odeslat na žádnou adresu.')
+    else:
+        form = HromadnyEmailForm(tarify=tarify)
+        if request.GET.get('okruh'):
+            form.fields['okruh'].initial = request.GET.get('okruh')
+    okruh = request.POST.get('okruh') or form['okruh'].value() or HromadnyEmail.OKRUH_VSICHNI
+    tarif = request.POST.get('tarif') or form['tarif'].value() or ''
+    prijemci, preskoceno = prijemci_hromadneho_emailu(okruh, tarif)
+    return render(
+        request,
+        'partner_admin/emaily.html',
+        {
+            'form': form,
+            'prijemcu': len(prijemci),
+            'preskoceno': preskoceno,
+            'historie': HromadnyEmail.objects.select_related('odeslal')[:8],
+        },
+    )

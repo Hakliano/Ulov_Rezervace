@@ -1,0 +1,45 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}{{ chyba.typ_chyby }}{% endblock %}
+
+{% block content %}
+  <div class="breadcrumbs"><a href="{% url 'partner_admin:chyby' %}">← Technické chyby</a></div>
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">{{ chyba.cas|date:"d.m.Y H:i:s" }}</p>
+      <h1>{{ chyba.typ_chyby }}</h1>
+      <p class="muted">Request ID {{ chyba.request_id }}{% if chyba.status_kod %} · HTTP {{ chyba.status_kod }}{% endif %}</p>
+    </div>
+    <div class="head-actions">
+      {% if not chyba.vyreseno %}
+        <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="zpet" value="seznam">
+          <button class="btn btn-primary" type="submit">Označit vyřešeno</button>
+        </form>
+      {% else %}
+        <span class="badge badge-ok">Vyřešeno</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Co se stalo</h2></div>
+    <dl class="saved-snapshot">
+      <div><dt>Salon</dt><dd>{% if chyba.salon %}<a href="{% url 'partner_admin:detail' chyba.salon_id %}?tab=chyby">{{ chyba.salon.name }}</a>{% else %}—{% endif %}</dd></div>
+      <div><dt>Metoda</dt><dd>{{ chyba.metoda|default:"—" }}</dd></div>
+      <div><dt>Cesta</dt><dd class="mono">{{ chyba.cesta }}</dd></div>
+      <div class="full"><dt>Query</dt><dd class="mono">{{ chyba.query|default:"—" }}</dd></div>
+    </dl>
+    <p class="bug-detail">{{ chyba.detail|default:"Server nevrátil text výjimky." }}</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Traceback</h2></div>
+    {% if chyba.stopa %}
+      <pre class="traceback">{{ chyba.stopa }}</pre>
+    {% else %}
+      <p class="muted">U této chyby traceback není (typicky HTTP 500 bez výjimky v Django).</p>
+    {% endif %}
+  </section>
+{% endblock %}

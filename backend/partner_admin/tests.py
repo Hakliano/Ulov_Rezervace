@@ -10,7 +10,7 @@ from django.urls import reverse
 from rezervace.models import SalonAuditLog, Zamestnanec, ZamestnanecSession
 from salons.models import Salon
 
-from .models import PartnerNastaveni, PlatbaPartnera, UpozorneniPlatby
+from .models import HromadnyEmail, PartnerNastaveni, PartnerTarif, PlatbaPartnera, TechnickaChyba, UpozorneniPlatby
 from .services import posun_splatnost
 
 
@@ -55,6 +55,15 @@ class PartnerAdminTests(TestCase):
         response = self.client.get(reverse('partner_admin:dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Salon')
+        self.assertContains(response, 'sidebar-brand')
+        self.assertContains(response, 'global-search')
+        self.assertContains(response, 'New%20Project.webp')
+        self.assertContains(response, 'Superadmin')
+        self.assertContains(response, 'Přijato tento měsíc')
+
+        seznam = self.client.get(reverse('partner_admin:partneri'))
+        self.assertEqual(seznam.status_code, 200)
+        self.assertContains(seznam, 'Test Salon')
 
     def test_block_je_rucni_a_api_vraci_423(self):
         jiny_salon = Salon.objects.create(name='Jiný salon', email='jiny@example.test')
@@ -161,15 +170,15 @@ class PartnerAdminTests(TestCase):
         partner_bez_vs.save()
 
         self.client.force_login(self.superuser)
-        response = self.client.get(reverse('partner_admin:dashboard'), {'platba': 'po_splatnosti'})
+        response = self.client.get(reverse('partner_admin:partneri'), {'platba': 'po_splatnosti'})
         self.assertContains(response, 'Test Salon')
         self.assertContains(response, f'+{self.partner.dni_po_splatnosti} dní')
 
-        response = self.client.get(reverse('partner_admin:dashboard'), {'platba': 'bez_vs'})
+        response = self.client.get(reverse('partner_admin:partneri'), {'platba': 'bez_vs'})
         self.assertContains(response, 'Bez VS')
         self.assertNotContains(response, 'Test Salon')
 
-        response = self.client.get(reverse('partner_admin:dashboard'), {'stav': 'active'})
+        response = self.client.get(reverse('partner_admin:partneri'), {'stav': 'active'})
         self.assertContains(response, 'Test Salon')
 
     def test_export_csv_respektuje_filtry(self):
@@ -273,7 +282,7 @@ class PartnerAdminTests(TestCase):
         self.assertIn('value="fakturace@kudrlinka-test.cz"', html)
         self.assertIn('value="1900000019"', html)
         self.assertIn('value="2026-09-01"', html)
-        self.assertIn('Uložený tarif', html)
+        self.assertIn('<dt>Tarif</dt>', html)
         self.assertIn('Partnerství Kudrlinka', html)
 
     def test_neplatny_vs_ponecha_vyplneny_tarif(self):
@@ -404,3 +413,147 @@ class PartnerAdminTests(TestCase):
         self.assertEqual(response.status_code, 302)
         row.refresh_from_db()
         self.assertEqual(row.status, PartnerModul.STAV_INACTIVE)
+
+    def test_katalog_tarifu_a_vyber_u_partnera(self):
+        self.client.force_login(self.superuser)
+        modernik = PartnerTarif.objects.get(nazev='Moderník')
+        modernik.castka = Decimal('1490.00')
+        modernik.save()
+
+        katalog = self.client.get(reverse('partner_admin:tarify'))
+        self.assertEqual(katalog.status_code, 200)
+        self.assertContains(katalog, 'Moderník')
+        self.assertContains(katalog, 'Materiálník')
+        self.assertContains(katalog, 'Partnerský web')
+
+        response = self.client.post(
+            reverse('partner_admin:tarify'),
+            {
+                'akce': 'ulozit',
+                'id': str(modernik.id),
+                'nazev': 'Moderník',
+                'castka': '1 590,00',
+                'razeni': '1',
+                'aktivni': 'on',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        modernik.refresh_from_db()
+        self.assertEqual(modernik.castka, Decimal('1590.00'))
+
+        detail = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        html = detail.content.decode()
+        self.assertIn('name="tarif"', html)
+        self.assertIn('data-cena="1590,00"', html)
+        self.assertIn('>Moderník<', html)
+        self.assertIn('haklweb.b-cdn.net', detail.headers.get('Content-Security-Policy', ''))
+
+        response = self.client.post(
+            reverse('partner_admin:ulozit_nastaveni', args=[self.salon.id]),
+            {
+                'domena': 'kudrlinka-test.cz',
+                'tarif': 'Moderník',
+                'fakturacni_email': 'fakturace@kudrlinka-test.cz',
+                'variabilni_symbol': '1900000019',
+                'periodicita': PartnerNastaveni.PERIODA_MESIC,
+                'castka': '1400,00',
+                'dalsi_splatnost': '2026-09-01',
+                'tab': 'partner',
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.partner.refresh_from_db()
+        self.assertEqual(self.partner.tarif, 'Moderník')
+        self.assertEqual(self.partner.castka, Decimal('1400.00'))
+        html = response.content.decode()
+        self.assertIn('tarif: Moderník', html)
+        self.assertIn('<dt>Tarif</dt>', html)
+        self.assertIn('modernik/modernik_logo.webp', html)
+        self.assertIn('value="1400,00"', html)
+
+    def test_pridani_tarifu_do_katalogu(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse('partner_admin:tarify'),
+            {
+                'akce': 'pridat',
+                'nazev': 'Zkušební tarif',
+                'castka': '99,00',
+                'razeni': '9',
+                'aktivni': 'on',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        tarif = PartnerTarif.objects.get(nazev='Zkušební tarif')
+        self.assertEqual(tarif.castka, Decimal('99.00'))
+        detail = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        self.assertContains(detail, 'Zkušební tarif')
+        self.assertContains(detail, 'data-cena="99,00"')
+        self.assertContains(detail, 'New%20Project.webp')
+
+    def test_logo_tarifu_podle_nazvu(self):
+        from partner_admin.loga import (
+            LOGO_MATERIALNIK,
+            LOGO_MODERNIK,
+            LOGO_OSTATNI,
+            LOGO_SPOJENI,
+            LOGO_WEB,
+            logo_url_pro_tarif,
+        )
+        self.assertEqual(logo_url_pro_tarif('Moderník'), LOGO_MODERNIK)
+        self.assertEqual(logo_url_pro_tarif('Materiálník'), LOGO_MATERIALNIK)
+        self.assertEqual(logo_url_pro_tarif('Moderník + Materiálník'), LOGO_SPOJENI)
+        self.assertEqual(logo_url_pro_tarif('WEB'), LOGO_WEB)
+        self.assertEqual(logo_url_pro_tarif('Partnerský web'), LOGO_OSTATNI)
+        self.assertEqual(logo_url_pro_tarif(''), LOGO_OSTATNI)
+
+    def test_hromadny_email_jde_vsem_s_adresou(self):
+        self.client.force_login(self.superuser)
+        self.assertEqual(self.client.get(reverse('partner_admin:emaily')).status_code, 200)
+        response = self.client.post(
+            reverse('partner_admin:emaily'),
+            {
+                'okruh': 'vsichni',
+                'predmet': 'Info pro partnery',
+                'text': 'Nový ceník od září.',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['platby@example.test'])
+        self.assertTrue(
+            HromadnyEmail.objects.filter(predmet='Info pro partnery', odeslano_pocet=1).exists()
+        )
+
+    def test_technicka_chyba_uchova_zpravu_a_query_bez_tajemstvi(self):
+        from django.test import RequestFactory
+
+        from partner_admin.middleware import TechnickeChybyMiddleware
+
+        request = RequestFactory().get(
+            f'/api/salon/{self.salon.id}/',
+            {'token': 'tajne', 'q': 'rezervace'},
+        )
+        TechnickeChybyMiddleware(lambda req: None).process_exception(
+            request,
+            ValueError('SMTP salonu neodpovídá'),
+        )
+        chyba = TechnickaChyba.objects.get()
+        self.assertEqual(chyba.typ_chyby, 'ValueError')
+        self.assertIn('SMTP', chyba.detail)
+        self.assertIn('token=***', chyba.query)
+        self.assertIn('q=rezervace', chyba.query)
+        self.assertNotIn('tajne', chyba.query)
+        self.assertIn('ValueError', chyba.stopa)
+
+        self.client.force_login(self.superuser)
+        detail = self.client.get(reverse('partner_admin:chyba_detail', args=[chyba.id]))
+        self.assertContains(detail, 'SMTP salonu neodpovídá')
+        self.assertContains(detail, 'ValueError')
+
+    def test_detail_partnera_ma_svisle_menu(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        self.assertContains(response, 'detail-side')
+        self.assertNotContains(response, 'detail-tabs')

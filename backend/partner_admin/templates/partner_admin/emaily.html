@@ -1,0 +1,76 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}E-maily partnerům{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Komunikace</p>
+      <h1>E-mail partnerům</h1>
+      <p class="muted">
+        Jeden text všem, nebo jen po splatnosti / ACTIVE / podle tarifu.
+        Jde na fakturační e-mail, případně na e-mail salonu.
+      </p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Nová zpráva</p>
+        <h2>Napsat e-mail</h2>
+      </div>
+      <span class="muted">Příjemců teď: {{ prijemcu }}{% if preskoceno %} · bez e-mailu {{ preskoceno }}{% endif %}</span>
+    </div>
+    <form method="post" class="form-grid" autocomplete="off">
+      {% csrf_token %}
+      <label>
+        {{ form.okruh.label }}
+        {{ form.okruh }}
+      </label>
+      <label>
+        {{ form.tarif.label }}
+        {{ form.tarif }}
+        <small>Vyplňte jen když je okruh „Podle tarifu“.</small>
+      </label>
+      <label class="full">
+        {{ form.predmet.label }}
+        {{ form.predmet }}
+        {% if form.predmet.errors %}<span class="field-error">{{ form.predmet.errors|striptags }}</span>{% endif %}
+      </label>
+      <label class="full">
+        {{ form.text.label }}
+        {{ form.text }}
+        {% if form.text.errors %}<span class="field-error">{{ form.text.errors|striptags }}</span>{% endif %}
+      </label>
+      {% if form.non_field_errors or form.tarif.errors %}
+        <p class="field-error full">{{ form.non_field_errors|striptags }} {{ form.tarif.errors|striptags }}</p>
+      {% endif %}
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Odeslat na {{ prijemcu }} adres</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Poslední hromadné e-maily</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Čas</th><th>Předmět</th><th>Okruh</th><th>Odesláno</th><th>Kdo</th></tr></thead>
+        <tbody>
+          {% for mail in historie %}
+            <tr>
+              <td>{{ mail.vytvoreno|date:"d.m.Y H:i" }}</td>
+              <td><strong>{{ mail.predmet }}</strong></td>
+              <td>{{ mail.get_okruh_display }}{% if mail.tarif %} · {{ mail.tarif }}{% endif %}</td>
+              <td>{{ mail.odeslano_pocet }}{% if mail.chyba_pocet %} · chyba {{ mail.chyba_pocet }}{% endif %}</td>
+              <td>{{ mail.odeslal|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">Zatím žádný hromadný e-mail.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

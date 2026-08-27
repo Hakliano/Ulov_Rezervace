@@ -1,0 +1,66 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Technické chyby{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Systém</p>
+      <h1>Technické chyby</h1>
+      <p class="muted">Ukládá se zpráva výjimky a traceback. Tělo requestu, hesla a HTTP hlavičky nikdy.</p>
+    </div>
+    <div class="head-actions">
+      {% if jen_nove %}
+        <a class="btn btn-quiet" href="?stav=vse">I vyřešené</a>
+      {% else %}
+        <a class="btn btn-quiet" href="{% url 'partner_admin:chyby' %}">Jen nové</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>{% if jen_nove %}Nevyřešené{% else %}Všechny{% endif %}</h2>
+      <span class="muted">{{ pocet }}</span>
+    </div>
+    <div class="bug-list">
+      {% for chyba in chyby %}
+        <article class="bug-card {% if chyba.vyreseno %}is-done{% endif %}">
+          <div class="bug-card-head">
+            <div>
+              <p class="eyebrow">{{ chyba.cas|date:"d.m.Y H:i:s" }}{% if chyba.status_kod %} · HTTP {{ chyba.status_kod }}{% endif %}</p>
+              <h3>{{ chyba.typ_chyby }}</h3>
+            </div>
+            {% if chyba.vyreseno %}
+              <span class="badge badge-ok">Vyřešeno</span>
+            {% else %}
+              <span class="badge badge-overdue">Nová</span>
+            {% endif %}
+          </div>
+          <p class="bug-detail">{{ chyba.detail|default:"Bez textu výjimky." }}</p>
+          <p class="mono">{{ chyba.metoda }} {{ chyba.cesta }}{% if chyba.query %}?{{ chyba.query }}{% endif %}</p>
+          <p class="muted">
+            {% if chyba.salon %}
+              <a href="{% url 'partner_admin:detail' chyba.salon_id %}">{{ chyba.salon.name }}</a>
+            {% else %}
+              Bez salonu
+            {% endif %}
+            · ID {{ chyba.request_id }}
+          </p>
+          <div class="form-actions-row">
+            <a class="btn btn-secondary" href="{% url 'partner_admin:chyba_detail' chyba.id %}">Otevřít detail</a>
+            {% if not chyba.vyreseno %}
+              <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="zpet" value="seznam">
+                <button class="btn btn-quiet" type="submit">Označit vyřešeno</button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% empty %}
+        <p class="empty">Žádné chyby v tomto filtru.</p>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
