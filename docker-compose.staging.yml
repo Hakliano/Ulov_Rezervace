@@ -88,6 +88,7 @@ services:
       ALLOWED_HOSTS: "www.staging.ulovklienty.cz,staging.ulovklienty.cz,ulov-staging-materialnik,localhost"
       CSRF_TRUSTED_ORIGINS: "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz"
       ULOV_API_URL: "http://ulov-staging-api:8000"
+      ULOV_API_HOST: "api-staging.ulovklienty.cz"
       MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY:-staging-materialnik-m2m}
       FORCE_SCRIPT_NAME: "/sklad"
       SQLITE_PATH: "/data/db.sqlite3"

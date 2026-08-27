@@ -132,6 +132,7 @@ CSRF_TRUSTED_ORIGINS = _env_list(
 
 # FLOW / Ulov API — ověření hesla partnera. Materiálník hesla neukládá.
 ULOV_API_URL = os.environ.get('ULOV_API_URL', 'http://127.0.0.1:8000').rstrip('/')
+ULOV_API_HOST = os.environ.get('ULOV_API_HOST', '').strip()
 MATERIALNIK_M2M_KEY = os.environ.get('MATERIALNIK_M2M_KEY', '').strip()
 FLOW_PUBLIC_URL = os.environ.get(
     'FLOW_PUBLIC_URL',
