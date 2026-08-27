@@ -240,6 +240,66 @@ class PartnerAdminTests(TestCase):
         self.assertEqual(self.partner.castka, Decimal('1.00'))
         self.assertEqual(self.partner.dalsi_splatnost, date(2026, 1, 31))
 
+    def test_ulozeni_nastaveni_vrati_hodnoty_do_formulare(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse('partner_admin:ulozit_nastaveni', args=[self.salon.id]),
+            {
+                'domena': 'kudrlinka-test.cz',
+                'tarif': 'Partnerství Kudrlinka',
+                'fakturacni_email': 'fakturace@kudrlinka-test.cz',
+                'variabilni_symbol': '1900000019',
+                'periodicita': PartnerNastaveni.PERIODA_MESIC,
+                'castka': '499,00',
+                'dalsi_splatnost': '2026-09-01',
+                'ulov_cislo_uctu': '123456789/0100',
+                'tab': 'partner',
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.partner.refresh_from_db()
+        self.assertEqual(self.partner.domena, 'kudrlinka-test.cz')
+        self.assertEqual(self.partner.tarif, 'Partnerství Kudrlinka')
+        self.assertEqual(self.partner.fakturacni_email, 'fakturace@kudrlinka-test.cz')
+        self.assertEqual(self.partner.variabilni_symbol, '1900000019')
+        self.assertEqual(self.partner.castka, Decimal('499.00'))
+        self.assertEqual(self.partner.dalsi_splatnost, date(2026, 9, 1))
+        self.assertEqual(self.partner.ulov_cislo_uctu, '123456789/0100')
+        html = response.content.decode()
+        self.assertIn('Nastavení partnera bylo uloženo.', html)
+        self.assertIn('tarif: Partnerství Kudrlinka', html)
+        self.assertIn('value="Partnerství Kudrlinka"', html)
+        self.assertIn('value="fakturace@kudrlinka-test.cz"', html)
+        self.assertIn('value="1900000019"', html)
+        self.assertIn('value="2026-09-01"', html)
+        self.assertIn('Uložený tarif', html)
+        self.assertIn('Partnerství Kudrlinka', html)
+
+    def test_neplatny_vs_ponecha_vyplneny_tarif(self):
+        self.client.force_login(self.superuser)
+        puvodni_tarif = self.partner.tarif
+        response = self.client.post(
+            reverse('partner_admin:ulozit_nastaveni', args=[self.salon.id]),
+            {
+                'domena': 'kudrlinka-test.cz',
+                'tarif': 'Nový tarif který se nesmí ztratit',
+                'fakturacni_email': 'fakturace@kudrlinka-test.cz',
+                'variabilni_symbol': 'abc',
+                'periodicita': PartnerNastaveni.PERIODA_MESIC,
+                'castka': '499.00',
+                'dalsi_splatnost': '2026-09-01',
+                'tab': 'partner',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.partner.refresh_from_db()
+        self.assertEqual(self.partner.tarif, puvodni_tarif)
+        html = response.content.decode()
+        self.assertIn('Nový tarif který se nesmí ztratit', html)
+        self.assertIn('Variabilní symbol musí obsahovat 1 až 10 číslic.', html)
+        self.assertNotIn('Nastavení partnera bylo uloženo.', html)
+
     def test_novy_partner_vytvori_salon_majitele_a_flow(self):
         self.client.force_login(self.superuser)
         response = self.client.get(reverse('partner_admin:novy'))

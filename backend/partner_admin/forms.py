@@ -121,6 +121,15 @@ class NovyPartnerForm(forms.Form):
         return email
 
 
+class CeskaCastkaField(forms.DecimalField):
+    """Částka z textového pole: 499,00 i 499.00. type=number v CS locale umí odeslat prázdno."""
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = value.strip().replace('\xa0', '').replace(' ', '').replace(',', '.')
+        return super().to_python(value)
+
+
 class PartnerNastaveniForm(forms.ModelForm):
     class Meta:
         model = PartnerNastaveni
@@ -136,15 +145,79 @@ class PartnerNastaveniForm(forms.ModelForm):
             'povolit_technicke_nastaveni',
         ]
         widgets = {
+            'domena': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
+            'tarif': forms.TextInput(attrs={'autocomplete': 'off'}),
+            'fakturacni_email': forms.EmailInput(attrs={'autocomplete': 'off'}),
+            'variabilni_symbol': forms.TextInput(attrs={
+                'autocomplete': 'off',
+                'inputmode': 'numeric',
+                'maxlength': '10',
+            }),
+            'ulov_cislo_uctu': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
             # HTML5 type=date vyžaduje ISO YYYY-MM-DD; bez format se v CS locale
             # vykreslí prázdné pole a uložení pak omylem smaže splatnost.
             'dalsi_splatnost': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
-            'castka': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['dalsi_splatnost'].input_formats = ['%Y-%m-%d']
+        self.fields['dalsi_splatnost'].input_formats = ['%Y-%m-%d', '%d.%m.%Y']
+        self.fields['dalsi_splatnost'].required = False
+        self.fields['tarif'].required = False
+        self.fields['fakturacni_email'].required = False
+        self.fields['variabilni_symbol'].required = False
+        self.fields['variabilni_symbol'].empty_value = None
+        self.fields['ulov_cislo_uctu'].required = False
+        self.fields['castka'] = CeskaCastkaField(
+            label=self.fields['castka'].label,
+            max_digits=10,
+            decimal_places=2,
+            min_value=Decimal('0.00'),
+            required=False,
+            localize=False,
+            widget=forms.TextInput(attrs={
+                'inputmode': 'decimal',
+                'autocomplete': 'off',
+                'lang': 'en',
+            }),
+        )
+        if (
+            not self.is_bound
+            and getattr(self.instance, 'castka', None) is not None
+        ):
+            self.initial['castka'] = f'{self.instance.castka:.2f}'.replace('.', ',')
+
+    def clean_domena(self):
+        domena = (self.cleaned_data.get('domena') or '').strip().lower()
+        domena = domena.removeprefix('https://').removeprefix('http://').rstrip('/')
+        if '/' in domena:
+            raise forms.ValidationError('Zadejte pouze doménu bez cesty.')
+        if domena:
+            qs = PartnerNastaveni.objects.filter(domena=domena)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Tato doména už je u jiného partnera.')
+        return domena
+
+    def clean_variabilni_symbol(self):
+        vs = (self.cleaned_data.get('variabilni_symbol') or '').strip()
+        if not vs:
+            return None
+        if not vs.isdigit() or len(vs) > 10:
+            raise forms.ValidationError('Variabilní symbol musí obsahovat 1 až 10 číslic.')
+        qs = PartnerNastaveni.objects.filter(variabilni_symbol=vs)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('Tento variabilní symbol už používá jiný partner.')
+        return vs
+
+    def clean_castka(self):
+        value = self.cleaned_data.get('castka')
+        if value is None:
+            return Decimal('0.00')
+        return value
 
 
 class PlatbaForm(forms.Form):

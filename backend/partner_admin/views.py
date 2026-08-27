@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db.models import Case, Count, IntegerField, Q, When
 from django.http import HttpResponse
@@ -393,9 +394,17 @@ def export_platby_csv(request, salon_id):
     return response
 
 
-@superadmin_required
-def detail_partnera(request, salon_id):
-    salon = get_object_or_404(Salon, pk=salon_id)
+def _chyby_formulare(form):
+    return '; '.join(error for errors in form.errors.values() for error in errors)
+
+
+def _zobraz_ulozenou_hodnotu(value):
+    if value in (None, ''):
+        return '—'
+    return str(value)
+
+
+def _render_detail_partnera(request, salon, nastaveni_form=None):
     partner = _partner(salon)
     dnes = timezone.localdate()
     zacatek_mesice = dnes.replace(day=1)
@@ -428,7 +437,7 @@ def detail_partnera(request, salon_id):
             'partner_api_token': str(api_session.token),
             'dnes': dnes,
             'statistiky': statistiky,
-            'nastaveni_form': PartnerNastaveniForm(instance=partner),
+            'nastaveni_form': nastaveni_form or PartnerNastaveniForm(instance=partner),
             'platba_form': PlatbaForm(initial={'prijata_castka': partner.castka}),
             'upozorneni_form': UpozorneniForm(
                 initial={'predmet': vychozi_predmet, 'text': vychozi_text},
@@ -451,6 +460,12 @@ def detail_partnera(request, salon_id):
 
 
 @superadmin_required
+def detail_partnera(request, salon_id):
+    salon = get_object_or_404(Salon, pk=salon_id)
+    return _render_detail_partnera(request, salon)
+
+
+@superadmin_required
 @require_POST
 def ulozit_nastaveni(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -463,16 +478,40 @@ def ulozit_nastaveni(request, salon_id):
         'periodicita': partner.periodicita,
         'castka': str(partner.castka),
         'dalsi_splatnost': partner.dalsi_splatnost.isoformat() if partner.dalsi_splatnost else None,
+        'ulov_cislo_uctu': partner.ulov_cislo_uctu,
     }
     form = PartnerNastaveniForm(request.POST, instance=partner)
-    if form.is_valid():
-        form.save()
-        log_superadmin(salon, request.user, 'Upraveno nastavení partnera.', pred=pred)
-        messages.success(request, 'Nastavení partnera bylo uloženo.')
-    else:
-        messages.error(request, 'Nastavení se nepodařilo uložit: ' + '; '.join(
-            error for errors in form.errors.values() for error in errors
-        ))
+    if not form.is_valid():
+        messages.error(request, 'Nastavení se nepodařilo uložit: ' + _chyby_formulare(form))
+        return _render_detail_partnera(request, salon, nastaveni_form=form)
+    try:
+        ulozeno = form.save()
+    except ValidationError as exc:
+        form.add_error(None, exc)
+        messages.error(request, 'Nastavení se nepodařilo uložit: ' + _chyby_formulare(form))
+        return _render_detail_partnera(request, salon, nastaveni_form=form)
+    ulozeno.refresh_from_db()
+    po = {
+        'domena': ulozeno.domena,
+        'tarif': ulozeno.tarif,
+        'fakturacni_email': ulozeno.fakturacni_email,
+        'variabilni_symbol': ulozeno.variabilni_symbol,
+        'periodicita': ulozeno.periodicita,
+        'castka': str(ulozeno.castka),
+        'dalsi_splatnost': ulozeno.dalsi_splatnost.isoformat() if ulozeno.dalsi_splatnost else None,
+        'ulov_cislo_uctu': ulozeno.ulov_cislo_uctu,
+    }
+    log_superadmin(salon, request.user, 'Upraveno nastavení partnera.', pred=pred, po=po)
+    messages.success(
+        request,
+        (
+            'Nastavení partnera bylo uloženo. '
+            f'Doména: {_zobraz_ulozenou_hodnotu(ulozeno.domena)}; '
+            f'tarif: {_zobraz_ulozenou_hodnotu(ulozeno.tarif)}; '
+            f'e-mail: {_zobraz_ulozenou_hodnotu(ulozeno.fakturacni_email)}; '
+            f'VS: {_zobraz_ulozenou_hodnotu(ulozeno.variabilni_symbol)}.'
+        ),
+    )
     return _detail_redirect(salon.id, _tab_z_request(request, 'partner'))
 
 

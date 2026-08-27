@@ -76,9 +76,21 @@
         <h2>Doména a platební nastavení</h2>
       </div>
     </div>
-    <form class="form-grid" method="post" action="{% url 'partner_admin:ulozit_nastaveni' salon.id %}">
+    <form class="form-grid" method="post" action="{% url 'partner_admin:ulozit_nastaveni' salon.id %}" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="tab" value="partner">
+      <dl class="saved-snapshot full">
+        <div><dt>Uložená doména</dt><dd>{{ partner.domena|default:"—" }}</dd></div>
+        <div><dt>Uložený tarif</dt><dd>{{ partner.tarif|default:"—" }}</dd></div>
+        <div><dt>Uložený e-mail</dt><dd>{{ partner.fakturacni_email|default:"—" }}</dd></div>
+        <div><dt>Uložený VS</dt><dd>{{ partner.variabilni_symbol|default:"—" }}</dd></div>
+        <div><dt>Uložená částka</dt><dd>{{ partner.castka|floatformat:2 }} Kč / {{ partner.get_periodicita_display|lower }}</dd></div>
+        <div><dt>Uložená splatnost</dt><dd>{{ partner.dalsi_splatnost|date:"d.m.Y"|default:"—" }}</dd></div>
+      </dl>
+      <p class="form-note full">Horní řádek je to, co je teď v databázi. Po uložení se musí shodovat s poli níže — když je tam pomlčka, hodnota se neuložila.</p>
+      {% if nastaveni_form.non_field_errors %}
+        <p class="field-error full">{{ nastaveni_form.non_field_errors|striptags }}</p>
+      {% endif %}
       {% for field in nastaveni_form %}
         {% if field.name == 'povolit_technicke_nastaveni' %}
           <div class="feature-toggle full">
