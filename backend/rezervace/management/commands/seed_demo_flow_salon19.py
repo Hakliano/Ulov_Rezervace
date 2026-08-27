@@ -234,8 +234,6 @@ def _rezervace(salon, staff, sluzby):
         if not who or not sl:
             continue
         start = _at(days, h, m)
-        if stav != 'dokonceno' and not _works(who, start):
-            continue
         _add(salon, who, sl, start, stav, jmeno, email, zaloha=zaloha, interni=note)
         n += 1
     return n

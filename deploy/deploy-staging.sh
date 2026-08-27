@@ -54,6 +54,10 @@ overrides = {
     "FLOW_BASE_URL": "https://www.staging.ulovklienty.cz/flow/",
     "API_PUBLIC_BASE_URL": "https://api-staging.ulovklienty.cz/api",
     "CUSTOMER_CARD_CONFIRM_BASE_URL": "https://api-staging.ulovklienty.cz/api",
+    "MATERIALNIK_URL": "http://ulov-staging-materialnik:8000",
+    "MATERIALNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/sklad",
+    "MATERIALNIK_M2M_KEY": "staging-materialnik-m2m",
+    "MATERIALNIK_STUB": "false",
 }
 # EMAIL_OVERRIDE_TO — zachovej pokud už je, jinak info@
 if "EMAIL_OVERRIDE_TO=" not in text:
@@ -155,7 +159,7 @@ docker network inspect ulov_default >/dev/null
 mkdir -p media-staging
 docker cp ulov-staging-api:/app/media/. media-staging/ 2>/dev/null || true
 
-docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis materialnik
 
 echo "### Migrate + seed (základní data, oddělená DB)"
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
@@ -177,7 +181,7 @@ docker compose exec -T nginx nginx -s reload
 echo "=== STAGING hotovo ==="
 echo "Hub:  https://www.staging.ulovklienty.cz/"
 echo "Moderník: https://staging.modernik.cz/ (po DNS + cert)"
-echo "Materiálník: https://staging.materialnik.cz/ (po DNS + cert) · zatím i /materialnik/ na hubu"
+echo "Materiálník app: https://www.staging.ulovklienty.cz/sklad/"
 echo "API:  https://api-staging.ulovklienty.cz/health/"
 echo "Demo: https://www.staging.ulovklienty.cz/salon1/"
 echo "Maily jdou na EMAIL_OVERRIDE_TO (viz .env.staging) — ne ostrým zákazníkům."

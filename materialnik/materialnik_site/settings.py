@@ -89,7 +89,7 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': os.environ.get('SQLITE_PATH', str(BASE_DIR / 'db.sqlite3')),
         }
     }
 
@@ -114,6 +114,14 @@ SESSION_COOKIE_NAME = 'materialnik_session'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_NAME = 'materialnik_csrf'
 
+FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME', '').strip() or None
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+if FORCE_SCRIPT_NAME:
+    SESSION_COOKIE_PATH = FORCE_SCRIPT_NAME
+    CSRF_COOKIE_PATH = FORCE_SCRIPT_NAME
+    LOGIN_URL = f'{FORCE_SCRIPT_NAME}/prihlaseni/'
+
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CSRF_TRUSTED_ORIGINS = _env_list(
     'CSRF_TRUSTED_ORIGINS',
@@ -127,4 +135,5 @@ FLOW_PUBLIC_URL = os.environ.get(
     'FLOW_PUBLIC_URL',
     'http://127.0.0.1:8090/flow' if DEBUG else '',
 ).strip()
-LOGIN_URL = '/prihlaseni/'
+if not FORCE_SCRIPT_NAME:
+    LOGIN_URL = '/prihlaseni/'

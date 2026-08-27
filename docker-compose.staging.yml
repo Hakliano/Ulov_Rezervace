@@ -78,9 +78,38 @@ services:
     networks:
       - default
 
+  materialnik:
+    build: ./materialnik
+    container_name: ulov-staging-materialnik
+    restart: unless-stopped
+    environment:
+      DEBUG: "false"
+      SECRET_KEY: staging-materialnik-insecure-change-me
+      ALLOWED_HOSTS: "www.staging.ulovklienty.cz,staging.ulovklienty.cz,ulov-staging-materialnik,localhost"
+      CSRF_TRUSTED_ORIGINS: "https://www.staging.ulovklienty.cz,https://staging.ulovklienty.cz"
+      ULOV_API_URL: "http://ulov-staging-api:8000"
+      MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY:-staging-materialnik-m2m}
+      FORCE_SCRIPT_NAME: "/sklad"
+      SQLITE_PATH: "/data/db.sqlite3"
+      FLOW_PUBLIC_URL: "https://www.staging.ulovklienty.cz/flow/"
+    volumes:
+      - staging_materialnik_data:/data
+    command:
+      [
+        "sh",
+        "-c",
+        "python manage.py migrate --noinput && gunicorn materialnik_site.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 60 --access-logfile - --error-logfile -",
+      ]
+    expose:
+      - "8000"
+    networks:
+      - default
+      - ulov_live
+
 volumes:
   staging_pgdata:
   staging_redisdata:
+  staging_materialnik_data:
 
 networks:
   ulov_live:
