@@ -18,16 +18,34 @@ if [ ! -d .git ]; then
   exit 1
 fi
 
-echo "### 1) Záloha před deployem"
-bash deploy/backup.sh
-tar -czf "/root/www-predeploy-${STAMP}.tar.gz" -C "$ROOT" www 2>/dev/null || true
+if [ "${LIVE_DEPLOY_REEXEC:-}" != "1" ]; then
+  echo "### 1) Záloha před deployem"
+  bash deploy/backup.sh
+  tar -czf "/root/www-predeploy-${STAMP}.tar.gz" -C "$ROOT" www 2>/dev/null || true
 
-echo "### 2) Fetch + checkout"
-git fetch origin --tags
-git checkout --force -B deploy-live "$REF"
-git reset --hard "$REF"
+  echo "### 2) Fetch + checkout"
+  git fetch origin --tags
+  git checkout --force -B deploy-live "$REF"
+  git reset --hard "$REF"
+  echo "GIT_SHA=$(git rev-parse --short HEAD)"
+  export LIVE_DEPLOY_REEXEC=1
+  exec bash "$ROOT/deploy/deploy-live.sh" "$REF"
+fi
+
 GIT_SHA="$(git rev-parse --short HEAD)"
 echo "GIT_SHA=$GIT_SHA"
+
+echo "### Materiálník env (doplň chybějící klíče, neměň existující)"
+if [ -f .env ]; then
+  if ! grep -qE '^MATERIALNIK_M2M_KEY=.+' .env; then
+    echo "MATERIALNIK_M2M_KEY=$(openssl rand -hex 24)" >> .env
+    echo "added MATERIALNIK_M2M_KEY"
+  fi
+  if ! grep -qE '^MATERIALNIK_SECRET_KEY=.+' .env; then
+    echo "MATERIALNIK_SECRET_KEY=$(openssl rand -hex 32)" >> .env
+    echo "added MATERIALNIK_SECRET_KEY"
+  fi
+fi
 
 echo "### 3) Kompletnost statiky (příklad: běžné dema — uprav dle potřeby)"
 # Kontrola všech salon*/vertikál přítomných ve stromu
@@ -81,10 +99,15 @@ fi
 echo "### 5) API / služby"
 docker compose up -d --build
 docker compose exec -T api python manage.py migrate --noinput
+docker compose exec -T nginx nginx -t
+docker compose exec -T nginx nginx -s reload
 
 echo "### 6) Smoke"
 curl -sS -o /dev/null -w "api_health:%{http_code}\n" "https://api.ulovklienty.cz/health/" || true
 curl -sS -o /dev/null -w "hub:%{http_code}\n" "https://ulovklienty.cz/" || true
+curl -sS -o /dev/null -w "flow:%{http_code}\n" "https://www.ulovklienty.cz/flow/" || true
+curl -sS -o /dev/null -w "sklad:%{http_code}\n" "https://www.ulovklienty.cz/sklad/" || true
+curl -sS -o /dev/null -w "salon19:%{http_code}\n" "https://www.ulovklienty.cz/salon19/" || true
 
 echo "=== Hotovo SHA=$GIT_SHA. Doporučeno: git tag live-$STAMP && git push origin live-$STAMP ==="
 echo "Rollback: bash deploy/rollback-live.sh <tag|stamp>"

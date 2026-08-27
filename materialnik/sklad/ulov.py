@@ -24,7 +24,19 @@ def _ulov_headers(**extra):
     host = (getattr(settings, 'ULOV_API_HOST', '') or '').strip()
     if host:
         headers['Host'] = host
+    # LIVE má SECURE_SSL_REDIRECT — bez této hlavičky interní HTTP skončí 301 na HTTPS.
+    if (getattr(settings, 'ULOV_API_URL', '') or '').startswith('http://'):
+        headers.setdefault('X-Forwarded-Proto', 'https')
     return headers
+
+
+def _ulov_request(url, *, data=None, method='GET', extra_headers=None):
+    headers = _ulov_headers(**(extra_headers or {}))
+    host = headers.pop('Host', None)
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    if host:
+        req.add_unredirected_header('Host', host)
+    return urllib.request.urlopen(req, timeout=5)
 
 
 def ulov_session(email, password):
@@ -33,14 +45,11 @@ def ulov_session(email, password):
         raise UlovAuthError('Chybí napojení na účet Ulov.')
     url = f'{base}/api/integrations/v1/materialnik/session'
     body = json.dumps({'email': email, 'password': password}).encode('utf-8')
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers=_ulov_headers(**{'Content-Type': 'application/json'}),
-        method='POST',
-    )
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with _ulov_request(
+            url, data=body, method='POST',
+            extra_headers={'Content-Type': 'application/json'},
+        ) as resp:
             return json.loads(resp.read().decode('utf-8'))
     except urllib.error.HTTPError as exc:
         logger.warning('ulov_session HTTP %s', exc.code)
@@ -57,13 +66,8 @@ def ulov_catalog(tenant_uuid):
     if not base:
         return []
     url = f'{base}/api/integrations/v1/materialnik/catalog?tenant_uuid={tenant_uuid}'
-    req = urllib.request.Request(
-        url,
-        headers=_ulov_headers(),
-        method='GET',
-    )
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with _ulov_request(url, method='GET') as resp:
             data = json.loads(resp.read().decode('utf-8'))
             return data.get('services') or []
     except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError):

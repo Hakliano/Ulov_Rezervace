@@ -36,6 +36,11 @@ services:
     build: ./backend
     restart: unless-stopped
     env_file: ./.env
+    environment:
+      MATERIALNIK_URL: http://materialnik:8000
+      MATERIALNIK_PUBLIC_URL: https://www.ulovklienty.cz/sklad
+      MATERIALNIK_STUB: "false"
+      MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -54,6 +59,11 @@ services:
     build: ./backend
     restart: unless-stopped
     env_file: ./.env
+    environment:
+      MATERIALNIK_URL: http://materialnik:8000
+      MATERIALNIK_PUBLIC_URL: https://www.ulovklienty.cz/sklad
+      MATERIALNIK_STUB: "false"
+      MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -111,6 +121,35 @@ services:
     entrypoint: >
       sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done"
 
+  materialnik:
+    build: ./materialnik
+    container_name: ulov-materialnik
+    restart: unless-stopped
+    environment:
+      DEBUG: "false"
+      SECRET_KEY: ${MATERIALNIK_SECRET_KEY}
+      ALLOWED_HOSTS: "www.ulovklienty.cz,ulovklienty.cz,materialnik,ulov-materialnik,localhost"
+      CSRF_TRUSTED_ORIGINS: "https://www.ulovklienty.cz,https://ulovklienty.cz"
+      ULOV_API_URL: "http://api:8000"
+      ULOV_API_HOST: "api.ulovklienty.cz"
+      MATERIALNIK_M2M_KEY: ${MATERIALNIK_M2M_KEY}
+      FORCE_SCRIPT_NAME: "/sklad"
+      SQLITE_PATH: "/data/db.sqlite3"
+      FLOW_PUBLIC_URL: "https://www.ulovklienty.cz/flow/"
+    volumes:
+      - materialnik_data:/data
+    command:
+      [
+        "sh",
+        "-c",
+        "python manage.py migrate --noinput && gunicorn materialnik_site.wsgi:application --bind 0.0.0.0:8000 --workers 1 --timeout 60 --access-logfile - --error-logfile -",
+      ]
+    expose:
+      - "8000"
+    depends_on:
+      - api
+
 volumes:
   pgdata:
   redisdata:
+  materialnik_data:
