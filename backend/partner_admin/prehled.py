@@ -160,6 +160,7 @@ def data_prehledu(dnes=None):
 
     prijato = _castka_plateb(_zacatek, dnes)
     kam_mesic = kam_naklady_mesic(_zacatek, dnes)
+    vydaje = vydaje_za_mesic(dnes)
     prijato_minuly = _castka_plateb(_zacatek_mesice(minuly), _konec_mesice(minuly))
     kam_minuly = kam_naklady_mesic(_zacatek_mesice(minuly), _konec_mesice(minuly))
 
@@ -167,7 +168,7 @@ def data_prehledu(dnes=None):
         'prijato_mesic': prijato,
         'prijato_minuly': prijato_minuly,
         'kam_mesic': kam_mesic,
-        'zisk_mesic': prijato - kam_mesic,
+        'zisk_mesic': prijato - kam_mesic - vydaje,
         'zisk_minuly': prijato_minuly - kam_minuly,
         'top_kam': top_kam_mesic(dnes, 3),
         'mesicni_tarif': mesicni_tarif.quantize(Decimal('0.01')),
@@ -179,5 +180,5 @@ def data_prehledu(dnes=None):
         'rust': rust,
         'upozorneni': upozorneni[:4],
         'chyby': list(nevyresene[:5]),
-        'vydaje_mesic': vydaje_za_mesic(dnes),
+        'vydaje_mesic': vydaje,
     }

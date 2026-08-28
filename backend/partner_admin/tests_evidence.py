@@ -124,6 +124,10 @@ class EvidenceFakturAVydajuTests(TestCase):
         dash = self.client.get(reverse('partner_admin:dashboard'))
         self.assertContains(dash, 'Výdaje tento měsíc')
         self.assertContains(dash, '890')
+        from .prehled import data_prehledu
+        prehled = data_prehledu(timezone.localdate())
+        self.assertEqual(prehled['vydaje_mesic'], Decimal('890.00'))
+        self.assertEqual(prehled['zisk_mesic'], Decimal('-890.00'))
 
     def test_souhrn_pdf(self):
         self.client.post(
