@@ -52,6 +52,7 @@
     <p class="nav-label">ULOV</p>
     <a class="tab{% if active_tab == 'partner' %} is-active{% endif %}" href="?tab=partner">Partner</a>
     <a class="tab{% if active_tab == 'parovani' %} is-active{% endif %}" href="?tab=parovani">Párování plateb</a>
+    <a class="tab{% if active_tab == 'extra' %} is-active{% endif %}" href="?tab=extra">Extra faktura</a>
     <a class="tab{% if active_tab == 'platby' %} is-active{% endif %}" href="?tab=platby">Historie plateb</a>
     <a class="tab{% if active_tab == 'upozorneni' %} is-active{% endif %}" href="?tab=upozorneni">Upozornění</a>
     <a class="tab{% if active_tab == 'pristupy' %} is-active{% endif %}" href="?tab=pristupy">Přístupy</a>
@@ -267,6 +268,77 @@
         <button class="btn btn-success" type="submit">Označit jako ZAPLACENO</button>
       </div>
     </form>
+  </section>
+  {% endif %}
+
+  {% if active_tab == 'extra' %}
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Za majitelku</p>
+        <h2>Jednorázová faktura</h2>
+      </div>
+    </div>
+    <p class="muted">Vizitky, NFC, jednorázová služba. Nemění splatnost partnerství ani KAM. VS je 6 + rok + číslo faktury.</p>
+    <form class="form-grid compact" method="post" action="{% url 'partner_admin:vytvorit_extra_fakturu' salon.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="tab" value="extra">
+      <label class="full">Položka {{ extra_form.popis }}</label>
+      <label>Částka {{ extra_form.castka }}</label>
+      <label>Stav {{ extra_form.stav }}</label>
+      <label class="full">Poznámka {{ extra_form.poznamka }}</label>
+      <label class="check-label">
+        <span class="check-row">{{ extra_form.odeslat_email }} {{ extra_form.odeslat_email.label }}</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Vystavit fakturu</button>
+      </div>
+    </form>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Extra faktury tohoto partnera</h2></div>
+    {% if extra_faktury %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Číslo</th>
+              <th>Položka</th>
+              <th>Částka</th>
+              <th>Stav</th>
+              <th>VS</th>
+              <th>Splatnost</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for faktura in extra_faktury %}
+              <tr>
+                <td>{{ faktura.cislo_faktury }}</td>
+                <td>{{ faktura.popis }}</td>
+                <td>{{ faktura.castka|floatformat:2 }} Kč</td>
+                <td>{{ faktura.get_stav_display }}</td>
+                <td>{{ faktura.variabilni_symbol }}</td>
+                <td>{% if faktura.datum_splatnosti %}{{ faktura.datum_splatnosti|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                <td>
+                  {% if faktura.faktura_pdf %}
+                    <a class="btn btn-quiet" href="{% url 'partner_admin:stahnout_fakturu_evidence' 'extra' faktura.id %}">PDF</a>
+                  {% endif %}
+                  {% if faktura.stav == 'k_uhrade' %}
+                    <form class="inline-form" method="post" action="{% url 'partner_admin:extra_faktura_uhrazena' salon.id faktura.id %}">
+                      {% csrf_token %}
+                      <button class="btn btn-success btn-tiny" type="submit">Označit uhrazeno</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">Zatím žádná extra faktura.</p>
+    {% endif %}
   </section>
   {% endif %}
 

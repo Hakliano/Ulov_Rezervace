@@ -294,6 +294,9 @@ button, input, select, textarea { font: inherit; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
+.filters-faktury {
+  grid-template-columns: 1fr 1fr 1.4fr auto;
+}
 .quick-filters {
   display: flex;
   flex-wrap: wrap;

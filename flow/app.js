@@ -2748,9 +2748,12 @@ function fmtMoneyCz(v) {
   return `${n.toLocaleString('cs-CZ', { maximumFractionDigits: 0 })}\u00a0Kč`;
 }
 
-async function downloadOwnerFaktura(platbaId) {
+async function downloadOwnerFaktura(platbaId, typ) {
   const token = getToken();
-  const res = await fetch(`${API_BASE}/flow/owner/platby/${platbaId}/faktura/`, {
+  const path = typ === 'extra'
+    ? `/flow/owner/extra-faktury/${platbaId}/faktura/`
+    : `/flow/owner/platby/${platbaId}/faktura/`;
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: token ? { 'X-Flow-Token': token } : {},
   });
   if (!res.ok) {
@@ -2824,11 +2827,45 @@ async function loadOwnerPlatby() {
     }
   }
 
+  const extraBox = $('#own-platby-extra');
+  if (extraBox) {
+    const extras = data.extra_k_uhrade || [];
+    if (!extras.length) {
+      extraBox.innerHTML = '';
+    } else {
+      extraBox.replaceChildren();
+      extras.forEach((e) => {
+        const wrap = document.createElement('article');
+        wrap.className = 'own-platby-extra-card';
+        wrap.innerHTML = `<h3>K úhradě · ${esc(e.popis || 'Extra faktura')}</h3>
+          <p>${fmtMoneyCz(e.castka)} · VS ${esc(e.variabilni_symbol || '—')}${e.splatnost ? ` · splatnost ${esc(e.splatnost)}` : ''}</p>`;
+        if (e.qr?.qr_png_base64) {
+          const img = document.createElement('img');
+          img.src = `data:image/png;base64,${e.qr.qr_png_base64}`;
+          img.alt = 'QR extra faktura';
+          wrap.appendChild(img);
+        }
+        if (e.ma_fakturu) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn ghost sm';
+          btn.textContent = 'PDF';
+          btn.addEventListener('click', async () => {
+            try { await downloadOwnerFaktura(e.id, 'extra'); }
+            catch (err) { showMsg($('#owner-admin-msg'), err.message, false); }
+          });
+          wrap.appendChild(btn);
+        }
+        extraBox.appendChild(wrap);
+      });
+    }
+  }
+
   const hist = $('#own-platby-historie');
   if (!hist) return;
   const rows = data.historie || [];
   if (!rows.length) {
-    hist.innerHTML = '<p class="empty">Zatím žádná zaplacená období.</p>';
+    hist.innerHTML = '<p class="empty">Zatím žádné faktury.</p>';
     return;
   }
   hist.replaceChildren();
@@ -2837,7 +2874,7 @@ async function loadOwnerPlatby() {
     row.className = 'own-platby-row';
     const info = document.createElement('div');
     info.innerHTML = `<strong>${esc(fmtMoneyCz(p.castka))}</strong>
-      <span>Splatnost ${esc(p.splatnost)} · zaplaceno ${esc(p.zaplaceno_dne)}${p.variabilni_symbol ? ` · VS ${esc(p.variabilni_symbol)}` : ''}</span>`;
+      <span>${esc(p.popis || 'Partnerství')} · ${esc(p.stav || '')} · splatnost ${esc(p.splatnost)}${p.zaplaceno_dne ? ` · zaplaceno ${esc(p.zaplaceno_dne)}` : ''}${p.variabilni_symbol ? ` · VS ${esc(p.variabilni_symbol)}` : ''}</span>`;
     row.appendChild(info);
     if (p.ma_fakturu) {
       const btn = document.createElement('button');
@@ -2846,7 +2883,7 @@ async function loadOwnerPlatby() {
       btn.textContent = 'PDF';
       btn.addEventListener('click', async () => {
         try {
-          await downloadOwnerFaktura(p.id);
+          await downloadOwnerFaktura(p.id, p.typ);
         } catch (err) {
           showMsg($('#owner-admin-msg'), err.message, false);
         }

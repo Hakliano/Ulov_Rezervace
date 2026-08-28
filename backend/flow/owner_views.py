@@ -569,12 +569,22 @@ def _partner_platby_payload(salon):
             'dni_po_splatnosti': 0,
             'qr': None,
             'historie': [],
+            'extra_k_uhrade': [],
         }
+
+    from partner_admin.models import ExtraFaktura
+    from partner_admin.services import primarni_ulov_ucet, seznam_ulov_uctu
+
+    ucty_global = seznam_ulov_uctu()
+    ucet = primarni_ulov_ucet() or (nast.ulov_cislo_uctu or '').strip()
 
     historie = []
     for p in PlatbaPartnera.objects.filter(salon=salon).order_by('-splatnost', '-id')[:40]:
         historie.append({
             'id': p.id,
+            'typ': 'partnerstvi',
+            'popis': 'Partnerství',
+            'stav': 'Uhrazeno',
             'splatnost': p.splatnost.isoformat(),
             'zaplaceno_dne': p.zaplaceno_dne.isoformat(),
             'castka': str(p.prijata_castka if p.prijata_castka is not None else p.ocekavana_castka),
@@ -582,11 +592,56 @@ def _partner_platby_payload(salon):
             'ma_fakturu': bool(p.faktura_pdf),
         })
 
-    qr = None
-    from partner_admin.services import primarni_ulov_ucet, seznam_ulov_uctu
+    extra_k_uhrade = []
+    for extra in ExtraFaktura.objects.filter(salon=salon).order_by('-datum_vystaveni', '-id'):
+        historie.append({
+            'id': extra.id,
+            'typ': 'extra',
+            'popis': extra.popis,
+            'stav': extra.get_stav_display(),
+            'splatnost': (extra.datum_splatnosti or extra.datum_vystaveni).isoformat(),
+            'zaplaceno_dne': extra.datum_uhrady.isoformat() if extra.datum_uhrady else '',
+            'castka': str(extra.castka),
+            'variabilni_symbol': extra.variabilni_symbol or '',
+            'ma_fakturu': bool(extra.faktura_pdf),
+        })
+        if extra.stav != ExtraFaktura.STAV_K_UHRADE:
+            continue
+        extra_qr = None
+        if ucet and extra.variabilni_symbol and extra.castka:
+            try:
+                from rezervace.services.platba_qr import generuj_platbu_qr
 
-    ucty_global = seznam_ulov_uctu()
-    ucet = primarni_ulov_ucet() or (nast.ulov_cislo_uctu or '').strip()
+                data = generuj_platbu_qr(
+                    ucet,
+                    extra.castka,
+                    extra.variabilni_symbol,
+                    zprava=f'ULOV {salon.name} {extra.popis}'[:60],
+                )
+                extra_qr = {
+                    'ucet': data['ucet'],
+                    'iban': data['iban'],
+                    'castka': data['castka'],
+                    'castka_display': data['castka_display'],
+                    'variabilni_symbol': data['variabilni_symbol'],
+                    'qr_png_base64': base64.b64encode(data['qr_png']).decode('ascii'),
+                }
+            except Exception:
+                extra_qr = None
+        extra_k_uhrade.append({
+            'id': extra.id,
+            'popis': extra.popis,
+            'castka': str(extra.castka),
+            'variabilni_symbol': extra.variabilni_symbol or '',
+            'splatnost': extra.datum_splatnosti.isoformat() if extra.datum_splatnosti else None,
+            'qr': extra_qr,
+            'ma_fakturu': bool(extra.faktura_pdf),
+        })
+
+    historie.sort(key=lambda r: r.get('splatnost') or '', reverse=True)
+    historie = historie[:40]
+
+    qr = None
     vs = (nast.variabilni_symbol or '').strip()
     if ucet and vs and nast.castka and nast.castka > 0:
         try:
@@ -632,6 +687,7 @@ def _partner_platby_payload(salon):
         'dni_po_splatnosti': nast.dni_po_splatnosti,
         'qr': qr,
         'historie': historie,
+        'extra_k_uhrade': extra_k_uhrade,
     }
 
 
@@ -669,6 +725,29 @@ class FlowOwnerPlatbaFakturaView(APIView):
             platba.faktura_pdf.open('rb'),
             as_attachment=True,
             filename=platba.faktura_pdf.name.rsplit('/', 1)[-1],
+            content_type='application/pdf',
+        )
+
+
+class FlowOwnerExtraFakturaView(APIView):
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def get(self, request, faktura_id):
+        from django.http import FileResponse
+
+        from partner_admin.models import ExtraFaktura
+
+        user, err = require_flow_owner(request)
+        if err:
+            return err
+        faktura = get_object_or_404(ExtraFaktura, pk=faktura_id, salon=user.salon)
+        if not faktura.faktura_pdf:
+            return Response({'detail': 'K této faktuře není PDF.'}, status=404)
+        return FileResponse(
+            faktura.faktura_pdf.open('rb'),
+            as_attachment=True,
+            filename=faktura.faktura_pdf.name.rsplit('/', 1)[-1],
             content_type='application/pdf',
         )
 

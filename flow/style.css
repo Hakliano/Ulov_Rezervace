@@ -875,6 +875,29 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   font-size: 0.9rem;
 }
 
+.own-platby-extra {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.own-platby-extra-card {
+  padding: 14px;
+  border: 1px solid var(--line, rgba(255,255,255,.12));
+  border-radius: 12px;
+}
+.own-platby-extra-card h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+.own-platby-extra-card img {
+  width: min(180px, 60vw);
+  height: auto;
+  background: #fff;
+  padding: 8px;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
 .own-platby-historie {
   display: grid;
   gap: 8px;

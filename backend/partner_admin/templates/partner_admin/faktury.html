@@ -1,0 +1,105 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Faktury{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Evidence</p>
+      <h1>Vydané faktury</h1>
+      <p class="muted">Všechny faktury partnerům — vygenerované i ručně nahrané. Filtr podle data vystavení nebo úhrady.</p>
+    </div>
+  </div>
+
+  <form class="filters filters-faktury" method="get">
+    <label>
+      Od
+      <input type="date" name="od" value="{{ od_dne|date:'Y-m-d' }}">
+    </label>
+    <label>
+      Do
+      <input type="date" name="do" value="{{ do_dne|date:'Y-m-d' }}">
+    </label>
+    <label>
+      Filtrovat podle
+      <select name="podle">
+        <option value="vystaveni"{% if podle != 'uhrada' %} selected{% endif %}>Data vystavení</option>
+        <option value="uhrada"{% if podle == 'uhrada' %} selected{% endif %}>Data úhrady</option>
+      </select>
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Filtrovat</button>
+      <a class="btn btn-secondary" href="{% url 'partner_admin:faktury' %}?od={{ od_dne|date:'Y-m-d' }}&amp;do={{ do_dne|date:'Y-m-d' }}&amp;podle={{ podle }}&amp;souhrn=pdf">Stáhnout souhrn</a>
+    </div>
+  </form>
+
+  <section class="kpis">
+    <article class="kpi">
+      <div class="label">Faktur v období</div>
+      <div class="value">{{ souhrn.pocet_faktur }}</div>
+    </article>
+    <article class="kpi">
+      <div class="label">Uhrazeno</div>
+      <div class="value">{{ souhrn.trzby }} Kč</div>
+    </article>
+    <article class="kpi">
+      <div class="label">K úhradě</div>
+      <div class="value">{{ souhrn.k_uhrade }} Kč</div>
+    </article>
+    <article class="kpi">
+      <div class="label">Výdaje</div>
+      <div class="value">{{ souhrn.vydaje }} Kč</div>
+    </article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Seznam</p>
+        <h2>Faktury</h2>
+      </div>
+    </div>
+    {% if radky %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Číslo</th>
+              <th>Partner</th>
+              <th>Položka</th>
+              <th>Vystaveno</th>
+              <th>Úhrada</th>
+              <th>Stav</th>
+              <th>Částka</th>
+              <th>VS</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for radek in radky %}
+              <tr>
+                <td>{{ radek.cislo }}</td>
+                <td><a href="{{ radek.detail_url }}">{{ radek.partner }}</a></td>
+                <td>{{ radek.popis }}</td>
+                <td>{{ radek.datum_vystaveni|date:"d.m.Y" }}</td>
+                <td>{% if radek.datum_uhrady %}{{ radek.datum_uhrady|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                <td>{{ radek.stav }}</td>
+                <td>{{ radek.castka|floatformat:2 }} Kč</td>
+                <td>{{ radek.vs|default:"—" }}</td>
+                <td>
+                  {% if radek.ma_pdf %}
+                    <a class="btn btn-quiet" href="{{ radek.stahnout_url }}">PDF</a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">V tomto období žádná faktura.</p>
+    {% endif %}
+  </section>
+{% endblock %}

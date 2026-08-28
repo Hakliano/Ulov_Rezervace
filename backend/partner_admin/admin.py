@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    ExtraFaktura,
     HromadnyEmail,
     KamProvize,
     KeyAccountManager,
@@ -10,6 +11,8 @@ from .models import (
     TechnickaChyba,
     UlovCisloUctu,
     UpozorneniPlatby,
+    Vydaj,
+    VydajSablona,
 )
 
 
@@ -92,3 +95,21 @@ class KamProvizeAdmin(admin.ModelAdmin):
 class UlovCisloUctuAdmin(admin.ModelAdmin):
     list_display = ['cislo', 'popisek', 'primarni', 'aktivni', 'razeni']
     list_editable = ['popisek', 'primarni', 'aktivni', 'razeni']
+
+
+@admin.register(ExtraFaktura)
+class ExtraFakturaAdmin(admin.ModelAdmin):
+    list_display = ['cislo_faktury', 'salon', 'castka', 'stav', 'datum_vystaveni']
+    list_filter = ['stav']
+    search_fields = ['cislo_faktury', 'salon__name', 'variabilni_symbol']
+
+
+@admin.register(Vydaj)
+class VydajAdmin(admin.ModelAdmin):
+    list_display = ['datum', 'castka', 'ucet', 'salon', 'poznamka']
+    list_filter = ['datum']
+
+
+@admin.register(VydajSablona)
+class VydajSablonaAdmin(admin.ModelAdmin):
+    list_display = ['nazev', 'castka', 'ucet']

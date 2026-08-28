@@ -493,3 +493,114 @@ class HromadnyEmail(models.Model):
 
     def __str__(self):
         return f'{self.predmet} ({self.odeslano_pocet})'
+
+
+class ExtraFaktura(models.Model):
+    """Jednorázová faktura partnerovi (vizitky, NFC…). Nemění splatnost tarifu."""
+
+    STAV_UHRAZENO = 'uhrazeno'
+    STAV_K_UHRADE = 'k_uhrade'
+    STAVY = [
+        (STAV_UHRAZENO, 'Uhrazeno'),
+        (STAV_K_UHRADE, 'K úhradě'),
+    ]
+
+    salon = models.ForeignKey(Salon, related_name='extra_faktury', on_delete=models.CASCADE)
+    cislo_faktury = models.CharField('číslo faktury', max_length=30, unique=True)
+    variabilni_symbol = models.CharField('variabilní symbol', max_length=10, blank=True)
+    popis = models.CharField('položka', max_length=200)
+    castka = models.DecimalField(max_digits=10, decimal_places=2)
+    stav = models.CharField(max_length=20, choices=STAVY, default=STAV_K_UHRADE, db_index=True)
+    datum_vystaveni = models.DateField(db_index=True)
+    datum_splatnosti = models.DateField(null=True, blank=True)
+    datum_uhrady = models.DateField(null=True, blank=True)
+    faktura_pdf = models.FileField(
+        'faktura PDF',
+        upload_to='partner_faktury/%Y/%m/',
+        blank=True,
+        null=True,
+    )
+    poznamka = models.CharField(max_length=300, blank=True)
+    odeslana_emailem = models.BooleanField(default=False)
+    vytvoril = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='extra_faktury',
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'jednorázová faktura'
+        verbose_name_plural = 'jednorázové faktury'
+        ordering = ['-datum_vystaveni', '-id']
+
+    def __str__(self):
+        return f'{self.cislo_faktury} · {self.salon.name}'
+
+    @property
+    def je_k_uhrade(self):
+        return self.stav == self.STAV_K_UHRADE
+
+
+class Vydaj(models.Model):
+    datum = models.DateField(db_index=True)
+    castka = models.DecimalField(max_digits=10, decimal_places=2)
+    ucet = models.ForeignKey(
+        UlovCisloUctu,
+        related_name='vydaje',
+        on_delete=models.PROTECT,
+    )
+    salon = models.ForeignKey(
+        Salon,
+        related_name='vydaje',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text='Prázdné = generic výdaj, ne k partnerovi.',
+    )
+    poznamka = models.CharField(max_length=300)
+    vytvoril = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='vydaje',
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'výdaj'
+        verbose_name_plural = 'výdaje'
+        ordering = ['-datum', '-id']
+
+    def __str__(self):
+        return f'{self.datum:%d.%m.%Y} · {self.castka} Kč'
+
+
+class VydajSablona(models.Model):
+    nazev = models.CharField('název', max_length=80, unique=True)
+    castka = models.DecimalField(max_digits=10, decimal_places=2)
+    ucet = models.ForeignKey(
+        UlovCisloUctu,
+        related_name='vydaj_sablony',
+        on_delete=models.PROTECT,
+    )
+    salon = models.ForeignKey(
+        Salon,
+        related_name='vydaj_sablony',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    poznamka = models.CharField(max_length=300, blank=True)
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'šablona výdaje'
+        verbose_name_plural = 'šablony výdajů'
+        ordering = ['nazev']
+
+    def __str__(self):
+        return self.nazev

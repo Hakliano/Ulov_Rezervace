@@ -1,0 +1,89 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Výdaje{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Evidence</p>
+      <h1>Výdaje</h1>
+      <p class="muted">Platby, o kterých se systém jinak nedozví — oběd, vizitky, Hetzner, benzin. Účet jen z už založených účtů ULOV.</p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Nový</p>
+        <h2>Zadat výdaj</h2>
+      </div>
+    </div>
+    {% if sablony %}
+      <p class="muted">Použít šablonu:
+        {% for s in sablony %}
+          <a class="btn btn-quiet" href="{% url 'partner_admin:vydaje' %}?sablona={{ s.id }}">{{ s.nazev }}</a>
+        {% endfor %}
+      </p>
+    {% endif %}
+    <form method="post" class="form-grid compact" autocomplete="off">
+      {% csrf_token %}
+      <label>Datum {{ form.datum }}{% if form.datum.errors %}<span class="field-error">{{ form.datum.errors|striptags }}</span>{% endif %}</label>
+      <label>Částka {{ form.castka }}{% if form.castka.errors %}<span class="field-error">{{ form.castka.errors|striptags }}</span>{% endif %}</label>
+      <label>Účet {{ form.ucet }}{% if form.ucet.errors %}<span class="field-error">{{ form.ucet.errors|striptags }}</span>{% endif %}</label>
+      <label>Partner {{ form.salon }}</label>
+      <label class="full">Poznámka {{ form.poznamka }}{% if form.poznamka.errors %}<span class="field-error">{{ form.poznamka.errors|striptags }}</span>{% endif %}</label>
+      <label class="check-label">
+        <span class="check-row">{{ form.ulozit_sablonu }} Uložit do šablon</span>
+      </label>
+      <label>Název šablony {{ form.nazev_sablony }}{% if form.nazev_sablony.errors %}<span class="field-error">{{ form.nazev_sablony.errors|striptags }}</span>{% endif %}</label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Uložit výdaj</button>
+      </div>
+    </form>
+  </section>
+
+  <form class="filters filters-faktury" method="get">
+    <label>Od <input type="date" name="od" value="{{ od_dne|date:'Y-m-d' }}"></label>
+    <label>Do <input type="date" name="do" value="{{ do_dne|date:'Y-m-d' }}"></label>
+    <div class="form-actions">
+      <button class="btn btn-secondary" type="submit">Filtrovat</button>
+    </div>
+  </form>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Seznam</p>
+        <h2>Výdaje v období</h2>
+      </div>
+    </div>
+    {% if radky %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Částka</th>
+              <th>Účet</th>
+              <th>Partner</th>
+              <th>Poznámka</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for radek in radky %}
+              <tr>
+                <td>{{ radek.datum|date:"d.m.Y" }}</td>
+                <td>{{ radek.castka|floatformat:2 }} Kč</td>
+                <td>{{ radek.ucet.cislo }}{% if radek.ucet.popisek %} ({{ radek.ucet.popisek }}){% endif %}</td>
+                <td>{% if radek.salon %}{{ radek.salon.name }}{% else %}Generic{% endif %}</td>
+                <td>{{ radek.poznamka }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">V tomto období žádný výdaj.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -20,6 +20,13 @@ urlpatterns = [
     path('kam/<int:kam_id>/vypis/', views.kam_vypis, name='kam_vypis'),
     path('kam/<int:kam_id>/vypis/vyplatit/', views.kam_vyplatit, name='kam_vyplatit'),
     path('ucty/', views.ulov_ucty, name='ucty'),
+    path('faktury/', views.evidence_faktur, name='faktury'),
+    path(
+        'faktury/<str:zdroj>/<int:pk>/pdf/',
+        views.stahnout_fakturu_evidence,
+        name='stahnout_fakturu_evidence',
+    ),
+    path('vydaje/', views.vydaje, name='vydaje'),
     path('emaily/', views.hromadne_emaily, name='emaily'),
     path('chyby/', views.seznam_chyb, name='chyby'),
     path('chyby/<int:chyba_id>/', views.detail_chyby, name='chyba_detail'),
@@ -67,5 +74,11 @@ urlpatterns = [
         name='reset_hesla',
     ),
     path('salon/<int:salon_id>/flow/aktivovat/', views.aktivovat_flow, name='aktivovat_flow'),
+    path('salon/<int:salon_id>/extra-faktura/', views.vytvorit_extra_fakturu, name='vytvorit_extra_fakturu'),
+    path(
+        'salon/<int:salon_id>/extra-faktura/<int:faktura_id>/uhradit/',
+        views.extra_faktura_uhrazena,
+        name='extra_faktura_uhrazena',
+    ),
     path('chyba/<int:chyba_id>/vyresit/', views.vyresit_chybu, name='vyresit_chybu'),
 ]

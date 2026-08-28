@@ -4,7 +4,7 @@ from django import forms
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import KeyAccountManager, PartnerNastaveni, PartnerTarif, UlovCisloUctu, vychozi_variabilni_symbol
+from .models import ExtraFaktura, KeyAccountManager, PartnerNastaveni, PartnerTarif, UlovCisloUctu, vychozi_variabilni_symbol
 
 
 class CeskaCastkaField(forms.DecimalField):
@@ -572,3 +572,81 @@ class BlokaceForm(forms.Form):
         if value != 'BLOCK':
             raise forms.ValidationError('Blokaci potvrďte přesným textem BLOCK.')
         return value
+
+
+class ExtraFakturaForm(forms.Form):
+    popis = forms.CharField(
+        label='Položka (služba / produkt)',
+        max_length=200,
+        widget=forms.TextInput(attrs={'placeholder': 'např. NFC stojánek, 4 ks'}),
+    )
+    castka = CeskaCastkaField(
+        label='Částka (Kč)',
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        localize=False,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'autocomplete': 'off', 'lang': 'en'}),
+    )
+    stav = forms.ChoiceField(label='Stav', choices=ExtraFaktura.STAVY)
+    poznamka = forms.CharField(label='Poznámka', max_length=300, required=False)
+    odeslat_email = forms.BooleanField(
+        label='Odeslat fakturu na fakturační e-mail',
+        required=False,
+        initial=True,
+        help_text='U stavu K úhradě se e-mail odešle vždy.',
+    )
+
+
+class VydajForm(forms.Form):
+    datum = forms.DateField(
+        label='Datum',
+        initial=timezone.localdate,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+    )
+    castka = CeskaCastkaField(
+        label='Částka (Kč)',
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal('0.01'),
+        localize=False,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'autocomplete': 'off', 'lang': 'en'}),
+    )
+    ucet = forms.ModelChoiceField(
+        label='Účet',
+        queryset=UlovCisloUctu.objects.none(),
+        empty_label=None,
+    )
+    salon = forms.ModelChoiceField(
+        label='Partner',
+        queryset=None,
+        required=False,
+        empty_label='Generic — nepatří ke konkrétnímu partnerovi',
+    )
+    poznamka = forms.CharField(
+        label='Poznámka',
+        max_length=300,
+        widget=forms.TextInput(attrs={'placeholder': 'oběd, vizitky, Hetzner…'}),
+    )
+    ulozit_sablonu = forms.BooleanField(label='Uložit do šablon', required=False)
+    nazev_sablony = forms.CharField(label='Název šablony', max_length=80, required=False)
+
+    def __init__(self, *args, **kwargs):
+        from salons.models import Salon
+
+        super().__init__(*args, **kwargs)
+        self.fields['ucet'].queryset = UlovCisloUctu.objects.filter(aktivni=True).order_by(
+            '-primarni', 'razeni', 'id',
+        )
+        self.fields['salon'].queryset = Salon.objects.order_by('name')
+
+    def clean(self):
+        data = super().clean()
+        if data.get('ulozit_sablonu'):
+            nazev = (data.get('nazev_sablony') or data.get('poznamka') or '').strip()
+            if not nazev:
+                self.add_error('nazev_sablony', 'Pro šablonu zadejte název.')
+            else:
+                data['nazev_sablony'] = nazev[:80]
+        return data

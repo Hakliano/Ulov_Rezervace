@@ -92,6 +92,11 @@ urlpatterns = [
         owner_views.FlowOwnerPlatbaFakturaView.as_view(),
         name='flow-owner-platba-faktura',
     ),
+    path(
+        'flow/owner/extra-faktury/<int:faktura_id>/faktura/',
+        owner_views.FlowOwnerExtraFakturaView.as_view(),
+        name='flow-owner-extra-faktura',
+    ),
     path('flow/owner/audit-log/', owner_views.FlowOwnerAuditLogView.as_view(), name='flow-owner-audit'),
     path('flow/owner/no-show-archiv/', owner_views.FlowOwnerNoShowArchivView.as_view(), name='flow-owner-noshow'),
     path(

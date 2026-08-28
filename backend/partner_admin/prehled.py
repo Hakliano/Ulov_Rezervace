@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from .models import HromadnyEmail, PartnerNastaveni, PlatbaPartnera, TechnickaChyba
+from .evidence import vydaje_za_mesic
 from .services import kam_naklady_mesic, top_kam_mesic
 
 
@@ -178,4 +179,5 @@ def data_prehledu(dnes=None):
         'rust': rust,
         'upozorneni': upozorneni[:4],
         'chyby': list(nevyresene[:5]),
+        'vydaje_mesic': vydaje_za_mesic(dnes),
     }

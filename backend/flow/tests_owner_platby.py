@@ -67,6 +67,9 @@ class FlowOwnerPlatbyTests(TestCase):
         return r.json()['token']
 
     def test_empty_without_partner_settings(self):
+        from partner_admin.models import PartnerNastaveni
+
+        PartnerNastaveni.objects.filter(salon=self.salon).delete()
         token = self._login('owner-i6@test.local', 'Heslo1234')
         r = self.client.get('/api/flow/owner/platby/', HTTP_X_FLOW_TOKEN=token)
         self.assertEqual(r.status_code, 200)
@@ -142,3 +145,42 @@ class FlowOwnerPlatbyTests(TestCase):
         self.assertEqual(dl['Content-Type'], 'application/pdf')
         body = b''.join(dl.streaming_content)
         self.assertTrue(body.startswith(b'%PDF'))
+
+    def test_extra_faktura_je_v_platbach_a_jde_stahnout(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from partner_admin.faktura import dalsi_cislo_faktury, uloz_fakturu_extra, vs_extra_z_cisla
+        from partner_admin.models import ExtraFaktura
+
+        nast = self.salon.partner_nastaveni
+        nast.ulov_cislo_uctu = '123456789/0100'
+        nast.variabilni_symbol = '8019'
+        nast.castka = Decimal('990.00')
+        nast.save()
+        cislo = dalsi_cislo_faktury()
+        extra = ExtraFaktura.objects.create(
+            salon=self.salon,
+            cislo_faktury=cislo,
+            variabilni_symbol=vs_extra_z_cisla(cislo),
+            popis='NFC stojánek',
+            castka=Decimal('1200.00'),
+            stav=ExtraFaktura.STAV_K_UHRADE,
+            datum_vystaveni=timezone.localdate(),
+            datum_splatnosti=timezone.localdate() + timedelta(days=14),
+        )
+        uloz_fakturu_extra(extra)
+        token = self._login('owner-i6@test.local', 'Heslo1234')
+        r = self.client.get('/api/flow/owner/platby/', HTTP_X_FLOW_TOKEN=token)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(len(data['extra_k_uhrade']), 1)
+        self.assertEqual(data['extra_k_uhrade'][0]['popis'], 'NFC stojánek')
+        self.assertTrue(any(row['typ'] == 'extra' for row in data['historie']))
+        dl = self.client.get(
+            f'/api/flow/owner/extra-faktury/{extra.id}/faktura/',
+            HTTP_X_FLOW_TOKEN=token,
+        )
+        self.assertEqual(dl.status_code, 200)
+        self.assertTrue(b''.join(dl.streaming_content).startswith(b'%PDF'))

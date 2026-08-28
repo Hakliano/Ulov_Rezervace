@@ -37,6 +37,11 @@
       <div class="value">{{ mesicni_tarif|floatformat:0 }} Kč</div>
       <div class="hint">ACTIVE, roční přepočtené / 12</div>
     </article>
+    <article class="kpi">
+      <div class="label">Výdaje tento měsíc</div>
+      <div class="value">{{ vydaje_mesic|floatformat:0 }} Kč</div>
+      <div class="hint">interní výdaje, ne faktury partnerům</div>
+    </article>
     <article class="kpi {% if po_splatnosti_pocet %}kpi-warn{% endif %}">
       <div class="label">Partneři</div>
       <div class="value">{{ partneru }}</div>

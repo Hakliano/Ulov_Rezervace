@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Q, When
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -20,6 +20,7 @@ from salons.models import Salon
 
 from .forms import (
     BlokaceForm,
+    ExtraFakturaForm,
     FakturaEditForm,
     FakturaPlatbyForm,
     HromadnyEmailForm,
@@ -31,10 +32,14 @@ from .forms import (
     ResetHeslaForm,
     UlovCisloUctuForm,
     UpozorneniForm,
+    VydajForm,
 )
+from .evidence import data_souhrnu, parse_datum, seznam_faktur, vychozi_obdobi
+from .extra_faktury import oznacit_extra_uhrazeno, vytvor_extra_fakturu
 from .loga import logo_url_pro_tarif, tarif_loga_pro_sablonu
 from .models import (
     MODUL_MATERIALNIK,
+    ExtraFaktura,
     HromadnyEmail,
     KeyAccountManager,
     PartnerModul,
@@ -44,6 +49,8 @@ from .models import (
     TechnickaChyba,
     UlovCisloUctu,
     UpozorneniPlatby,
+    Vydaj,
+    VydajSablona,
     vychozi_variabilni_symbol,
 )
 from .prehled import data_prehledu, prijemci_hromadneho_emailu
@@ -88,6 +95,7 @@ DETAIL_TABS = {
     'emaily',
     'smtp',
     'odkazy',
+    'extra',
 }
 
 
@@ -774,6 +782,8 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
             'ulov_ucty': seznam_ulov_uctu(),
             'platby': salon.partnerske_platby.select_related('oznacil')[:24],
             'posledni_platba': salon.partnerske_platby.select_related('oznacil').first(),
+            'extra_faktury': salon.extra_faktury.all()[:40],
+            'extra_form': ExtraFakturaForm(),
             'upozorneni': salon.upozorneni_plateb.select_related('odeslal')[:20],
             'audity': SalonAuditLog.objects.filter(salon=salon)[:50],
             'chyby': TechnickaChyba.objects.filter(salon=salon)[:50],
@@ -1280,3 +1290,161 @@ def hromadne_emaily(request):
             'historie': HromadnyEmail.objects.select_related('odeslal')[:8],
         },
     )
+
+
+def _pdf_response(soubor, filename):
+    if not soubor:
+        raise Http404('PDF není uložené.')
+    return FileResponse(
+        soubor.open('rb'),
+        as_attachment=True,
+        filename=filename,
+        content_type='application/pdf',
+    )
+
+
+@superadmin_required
+def evidence_faktur(request):
+    dnes = timezone.localdate()
+    vychozi_od, vychozi_do = vychozi_obdobi(dnes)
+    od_dne = parse_datum(request.GET.get('od'), vychozi_od)
+    do_dne = parse_datum(request.GET.get('do'), vychozi_do)
+    if od_dne > do_dne:
+        od_dne, do_dne = do_dne, od_dne
+    podle = 'uhrada' if request.GET.get('podle') == 'uhrada' else 'vystaveni'
+    radky = seznam_faktur(od_dne=od_dne, do_dne=do_dne, podle=podle)
+    souhrn = data_souhrnu(od_dne=od_dne, do_dne=do_dne, podle=podle)
+    if request.GET.get('souhrn') == 'pdf':
+        from .faktura import vygeneruj_souhrn_pdf
+
+        pdf = vygeneruj_souhrn_pdf(souhrn)
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="souhrn-{od_dne.isoformat()}-{do_dne.isoformat()}.pdf"'
+        )
+        return response
+    return render(
+        request,
+        'partner_admin/faktury.html',
+        {
+            'radky': radky,
+            'souhrn': souhrn,
+            'od_dne': od_dne,
+            'do_dne': do_dne,
+            'podle': podle,
+        },
+    )
+
+
+@superadmin_required
+def stahnout_fakturu_evidence(request, zdroj, pk):
+    if zdroj == 'partnerstvi':
+        platba = get_object_or_404(PlatbaPartnera, pk=pk)
+        nazev = f'faktura-{platba.cislo_faktury or platba.id}.pdf'
+        return _pdf_response(platba.faktura_pdf, nazev)
+    if zdroj == 'extra':
+        faktura = get_object_or_404(ExtraFaktura, pk=pk)
+        nazev = f'faktura-{faktura.cislo_faktury}.pdf'
+        return _pdf_response(faktura.faktura_pdf, nazev)
+    raise Http404()
+
+
+@superadmin_required
+def vydaje(request):
+    form = VydajForm(request.POST or None)
+    if request.method == 'GET' and request.GET.get('sablona'):
+        sablona = get_object_or_404(VydajSablona, pk=request.GET.get('sablona'))
+        form = VydajForm(initial={
+            'castka': sablona.castka,
+            'ucet': sablona.ucet_id,
+            'salon': sablona.salon_id,
+            'poznamka': sablona.poznamka or sablona.nazev,
+        })
+    if request.method == 'POST':
+        if form.is_valid():
+            vydaj = Vydaj.objects.create(
+                datum=form.cleaned_data['datum'],
+                castka=form.cleaned_data['castka'],
+                ucet=form.cleaned_data['ucet'],
+                salon=form.cleaned_data.get('salon'),
+                poznamka=form.cleaned_data['poznamka'].strip(),
+                vytvoril=request.user,
+            )
+            if form.cleaned_data.get('ulozit_sablonu'):
+                VydajSablona.objects.update_or_create(
+                    nazev=form.cleaned_data['nazev_sablony'],
+                    defaults={
+                        'castka': vydaj.castka,
+                        'ucet': vydaj.ucet,
+                        'salon': vydaj.salon,
+                        'poznamka': vydaj.poznamka,
+                    },
+                )
+            messages.success(request, f'Výdaj {vydaj.castka} Kč uložen.')
+            return redirect('partner_admin:vydaje')
+        messages.error(request, 'Výdaj se nepodařilo uložit.')
+    od_dne = parse_datum(request.GET.get('od'), timezone.localdate().replace(day=1))
+    do_dne = parse_datum(request.GET.get('do'), timezone.localdate())
+    if od_dne > do_dne:
+        od_dne, do_dne = do_dne, od_dne
+    seznam = Vydaj.objects.filter(datum__gte=od_dne, datum__lte=do_dne).select_related(
+        'ucet', 'salon',
+    )
+    return render(
+        request,
+        'partner_admin/vydaje.html',
+        {
+            'form': form,
+            'radky': seznam,
+            'sablony': VydajSablona.objects.select_related('ucet', 'salon'),
+            'od_dne': od_dne,
+            'do_dne': do_dne,
+        },
+    )
+
+
+@superadmin_required
+@require_POST
+def vytvorit_extra_fakturu(request, salon_id):
+    salon = get_object_or_404(Salon, pk=salon_id)
+    form = ExtraFakturaForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, 'Fakturu nelze vystavit: ' + _chyby_formulare(form))
+        return _detail_redirect(salon.id, 'extra')
+    pred_splatnost = salon.partner_nastaveni.dalsi_splatnost
+    faktura, mail_ok, mail_detail = vytvor_extra_fakturu(
+        salon,
+        request.user,
+        popis=form.cleaned_data['popis'],
+        castka=form.cleaned_data['castka'],
+        stav=form.cleaned_data['stav'],
+        poznamka=form.cleaned_data.get('poznamka') or '',
+        odeslat_email=form.cleaned_data.get('odeslat_email'),
+    )
+    po_splatnost = salon.partner_nastaveni.dalsi_splatnost
+    if pred_splatnost != po_splatnost:
+        messages.error(request, 'Chyba: extra faktura změnila splatnost tarifu.')
+    zprava = f'Faktura {faktura.cislo_faktury} je vystavená (VS {faktura.variabilni_symbol}).'
+    if faktura.stav == ExtraFaktura.STAV_K_UHRADE or form.cleaned_data.get('odeslat_email'):
+        if mail_ok:
+            zprava += f' E-mail odeslán na {mail_detail}.'
+        else:
+            zprava += f' E-mail se nepodařilo odeslat: {mail_detail}.'
+    messages.success(request, zprava)
+    return _detail_redirect(salon.id, 'extra')
+
+
+@superadmin_required
+@require_POST
+def extra_faktura_uhrazena(request, salon_id, faktura_id):
+    salon = get_object_or_404(Salon, pk=salon_id)
+    faktura = get_object_or_404(ExtraFaktura, pk=faktura_id, salon=salon)
+    pred = salon.partner_nastaveni.dalsi_splatnost
+    oznacit_extra_uhrazeno(faktura, request.user)
+    salon.partner_nastaveni.refresh_from_db()
+    if salon.partner_nastaveni.dalsi_splatnost != pred:
+        messages.error(request, 'Chyba: extra faktura změnila splatnost tarifu.')
+    else:
+        messages.success(request, f'Faktura {faktura.cislo_faktury} je označená jako uhrazená.')
+    return _detail_redirect(salon.id, 'extra')
+
