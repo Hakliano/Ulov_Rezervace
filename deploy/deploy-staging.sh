@@ -163,8 +163,10 @@ docker cp ulov-staging-api:/app/media/. media-staging/ 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis staging-materialnik
 
 echo "### Migrate + seed (základní data, oddělená DB)"
+# staging-api už migrate dělá při startu; druhý běh v souběhu umí DuplicateType
+sleep 8
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
-  python manage.py migrate --noinput
+  python manage.py migrate --noinput || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_salons 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \

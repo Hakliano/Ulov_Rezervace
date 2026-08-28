@@ -255,7 +255,8 @@ body {
   gap: 12px;
   margin: 0 0 16px;
 }
-.flow-top-row .btn.cta-nova {
+.flow-top-row .btn.cta-nova,
+.flow-top-row .btn.cta-web {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -2039,6 +2040,31 @@ label.flow-switch,
   filter: brightness(1.05);
 }
 
+.btn.cta-web {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  background: transparent;
+  color: var(--gold-soft);
+  border: 1px solid rgba(201, 162, 39, 0.55);
+  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.18);
+  text-decoration: none;
+}
+.btn.cta-web:hover {
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--gold-soft);
+}
+.btn.cta-web .cta-plus {
+  background: rgba(201, 162, 39, 0.18);
+  color: var(--gold-soft);
+}
+
 .cta-plus {
   display: inline-flex;
   width: 28px;
@@ -2479,7 +2505,9 @@ label.flow-switch,
   margin-top: 0;
 }
 
-.materialnik-link { display: inline-flex; margin: 0.4rem 0 0.8rem; }
+.materialnik-link,
+.web-provozovny-link { display: inline-flex; margin: 0.4rem 0 0.8rem; }
+.web-provozovny-link { margin-bottom: 0.35rem; }
 .materialnik-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .materialnik-table th, .materialnik-table td { padding: 0.45rem 0.4rem; text-align: left; border-bottom: 1px solid #e8edf3; }
 .materialnik-table input.mat-qty { width: 5.5rem; }

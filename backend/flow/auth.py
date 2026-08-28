@@ -61,6 +61,7 @@ def get_flow_session_from_request(request):
         session = FlowSession.objects.select_related(
             'user',
             'user__salon',
+            'user__salon__partner_nastaveni',
             'user__zamestnanec',
             'user__pracovni_zamestnanec',
             'active_zamestnanec',
@@ -108,7 +109,7 @@ def prihlasit_flow(email, password):
         raise ValueError('Přihlášení je pouze e-mailem.')
     try:
         user = FlowUser.objects.select_related(
-            'salon', 'zamestnanec', 'pracovni_zamestnanec'
+            'salon', 'salon__partner_nastaveni', 'zamestnanec', 'pracovni_zamestnanec'
         ).get(email__iexact=email_n)
     except FlowUser.DoesNotExist:
         raise ValueError('Nesprávný e-mail nebo heslo.')
@@ -176,6 +177,24 @@ def _flow_moduly(user):
     return out
 
 
+def web_provozovny_url(domena):
+    """Veřejný web partnera. Prázdná doména = žádné tlačítko ve FLOW."""
+    host = (domena or '').strip().lower()
+    host = host.removeprefix('https://').removeprefix('http://').rstrip('/')
+    if not host or '/' in host:
+        return ''
+    return f'https://{host}'
+
+
+def _partner_pro_flow(user):
+    from django.core.exceptions import ObjectDoesNotExist
+
+    try:
+        return user.salon.partner_nastaveni
+    except ObjectDoesNotExist:
+        return None
+
+
 def flow_user_do_dict(user):
     active = flow_zam(user)
     primary = getattr(user, '_primary_zamestnanec', None) or user.zamestnanec
@@ -185,22 +204,19 @@ def flow_user_do_dict(user):
     ceka_volno = 0
     po_splatnosti_dni = 0
     povolit_technicke_nastaveni = False
+    nast = _partner_pro_flow(user)
+    web_url = web_provozovny_url(nast.domena if nast else '')
     # Badge / splatnost jen když je účet majitelky (i ve staff personě ať vidí alerty)
     if ucet_majitel:
-        from partner_admin.models import PartnerNastaveni
         from rezervace.models import ZamestnanecAbsence
         ceka_volno = ZamestnanecAbsence.objects.filter(
             zamestnanec__salon_id=user.salon_id,
             stav=ZamestnanecAbsence.STAV_CEKA,
         ).count()
-        try:
-            nast = PartnerNastaveni.objects.get(salon_id=user.salon_id)
+        if nast is not None:
             if nast.je_po_splatnosti:
                 po_splatnosti_dni = nast.dni_po_splatnosti
             povolit_technicke_nastaveni = bool(nast.povolit_technicke_nastaveni)
-        except PartnerNastaveni.DoesNotExist:
-            po_splatnosti_dni = 0
-            povolit_technicke_nastaveni = False
     aktivni_kod = 'majitel' if active.id == primary.id else 'pracovnik'
     return {
         'id': user.id,
@@ -219,6 +235,8 @@ def flow_user_do_dict(user):
             'banner_od': user.salon.banner_od.isoformat() if user.salon.banner_od else None,
             'banner_do': user.salon.banner_do.isoformat() if user.salon.banner_do else None,
             'banner_enabled': bool(user.salon.banner_enabled),
+            'domena': (nast.domena or '').strip() if nast else '',
+            'web_url': web_url,
         },
         'zamestnanec': {
             'id': active.id,

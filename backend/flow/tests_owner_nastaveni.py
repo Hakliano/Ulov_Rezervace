@@ -2,6 +2,7 @@
 
 from django.test import TestCase, Client
 
+from flow.auth import web_provozovny_url
 from flow.models import FlowUser
 from partner_admin.models import PartnerNastaveni
 from rezervace.models import RezervacniNastaveni, Zamestnanec
@@ -110,3 +111,27 @@ class FlowOwnerNastaveniTests(TestCase):
         token = self._login('staff-i3@test.local', 'Staff1234')
         get = self.client.get('/api/flow/owner/nastaveni/', HTTP_X_FLOW_TOKEN=token)
         self.assertEqual(get.status_code, 403)
+
+    def test_me_web_url_when_domena_filled(self):
+        PartnerNastaveni.objects.filter(salon=self.salon).update(domena='demo3.ulovklienty.cz')
+        token = self._login('owner-i3@test.local', 'Heslo1234')
+        me = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=token)
+        salon = me.json()['salon']
+        self.assertEqual(salon['domena'], 'demo3.ulovklienty.cz')
+        self.assertEqual(salon['web_url'], 'https://demo3.ulovklienty.cz')
+
+    def test_me_web_url_empty_without_domena(self):
+        PartnerNastaveni.objects.filter(salon=self.salon).update(domena='')
+        token = self._login('staff-i3@test.local', 'Staff1234')
+        me = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=token)
+        salon = me.json()['salon']
+        self.assertEqual(salon['domena'], '')
+        self.assertEqual(salon['web_url'], '')
+
+    def test_web_provozovny_url_helper(self):
+        self.assertEqual(
+            web_provozovny_url('https://Demo3.ulovklienty.cz/'),
+            'https://demo3.ulovklienty.cz',
+        )
+        self.assertEqual(web_provozovny_url(''), '')
+        self.assertEqual(web_provozovny_url('evil.cz/cesta'), '')

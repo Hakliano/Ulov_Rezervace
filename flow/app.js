@@ -637,6 +637,7 @@ function showLoggedIn(user) {
   applyPersonaUi(user);
   applyTechnickeNastaveniUi(user);
   applyMaterialnikUi(user);
+  applyWebProvozovnyUi(user);
   // Staff: pracovní doba jen view; majitel ji mění ve Staff
   const rozHint = $('#rozvrh-hint');
   const rozSave = $('#btn-rozvrh-save');
@@ -679,6 +680,8 @@ function showLogin() {
   $('#shell').classList.remove('app-mode');
   $('#hero-brand').classList.remove('compact');
   $('#btn-materialnik')?.classList.add('hidden');
+  $('#btn-web-provozovny')?.classList.add('hidden');
+  $('#btn-web-provozovny-nav')?.classList.add('hidden');
   $('#ov-stock-card')?.classList.add('hidden');
   closeMaterialnikModal();
 }
@@ -2368,6 +2371,24 @@ function applyMaterialnikUi(user = currentUser) {
   }
   btn.classList.remove('hidden');
   btn.href = info.url;
+}
+
+function webProvozovnyUrl(user = currentUser) {
+  return (user?.salon?.web_url || '').trim();
+}
+
+function applyWebProvozovnyUi(user = currentUser) {
+  const url = webProvozovnyUrl(user);
+  const buttons = [$('#btn-web-provozovny'), $('#btn-web-provozovny-nav')].filter(Boolean);
+  buttons.forEach((btn) => {
+    if (!url) {
+      btn.classList.add('hidden');
+      btn.removeAttribute('href');
+      return;
+    }
+    btn.classList.remove('hidden');
+    btn.href = url;
+  });
 }
 
 function closeMaterialnikModal() {

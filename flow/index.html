@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=62">
+  <link rel="stylesheet" href="style.css?v=63">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -59,6 +59,7 @@
           <button type="button" class="tab" data-tab="ucet"><span class="tab-label">Účet</span></button>
         </div>
       </nav>
+      <a id="btn-web-provozovny-nav" class="btn-gold web-provozovny-link hidden" href="#" target="_blank" rel="noopener noreferrer">Otevřít web</a>
       <a id="btn-materialnik" class="btn-gold materialnik-link hidden" href="#" target="_blank" rel="noopener">Sklad — Materiálník</a>
       <div class="userbox">
         <div class="userbox-who">
@@ -131,6 +132,10 @@
             <span class="cta-plus" aria-hidden="true">＋</span>
             Zadat rezervaci
           </button>
+          <a id="btn-web-provozovny" class="btn cta-web hidden" href="#" target="_blank" rel="noopener noreferrer">
+            <span class="cta-plus" aria-hidden="true">↗</span>
+            Otevřít web
+          </a>
           <aside class="flow-today-card" aria-live="polite">
             <p class="flow-today-clock" id="flow-today-clock">—</p>
             <p class="flow-today-label">Kdo má dneska svátek</p>
@@ -756,7 +761,7 @@
   </div>
 
   <script src="svatky.js?v=1"></script>
-  <script src="app.js?v=76"></script>
+  <script src="app.js?v=77"></script>
   <script src="customer-card.js?v=4"></script>
 
 </body>
