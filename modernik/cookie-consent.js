@@ -64,6 +64,20 @@
 
   var cfg = mergeConfig(defaults, global.ULOV_COOKIE_CONSENT || {});
 
+  function hasValidGaId() {
+    return !!(cfg.gaMeasurementId && /^G-[A-Z0-9]+$/i.test(cfg.gaMeasurementId));
+  }
+
+  if (!hasValidGaId()) {
+    cfg.categories.forEach(function (cat) {
+      if (cat.id === "analytics") {
+        cat.available = false;
+        cat.description =
+          "Momentálně nepoužíváme. Pokud Google Analytics zapneme, bude spuštěn pouze se souhlasem.";
+      }
+    });
+  }
+
   // Vestavěný loader pro GA4
   if (!cfg.loaders.analytics) {
     cfg.loaders.analytics = function () {
@@ -189,7 +203,7 @@
   }
 
   function acceptAll() {
-    applyConsent("all", true);
+    applyConsent("all", hasValidGaId());
   }
 
   function acceptNecessary() {
@@ -227,8 +241,9 @@
     copy.appendChild(el("h2", "ulov-cc-banner__title", { id: "ulov-cc-banner-title", text: "Respektujeme vaše soukromí" }));
     copy.appendChild(
       el("p", "ulov-cc-banner__text", {
-        text:
-          "Používáme nezbytné cookies pro správné fungování webu. S vaším souhlasem používáme také analytické cookies (Google Analytics), které nám pomáhají zlepšovat naše služby a obsah webu. Nepoužíváme marketingové cookies ani neprodáváme vaše údaje třetím stranám.",
+        text: hasValidGaId()
+          ? "Používáme nezbytné cookies pro správné fungování webu. S vaším souhlasem používáme také analytické cookies (Google Analytics), které nám pomáhají zlepšovat naše služby a obsah webu. Nepoužíváme marketingové cookies ani neprodáváme vaše údaje třetím stranám."
+          : "Používáme nezbytné cookies pro správné fungování webu. Analytické a marketingové cookies momentálně nepoužíváme. Osobní údaje neprodáváme třetím stranám.",
       })
     );
     if (cfg.privacyUrl) {

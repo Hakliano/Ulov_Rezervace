@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=17">
+  <link rel="stylesheet" href="marketing-v2.css?v=19">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -24,7 +24,7 @@
         <a href="#ukazky">Ukázky</a>
         <a href="#nfc">Recenze</a>
         <a href="#ceny">Partnerství</a>
-        <a href="https://www.ulovklienty.cz/dokumentace.html" target="_blank" rel="noopener">Dokumentace</a>
+        <a href="dokumentace.html">Dokumentace</a>
         <a href="#poptavka">Kontakt</a>
       </nav>
       <div class="header-actions">
@@ -825,7 +825,7 @@
 
           <article class="tile tile-addon" data-tile="rust" id="program-rustu">
             <img class="tile-icon" src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ikona_program_rustu.webp" alt="" width="64" height="64">
-            <p class="tile-addon-badge">Za příplatek 999&nbsp;Kč ročně</p>
+            <p class="tile-addon-badge">Za příplatek 83&nbsp;Kč / měsíc · 999&nbsp;Kč / rok</p>
             <h3>Program Růstu</h3>
             <p class="tile-teaser">Bonusy a služby, které pomáhají živnosti dlouhodobě růst.</p>
             <button type="button" class="tile-probe" aria-expanded="false" aria-label="Prozkoumat detail">
@@ -962,23 +962,42 @@
     </section>
 
     <section class="section pricing" id="ceny">
-      <div class="wrap-wide pricing-grid pricing-grid-2">
-        <a href="#poptavka" class="promo-card promo-card-img promo-card-lg" data-package="Kompletní partnerství MODERNÍK" aria-label="Přejít na nezávazný návrh">
-          <img
-            src="https://haklweb.b-cdn.net/modernik/modernik_ikona_akce.webp"
-            alt="Akce do 31. 12. 2026 — garantovaná cena partnerství"
-            width="800"
-            height="800"
-            loading="lazy"
-            decoding="async"
-          >
-        </a>
+      <div class="wrap-wide">
+        <div class="section-head">
+          <h2>Partnerství MODERNÍK</h2>
+          <p>Jeden produkt — web, rezervace, FLOW a podpora. Platíte měsíčně, na půl roku, nebo na rok. Program růstu a Materiálník se dají přikoupit.</p>
+        </div>
 
-        <div class="price-card">
-          <h3>Kompletní partnerství MODERNÍK</h3>
-          <p class="price-old">799 Kč / měsíc</p>
-          <p class="price-new">499 Kč <small>/ měsíc</small></p>
-          <p class="price-note">První platba na půl roku, pak měsíčně 499&nbsp;Kč.</p>
+        <div class="price-plans" role="list">
+          <article class="price-plan" role="listitem">
+            <h3 class="price-plan-period">Partnerství na měsíc</h3>
+            <p class="price-plan-month">799&nbsp;Kč</p>
+            <p class="price-plan-per">za měsíc</p>
+            <p class="price-plan-pay">Platíte <strong>799&nbsp;Kč</strong> každý měsíc.</p>
+            <a href="#poptavka" class="btn btn-outline" data-package="Kompletní partnerství MODERNÍK — měsíčně 799 Kč">Chci měsíčně →</a>
+          </article>
+
+          <article class="price-plan" role="listitem">
+            <h3 class="price-plan-period">Partnerství na půl roku</h3>
+            <p class="price-plan-month">600&nbsp;Kč</p>
+            <p class="price-plan-per">za měsíc</p>
+            <p class="price-plan-pay">Platíte <strong>3&nbsp;600&nbsp;Kč</strong> jednou za 6 měsíců.</p>
+            <p class="price-plan-save">Oproti měsíční platbě ušetříte 1&nbsp;194&nbsp;Kč za půl roku.</p>
+            <a href="#poptavka" class="btn btn-outline" data-package="Kompletní partnerství MODERNÍK — 3 600 Kč / 6 měsíců">Chci na půl roku →</a>
+          </article>
+
+          <article class="price-plan is-featured" role="listitem">
+            <h3 class="price-plan-period">Partnerství na rok</h3>
+            <p class="price-plan-month">500&nbsp;Kč</p>
+            <p class="price-plan-per">za měsíc</p>
+            <p class="price-plan-pay">Platíte <strong>6&nbsp;000&nbsp;Kč</strong> jednou za rok.</p>
+            <p class="price-plan-save">Oproti měsíční platbě ušetříte 3&nbsp;588&nbsp;Kč za rok.</p>
+            <a href="#poptavka" class="btn btn-gold" data-package="Kompletní partnerství MODERNÍK — 6 000 Kč / rok">Chci na rok →</a>
+          </article>
+        </div>
+
+        <div class="price-included">
+          <h3>V partnerství je vždy</h3>
           <ul class="price-list">
             <li>Web na míru + vlastní doména</li>
             <li>Online rezervace 24/7</li>
@@ -988,9 +1007,25 @@
             <li>Osobní podpora zakladatele</li>
             <li>Statistiky a reporty</li>
             <li>Kartotéka klientů</li>
-            <li>Volitelně Materiálník — sklad a spotřeba za 99&nbsp;Kč / měsíc</li>
           </ul>
-          <a href="#poptavka" class="btn btn-gold" style="margin-top:1.1rem;" data-package="Kompletní partnerství MODERNÍK">Chci partnerství →</a>
+        </div>
+
+        <div class="price-addons">
+          <h3>K Moderníku si můžete přikoupit</h3>
+          <div class="price-addon-grid">
+            <a class="price-addon" href="#program-rustu">
+              <img class="price-addon-icon" src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ikona_program_rustu.webp" alt="" width="96" height="96">
+              <span class="price-addon-name">Program růstu</span>
+              <span class="price-addon-month">83&nbsp;Kč <small>/ měsíc</small></span>
+              <span class="price-addon-pay">999&nbsp;Kč jednou za rok</span>
+            </a>
+            <a class="price-addon" href="#materialnik">
+              <img class="price-addon-icon price-addon-icon-wordmark" src="https://haklweb.b-cdn.net/modernik/materialnik_logo.webp" alt="" width="240" height="110">
+              <span class="price-addon-name">Materiálník</span>
+              <span class="price-addon-month">99&nbsp;Kč <small>/ měsíc</small></span>
+              <span class="price-addon-pay">sklad a spotřeba ke službám</span>
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -1215,13 +1250,9 @@
             <a href="#poptavka" class="btn btn-outline" data-package="Web jednorázově">Chci vlastní web</a>
           </article>
 
-          <article class="extras-card extras-card-web extras-card-promo">
+          <article class="extras-card extras-card-web">
             <h3>Partnerský web</h3>
-            <p class="extras-price extras-price-promo">
-              <span class="extras-price-old">299&nbsp;Kč</span>
-              <span class="extras-price-now">199&nbsp;Kč <small>/ měsíc</small></span>
-            </p>
-            <p class="extras-note">Noví partneři se startem do&nbsp;31.&nbsp;12.&nbsp;2026 mají garantovanou cenu <strong>199&nbsp;Kč měsíčně</strong>.</p>
+            <p class="extras-price">299&nbsp;Kč <small>/ měsíc</small></p>
             <ul>
               <li>Moderní web na míru</li>
               <li>Vlastní správa obsahu</li>
@@ -1329,8 +1360,10 @@
             <select id="p-balicek">
               <option value="">Vyberte (volitelné)</option>
               <option value="Web jednorázově">Web jednorázově (4 000 Kč)</option>
-              <option value="Partnerský web">Partnerský web (199 Kč akce / běžně 299 Kč)</option>
-              <option value="Kompletní partnerství MODERNÍK" selected>Kompletní partnerství MODERNÍK (499 Kč akce / běžně 799 Kč)</option>
+              <option value="Partnerský web">Partnerský web (299 Kč / měsíc)</option>
+              <option value="Kompletní partnerství MODERNÍK — měsíčně 799 Kč">Kompletní partnerství MODERNÍK — 799 Kč / měsíc</option>
+              <option value="Kompletní partnerství MODERNÍK — 3 600 Kč / 6 měsíců">Kompletní partnerství MODERNÍK — 3 600 Kč / 6 měsíců (600 Kč/měs.)</option>
+              <option value="Kompletní partnerství MODERNÍK — 6 000 Kč / rok" selected>Kompletní partnerství MODERNÍK — 6 000 Kč / rok (500 Kč/měs.)</option>
               <option value="Kompletní partnerství MODERNÍK + Program růstu">Kompletní partnerství MODERNÍK + Program růstu</option>
               <option value="Materiálník k partnerství MODERNÍK">Materiálník k partnerství (+99 Kč / měsíc)</option>
               <option value="Výroční servis">Výroční servis</option>
@@ -1410,7 +1443,8 @@
       </p>
       <p class="footer-links">
         © 2026 MODERNÍK ·
-        <a href="https://www.ulovklienty.cz/dokumentace.html" target="_blank" rel="noopener">Dokumentace</a>
+        <a href="dokumentace.html">Dokumentace</a>
+        <a href="smlouva.html">Smlouva</a>
         <a href="vop.html">VOP</a>
         <a href="gdpr.html">GDPR</a>
         <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
@@ -1429,7 +1463,7 @@
       privacyUrl: "gdpr.html"
     };
   </script>
-  <script src="cookie-consent.js?v=1" defer></script>
+  <script src="cookie-consent.js?v=2" defer></script>
   <script src="marketing-v2.js?v=6" defer></script>
 </body>
 </html>

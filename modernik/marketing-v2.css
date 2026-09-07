@@ -756,6 +756,181 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
 }
 
+.pricing .section-head {
+  max-width: 46rem;
+}
+
+.pricing .section-head p {
+  color: var(--muted);
+}
+
+.price-plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.price-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 1px solid var(--line-soft);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--bg-card);
+  padding: 1.5rem 1.1rem 1.35rem;
+}
+
+.price-plan.is-featured {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(201, 166, 74, 0.14) 0%, var(--bg-card) 42%);
+  box-shadow: 0 0 0 1px rgba(201, 166, 74, 0.35);
+}
+
+.price-plan-period {
+  margin: 0 0 0.55rem;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: none;
+  color: var(--gold-light);
+}
+
+.price-plan-month {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 0.95;
+  color: var(--gold-light);
+  letter-spacing: -0.03em;
+}
+
+.price-plan-per {
+  margin: 0.35rem 0 0.9rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.price-plan-pay {
+  margin: 0 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.price-plan-pay strong {
+  color: var(--text);
+}
+
+.price-plan-save {
+  margin: 0 0 1rem;
+  color: var(--gold-light);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.price-plan .btn {
+  margin-top: auto;
+  width: 100%;
+}
+
+.price-included {
+  margin: 1.75rem auto 0;
+  max-width: 52rem;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--line-soft);
+  border-radius: calc(var(--radius) + 2px);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.price-included h3,
+.price-addons h3 {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+}
+
+.price-included .price-list {
+  grid-template-columns: 1fr 1fr;
+}
+
+.price-addons {
+  margin: 1.5rem auto 0;
+  max-width: 52rem;
+}
+
+.price-addon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.price-addon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--line-soft);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--bg-card);
+  padding: 1.2rem 1rem;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.price-addon:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold);
+}
+
+.price-addon-icon {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin-bottom: 0.55rem;
+}
+
+.price-addon-icon-wordmark {
+  width: min(220px, 80%);
+  height: 72px;
+}
+
+.price-addon-name {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.price-addon-month {
+  margin: 0.4rem 0 0.2rem;
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  font-weight: 800;
+  color: var(--gold-light);
+  line-height: 1.05;
+}
+
+.price-addon-month small {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.price-addon-pay {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .price-card,
 .promo-card,
 .guarantee-card {
@@ -1646,6 +1821,9 @@ a.promo-card-img:hover {
   .header-actions { gap: 0.4rem; }
   .header-actions .btn { min-height: 40px; padding: 0.5rem 0.85rem; font-size: 0.72rem; }
   .tiles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .price-plans,
+  .price-addon-grid { grid-template-columns: 1fr; }
+  .price-included .price-list { grid-template-columns: 1fr; }
   .tile-expand { grid-template-columns: 1fr; }
   .tile-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tile-shots,
@@ -1653,6 +1831,7 @@ a.promo-card-img:hover {
   .tile-shots-2 { grid-template-columns: 1fr 1fr; }
   .extras-web-grid,
   .extras-web-grid-3 { grid-template-columns: 1fr; }
+  .price-addon-grid { grid-template-columns: 1fr; }
   .extras-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .nfc-visual img { max-height: 240px; }
 }
