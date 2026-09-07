@@ -1817,7 +1817,9 @@ a.promo-card-img:hover {
     justify-self: center;
   }
   .hero-brand-logo { width: min(100%, 220px); }
-  .nav { display: none; }
+  .nav a { display: none; }
+  .nav { display: flex; }
+  .nav a.nav-doc { display: inline; }
   .header-actions { gap: 0.4rem; }
   .header-actions .btn { min-height: 40px; padding: 0.5rem 0.85rem; font-size: 0.72rem; }
   .tiles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
