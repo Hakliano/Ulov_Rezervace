@@ -6,8 +6,16 @@ from rezervace.services.staff_auth import get_staff_from_request, je_majitel
 
 
 def _legacy_admin_password(request):
-    password = request.headers.get('X-Admin-Password', '')
-    return password == settings.SALON_ADMIN_PASSWORD
+    """Jen lokální DEBUG. V produkci globální bypass neexistuje."""
+    if not settings.DEBUG:
+        return False
+    expected = (getattr(settings, 'SALON_ADMIN_PASSWORD', '') or '').strip()
+    if not expected:
+        return False
+    got = (request.headers.get('X-Admin-Password') or '').strip()
+    if not got:
+        return False
+    return got == expected
 
 
 def _partner_ok(request):

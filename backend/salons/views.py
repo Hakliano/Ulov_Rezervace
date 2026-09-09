@@ -269,8 +269,11 @@ class AuthLoginView(APIView):
     permission_classes = []
 
     def post(self, request):
+        if not settings.DEBUG:
+            return Response({'detail': 'Nenalezeno.'}, status=status.HTTP_404_NOT_FOUND)
+        expected = (getattr(settings, 'SALON_ADMIN_PASSWORD', '') or '').strip()
         password = (request.data.get('password') or '').strip()
-        if password == settings.SALON_ADMIN_PASSWORD:
+        if expected and password and password == expected:
             return Response({'ok': True, 'message': 'Přihlášení úspěšné.'})
         return Response(
             {'ok': False, 'message': 'Nesprávné heslo.'},

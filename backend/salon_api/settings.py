@@ -187,8 +187,10 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Lokální heslo pro administraci salonů (simulované přihlášení — odstranit v produkci)
-SALON_ADMIN_PASSWORD = os.environ.get('SALON_ADMIN_PASSWORD', 'admin123')
+# Legacy globální heslo jen pro lokální DEBUG (hlavička X-Admin-Password).
+# Žádný default — chybějící/prázdná hodnota = bypass vypnutý.
+# V produkci (DEBUG=False) se nepoužívá, i kdyby bylo v .env.
+SALON_ADMIN_PASSWORD = (os.environ.get('SALON_ADMIN_PASSWORD') or '').strip()
 
 # GDPR — jednotná retenční doba pro všechny salony (měsíce); mění pouze provozovatel platformy
 GDPR_UCHOVAVANI_MESICU_DEFAULT = int(os.environ.get('GDPR_UCHOVAVANI_MESICU', '12'))
