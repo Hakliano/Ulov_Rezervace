@@ -45,7 +45,7 @@ from rezervace.serializers import (
     ZamestnanecAbsenceSerializer,
     ZamestnanecDetailSerializer,
     ZamestnanecPublicSerializer,
-    ZamestnanecSerializer,
+    ZamestnanecRezervacePublicSerializer,
     ZamestnanecWriteSerializer,
 )
 from rezervace.services.audit import audit_actor, log_audit, log_rezervace_audit
@@ -280,12 +280,6 @@ class PersonelPublicView(APIView):
 class RezervaceInfoView(APIView):
     def get(self, request, pk):
         salon = get_salon(pk)
-        try:
-            nastaveni = salon.rezervacni_nastaveni
-            nast_data = RezervacniNastaveniSerializer(nastaveni).data
-        except RezervacniNastaveni.DoesNotExist:
-            nast_data = None
-
         sluzby = CenikPolozka.objects.filter(salon=salon, aktivni=True).order_by('poradi')
         zamestnanci = (
             Zamestnanec.objects.filter(salon=salon, aktivni=True)
@@ -293,16 +287,17 @@ class RezervaceInfoView(APIView):
             .prefetch_related('prirazene_sluzby')
             .order_by('poradi')
         )
-        from rezervace.services.emails import get_email_config
-        email_cfg = get_email_config(salon)
 
         return Response({
-            'salon': {'id': salon.id, 'name': salon.name, 'address': salon.address, 'phone': salon.phone, 'email': salon.email},
-            'nastaveni': nast_data,
+            'salon': {
+                'id': salon.id,
+                'name': salon.name,
+                'address': salon.address,
+                'phone': salon.phone,
+                'email': salon.email,
+            },
             'sluzby': SluzbaPublicSerializer(sluzby, many=True).data,
-            'zamestnanci': ZamestnanecSerializer(zamestnanci, many=True).data,
-            'email_smtp': email_cfg['smtp_ready'],
-            'email_odesilatel': email_cfg['from_email'],
+            'zamestnanci': ZamestnanecRezervacePublicSerializer(zamestnanci, many=True).data,
             'gdpr': {
                 'zasady_verze': aktualni_zasady_verze(salon),
                 'jazyk': 'cs',

@@ -91,6 +91,19 @@ class ZamestnanecSerializer(serializers.ModelSerializer):
         return [row.sluzba_id for row in obj.prirazene_sluzby.all()]
 
 
+class ZamestnanecRezervacePublicSerializer(serializers.ModelSerializer):
+    """Anonymní veřejná rezervace: jen údaje potřebné k výběru personálu."""
+
+    sluzby_ids = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Zamestnanec
+        fields = ['id', 'jmeno', 'specializace', 'sluzby_ids']
+
+    def get_sluzby_ids(self, obj):
+        return [row.sluzba_id for row in obj.prirazene_sluzby.all()]
+
+
 class ZamestnanecPublicSerializer(serializers.ModelSerializer):
     rozvrh = serializers.SerializerMethodField()
 
