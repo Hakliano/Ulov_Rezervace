@@ -39,6 +39,7 @@ class Command(BaseCommand):
             src_nast.smtp_user = cfg['user']
             src_nast.smtp_password = cfg['password']
             src_nast.save(update_fields=list(SMTP_FIELDS))
+            src_nast.refresh_from_db()
 
         for pk in TARGET_PKS:
             try:

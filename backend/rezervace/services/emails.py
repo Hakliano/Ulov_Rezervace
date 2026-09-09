@@ -33,11 +33,12 @@ def get_email_config(salon):
     # Kontaktní e-mail webu (může být jiný než SMTP schránka)
     kontakt_email = salon.email or (nast.email_odesilatel if nast else '')
 
-    if nast and nast.smtp_user and nast.smtp_password:
+    smtp_password_plain = nast.smtp_password_plain() if nast else ''
+    if nast and nast.smtp_user and smtp_password_plain:
         smtp_host = nast.smtp_host or 'smtp.forpsi.com'
         smtp_port = nast.smtp_port or 465
         smtp_user = nast.smtp_user
-        smtp_password = nast.smtp_password
+        smtp_password = smtp_password_plain
         use_ssl = nast.smtp_use_ssl
         use_tls = not use_ssl
         zdroj = 'admin'

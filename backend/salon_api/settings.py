@@ -43,6 +43,8 @@ SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-i-i@a&2$uh_sl&!hw41-cscn6a0%50i$0kh6&rzcd3@x269y%6',
 )
+# Volitelný klíč pro SMTP hesla v DB. Prázdné = odvození z SECRET_KEY.
+SMTP_ENCRYPTION_KEY = os.environ.get('SMTP_ENCRYPTION_KEY', '').strip()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default je False (produkce). Pro lokální vývoj nastavte DEBUG=True v .env.
