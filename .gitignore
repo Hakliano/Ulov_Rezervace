@@ -16,6 +16,7 @@ deploy/certbot/www/
 
 # Local SMTP credentials (never commit)
 .smtp_encryption_key
+.smtp_encryption_key.live
 deploy/smtp-salon2.json
 deploy/demo-media.json
 _recovered/
