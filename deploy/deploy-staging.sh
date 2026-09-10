@@ -39,31 +39,23 @@ cp -a .env .env.staging
 sed -i 's/^DB_NAME=.*/DB_NAME=ulov_staging/' .env.staging || true
 grep -q '^DB_NAME=' .env.staging || echo 'DB_NAME=ulov_staging' >> .env.staging
 
-# Hosts / CORS + SMTP key (sidecar, not the DB)
+# SMTP_ENCRYPTION_KEY: nikdy z LIVE. Persistentní staging sidecar, abort při shodě.
+python3 "$ROOT/deploy/staging_smtp_encryption_key.py"
+if [ ! -f .smtp_encryption_key.live ]; then
+  echo "FAIL: chybí .smtp_encryption_key.live — nelze ověřit oddělení od LIVE"
+  exit 1
+fi
+if cmp -s .smtp_encryption_key .smtp_encryption_key.live; then
+  echo "FAIL: staging SMTP encryption sidecar matches LIVE"
+  exit 1
+fi
+
+# Hosts / CORS (SMTP klíč už je v .env.staging ze sidecar)
 python3 - <<'PY'
 from pathlib import Path
-import base64
-import os
 
 p = Path(".env.staging")
 text = p.read_text(encoding="utf-8")
-sidecar = Path(".smtp_encryption_key")
-
-def _env_val(blob, key):
-    prefix = f"{key}="
-    for line in blob.splitlines():
-        if line.startswith(prefix):
-            return line[len(prefix):].strip()
-    return ""
-
-smtp_key = _env_val(text, "SMTP_ENCRYPTION_KEY")
-if not smtp_key and sidecar.exists():
-    smtp_key = sidecar.read_text(encoding="utf-8").strip()
-if not smtp_key:
-    smtp_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
-if smtp_key:
-    sidecar.write_text(smtp_key + "\n", encoding="utf-8")
-    os.chmod(sidecar, 0o600)
 
 lines = []
 overrides = {
@@ -80,7 +72,6 @@ overrides = {
     "MATERIALNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/sklad",
     "MATERIALNIK_M2M_KEY": "staging-materialnik-m2m",
     "MATERIALNIK_STUB": "false",
-    "SMTP_ENCRYPTION_KEY": smtp_key,
 }
 # EMAIL_OVERRIDE_TO — zachovej pokud už je, jinak info@
 if "EMAIL_OVERRIDE_TO=" not in text:
@@ -93,6 +84,11 @@ for line in text.splitlines():
         continue
     k, _, v = line.partition("=")
     k = k.strip()
+    if k == "SMTP_ENCRYPTION_KEY":
+        # Klíč už nastavil staging_smtp_encryption_key.py — nepřepisovat z LIVE.
+        lines.append(line)
+        keys_done.add(k)
+        continue
     if k in overrides:
         lines.append(f"{k}={overrides[k]}")
         keys_done.add(k)
@@ -104,6 +100,10 @@ for k, v in overrides.items():
 p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("env.staging ok")
 PY
+if cmp -s .smtp_encryption_key .smtp_encryption_key.live; then
+  echo "FAIL: staging SMTP encryption sidecar matches LIVE"
+  exit 1
+fi
 
 echo "### Sync statiky → www-staging (+ API na api-staging)"
 mkdir -p www-staging
@@ -182,7 +182,7 @@ docker network inspect ulov_default >/dev/null
 mkdir -p media-staging
 docker cp ulov-staging-api:/app/media/. media-staging/ 2>/dev/null || true
 
-docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis staging-materialnik
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging up -d --build staging-api db redis staging-materialnik worker
 
 echo "### Migrate + seed (základní data, oddělená DB)"
 # staging-api už migrate dělá při startu; druhý běh v souběhu umí DuplicateType
@@ -202,6 +202,44 @@ mv -f deploy/nginx/conf.d/staging.conf.disabled deploy/nginx/conf.d/staging.conf
 docker compose up -d nginx
 docker compose exec -T nginx nginx -t
 docker compose exec -T nginx nginx -s reload
+
+echo "### SMTP encryption isolation (fingerprints only, never print keys)"
+python3 - <<'PY'
+from hashlib import sha256
+from pathlib import Path
+import sys
+
+def fp(path):
+    p = Path(path)
+    if not p.is_file():
+        return "missing"
+    return sha256(p.read_text(encoding="utf-8").strip().encode()).hexdigest()[:12]
+
+def env_key_fp(path):
+    prefix = "SMTP_ENCRYPTION_KEY="
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if line.startswith(prefix):
+            return sha256(line[len(prefix):].strip().encode()).hexdigest()[:12]
+    return "missing"
+
+stg = fp(".smtp_encryption_key")
+live = fp(".smtp_encryption_key.live")
+envfp = env_key_fp(".env.staging")
+print("sidecar_fp", stg)
+print("live_fp", live)
+print("env_fp", envfp)
+if stg in {"", "missing"} or live in {"", "missing"} or stg == live:
+    print("FAIL: staging SMTP key is not isolated from LIVE")
+    sys.exit(1)
+if envfp != stg:
+    print("FAIL: .env.staging SMTP key does not match staging sidecar")
+    sys.exit(1)
+print("isolated yes")
+PY
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python -c "from hashlib import sha256; from django.conf import settings; k=(settings.SMTP_ENCRYPTION_KEY or '').strip(); print('api_fp', sha256(k.encode()).hexdigest()[:12] if k else 'empty')"
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T worker \
+  python -c "from hashlib import sha256; from django.conf import settings; k=(settings.SMTP_ENCRYPTION_KEY or '').strip(); print('worker_fp', sha256(k.encode()).hexdigest()[:12] if k else 'empty')"
 
 echo "=== STAGING hotovo ==="
 echo "Hub:  https://www.staging.ulovklienty.cz/"
