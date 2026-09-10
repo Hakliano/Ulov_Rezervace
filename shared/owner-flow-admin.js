@@ -1,5 +1,5 @@
 /**
- * Schválené chování majitele ze salon2 — FLOW aktivace + změna sdíleného hesla
+ * Schválené chování majitele ze salon2 — FLOW aktivace + změna hesla majitele
  * + tick box „Manager také pracuje“.
  *
  * Zapojení (povinné u každého partner webu):
@@ -133,7 +133,7 @@
         <h4>Provozní den — FLOW</h4>
         <p class="admin-hint" id="flow-onboard-hint">
           Web můžete mít i bez rezervací. Až budete chtít kalendář a Staff v provozu,
-          aktivujte FLOW — přihlášení stejným e-mailem a heslem.
+          aktivujte FLOW.
         </p>
         <p id="flow-onboard-msg" class="status-msg"></p>
         <button type="button" id="btn-goto-flow" class="btn btn-primary btn-block">Přejít do FLOW</button>
@@ -149,7 +149,7 @@
         <h4>Manager také pracuje</h4>
         <p class="admin-hint">
           Zapne pracovní profil na webu (Staff + rezervace) a přepínač
-          Manager / Staff ve FLOW — jeden login, bez druhého hesla.
+          Manager / Staff ve FLOW.
         </p>
         <label class="checkbox" style="display:flex;gap:0.5rem;align-items:flex-start;margin:0.75rem 0;">
           <input type="checkbox" id="owner-works-check">
@@ -294,11 +294,11 @@
     try {
       const data = await api(`/salon/${sid}/flow/aktivace/`);
       if (data.aktivni) {
-        hint.textContent = `FLOW je aktivní${data.email ? ` (${data.email})` : ''}. Přihlášení stejným e-mailem a heslem jako sem.`;
+        hint.textContent = `FLOW je aktivní${data.email ? ` (${data.email})` : ''}.`;
         btn.textContent = 'Otevřít FLOW';
       } else {
         hint.textContent =
-          'Web můžete mít i bez rezervací. Až budete chtít kalendář a Staff v provozu, aktivujte FLOW — přihlášení stejným e-mailem a heslem.';
+          'Web můžete mít i bez rezervací. Až budete chtít kalendář a Staff v provozu, aktivujte FLOW.';
         btn.textContent = 'Přejít do FLOW';
       }
       if (data.majitelka_pracuje) applyOwnerWorksUi(data.majitelka_pracuje);
