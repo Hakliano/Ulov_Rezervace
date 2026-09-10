@@ -268,11 +268,13 @@ class EmailNastaveniSerializer(serializers.ModelSerializer):
         return bool(obj.smtp_password)
 
     def update(self, instance, validated_data):
+        from rezervace.services.smtp_secrets import encrypt_smtp_secret
+
         pwd = validated_data.pop('smtp_password', None)
         for attr, val in validated_data.items():
             setattr(instance, attr, val)
         if pwd:
-            instance.smtp_password = pwd
+            instance.smtp_password = encrypt_smtp_secret(pwd)
         instance.save()
         return instance
 

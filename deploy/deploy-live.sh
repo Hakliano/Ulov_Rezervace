@@ -47,6 +47,42 @@ if [ -f .env ]; then
   fi
 fi
 
+echo "### SMTP_ENCRYPTION_KEY (LIVE sidecar, hodnotu nikdy nevypisovat)"
+python3 - <<'PY'
+from pathlib import Path
+import os
+import base64
+
+env_path = Path(".env")
+live_sidecar = Path(".smtp_encryption_key.live")
+text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+key = live_sidecar.read_text(encoding="utf-8").strip() if live_sidecar.exists() else ""
+generated = False
+if not key:
+    key = base64.urlsafe_b64encode(os.urandom(32)).decode()
+    generated = True
+live_sidecar.write_text(key + "\n", encoding="utf-8")
+os.chmod(live_sidecar, 0o600)
+lines = []
+found = False
+for line in text.splitlines():
+    if line.startswith("SMTP_ENCRYPTION_KEY="):
+        lines.append(f"SMTP_ENCRYPTION_KEY={key}")
+        found = True
+    else:
+        lines.append(line)
+if not found:
+    lines.append(f"SMTP_ENCRYPTION_KEY={key}")
+if env_path.exists():
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print("SMTP_ENCRYPTION_KEY generated" if generated else "SMTP_ENCRYPTION_KEY reused from LIVE sidecar")
+PY
+if [ -f .smtp_encryption_key.live ]; then
+  mkdir -p backups
+  cp -a .smtp_encryption_key.live backups/smtp_encryption_key.live
+  chmod 600 backups/smtp_encryption_key.live 2>/dev/null || true
+fi
+
 echo "### 3) Kompletnost statiky (příklad: běžné dema — uprav dle potřeby)"
 # Kontrola všech salon*/vertikál přítomných ve stromu
 mapfile -t DIRS < <(find . -maxdepth 1 -type d \( -name 'salon*' -o -name 'zdravi-*' -o -name 'remesla-*' -o -name 'provoz-*' \) -printf '%f\n' | sort)

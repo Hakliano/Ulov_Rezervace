@@ -72,7 +72,11 @@ class RezervacniNastaveni(models.Model):
     smtp_port = models.PositiveIntegerField('SMTP port', default=465)
     smtp_use_ssl = models.BooleanField('SMTP SSL', default=True)
     smtp_user = models.EmailField('SMTP přihlášení', blank=True)
-    smtp_password = models.CharField('SMTP heslo', max_length=200, blank=True)
+    smtp_password = models.TextField(
+        'SMTP heslo',
+        blank=True,
+        help_text='Uloženo šifrovaně. API heslo nikdy nevrací.',
+    )
     imap_host = models.CharField('IMAP server', max_length=200, blank=True, default='imap.forpsi.com')
     imap_port = models.PositiveIntegerField('IMAP port', default=993)
     imap_use_ssl = models.BooleanField('IMAP SSL', default=True)
@@ -113,8 +117,20 @@ class RezervacniNastaveni(models.Model):
 
     def save(self, *args, **kwargs):
         from rezervace.notifikace_defaults import normalizuj_notifikace
+        from rezervace.services.smtp_secrets import encrypt_smtp_secret
+
         self.notifikace = normalizuj_notifikace(self.notifikace)
+        if self.smtp_password:
+            self.smtp_password = encrypt_smtp_secret(self.smtp_password)
         super().save(*args, **kwargs)
+
+    def smtp_password_plain(self):
+        from rezervace.services.smtp_secrets import SmtpDecryptError, decrypt_smtp_secret
+
+        try:
+            return decrypt_smtp_secret(self.smtp_password)
+        except SmtpDecryptError:
+            return ''
 
 
 class StatniSvatky(models.Model):

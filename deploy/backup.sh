@@ -26,6 +26,7 @@ docker compose exec -T db pg_dump -U "$DB_USER" "$DB_NAME" | gzip > "$BACKUP_DIR
 echo "### Záloha konfigurace ..."
 tar -czf "$BACKUP_DIR/config_${STAMP}.tar.gz" \
   .env \
+  .smtp_encryption_key.live \
   docker-compose.yml \
   deploy/nginx \
   deploy/certbot/conf 2>/dev/null || true

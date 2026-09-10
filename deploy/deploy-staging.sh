@@ -39,11 +39,32 @@ cp -a .env .env.staging
 sed -i 's/^DB_NAME=.*/DB_NAME=ulov_staging/' .env.staging || true
 grep -q '^DB_NAME=' .env.staging || echo 'DB_NAME=ulov_staging' >> .env.staging
 
-# Hosts / CORS
+# Hosts / CORS + SMTP key (sidecar, not the DB)
 python3 - <<'PY'
 from pathlib import Path
+import base64
+import os
+
 p = Path(".env.staging")
 text = p.read_text(encoding="utf-8")
+sidecar = Path(".smtp_encryption_key")
+
+def _env_val(blob, key):
+    prefix = f"{key}="
+    for line in blob.splitlines():
+        if line.startswith(prefix):
+            return line[len(prefix):].strip()
+    return ""
+
+smtp_key = _env_val(text, "SMTP_ENCRYPTION_KEY")
+if not smtp_key and sidecar.exists():
+    smtp_key = sidecar.read_text(encoding="utf-8").strip()
+if not smtp_key:
+    smtp_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
+if smtp_key:
+    sidecar.write_text(smtp_key + "\n", encoding="utf-8")
+    os.chmod(sidecar, 0o600)
+
 lines = []
 overrides = {
     "ALLOWED_HOSTS": "api-staging.ulovklienty.cz,staging.ulovklienty.cz,www.staging.ulovklienty.cz,localhost,127.0.0.1,ulov-staging-api,staging-api",
@@ -59,6 +80,7 @@ overrides = {
     "MATERIALNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/sklad",
     "MATERIALNIK_M2M_KEY": "staging-materialnik-m2m",
     "MATERIALNIK_STUB": "false",
+    "SMTP_ENCRYPTION_KEY": smtp_key,
 }
 # EMAIL_OVERRIDE_TO — zachovej pokud už je, jinak info@
 if "EMAIL_OVERRIDE_TO=" not in text:

@@ -33,6 +33,7 @@ class RezervaceAdmin(admin.ModelAdmin):
 @admin.register(RezervacniNastaveni)
 class RezervacniNastaveniAdmin(admin.ModelAdmin):
     list_display = ['salon', 'interval_minut', 'min_predstih_hodin']
+    exclude = ['smtp_password']
 
 
 class ZamestnanecRozvrhInline(admin.TabularInline):
