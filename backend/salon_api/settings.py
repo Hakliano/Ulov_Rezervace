@@ -56,8 +56,13 @@ _RUNNING_TESTS = 'test' in sys.argv or bool(os.environ.get('PYTEST_CURRENT_TEST'
 # Default je False (produkce). Pro lokální vývoj nastavte DEBUG=True v .env.
 DEBUG = _env_bool('DEBUG', False)
 
+_ALLOW_MISSING_SMTP_KEY = (
+    DEBUG
+    or _RUNNING_TESTS
+    or 'collectstatic' in sys.argv
+)
 if not SMTP_ENCRYPTION_KEY:
-    if DEBUG or _RUNNING_TESTS:
+    if _ALLOW_MISSING_SMTP_KEY:
         SMTP_ENCRYPTION_KEY = _SMTP_DEV_FERNET_KEY
     else:
         from django.core.exceptions import ImproperlyConfigured
