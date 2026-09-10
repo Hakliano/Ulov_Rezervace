@@ -1,6 +1,10 @@
-const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
-  ? 'http://localhost:8000/api'
-  : 'https://api.ulovklienty.cz/api';
+const API_BASE = (function () {
+  const h = window.location.hostname;
+  const local = window.location.protocol === 'file:'
+    || h === '127.0.0.1' || h === '::1' || h === '[::1]'
+    || (h && h.indexOf('.') === -1);
+  return local ? 'http://127.0.0.1:8000/api' : 'https://api.ulovklienty.cz/api';
+})();
 const TOKEN_KEY = 'flow_token';
 
 const STAV_LABEL = {
@@ -128,7 +132,7 @@ function showZalohaStornoBanner(data = {}) {
   const emailOk = data.email_odeslan === true;
   const emailLine = emailOk
     ? 'Zákazníkovi byl odeslán e-mail s žádostí, aby zavolal a domluvil vrácení nebo přesun zálohy.'
-    : 'E-mail se nepodařilo doručit (např. localhost bez SMTP) — zavolejte zákazníkovi sami.';
+    : 'E-mail se nepodařilo doručit (např. vývoj bez SMTP) — zavolejte zákazníkovi sami.';
   box.hidden = false;
   box.classList.remove('hidden');
   box.innerHTML = `

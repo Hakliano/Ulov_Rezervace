@@ -1,4 +1,10 @@
-const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
+const API_BASE = (function () {
+  const h = window.location.hostname;
+  const local = window.location.protocol === 'file:'
+    || h === '127.0.0.1' || h === '::1' || h === '[::1]'
+    || (h && h.indexOf('.') === -1);
+  return local ? 'http://127.0.0.1:8000/api' : 'https://api.ulovklienty.cz/api';
+})();
 const SALON_ID = 1;
 
 window.UlovOwnerFlowConfig = {
@@ -1062,8 +1068,7 @@ document.getElementById('btn-add-personel').addEventListener('click', () => {
 });
 
 function defaultRezervaceUrl() {
-  const port = SALON_ID === 1 ? 5500 : 5501;
-  return `http://localhost:${port}/rezervace.html`;
+  return `${location.origin}/rezervace.html`;
 }
 
 async function loadEmailSettings() {
@@ -1074,7 +1079,7 @@ async function loadEmailSettings() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Nelze načíst');
-    document.getElementById('smtp-host').value = data.smtp_host || 'smtp.forpsi.com';
+    document.getElementById('smtp-host').value = data.smtp_host || '';
     document.getElementById('smtp-port').value = data.smtp_port || 465;
     document.getElementById('smtp-ssl').checked = data.smtp_use_ssl !== false;
     document.getElementById('smtp-user').value = data.smtp_user || document.getElementById('edit-email').value || '';
@@ -1089,13 +1094,13 @@ async function loadEmailSettings() {
     const imapSsl = document.getElementById('imap-ssl');
     const imapStatus = document.getElementById('imap-status');
     if (imapEnabled) imapEnabled.checked = !!data.imap_enabled;
-    if (imapHost) imapHost.value = data.imap_host || 'imap.forpsi.com';
+    if (imapHost) imapHost.value = data.imap_host || '';
     if (imapPort) imapPort.value = data.imap_port || 993;
     if (imapSsl) imapSsl.checked = data.imap_use_ssl !== false;
     if (imapStatus) {
       imapStatus.textContent = data.imap_aktivni
         ? '✓ FLOW Mail aktivní — personál vidí schránku po přihlášení.'
-        : 'FLOW Mail vypnutý — zapněte IMAP a uložte (vyžaduje SMTP heslo).';
+        : 'FLOW Mail vypnutý — zapněte IMAP a uložte.';
       imapStatus.className = data.imap_aktivni ? 'admin-hint success' : 'admin-hint';
     }
     status.textContent = data.smtp_aktivni
@@ -1119,7 +1124,7 @@ async function saveEmailSettings() {
     smtp_user: document.getElementById('smtp-user').value.trim(),
     web_rezervace_url: document.getElementById('web-rezervace-url').value.trim(),
     imap_enabled: !!document.getElementById('imap-enabled')?.checked,
-    imap_host: document.getElementById('imap-host')?.value.trim() || 'imap.forpsi.com',
+    imap_host: document.getElementById('imap-host')?.value.trim() || '',
     imap_port: parseInt(document.getElementById('imap-port')?.value, 10) || 993,
     imap_use_ssl: document.getElementById('imap-ssl')?.checked !== false,
   };

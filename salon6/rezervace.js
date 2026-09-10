@@ -1,4 +1,10 @@
-const API_BASE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) ? 'http://localhost:8000/api' : 'https://api.ulovklienty.cz/api';
+const API_BASE = (function () {
+  const h = window.location.hostname;
+  const local = window.location.protocol === 'file:'
+    || h === '127.0.0.1' || h === '::1' || h === '[::1]'
+    || (h && h.indexOf('.') === -1);
+  return local ? 'http://127.0.0.1:8000/api' : 'https://api.ulovklienty.cz/api';
+})();
 const SALON_ID = 6;
 
 let info = null;
@@ -586,7 +592,7 @@ function closePlatbaQrModal() {
 function flowAppUrl() {
   const h = location.hostname;
   if (h.includes('staging')) return 'https://www.staging.ulovklienty.cz/flow/';
-  if (['localhost', '127.0.0.1', '::1'].includes(h)) {
+  if (h === '127.0.0.1' || h === '::1' || h === '[::1]' || (h && h.indexOf('.') === -1)) {
     return `${location.protocol}//${h}${location.port ? `:${location.port}` : ''}/flow/`;
   }
   return 'https://www.ulovklienty.cz/flow/';

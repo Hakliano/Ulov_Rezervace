@@ -40,7 +40,7 @@
   function flowAppUrl() {
     const h = location.hostname;
     if (h.includes('staging')) return 'https://www.staging.ulovklienty.cz/flow/';
-    if (['localhost', '127.0.0.1', '::1'].includes(h)) {
+    if (h === '127.0.0.1' || h === '::1' || h === '[::1]' || (h && h.indexOf('.') === -1)) {
       return `${location.protocol}//${h}${location.port ? `:${location.port}` : ''}/flow/`;
     }
     return 'https://www.ulovklienty.cz/flow/';
@@ -169,10 +169,7 @@
       panel.className = 'tab-panel';
       panel.dataset.panel = 'heslo';
       panel.innerHTML = `
-        <p class="admin-hint">
-          Změna sdíleného hesla Manager. Stejné heslo platí pro webovou administraci i pro FLOW.
-          Nejde o reset — reset hesla zaměstnanců bude jen ve FLOW.
-        </p>
+        <p class="admin-hint">Změna hesla majitele.</p>
         <form id="form-owner-password" class="login-form">
           <label for="owner-pwd-current">Současné heslo</label>
           <input type="password" id="owner-pwd-current" autocomplete="current-password" required>
@@ -180,9 +177,8 @@
           <input type="password" id="owner-pwd-new" autocomplete="new-password" required minlength="8">
           <label for="owner-pwd-new2">Nové heslo znovu</label>
           <input type="password" id="owner-pwd-new2" autocomplete="new-password" required minlength="8">
-          <p class="admin-hint">Min. 8 znaků, alespoň jedno písmeno a jedno číslo.</p>
           <div id="owner-pwd-msg" class="status-msg"></div>
-          <button type="submit" class="btn btn-primary btn-block">Změnit sdílené heslo</button>
+          <button type="submit" class="btn btn-primary btn-block">Změnit heslo</button>
         </form>
       `;
       edit.appendChild(panel);

@@ -1,5 +1,5 @@
 const host = location.hostname;
-const isLocal = host === 'localhost' || host === '127.0.0.1';
+const isLocal = host === '127.0.0.1' || host === '::1' || host === '[::1]' || (host && host.indexOf('.') === -1);
 const API_BASE = isLocal ? `http://${host}:8000/api` : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 10;
 
@@ -588,7 +588,7 @@ function closePlatbaQrModal() {
 function flowAppUrl() {
   const h = location.hostname;
   if (h.includes('staging')) return 'https://www.staging.ulovklienty.cz/flow/';
-  if (['localhost', '127.0.0.1', '::1'].includes(h)) {
+  if (h === '127.0.0.1' || h === '::1' || h === '[::1]' || (h && h.indexOf('.') === -1)) {
     return `${location.protocol}//${h}${location.port ? `:${location.port}` : ''}/flow/`;
   }
   return 'https://www.ulovklienty.cz/flow/';

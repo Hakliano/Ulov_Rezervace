@@ -17,7 +17,8 @@
 
   /** Lokální vývoj — aktivace bez e-mailu (backend jen při DEBUG). */
   function isLocalDev() {
-    return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    const h = window.location.hostname;
+    return h === '127.0.0.1' || h === '::1' || h === '[::1]' || (h && h.indexOf('.') === -1);
   }
 
   async function loadCustomerCards() {
