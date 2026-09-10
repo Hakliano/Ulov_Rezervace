@@ -1,5 +1,5 @@
 const host = location.hostname;
-const isLocal = host === 'localhost' || host === '127.0.0.1';
+const isLocal = host === '127.0.0.1' || host === '::1' || host === '[::1]' || (host && host.indexOf('.') === -1);
 const API_BASE = isLocal ? `http://${host}:8000/api` : 'https://api.ulovklienty.cz/api';
 const SALON_ID = 12;
 
@@ -1063,8 +1063,7 @@ document.getElementById('btn-add-personel').addEventListener('click', () => {
 });
 
 function defaultRezervaceUrl() {
-  const port = SALON_ID === 1 ? 5500 : 5501;
-  return `http://localhost:${port}/rezervace.html`;
+  return `${location.origin}/rezervace.html`;
 }
 
 async function loadEmailSettings() {
@@ -1075,7 +1074,7 @@ async function loadEmailSettings() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Nelze načíst');
-    document.getElementById('smtp-host').value = data.smtp_host || 'smtp.forpsi.com';
+    document.getElementById('smtp-host').value = data.smtp_host || '';
     document.getElementById('smtp-port').value = data.smtp_port || 465;
     document.getElementById('smtp-ssl').checked = data.smtp_use_ssl !== false;
     document.getElementById('smtp-user').value = data.smtp_user || document.getElementById('edit-email').value || '';
@@ -1105,7 +1104,7 @@ async function saveEmailSettings() {
     smtp_user: document.getElementById('smtp-user').value.trim(),
     web_rezervace_url: document.getElementById('web-rezervace-url').value.trim(),
     imap_enabled: !!document.getElementById('imap-enabled')?.checked,
-    imap_host: document.getElementById('imap-host')?.value.trim() || 'imap.forpsi.com',
+    imap_host: document.getElementById('imap-host')?.value.trim() || '',
     imap_port: parseInt(document.getElementById('imap-port')?.value, 10) || 993,
     imap_use_ssl: document.getElementById('imap-ssl')?.checked !== false,
   };

@@ -12,7 +12,7 @@
   const form = document.getElementById('contact-form');
   const msg = document.getElementById('form-msg');
   const host = location.hostname;
-  const isLocal = host === 'localhost' || host === '127.0.0.1';
+  const isLocal = host === '127.0.0.1' || host === '::1' || host === '[::1]' || (host && host.indexOf('.') === -1);
   const isStaging = host.includes('staging');
   const API_BASE = isLocal
     ? `http://${host}:8000/api`
