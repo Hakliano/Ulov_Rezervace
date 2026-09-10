@@ -1,6 +1,6 @@
 """Veřejný kontaktní formulář partnera — e-mail na salon.email přes SMTP salonu (Forpsi)."""
 
-from rezervace.services.emails import _odeslat_pro_salon, get_email_config
+from rezervace.services.emails import SmtpNotReady, _odeslat_pro_salon, get_email_config
 
 from .models import Salon
 
@@ -32,7 +32,10 @@ def odeslat_kontakt_salonu(salon_id, jmeno, email, telefon, zprava):
     predmet = f'Dotaz z webu — {salon.name}'
     headers = {'Reply-To': email}
 
-    ok = _odeslat_pro_salon(salon, prijemce, predmet, body, headers=headers)
+    try:
+        ok = _odeslat_pro_salon(salon, prijemce, predmet, body, headers=headers)
+    except SmtpNotReady as exc:
+        raise ValueError(str(exc)) from exc
     if not ok:
         raise ValueError('Odeslání se nepodařilo.')
     return prijemce

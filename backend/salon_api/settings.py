@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,12 +44,27 @@ SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-i-i@a&2$uh_sl&!hw41-cscn6a0%50i$0kh6&rzcd3@x269y%6',
 )
-# Volitelný klíč pro SMTP hesla v DB. Prázdné = odvození z SECRET_KEY.
+# Fernet klíč pro SMTP hesla v DB. Produkce (DEBUG=False) ho musí mít.
+# Vygenerovat: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# Žádný fallback na SECRET_KEY. Previous klíče jen pro rotaci (čárkou).
+_SMTP_DEV_FERNET_KEY = 'MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA='
 SMTP_ENCRYPTION_KEY = os.environ.get('SMTP_ENCRYPTION_KEY', '').strip()
+SMTP_ENCRYPTION_PREVIOUS_KEYS = _env_list('SMTP_ENCRYPTION_PREVIOUS_KEYS')
+_RUNNING_TESTS = 'test' in sys.argv or bool(os.environ.get('PYTEST_CURRENT_TEST'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default je False (produkce). Pro lokální vývoj nastavte DEBUG=True v .env.
 DEBUG = _env_bool('DEBUG', False)
+
+if not SMTP_ENCRYPTION_KEY:
+    if DEBUG or _RUNNING_TESTS:
+        SMTP_ENCRYPTION_KEY = _SMTP_DEV_FERNET_KEY
+    else:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured(
+            'SMTP_ENCRYPTION_KEY is required when DEBUG=False. '
+            'Generate a Fernet key and put it in .env — never in the database.'
+        )
 
 ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
@@ -408,6 +424,31 @@ LOGGING = {
 }
 
 
+def _sentry_scrub_smtp(event, hint):
+    """Nesmí uniknout SMTP heslo, ciphertext ani šifrovací klíč."""
+    blocked = ('smtp_password', 'smtp_encryption_key', 'enc:v1:')
+
+    def _scrub(value):
+        if isinstance(value, dict):
+            return {
+                k: (
+                    '[filtered]'
+                    if str(k).lower() in {'smtp_password', 'password', 'smtp_encryption_key'}
+                    else _scrub(v)
+                )
+                for k, v in value.items()
+            }
+        if isinstance(value, list):
+            return [_scrub(item) for item in value]
+        if isinstance(value, str):
+            lowered = value.lower()
+            if any(token in lowered for token in blocked):
+                return '[filtered]'
+        return value
+
+    return _scrub(event)
+
+
 # Sentry — aktivní jen když je nastaven SENTRY_DSN (jinak žádná režie).
 SENTRY_DSN = os.environ.get('SENTRY_DSN', '').strip()
 if SENTRY_DSN:
@@ -418,4 +459,5 @@ if SENTRY_DSN:
         environment=os.environ.get('SENTRY_ENVIRONMENT', 'production'),
         traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
         send_default_pii=False,
+        before_send=_sentry_scrub_smtp,
     )

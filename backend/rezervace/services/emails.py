@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 import string
@@ -6,6 +7,16 @@ from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.template.loader import render_to_string
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
+
+
+class SmtpNotReady(Exception):
+    """Vlastní SMTP nelze použít — žádný tichý fallback na Ulov."""
+
+    def __init__(self, code, message):
+        self.code = code
+        super().__init__(message)
 
 
 def generate_heslo(length=12):
@@ -23,64 +34,113 @@ def _salon_smtp_env(salon_id, key, fallback=''):
 
 
 def get_email_config(salon):
-    """SMTP a adresa Od: pro konkrétní salon – primárně z DB (administrace webu)."""
+    """SMTP a adresa Od: pro konkrétní salon – primárně z DB (administrace webu).
+
+    - Žádný smtp_user → stávající fallback na Ulov env SMTP.
+    - smtp_user je nastavený, ale heslo chybí / není enc:v1 → žádný fallback, smtp_ready=false.
+    - enc:v1: nejde dešifrovat → fail closed, žádný fallback.
+    """
+    from rezervace.services.smtp_secrets import (
+        SmtpDecryptError,
+        decrypt_smtp_secret,
+        is_encrypted_smtp_secret,
+    )
+
     try:
         nast = salon.rezervacni_nastaveni
     except Exception:
         nast = None
 
     from_name = salon.name or (nast.email_jmeno_odesilatele if nast else '')
-    # Kontaktní e-mail webu (může být jiný než SMTP schránka)
     kontakt_email = salon.email or (nast.email_odesilatel if nast else '')
 
-    smtp_password_plain = nast.smtp_password_plain() if nast else ''
-    if nast and nast.smtp_user and smtp_password_plain:
-        smtp_host = nast.smtp_host or 'smtp.forpsi.com'
-        smtp_port = nast.smtp_port or 465
-        smtp_user = nast.smtp_user
-        smtp_password = smtp_password_plain
-        use_ssl = nast.smtp_use_ssl
-        use_tls = not use_ssl
-        zdroj = 'admin'
-        # Forpsi / většina SMTP: From musí sedět na přihlášenou schránku
-        from_addr = smtp_user
-    else:
-        sid = salon.id
-        smtp_host = _salon_smtp_env(sid, 'SMTP_HOST') or settings.EMAIL_HOST
-        smtp_port = int(_salon_smtp_env(sid, 'SMTP_PORT') or settings.EMAIL_PORT)
-        smtp_user = _salon_smtp_env(sid, 'SMTP_USER') or settings.EMAIL_HOST_USER
-        smtp_password = _salon_smtp_env(sid, 'SMTP_PASSWORD') or settings.EMAIL_HOST_PASSWORD
-        ssl_env = _salon_smtp_env(sid, 'SMTP_USE_SSL')
-        if ssl_env:
-            use_ssl = ssl_env.lower() in ('1', 'true', 'yes')
-            use_tls = not use_ssl
-        elif smtp_port == 465:
-            use_ssl = True
-            use_tls = False
+    decrypt_error = False
+    password = ''
+    raw = (nast.smtp_password or '').strip() if nast else ''
+    if is_encrypted_smtp_secret(raw):
+        try:
+            password = decrypt_smtp_secret(raw)
+        except SmtpDecryptError:
+            decrypt_error = True
+            logger.error('SMTP decrypt failed for salon_id=%s', salon.id)
+    elif raw:
+        logger.error(
+            'SMTP password for salon_id=%s is not enc:v1 and was ignored',
+            salon.id,
+        )
+
+    own_user = bool(nast and (nast.smtp_user or '').strip())
+
+    def _pack(host, port, user, pwd, use_ssl, use_tls, zdroj, from_addr, ready):
+        if from_name and from_addr:
+            from_email = f'{from_name} <{from_addr}>'
         else:
-            use_ssl = settings.EMAIL_USE_SSL
-            use_tls = settings.EMAIL_USE_TLS and not use_ssl
-        zdroj = 'env' if smtp_user and smtp_password else 'none'
-        from_addr = smtp_user or kontakt_email
+            from_email = from_addr or settings.DEFAULT_FROM_EMAIL
+        return {
+            'from_email': from_email,
+            'from_addr': from_addr,
+            'from_name': from_name,
+            'host': host,
+            'port': port,
+            'user': user,
+            'password': pwd,
+            'use_tls': use_tls,
+            'use_ssl': use_ssl,
+            'smtp_ready': ready,
+            'zdroj': zdroj,
+        }
 
-    if from_name and from_addr:
-        from_email = f'{from_name} <{from_addr}>'
+    if decrypt_error:
+        host = (nast.smtp_host if nast else '') or 'smtp.forpsi.com'
+        port = (nast.smtp_port if nast else None) or 465
+        user = (nast.smtp_user if nast else '') or ''
+        use_ssl = bool(nast.smtp_use_ssl) if nast else True
+        return _pack(
+            host, port, user, '', use_ssl, not use_ssl,
+            'decrypt_error', user or kontakt_email, False,
+        )
+
+    if own_user and not password:
+        host = nast.smtp_host or 'smtp.forpsi.com'
+        port = nast.smtp_port or 465
+        user = nast.smtp_user
+        use_ssl = nast.smtp_use_ssl
+        return _pack(
+            host, port, user, '', use_ssl, not use_ssl,
+            'admin_incomplete', user, False,
+        )
+
+    if own_user and password:
+        host = nast.smtp_host or 'smtp.forpsi.com'
+        port = nast.smtp_port or 465
+        user = nast.smtp_user
+        use_ssl = nast.smtp_use_ssl
+        return _pack(
+            host, port, user, password, use_ssl, not use_ssl,
+            'admin', user, True,
+        )
+
+    sid = salon.id
+    smtp_host = _salon_smtp_env(sid, 'SMTP_HOST') or settings.EMAIL_HOST
+    smtp_port = int(_salon_smtp_env(sid, 'SMTP_PORT') or settings.EMAIL_PORT)
+    smtp_user = _salon_smtp_env(sid, 'SMTP_USER') or settings.EMAIL_HOST_USER
+    smtp_password = _salon_smtp_env(sid, 'SMTP_PASSWORD') or settings.EMAIL_HOST_PASSWORD
+    ssl_env = _salon_smtp_env(sid, 'SMTP_USE_SSL')
+    if ssl_env:
+        use_ssl = ssl_env.lower() in ('1', 'true', 'yes')
+        use_tls = not use_ssl
+    elif smtp_port == 465:
+        use_ssl = True
+        use_tls = False
     else:
-        from_email = from_addr or settings.DEFAULT_FROM_EMAIL
-
-    return {
-        'from_email': from_email,
-        'from_addr': from_addr,
-        'from_name': from_name,
-        'host': smtp_host,
-        'port': smtp_port,
-        'user': smtp_user,
-        'password': smtp_password,
-        'use_tls': use_tls,
-        'use_ssl': use_ssl,
-        'smtp_ready': bool(smtp_user and smtp_password),
-        'zdroj': zdroj,
-    }
+        use_ssl = settings.EMAIL_USE_SSL
+        use_tls = settings.EMAIL_USE_TLS and not use_ssl
+    zdroj = 'env' if smtp_user and smtp_password else 'none'
+    from_addr = smtp_user or kontakt_email
+    return _pack(
+        smtp_host, smtp_port, smtp_user, smtp_password, use_ssl, use_tls,
+        zdroj, from_addr, bool(smtp_user and smtp_password),
+    )
 
 
 def _odeslat_pro_salon(
@@ -106,6 +166,19 @@ def _odeslat_pro_salon(
 
     cfg = get_email_config(salon)
     extra_headers = headers or {}
+    zdroj = cfg.get('zdroj')
+    if zdroj == 'decrypt_error':
+        logger.error('Skipping send for salon_id=%s reason=decrypt_error', salon.id)
+        raise SmtpNotReady(
+            'decrypt_error',
+            'SMTP přihlášení nelze dešifrovat. Kontaktujte správce platformy.',
+        )
+    if zdroj == 'admin_incomplete':
+        logger.error('Skipping send for salon_id=%s reason=admin_incomplete', salon.id)
+        raise SmtpNotReady(
+            'admin_incomplete',
+            'Vlastní SMTP je nastavené, ale chybí heslo schránky.',
+        )
 
     # Lokální console backend: vždy vypiš mail do terminálu (i když má salon SMTP v DB).
     use_console = 'console' in (getattr(settings, 'EMAIL_BACKEND', '') or '').lower()

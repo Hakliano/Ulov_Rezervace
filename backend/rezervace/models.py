@@ -125,9 +125,12 @@ class RezervacniNastaveni(models.Model):
         super().save(*args, **kwargs)
 
     def smtp_password_plain(self):
-        from rezervace.services.smtp_secrets import decrypt_smtp_secret
+        from rezervace.services.smtp_secrets import SmtpDecryptError, decrypt_smtp_secret
 
-        return decrypt_smtp_secret(self.smtp_password)
+        try:
+            return decrypt_smtp_secret(self.smtp_password)
+        except SmtpDecryptError:
+            return ''
 
 
 class StatniSvatky(models.Model):

@@ -23,6 +23,18 @@ def _run(task, fn):
         raise
 
 
+@shared_task(bind=True, max_retries=3, name='rezervace.email_test')
+def task_email_test(self, salon_id, prijemce):
+    def _inner():
+        from salons.models import Salon
+        from rezervace.services.emails import email_test
+
+        salon = Salon.objects.get(pk=salon_id)
+        return email_test(salon, prijemce)
+
+    return _run(self, _inner)
+
+
 @shared_task(bind=True, max_retries=3, name='rezervace.email_vyzva_k_potvrzeni')
 def task_email_vyzva_k_potvrzeni(self, rezervace_id):
     def _inner():

@@ -63,6 +63,7 @@ from rezervace.services.emails import (
     email_vyzva_k_potvrzeni,
     generate_heslo,
     get_email_config,
+    SmtpNotReady,
     _potvrzeni_url,
     _storno_url,
 )
@@ -718,6 +719,7 @@ class AdminEmailNastaveniView(APIView):
         cfg = get_email_config(salon)
         data['email_odesilatel'] = cfg['from_email']
         data['smtp_aktivni'] = cfg['smtp_ready']
+        data['smtp_stav'] = cfg['zdroj']
         data['imap_aktivni'] = bool(
             nast.imap_enabled and cfg['smtp_ready'] and (nast.imap_host or '').strip()
         )
@@ -739,6 +741,7 @@ class AdminEmailNastaveniView(APIView):
         cfg = get_email_config(salon)
         data['email_odesilatel'] = cfg['from_email']
         data['smtp_aktivni'] = cfg['smtp_ready']
+        data['smtp_stav'] = cfg['zdroj']
         data['imap_aktivni'] = bool(
             nast.imap_enabled and cfg['smtp_ready'] and (nast.imap_host or '').strip()
         )
@@ -756,6 +759,8 @@ class AdminEmailTestView(APIView):
             return Response({'detail': 'Zadejte e-mail pro test.'}, status=400)
         try:
             email_test(salon, prijemce)
+        except SmtpNotReady as exc:
+            return Response({'detail': str(exc)}, status=400)
         except Exception as exc:
             return Response({'detail': f'Odeslání selhalo: {exc}'}, status=400)
         _audit(request, salon, 'email', f'odeslání testovacího e-mailu na {prijemce}')
