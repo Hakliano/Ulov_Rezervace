@@ -237,9 +237,9 @@ if envfp != stg:
 print("isolated yes")
 PY
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
-  python -c "from hashlib import sha256; from django.conf import settings; k=(settings.SMTP_ENCRYPTION_KEY or '').strip(); print('api_fp', sha256(k.encode()).hexdigest()[:12] if k else 'empty')"
+  python manage.py shell -c 'from hashlib import sha256; from django.conf import settings; k=(settings.SMTP_ENCRYPTION_KEY or "").strip(); print("api_fp", sha256(k.encode()).hexdigest()[:12] if k else "empty")'
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T worker \
-  python -c "from hashlib import sha256; from django.conf import settings; k=(settings.SMTP_ENCRYPTION_KEY or '').strip(); print('worker_fp', sha256(k.encode()).hexdigest()[:12] if k else 'empty')"
+  python manage.py shell -c 'from hashlib import sha256; from django.conf import settings; k=(settings.SMTP_ENCRYPTION_KEY or "").strip(); print("worker_fp", sha256(k.encode()).hexdigest()[:12] if k else "empty")'
 
 echo "=== STAGING hotovo ==="
 echo "Hub:  https://www.staging.ulovklienty.cz/"
