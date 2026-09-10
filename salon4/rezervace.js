@@ -3,7 +3,9 @@ const API_BASE = (function () {
   const local = window.location.protocol === 'file:'
     || h === '127.0.0.1' || h === '::1' || h === '[::1]'
     || (h && h.indexOf('.') === -1);
-  return local ? 'http://127.0.0.1:8000/api' : 'https://api.ulovklienty.cz/api';
+  if (!local) return 'https://api.ulovklienty.cz/api';
+  const apiHost = (h === '::1' || h === '[::1]') ? '127.0.0.1' : (h || '127.0.0.1');
+  return 'http://' + apiHost + ':8000/api';
 })();
 const SALON_ID = 4;
 
