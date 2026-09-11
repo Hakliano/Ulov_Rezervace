@@ -469,12 +469,12 @@ function renderSalon(data) {
 
   document.getElementById('novinky-list').innerHTML = data.novinky.map(n =>
     `<article class="news-card">
+      ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
       <div class="news-card-body">
         <time>${formatDate(n.datum)}</time>
         <h3>${esc(n.nadpis)}</h3>
         <p>${esc(n.text)}</p>
       </div>
-      ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
     </article>`
   ).join('');
 
