@@ -69,7 +69,9 @@ a:hover { color: var(--primary-dark); }
 .hero-bg img { display: none; }
 .hero.has-image {
   min-height: 0;
-  padding: 0;
+  padding: 0 0 2.5rem;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 .hero.has-image .blob { display: none; }
 .hero.has-image .hero-bg {
@@ -82,7 +84,8 @@ a:hover { color: var(--primary-dark); }
 }
 .hero.has-image .hero-bg img {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: auto;
   max-height: 85vh;
   object-fit: contain;
@@ -90,15 +93,13 @@ a:hover { color: var(--primary-dark); }
   margin: 0 auto;
 }
 .hero.has-image .hero-content {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   width: calc(100% - 2rem);
-  background: rgba(255, 248, 240, 0.92);
-  padding: 2rem 1.75rem;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  margin-top: 1.75rem;
+  padding: 0 0.5rem;
+}
+.hero.has-image h1 {
+  font-size: clamp(2.6rem, 8vw, 4.6rem);
 }
 .blob { position: absolute; border-radius: 62% 38% 55% 45% / 55% 45% 58% 42%; z-index: 0; }
 .blob-1 { width: 340px; height: 340px; background: var(--accent); opacity: 0.35; top: -80px; left: -80px; animation: float1 9s ease-in-out infinite; }
