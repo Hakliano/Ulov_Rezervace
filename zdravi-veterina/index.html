@@ -93,31 +93,37 @@
     </section>
 
     <section id="kontakt" class="section contact">
-      <div class="container contact-grid">
-        <div class="contact-info">
-          <div class="section-header">
-            <span class="section-label">Kontakt</span>
-            <h2>Kde nás najdete</h2>
+      <div class="container">
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="section-header">
+              <span class="section-label">Kontakt</span>
+              <h2>Kde nás najdete</h2>
+            </div>
+            <ul class="contact-list">
+              <li>
+                <span class="contact-icon">📍</span>
+                <div><strong>Adresa</strong><span id="salon-address"></span></div>
+              </li>
+              <li>
+                <span class="contact-icon">📞</span>
+                <div><strong>Telefon</strong><a id="salon-phone" href="#"></a></div>
+              </li>
+              <li>
+                <span class="contact-icon">✉️</span>
+                <div><strong>E-mail</strong><a id="salon-email" href="#"></a></div>
+              </li>
+            </ul>
           </div>
-          <ul class="contact-list">
-            <li>
-              <span class="contact-icon">📍</span>
-              <div><strong>Adresa</strong><span id="salon-address"></span></div>
-            </li>
-            <li>
-              <span class="contact-icon">📞</span>
-              <div><strong>Telefon</strong><a id="salon-phone" href="#"></a></div>
-            </li>
-            <li>
-              <span class="contact-icon">✉️</span>
-              <div><strong>E-mail</strong><a id="salon-email" href="#"></a></div>
-            </li>
-          </ul>
+          <div class="hours-card" id="oteviraci-doba">
+            <h3>Otevírací doba</h3>
+            <p class="hours-note">Vypočteno z pracovní doby personálu</p>
+            <table><tbody></tbody></table>
+          </div>
         </div>
-        <div class="hours-card" id="oteviraci-doba">
-          <h3>Otevírací doba</h3>
-          <p class="hours-note">Vypočteno z pracovní doby personálu</p>
-          <table><tbody></tbody></table>
+        <div class="map-wrap" id="map-wrap">
+          <p id="map-empty" class="map-empty">Mapa se objeví po vyplnění adresy v ⚙ → Základní.</p>
+          <iframe id="salon-map" class="hidden" title="Mapa ordinace" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
         </div>
       </div>
     </section>
