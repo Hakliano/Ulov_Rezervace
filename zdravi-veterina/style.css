@@ -116,27 +116,35 @@ a:hover { color: var(--primary-dark); }
 }
 .section-header h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 4vw, 2.7rem); color: var(--primary-dark); margin-top: 0.5rem; }
 
-/* Ceník — bento asymmetric grid */
+/* Ceník — rovnoměrná mřížka karet */
 .pricing { background: var(--surface); }
 .price-grid {
-  display: grid; gap: 1.25rem;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(140px, auto);
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: stretch;
 }
 .price-card {
-  background: var(--bg); padding: 1.75rem;
+  background: var(--bg);
+  padding: 1.6rem 1.4rem;
   border-radius: var(--radius);
-  display: flex; flex-direction: column; justify-content: flex-end; gap: 0.5rem;
-  transition: all 0.25s; border: 3px solid transparent;
-  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.85rem;
+  min-height: 220px;
+  border: 3px solid transparent;
+  box-shadow: var(--shadow);
+  transition: transform 0.25s, border-color 0.25s;
 }
-.price-card:nth-child(4n+1) { grid-column: span 3; background: linear-gradient(135deg, var(--accent), var(--bg)); }
-.price-card:nth-child(4n+2) { grid-column: span 1; grid-row: span 2; background: linear-gradient(160deg, var(--accent-2), var(--bg)); }
-.price-card:nth-child(4n+3) { grid-column: span 1; }
-.price-card:nth-child(4n+4) { grid-column: span 3; }
-.price-card:hover { border-color: var(--primary); transform: translateY(-4px) rotate(-0.5deg); }
-.price-name { font-weight: 700; font-size: 1.05rem; }
-.price-value { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; color: var(--primary-dark); }
+.price-card:nth-child(3n+1) { background: linear-gradient(180deg, #fff3e0, var(--bg)); }
+.price-card:nth-child(3n+2) { background: linear-gradient(180deg, #e7f5f1, var(--bg)); }
+.price-card:nth-child(3n+3) { background: linear-gradient(180deg, #fdecea, var(--bg)); }
+.price-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+.price-name { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+.price-value { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; color: var(--primary-dark); }
 
 /* Personál — playful circles */
 .team-section { background: var(--bg); }
@@ -319,6 +327,10 @@ a:hover { color: var(--primary-dark); }
 .status-msg.error { color: #c0392b; }
 .status-msg.success { color: #27ae60; }
 
+@media (max-width: 960px) {
+  .price-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ===== Mobile ===== */
 @media (max-width: 768px) {
   .nav-toggle { display: block; }
@@ -328,15 +340,13 @@ a:hover { color: var(--primary-dark); }
   }
   .nav-links.open { display: flex; }
   .price-grid { grid-template-columns: repeat(2, 1fr); }
-  .price-card, .price-card:nth-child(4n+1), .price-card:nth-child(4n+2), .price-card:nth-child(4n+3), .price-card:nth-child(4n+4) {
-    grid-column: span 1 !important; grid-row: span 1 !important;
-  }
   .gallery { column-count: 2; }
   .news-card, .news-card:nth-child(even) { flex-direction: column; max-width: 100%; align-self: stretch; text-align: center; }
   .news-card-media { width: 100%; height: 160px; }
 }
 @media (max-width: 480px) {
   .gallery { column-count: 1; }
+  .price-grid { grid-template-columns: 1fr; }
 }
 
 .creator-bar {
@@ -345,33 +355,31 @@ a:hover { color: var(--primary-dark); }
 }
 
 .price-card-has-image {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
+  justify-content: flex-start;
 }
 
 .price-media {
-  width: 144px;
-  min-width: 144px;
+  width: 88px;
+  min-width: 88px;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(58, 43, 37, 0.08);
 }
 
 .price-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .price-copy {
   display: flex;
-  flex: 1;
-  min-width: 0;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.75rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
 }
 
 .cenik-img-preview {
