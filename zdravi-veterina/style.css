@@ -63,11 +63,43 @@ a:hover { color: var(--primary-dark); }
 }
 .hero-bg {
   position: absolute; inset: 0; z-index: 0;
-  background-size: cover; background-position: center; opacity: 0;
+  opacity: 0;
   border-radius: 0 0 45% 45% / 0 0 12% 12%;
 }
-.hero-bg.has-image { opacity: 0.85; animation: slowZoom 20s ease infinite alternate; }
-@keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.06); } }
+.hero-bg img { display: none; }
+.hero.has-image {
+  min-height: 0;
+  padding: 0;
+}
+.hero.has-image .blob { display: none; }
+.hero.has-image .hero-bg {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  border-radius: 0;
+  width: 100%;
+  background: var(--bg);
+}
+.hero.has-image .hero-bg img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 85vh;
+  object-fit: contain;
+  object-position: center;
+  margin: 0 auto;
+}
+.hero.has-image .hero-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2rem);
+  background: rgba(255, 248, 240, 0.92);
+  padding: 2rem 1.75rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
 .blob { position: absolute; border-radius: 62% 38% 55% 45% / 55% 45% 58% 42%; z-index: 0; }
 .blob-1 { width: 340px; height: 340px; background: var(--accent); opacity: 0.35; top: -80px; left: -80px; animation: float1 9s ease-in-out infinite; }
 .blob-2 { width: 260px; height: 260px; background: var(--accent-2); opacity: 0.3; bottom: -60px; right: -40px; animation: float2 11s ease-in-out infinite; }
@@ -341,8 +373,8 @@ a:hover { color: var(--primary-dark); }
 .tab-panel.active { display: block; }
 .upload-box { margin-bottom: 1.5rem; }
 .upload-box h4 { font-size: 0.9rem; margin-bottom: 0.75rem; }
-.hero-preview { height: 120px; border-radius: 10px; overflow: hidden; background: var(--bg); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; }
-.hero-preview img { width: 100%; height: 100%; object-fit: cover; }
+.hero-preview { min-height: 120px; max-height: 220px; border-radius: 10px; overflow: hidden; background: var(--bg); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; }
+.hero-preview img { width: 100%; height: auto; max-height: 220px; object-fit: contain; }
 .btn-upload { cursor: pointer; display: inline-block; }
 .bunny-hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.75rem; }
 .gallery-edit { display: grid; gap: 0.75rem; margin-bottom: 0.75rem; }

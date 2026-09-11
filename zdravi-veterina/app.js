@@ -444,13 +444,19 @@ function renderSalon(data) {
   emailEl.textContent = data.email;
   emailEl.href = `mailto:${data.email}`;
 
+  const heroEl = document.getElementById('hero');
   const heroBg = document.getElementById('hero-bg');
+  const heroPhoto = document.getElementById('hero-photo');
   if (data.hero_image) {
-    heroBg.style.backgroundImage = `url('${data.hero_image}')`;
+    heroPhoto.src = data.hero_image;
+    heroPhoto.alt = data.name || '';
     heroBg.classList.add('has-image');
+    heroEl.classList.add('has-image');
   } else {
-    heroBg.style.backgroundImage = '';
+    heroPhoto.removeAttribute('src');
+    heroPhoto.alt = '';
     heroBg.classList.remove('has-image');
+    heroEl.classList.remove('has-image');
   }
 
   const gallery = document.getElementById('gallery');
