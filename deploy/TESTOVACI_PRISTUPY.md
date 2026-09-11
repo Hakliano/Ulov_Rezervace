@@ -60,8 +60,9 @@ RentGo (`info@rentgo.cz` / `majitelka123`) OK.
 | 15 | MotorBay | `provoz-autoservis/` | `info@motorbay.cz` | https://www.ulovklienty.cz/provoz-autoservis/ |
 | 16 | RentGo | `provoz-pujcovna/` | `info@rentgo.cz` | https://www.ulovklienty.cz/provoz-pujcovna/ |
 | 17 | Ateliér 42 | `provoz-studio/` | `majitel.salon17@ulov.local` | https://www.ulovklienty.cz/provoz-studio/ |
+| 20 | Veterina Hulínek | `zdravi-hulinek/` | `info@veterinahulinek.cz` | https://www.ulovklienty.cz/zdravi-hulinek/ |
 
-Staging: stejná cesta pod `https://www.staging.ulovklienty.cz/…` (např. `/zdravi-fyzio/`).
+Staging: stejná cesta pod `https://www.staging.ulovklienty.cz/…` (např. `/zdravi-fyzio/`). Hulínek je zatím určený na staging (`/zdravi-hulinek/`).
 
 ---
 

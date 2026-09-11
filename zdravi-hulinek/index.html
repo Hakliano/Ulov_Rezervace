@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veterina Hulínek — veterinární ordinace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../shared/creator-footer.css">
+</head>
+<body>
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" id="nav-logo">Veterina Hulínek</a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu">☰</button>
+      <div class="nav-links">
+        <a href="#o-nas">Ordinace</a>
+        <a href="#cenik">Služby</a>
+        <a href="#personel">Tým</a>
+        <a href="#galerie">Galerie</a>
+        <a href="#novinky">Aktuality</a>
+        <a href="#kontakt">Kontakt</a>
+        <a href="rezervace.html" class="nav-rezervace">Objednat se</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero" id="hero">
+    <div class="hero-copy">
+      <p class="hero-kicker">Veterinární ordinace</p>
+      <h1 id="salon-name">Veterina Hulínek</h1>
+      <p class="hero-desc" id="salon-desc">Kompletní péče o psy, kočky i drobné savce — od prevence po chirurgii.</p>
+      <div class="hero-actions">
+        <a href="rezervace.html" class="btn btn-primary">Objednat se</a>
+        <a href="#cenik" class="btn btn-ghost">Přehled služeb</a>
+      </div>
+    </div>
+    <div class="hero-visual" id="hero-bg">
+      <img id="hero-photo" alt="">
+    </div>
+  </header>
+
+  <section id="o-nas" class="intro">
+    <div class="container intro-grid">
+      <div class="intro-label">
+        <span class="section-label">Úvod</span>
+        <h2>Ordinace, kde má vyšetření i operace jasný řád</h2>
+      </div>
+      <div class="intro-copy">
+        <p class="intro-lead">Veterina Hulínek je praktická ordinace pro psy, kočky i drobné savce. Od preventivní prohlídky přes laboratoř a rentgen až po chirurgii — vše pod jednou střechou, bez zbytečné okázalosti.</p>
+        <p class="about-text" id="about-text"></p>
+        <ul class="intro-points">
+          <li>Vlastní laboratoř IDEXX a digitální RTG</li>
+          <li>Chirurgické zákroky včetně ortopedie a stomatologie</li>
+          <li>Cestovní doklady, čipy a konzultace k výživě</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Načítám ordinaci…</p>
+  </div>
+
+  <main id="content" class="hidden">
+    <div id="site-banner" class="site-banner hidden" role="status"></div>
+    <section id="cenik" class="section services">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">Služby</span>
+          <h2>Co u nás řešíme</h2>
+          <p class="section-note">Ceny sdělíme při objednání nebo po telefonu. Na webu je neuvádíme.</p>
+        </div>
+        <div class="svc-groups" id="cenik-list"></div>
+      </div>
+    </section>
+
+    <section id="personel" class="section team-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">Tým</span>
+          <h2>Lékaři a sestřičky</h2>
+        </div>
+        <div class="team-grid" id="personel-list"></div>
+      </div>
+    </section>
+
+    <section id="galerie" class="section gallery-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">Galerie</span>
+          <h2>Prostory ordinace</h2>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </div>
+    </section>
+
+    <section id="novinky" class="section news">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label">Aktuality</span>
+          <h2>Co je nového</h2>
+        </div>
+        <div class="news-list" id="novinky-list"></div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="section contact">
+      <div class="container">
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="section-header">
+              <span class="section-label">Kontakt</span>
+              <h2>Jak se k nám dostanete</h2>
+            </div>
+            <ul class="contact-list">
+              <li>
+                <span class="contact-icon">📍</span>
+                <div><strong>Adresa</strong><span id="salon-address"></span></div>
+              </li>
+              <li>
+                <span class="contact-icon">📞</span>
+                <div><strong>Telefon</strong><a id="salon-phone" href="#"></a></div>
+              </li>
+              <li>
+                <span class="contact-icon">✉️</span>
+                <div><strong>E-mail</strong><a id="salon-email" href="#"></a></div>
+              </li>
+            </ul>
+          </div>
+          <div class="hours-card" id="oteviraci-doba">
+            <h3>Ordinační hodiny</h3>
+            <p class="hours-note">Podle pracovní doby týmu</p>
+            <table><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="map-wrap" id="map-wrap">
+          <p id="map-empty" class="map-empty">Mapa se objeví po vyplnění adresy v ⚙ → Základní.</p>
+          <iframe id="salon-map" class="hidden" title="Mapa ordinace" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p id="footer-name">Veterina Hulínek</p>
+      <p class="footer-copy">© 2026 · Veterinární ordinace</p>
+    </div>
+  </footer>
+
+  <aside class="creator-bar" aria-label="Informace o tvůrci webu">
+    <div class="creator-bar-inner">
+      <p class="creator-bar-copy">© 2026 <a href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">ULOV KLIENTY</a></p>
+      <div class="creator-bar-credits">
+        <span>Vytvořeno Jiřím Haklem</span>
+        <span class="creator-bar-sep" aria-hidden="true">•</span>
+        <a class="creator-brand" href="https://www.ulovklienty.cz" target="_blank" rel="noopener noreferrer">
+          <span class="creator-brand-url">www.ulovklienty.cz</span>
+          <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="ULOV KLIENTY" width="88" height="88" loading="lazy" decoding="async">
+        </a>
+        <span class="creator-bar-sep" aria-hidden="true">•</span>
+        <a class="creator-brand" href="https://www.ulovsalon.cz" target="_blank" rel="noopener noreferrer">
+          <span class="creator-brand-url">www.ulovsalon.cz</span>
+          <img src="https://ulovsalon-images.b-cdn.net/images/ulov_salon-1759830649.webp" alt="ULOV SALON" width="88" height="88" loading="lazy" decoding="async">
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <button id="admin-toggle" class="admin-fab" type="button" title="Administrace">⚙</button>
+
+  <div id="admin-panel" class="admin-panel">
+    <div class="admin-drawer">
+      <div class="admin-header">
+        <h2>Administrace</h2>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <button type="button" id="btn-web-logout" class="btn btn-secondary btn-sm hidden">Odhlásit</button>
+          <button type="button" id="btn-cancel" class="btn-icon">✕</button>
+        </div>
+      </div>
+
+      <div id="login-section" class="admin-body">
+        <form id="login-form" class="login-form">
+          <p class="admin-hint">Přihlášení majitelky pro úpravu obsahu webu.</p>
+          <label for="staff-login">Přihlašovací jméno</label>
+          <input type="text" id="staff-login" autocomplete="username" required>
+          <label for="staff-password">Heslo</label>
+          <input type="password" id="staff-password" autocomplete="current-password" required>
+          <div id="login-status-msg" class="status-msg"></div>
+          <button type="submit" class="btn btn-primary btn-block">Přihlásit</button>
+        </form>
+      </div>
+
+      <div id="edit-section" class="admin-body hidden">
+        <div class="admin-tabs">
+          <button type="button" class="tab active" data-tab="zaklad">Základní</button>
+          <button type="button" class="tab" data-tab="obrazky">Obrázky</button>
+          <button type="button" class="tab" data-tab="vizual">Vizuál</button>
+          <button type="button" class="tab" data-tab="banner">Banner</button>
+          <button type="button" class="tab" data-tab="personel">Personál</button>
+          <button type="button" class="tab" data-tab="cenik">Ceník</button>
+          <button type="button" class="tab" data-tab="novinky">Novinky</button>
+          <button type="button" class="tab" data-tab="email">E-mail</button>
+          <button type="button" class="tab" data-tab="heslo">Heslo</button>
+        </div>
+
+        <div class="tab-panel active" data-panel="zaklad">
+          <label for="edit-name">Název</label>
+          <input type="text" id="edit-name">
+          <label for="edit-desc">Popis</label>
+          <textarea id="edit-desc" rows="3"></textarea>
+          <label for="edit-address">Adresa</label>
+          <input type="text" id="edit-address">
+          <label for="edit-phone">Telefon</label>
+          <input type="text" id="edit-phone">
+          <label for="edit-email">E-mail (kontakt na webu)</label>
+          <input type="email" id="edit-email">
+        </div>
+
+        <div class="tab-panel" data-panel="email">
+          <p class="admin-hint">Nastavení odesílání potvrzení rezervací. Údaje najdete u poskytovatele e-mailu.</p>
+          <p id="email-status" class="admin-hint"></p>
+          <label for="smtp-host">SMTP server</label>
+          <input type="text" id="smtp-host" placeholder="SMTP server">
+          <label for="smtp-port">Port</label>
+          <input type="number" id="smtp-port" placeholder="465">
+          <label class="checkbox"><input type="checkbox" id="smtp-ssl" checked> Použít SSL (port 465)</label>
+          <label for="smtp-user">Přihlášení (e-mail)</label>
+          <input type="email" id="smtp-user" placeholder="info@vase-domena.cz">
+          <label for="smtp-password">Heslo ke schránce</label>
+          <input type="password" id="smtp-password" placeholder="Nechte prázdné = beze změny">
+          <label for="web-rezervace-url">URL stránky rezervací (odkazy v e-mailech)</label>
+          <input type="url" id="web-rezervace-url" placeholder="https://vase-domena.cz/rezervace.html">
+          
+          <hr class="admin-sep">
+          <h4 class="admin-sub">FLOW Mail (IMAP)</h4>
+          <p class="admin-hint">Personál ve FLOW uvidí schránku (číst / odpovědět / nový).</p>
+          <label class="checkbox"><input type="checkbox" id="imap-enabled"> Zapnout schránku ve FLOW</label>
+          <label for="imap-host">IMAP server</label>
+          <input type="text" id="imap-host" placeholder="IMAP server">
+          <label for="imap-port">IMAP port</label>
+          <input type="number" id="imap-port" placeholder="993">
+          <label class="checkbox"><input type="checkbox" id="imap-ssl" checked> IMAP SSL (port 993)</label>
+          <p id="imap-status" class="admin-hint"></p>
+
+<p id="email-save-msg" class="status-msg"></p>
+          <button type="button" id="btn-save-email" class="btn btn-primary btn-block">Uložit e-mail nastavení</button>
+          <button type="button" id="btn-test-email" class="btn btn-secondary btn-block">Odeslat testovací e-mail</button>
+        </div>
+
+        <div class="tab-panel" data-panel="obrazky">
+          <div class="upload-box">
+            <h4>Úvodní fotka (hero)</h4>
+            <div class="hero-preview" id="hero-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát hero fotku
+              <input type="file" id="upload-hero" accept="image/*" hidden>
+            </label>
+          </div>
+          <div class="upload-box">
+            <h4>Galerie</h4>
+            <div id="gallery-edit" class="gallery-edit"></div>
+            <label class="btn btn-secondary btn-upload">
+              + Přidat do galerie
+              <input type="file" id="upload-gallery" accept="image/*" hidden>
+            </label>
+            <p class="bunny-hint" id="bunny-hint"></p>
+          </div>
+        </div>
+
+
+        <div class="tab-panel" data-panel="vizual">
+          <p class="admin-hint">Logo a favicon pro web salonu.</p>
+          <div class="upload-box">
+            <h4>Logo</h4>
+            <div class="hero-preview" id="logo-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát logo
+              <input type="file" id="upload-logo" accept="image/*" hidden>
+            </label>
+            <button type="button" id="btn-clear-logo" class="btn btn-secondary btn-sm">Odebrat logo</button>
+          </div>
+          <div class="upload-box">
+            <h4>Favicon</h4>
+            <div class="hero-preview" id="favicon-preview"></div>
+            <label class="btn btn-secondary btn-upload">
+              Nahrát favicon
+              <input type="file" id="upload-favicon" accept="image/*" hidden>
+            </label>
+            <button type="button" id="btn-clear-favicon" class="btn btn-secondary btn-sm">Odebrat favicon</button>
+          </div>
+</div>
+
+        <div class="tab-panel" data-panel="banner">
+          <p class="admin-hint">Krátká zpráva pro personál ve FLOW (po přihlášení). Na veřejném webu se nezobrazuje. Prázdné datum = bez omezení.</p>
+          <label class="checkbox">
+            <input type="checkbox" id="edit-banner-enabled"> Banner zapnutý
+          </label>
+          <label for="edit-banner-text">Text</label>
+          <input type="text" id="edit-banner-text" maxlength="300" placeholder="Např. Letní dovolená 1.–15. 8. — objednávky od 16. 8.">
+          <label for="edit-banner-od">Zobrazit od</label>
+          <input type="date" id="edit-banner-od">
+          <label for="edit-banner-do">Zobrazit do</label>
+          <input type="date" id="edit-banner-do">
+        </div>
+        <div class="tab-panel" data-panel="personel">
+          <p class="admin-hint">Jméno, popis a pracovní doba se zobrazí na webu v sekci Personál. Fotku nahrajte tlačítkem níže.</p>
+          <div id="personel-edit"></div>
+          <button type="button" id="btn-add-personel" class="btn btn-secondary btn-sm">+ Přidat člena týmu</button>
+        </div>
+
+        <div class="tab-panel" data-panel="cenik">
+          <p class="admin-hint">Cenu můžete vyplnit pro interní přehled. Na webu a v rezervaci se zákazníkům nevypisuje.</p>
+          <div id="cenik-edit"></div>
+          <button type="button" id="btn-add-cenik" class="btn btn-secondary btn-sm">+ Položka</button>
+        </div>
+
+        <div class="tab-panel" data-panel="novinky">
+          <div id="novinky-edit"></div>
+          <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
+        </div>
+
+
+        <div class="admin-footer">
+          <button type="button" id="btn-save" class="btn btn-primary btn-block">Uložit textová data</button>
+          <div id="status-msg" class="status-msg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden">
+    <button class="lightbox-close" type="button">✕</button>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <script src="service-groups.js"></script>
+  <script src="../shared/owner-flow-admin.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

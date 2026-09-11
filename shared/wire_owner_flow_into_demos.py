@@ -22,6 +22,7 @@ DEMOS = [
     "zdravi-dental",
     "zdravi-fyzio",
     "zdravi-veterina",
+    "zdravi-hulinek",
     "remesla-elektrikar",
     "remesla-instalater",
     "remesla-rekonstrukce",
