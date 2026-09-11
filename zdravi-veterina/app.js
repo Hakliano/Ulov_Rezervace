@@ -421,6 +421,21 @@ function renderSalon(data) {
   document.getElementById('about-text').textContent = data.description;
   document.getElementById('salon-address').textContent = data.address;
 
+  const mapEl = document.getElementById('salon-map');
+  const mapEmpty = document.getElementById('map-empty');
+  if (mapEl) {
+    const address = (data.address || '').trim();
+    if (address) {
+      mapEl.src = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed&hl=cs`;
+      mapEl.classList.remove('hidden');
+      mapEmpty?.classList.add('hidden');
+    } else {
+      mapEl.removeAttribute('src');
+      mapEl.classList.add('hidden');
+      mapEmpty?.classList.remove('hidden');
+    }
+  }
+
   const phoneEl = document.getElementById('salon-phone');
   phoneEl.textContent = data.phone;
   phoneEl.href = `tel:${data.phone.replace(/\s/g, '')}`;
