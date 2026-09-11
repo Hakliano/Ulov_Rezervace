@@ -69,37 +69,29 @@ a:hover { color: var(--primary-dark); }
 .hero-bg img { display: none; }
 .hero.has-image {
   min-height: 0;
-  padding: 0 0 2.5rem;
-  flex-direction: column;
-  justify-content: flex-start;
+  padding: 0;
 }
 .hero.has-image .blob { display: none; }
 .hero.has-image .hero-bg {
   position: relative;
   inset: auto;
-  opacity: 1;
+  opacity: 0.85;
   border-radius: 0;
   width: 100%;
-  background: var(--bg);
 }
 .hero.has-image .hero-bg img {
   display: block;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
   height: auto;
-  max-height: 85vh;
   object-fit: contain;
   object-position: center;
-  margin: 0 auto;
 }
 .hero.has-image .hero-content {
-  position: relative;
-  width: calc(100% - 2rem);
-  margin-top: 1.75rem;
-  padding: 0 0.5rem;
-}
-.hero.has-image h1 {
-  font-size: clamp(2.6rem, 8vw, 4.6rem);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 3rem);
 }
 .blob { position: absolute; border-radius: 62% 38% 55% 45% / 55% 45% 58% 42%; z-index: 0; }
 .blob-1 { width: 340px; height: 340px; background: var(--accent); opacity: 0.35; top: -80px; left: -80px; animation: float1 9s ease-in-out infinite; }
