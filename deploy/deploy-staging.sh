@@ -200,6 +200,8 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
   python manage.py seed_vertical_demos 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py fix_pg_sequences 2>/dev/null || true
+# Archivník seed: jen založí demo, pokud kartotéka ještě neexistuje. Nikdy --reset
+# (to by smazalo nahrané fotografie, dokumenty i zápisy).
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_archivnik_only 2>/dev/null || true
 

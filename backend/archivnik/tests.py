@@ -301,6 +301,65 @@ class SeedArchivnikOnlyTests(TestCase):
             Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n__gte=2).exists()
         )
 
+    def test_seed_bez_reset_nesmaze_uzivatelsky_asset(self):
+        from django.core.management import call_command
+
+        from archivnik.management.commands.seed_archivnik_only import OWNER_EMAIL
+
+        call_command('seed_archivnik_only')
+        salon = Zamestnanec.objects.get(
+            prihlasovaci_jmeno__iexact=OWNER_EMAIL,
+            role=Zamestnanec.ROLE_MAJITEL,
+        ).salon
+        maxp = Object.objects.get(salon=salon, nazev='Max')
+        user_asset = Asset.objects.create(
+            salon=salon,
+            zakaznik=maxp.zakaznik,
+            objekt=maxp,
+            druh='fotografie',
+            nazev='user-labrador.webp',
+            content_type='image/webp',
+            velikost=96028,
+            storage_key=f'archivnik/test/{maxp.uuid}.webp',
+        )
+        Object.objects.filter(pk=maxp.pk).update(cover=user_asset)
+        before = Asset.objects.filter(salon=salon).count()
+
+        call_command('seed_archivnik_only')
+
+        self.assertTrue(Asset.objects.filter(pk=user_asset.pk).exists())
+        self.assertEqual(Asset.objects.filter(salon=salon).count(), before)
+        maxp.refresh_from_db()
+        self.assertEqual(maxp.cover_id, user_asset.id)
+
+    def test_seed_reset_obnovi_demo_kartoteku(self):
+        from django.core.management import call_command
+
+        from archivnik.management.commands.seed_archivnik_only import OWNER_EMAIL
+
+        call_command('seed_archivnik_only')
+        salon = Zamestnanec.objects.get(
+            prihlasovaci_jmeno__iexact=OWNER_EMAIL,
+            role=Zamestnanec.ROLE_MAJITEL,
+        ).salon
+        maxp = Object.objects.get(salon=salon, nazev='Max')
+        Asset.objects.create(
+            salon=salon,
+            zakaznik=maxp.zakaznik,
+            objekt=maxp,
+            druh='fotografie',
+            nazev='user-labrador.webp',
+            content_type='image/webp',
+            velikost=96028,
+            storage_key=f'archivnik/test/{maxp.uuid}-reset.webp',
+        )
+
+        call_command('seed_archivnik_only', reset=True)
+
+        self.assertFalse(Asset.objects.filter(salon=salon, nazev='user-labrador.webp').exists())
+        self.assertTrue(Object.objects.filter(salon=salon, nazev='Max').exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, nazev='Max-profil.png').exists())
+
 
 def _png_file(name='foto.png', color=(20, 80, 60)):
     buf = BytesIO()

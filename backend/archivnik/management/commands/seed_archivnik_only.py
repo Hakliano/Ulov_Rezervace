@@ -29,7 +29,20 @@ class Actor:
 
 
 class Command(BaseCommand):
-    help = 'Idempotentní Archivník-only provozovna bez FLOW + veterinární demo kartotéka.'
+    help = (
+        'Archivník-only provozovna bez FLOW + veterinární demo kartotéka. '
+        'Bez --reset nikdy nemaže zákazníky, objekty, zápisy, připomínky ani Assety.'
+    )
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--reset',
+            action='store_true',
+            help=(
+                'Smaže kartotéku této demo provozovny a nasadí ji znovu. '
+                'Nespouštět z běžného deploye — smaže i nahrané fotografie a dokumenty.'
+            ),
+        )
 
     def handle(self, *args, **options):
         actor = Actor()
@@ -70,12 +83,14 @@ class Command(BaseCommand):
 
         FlowUser.objects.filter(salon=salon).update(aktivni=False)
         nastav_modul(salon, MODUL_ARCHIVNIK, True, actor)
-        counts = _seed_kartoteka(salon, owner)
+        counts = _seed_kartoteka(salon, owner, reset=options['reset'])
         flow_count = FlowUser.objects.filter(salon=salon, aktivni=True).count()
+        skip = ' skip_wipe=1' if counts.get('skip_wipe') else ''
         self.stdout.write(
             f'salon_id={salon.id} email={OWNER_EMAIL} flow_active={flow_count} '
             f'modul=archivnik zakaznici={counts["zakaznici"]} objekty={counts["objekty"]} '
             f'zapisy={counts["zapisy"]} pripominky={counts["pripominky"]} stitky={counts["stitky"]}'
+            f'{skip}'
         )
 
 
@@ -207,7 +222,23 @@ def _reminder(salon, owner, zakaznik, text, days, objekt=None):
     )
 
 
-def _seed_kartoteka(salon, owner):
+def _kartoteka_counts(salon):
+    return {
+        'zakaznici': Customer.objects.filter(salon=salon).count(),
+        'objekty': Object.objects.filter(salon=salon).count(),
+        'zapisy': Entry.objects.filter(salon=salon).count(),
+        'pripominky': Reminder.objects.filter(salon=salon).count(),
+        'stitky': Tag.objects.filter(salon=salon).count(),
+        'soubory': Asset.objects.filter(salon=salon).count(),
+    }
+
+
+def _seed_kartoteka(salon, owner, reset=False):
+    if Customer.objects.filter(salon=salon).exists() and not reset:
+        counts = _kartoteka_counts(salon)
+        counts['skip_wipe'] = True
+        return counts
+
     Asset.objects.filter(salon=salon).delete()
     CustomFieldValue.objects.filter(objekt__salon=salon).delete()
     CustomFieldDef.objects.filter(salon=salon).delete()
@@ -390,11 +421,6 @@ def _seed_kartoteka(salon, owner):
     Object.objects.filter(pk=micka.pk).update(cover=micka_foto)
     Object.objects.filter(pk=felix.pk).update(cover=felix_foto)
 
-    return {
-        'zakaznici': Customer.objects.filter(salon=salon).count(),
-        'objekty': Object.objects.filter(salon=salon).count(),
-        'zapisy': Entry.objects.filter(salon=salon).count(),
-        'pripominky': Reminder.objects.filter(salon=salon).count(),
-        'stitky': Tag.objects.filter(salon=salon).count(),
-        'soubory': Asset.objects.filter(salon=salon).count(),
-    }
+    counts = _kartoteka_counts(salon)
+    counts['skip_wipe'] = False
+    return counts
