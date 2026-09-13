@@ -28,6 +28,11 @@ urlpatterns = [
         views_evidence.ObjectFieldValuesView.as_view(),
         name='archivnik-object-fields',
     ),
+    path(
+        'objects/<uuid:object_uuid>/cover/',
+        views_evidence.ObjectCoverView.as_view(),
+        name='archivnik-object-cover',
+    ),
     path('entries/', views.EntryListCreateView.as_view(), name='archivnik-entries'),
     path('tags/', views.TagListCreateView.as_view(), name='archivnik-tags'),
     path('reminders/', views.ReminderListCreateView.as_view(), name='archivnik-reminders'),
@@ -41,5 +46,10 @@ urlpatterns = [
         'assets/<uuid:asset_uuid>/content/',
         views_evidence.AssetContentView.as_view(),
         name='archivnik-asset-content',
+    ),
+    path(
+        'assets/<uuid:asset_uuid>/',
+        views_evidence.AssetDetailView.as_view(),
+        name='archivnik-asset-detail',
     ),
 ]

@@ -25,9 +25,23 @@ from archivnik.serializers import (
     AssetSerializer,
     CustomFieldDefSerializer,
     CustomFieldDefWriteSerializer,
+    ObjectSerializer,
 )
-from archivnik.storage import BunnyUploadError, get_bytes, guess_kind, store_file
+from archivnik.storage import BunnyUploadError, delete_bytes, get_bytes, guess_kind, store_file
 from archivnik.views import _actor, _salon, _validation_detail
+
+
+def _set_cover(obj, asset=None, exclude_id=None):
+    if asset and asset.druh == AssetKind.FOTOGRAFIE and asset.objekt_id == obj.id:
+        Object.objects.filter(pk=obj.id).update(cover=asset)
+        return
+    nxt = (
+        Asset.objects.filter(objekt=obj, druh=AssetKind.FOTOGRAFIE)
+        .exclude(pk=exclude_id or 0)
+        .order_by('-vytvoreno')
+        .first()
+    )
+    Object.objects.filter(pk=obj.id).update(cover=nxt)
 
 
 class FieldListCreateView(APIView):
@@ -189,6 +203,8 @@ class AssetListCreateView(APIView):
             asset.save()
         except Exception as exc:
             return Response({'detail': _validation_detail(exc)}, status=400)
+        if druh == AssetKind.FOTOGRAFIE and objekt and not objekt.cover_id:
+            _set_cover(objekt, asset)
         return Response(AssetSerializer(asset, context={'request': request}).data, status=201)
 
 
@@ -210,3 +226,40 @@ class AssetContentView(APIView):
         resp['Content-Disposition'] = f'{disp}; filename="{asset.nazev}"'
         resp['Cache-Control'] = 'private, max-age=300'
         return resp
+
+
+class AssetDetailView(APIView):
+    authentication_classes = []
+    permission_classes = [ArchivnikPermission]
+
+    def delete(self, request, asset_uuid):
+        asset = Asset.objects.filter(salon=_salon(request), uuid=asset_uuid).select_related('objekt', 'zapis').first()
+        if not asset:
+            return Response({'detail': 'Soubor nenalezen.'}, status=404)
+        objekt = asset.objekt
+        was_cover = bool(objekt and objekt.cover_id == asset.id)
+        key = asset.storage_key
+        asset_id = asset.id
+        asset.delete()
+        delete_bytes(key)
+        if objekt and was_cover:
+            _set_cover(objekt, exclude_id=asset_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ObjectCoverView(APIView):
+    authentication_classes = []
+    permission_classes = [ArchivnikPermission]
+
+    def post(self, request, object_uuid):
+        obj = Object.objects.filter(salon=_salon(request), uuid=object_uuid).first()
+        if not obj:
+            return Response({'detail': 'Objekt nenalezen.'}, status=404)
+        asset = Asset.objects.filter(
+            salon=obj.salon, uuid=request.data.get('asset_uuid'), objekt=obj, druh=AssetKind.FOTOGRAFIE,
+        ).first()
+        if not asset:
+            return Response({'detail': 'Vyberte fotografii tohoto objektu.'}, status=400)
+        _set_cover(obj, asset)
+        obj = Object.objects.select_related('typ', 'zakaznik', 'cover').filter(pk=obj.pk).first()
+        return Response(ObjectSerializer(obj, context={'request': request}).data)

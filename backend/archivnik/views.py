@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import Count, Max, Q, Subquery, OuterRef
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -15,7 +15,7 @@ from archivnik.auth import (
     get_actor_from_request,
     get_session_from_request,
 )
-from archivnik.models import Asset, Customer, Entry, Object, ObjectType, Reminder, ReminderStav, Stav, Tag
+from archivnik.models import Customer, Entry, Object, ObjectType, Reminder, ReminderStav, Stav, Tag
 from archivnik.permissions import ArchivnikPermission
 from archivnik.serializers import (
     CustomerListSerializer,
@@ -46,14 +46,9 @@ def _validation_detail(exc):
 
 
 def _objects_qs(salon):
-    cover = Subquery(
-        Asset.objects.filter(objekt_id=OuterRef('pk'), druh='fotografie')
-        .order_by('-vytvoreno')
-        .values('uuid')[:1]
-    )
     return (
         Object.objects.filter(salon=salon)
-        .select_related('typ', 'zakaznik')
+        .select_related('typ', 'zakaznik', 'cover')
         .prefetch_related('tagy')
         .annotate(
             zapisy_pocet=Count('zapisy', distinct=True),
@@ -63,7 +58,6 @@ def _objects_qs(salon):
                 filter=Q(pripominky__stav=ReminderStav.AKTIVNI),
                 distinct=True,
             ),
-            cover_uuid=cover,
         )
     )
 

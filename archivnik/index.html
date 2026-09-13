@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=p1ev">
+  <link rel="stylesheet" href="style.css?v=p1ev3">
 </head>
 <body>
   <div id="login-screen" class="login-wrap">
@@ -89,8 +89,14 @@
     <img id="lightbox-img" alt="">
     <button type="button" class="lightbox-nav" id="lightbox-next" aria-label="Další">›</button>
     <button type="button" class="btn-ghost lightbox-close" id="lightbox-close">Zavřít</button>
-    <p id="lightbox-caption" class="lightbox-caption"></p>
+    <div class="lightbox-bar">
+      <p id="lightbox-caption" class="lightbox-caption"></p>
+      <div class="lightbox-actions">
+        <button type="button" class="btn-gold" id="lightbox-cover">Nastavit jako hlavní</button>
+        <button type="button" class="btn-small" id="lightbox-delete">Smazat</button>
+      </div>
+    </div>
   </div>
-  <script src="app.js?v=p1ev"></script>
+  <script src="app.js?v=p1ev3"></script>
 </body>
 </html>

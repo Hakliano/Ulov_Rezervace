@@ -91,11 +91,18 @@ async function apiUpload(path, formData) {
 
 let galleryItems = [];
 let galleryIndex = 0;
+let galleryCtx = { canCover: false, objectUuid: null, coverUuid: null, onChange: null };
 
-function openGallery(items, start = 0) {
+function openGallery(items, start = 0, ctx = {}) {
   galleryItems = items || [];
   if (!galleryItems.length) return;
   galleryIndex = start;
+  galleryCtx = {
+    canCover: Boolean(ctx.canCover),
+    objectUuid: ctx.objectUuid || null,
+    coverUuid: ctx.coverUuid || null,
+    onChange: ctx.onChange || null,
+  };
   showGallery();
 }
 
@@ -104,8 +111,13 @@ function showGallery() {
   if (!item) return;
   $('#lightbox-img').src = assetSrc(item.uuid);
   $('#lightbox-img').alt = item.nazev || '';
-  $('#lightbox-caption').textContent = item.nazev || '';
+  const isCover = galleryCtx.coverUuid && galleryCtx.coverUuid === item.uuid;
+  $('#lightbox-caption').textContent = isCover ? `${item.nazev || 'Fotografie'} · hlavní` : (item.nazev || '');
   $('#lightbox').classList.remove('hidden');
+  const coverBtn = $('#lightbox-cover');
+  coverBtn.classList.toggle('hidden', !galleryCtx.canCover);
+  coverBtn.disabled = isCover;
+  coverBtn.textContent = isCover ? 'Hlavní fotografie' : 'Nastavit jako hlavní';
 }
 
 function closeGallery() {
@@ -113,17 +125,67 @@ function closeGallery() {
   $('#lightbox-img').src = '';
 }
 
-function coverBlock(uuid, alt) {
-  if (!uuid) return '<div class="cover-hero" aria-hidden="true"></div>';
-  return `<img class="cover-hero" src="${assetSrc(uuid)}" alt="${esc(alt)}">`;
+async function confirmDeleteAsset(asset) {
+  const msg = asset.zapis_uuid
+    ? 'Tento soubor je zároveň přílohou zápisu. Smazáním zmizí z dokumentace i z historie — jde o jeden soubor, ne o kopii.\n\nOpravdu smazat?'
+    : 'Opravdu smazat tento soubor?';
+  if (!window.confirm(msg)) return false;
+  await api(`/assets/${asset.uuid}/`, { method: 'DELETE' });
+  return true;
 }
 
-function photoGrid(photos) {
+function coverBlock(uuid, alt) {
+  if (!uuid) return '<div class="cover-hero" aria-hidden="true"></div>';
+  return `<button type="button" class="cover-open" data-gallery-cover>
+    <img class="cover-hero" src="${assetSrc(uuid)}" alt="${esc(alt)}">
+    <span class="cover-label">Hlavní fotografie</span>
+  </button>`;
+}
+
+function photoGrid(photos, coverUuid, objectContext) {
   if (!photos.length) return '<p class="muted">Zatím žádná fotografie.</p>';
   return `<div class="photo-grid">${photos.map((p, i) => `
     <button type="button" data-gallery="${i}">
-      <img class="photo-thumb" src="${assetSrc(p.uuid)}" alt="${esc(p.nazev)}">
-    </button>`).join('')}</div>`;
+      <span class="photo-wrap">
+        <img class="photo-thumb" src="${assetSrc(p.uuid)}" alt="${esc(p.nazev)}">
+        ${coverUuid && p.uuid === coverUuid ? '<span class="photo-badge">Hlavní</span>' : ''}
+      </span>
+    </button>`).join('')}</div>
+    <p class="muted">${objectContext
+      ? 'Kliknutím otevřete náhled. Hlavní fotografie je v hlavičce karty i na kartičkách v seznamu.'
+      : 'Kliknutím otevřete náhled. Smazat lze v náhledu.'}</p>`;
+}
+
+function bindAssets(root, { photos, docs, coverUuid, objectUuid, onChange }) {
+  root.querySelectorAll('[data-gallery]').forEach((btn) => {
+    btn.addEventListener('click', () => openGallery(photos, Number(btn.dataset.gallery), {
+      canCover: Boolean(objectUuid),
+      objectUuid,
+      coverUuid,
+      onChange,
+    }));
+  });
+  const coverOpen = root.querySelector('[data-gallery-cover]');
+  if (coverOpen && photos.length) {
+    const idx = photos.findIndex((p) => p.uuid === coverUuid);
+    coverOpen.addEventListener('click', () => openGallery(photos, idx < 0 ? 0 : idx, {
+      canCover: Boolean(objectUuid),
+      objectUuid,
+      coverUuid,
+      onChange,
+    }));
+  }
+  root.querySelectorAll('[data-del-asset]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const asset = (docs || []).find((d) => d.uuid === btn.dataset.delAsset);
+      if (!asset) return;
+      try {
+        if (await confirmDeleteAsset(asset) && onChange) onChange();
+      } catch (err) {
+        window.alert(err.message || 'Soubor se nepodařilo smazat.');
+      }
+    });
+  });
 }
 
 function docRows(docs) {
@@ -135,7 +197,10 @@ function docRows(docs) {
         <strong>${esc(d.nazev)}</strong>
         <div class="muted">${d.zapis_uuid ? 'příloha zápisu' : 'dokument karty'} · ${fmtDate(d.vytvoreno)}</div>
       </div>
-      <a class="btn-small" href="${assetSrc(d.uuid)}" target="_blank" rel="noopener">Otevřít</a>
+      <div class="doc-actions">
+        <a class="btn-small" href="${assetSrc(d.uuid)}" target="_blank" rel="noopener">Otevřít</a>
+        <button type="button" class="btn-small" data-del-asset="${d.uuid}">Smazat</button>
+      </div>
     </div>`).join('');
 }
 
@@ -289,6 +354,38 @@ $('#lightbox-next').addEventListener('click', () => {
   if (!galleryItems.length) return;
   galleryIndex = (galleryIndex + 1) % galleryItems.length;
   showGallery();
+});
+$('#lightbox-cover').addEventListener('click', async () => {
+  const item = galleryItems[galleryIndex];
+  if (!item || !galleryCtx.objectUuid) return;
+  try {
+    await api(`/objects/${galleryCtx.objectUuid}/cover/`, {
+      method: 'POST',
+      body: JSON.stringify({ asset_uuid: item.uuid }),
+    });
+    closeGallery();
+    if (galleryCtx.onChange) galleryCtx.onChange();
+  } catch (err) {
+    window.alert(err.message || 'Hlavní fotografii se nepodařilo nastavit.');
+  }
+});
+$('#lightbox-delete').addEventListener('click', async () => {
+  const item = galleryItems[galleryIndex];
+  if (!item) return;
+  try {
+    if (await confirmDeleteAsset(item)) {
+      closeGallery();
+      if (galleryCtx.onChange) galleryCtx.onChange();
+    }
+  } catch (err) {
+    window.alert(err.message || 'Soubor se nepodařilo smazat.');
+  }
+});
+document.addEventListener('keydown', (ev) => {
+  if ($('#lightbox').classList.contains('hidden')) return;
+  if (ev.key === 'Escape') closeGallery();
+  if (ev.key === 'ArrowLeft') $('#lightbox-prev').click();
+  if (ev.key === 'ArrowRight') $('#lightbox-next').click();
 });
 
 $('#search-form').addEventListener('submit', async (ev) => {
@@ -534,8 +631,10 @@ async function openCustomer(uuid, opts = {}) {
   `;
   bindNav(box);
   bindDone(box, () => openCustomer(uuid, { skipList: true }));
-  box.querySelectorAll('[data-gallery]').forEach((btn) => {
-    btn.addEventListener('click', () => openGallery(photos, Number(btn.dataset.gallery)));
+  bindAssets(box, {
+    photos,
+    docs,
+    onChange: () => openCustomer(uuid, { skipList: true }),
   });
   box.querySelector('[data-act="entry"]').addEventListener('click', () => showEntryForm({ zakaznik: c, objects }));
   box.querySelector('[data-act="reminder"]').addEventListener('click', () => showReminderForm({ zakaznik: c, objects }));
@@ -611,7 +710,7 @@ async function openObject(uuid, opts = {}) {
     </section>
     <section class="section" id="o-foto">
       <h3>Fotografie</h3>
-      ${photoGrid(photos)}
+      ${photoGrid(photos, obj.cover_uuid, true)}
     </section>
     <section class="section" id="o-docs">
       <h3>Dokumenty</h3>
@@ -635,8 +734,12 @@ async function openObject(uuid, opts = {}) {
       renderObjects();
     });
   }
-  box.querySelectorAll('[data-gallery]').forEach((btn) => {
-    btn.addEventListener('click', () => openGallery(photos, Number(btn.dataset.gallery)));
+  bindAssets(box, {
+    photos,
+    docs,
+    coverUuid: obj.cover_uuid,
+    objectUuid: obj.uuid,
+    onChange: () => openObject(uuid, opts),
   });
   bindDone(box, () => openObject(uuid, opts));
   box.querySelector('[data-act="entry"]').addEventListener('click', () => showEntryForm({ objekt: obj }));

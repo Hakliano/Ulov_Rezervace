@@ -150,9 +150,8 @@ class ObjectSerializer(serializers.ModelSerializer):
         return obj.pripominky.filter(stav='aktivni').count()
 
     def get_cover_uuid(self, obj):
-        val = obj.__dict__.get('cover_uuid')
-        if val:
-            return str(val)
+        if obj.cover_id:
+            return str(obj.cover.uuid)
         photo = obj.soubory.filter(druh='fotografie').order_by('-vytvoreno').values_list('uuid', flat=True).first()
         return str(photo) if photo else None
 

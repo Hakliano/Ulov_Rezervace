@@ -406,3 +406,75 @@ class ArchivnikEvidenceTests(TestCase):
         listed = other_client.get('/api/archivnik/assets/')
         self.assertEqual(listed.data, [])
 
+    def test_hlavni_fotografie_a_smazani_prilohy(self):
+        first = self.client.post(
+            '/api/archivnik/assets/',
+            {'soubor': _png_file('a.png', (10, 20, 30)), 'objekt_uuid': str(self.objekt.uuid), 'druh': 'fotografie'},
+            format='multipart',
+        )
+        second = self.client.post(
+            '/api/archivnik/assets/',
+            {'soubor': _png_file('b.png', (80, 20, 30)), 'objekt_uuid': str(self.objekt.uuid), 'druh': 'fotografie'},
+            format='multipart',
+        )
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 201)
+        detail = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/')
+        self.assertEqual(detail.data['cover_uuid'], first.data['uuid'])
+
+        cover = self.client.post(
+            f'/api/archivnik/objects/{self.objekt.uuid}/cover/',
+            {'asset_uuid': second.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(cover.status_code, 200)
+        self.assertEqual(cover.data['cover_uuid'], second.data['uuid'])
+
+        entry = self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'S přílohou.'},
+            format='json',
+        )
+        priloha = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': _png_file('priloha.png'),
+                'zapis_uuid': entry.data['uuid'],
+                'druh': 'fotografie',
+                'nazev': 'priloha.png',
+            },
+            format='multipart',
+        )
+        self.assertEqual(priloha.status_code, 201)
+        deleted = self.client.delete(f'/api/archivnik/assets/{priloha.data["uuid"]}/')
+        self.assertEqual(deleted.status_code, 204)
+        znovu = self.client.get(f'/api/archivnik/entries/?objekt={self.objekt.uuid}')
+        self.assertEqual(znovu.data[0]['prilohy'], [])
+        docs = self.client.get(f'/api/archivnik/assets/?objekt={self.objekt.uuid}&druh=fotografie')
+        self.assertNotIn(priloha.data['uuid'], {row['uuid'] for row in docs.data})
+
+        self.client.delete(f'/api/archivnik/assets/{second.data["uuid"]}/')
+        after = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/')
+        self.assertEqual(after.data['cover_uuid'], first.data['uuid'])
+
+        self.client.delete(f'/api/archivnik/assets/{first.data["uuid"]}/')
+        empty = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/')
+        self.assertIsNone(empty.data['cover_uuid'])
+
+        doc = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': SimpleUploadedFile('smlouva.pdf', b'%PDF-1.4 test', content_type='application/pdf'),
+                'objekt_uuid': str(self.objekt.uuid),
+                'druh': 'dokument',
+            },
+            format='multipart',
+        )
+        self.assertEqual(doc.status_code, 201)
+        bad = self.client.post(
+            f'/api/archivnik/objects/{self.objekt.uuid}/cover/',
+            {'asset_uuid': doc.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(bad.status_code, 400)
+

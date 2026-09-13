@@ -376,16 +376,19 @@ def _seed_kartoteka(salon, owner):
     _value(rocky, pes_plemeno, 'Golden retriever')
     _value(rocky, pes_cip, '203011122233344')
 
-    _asset(salon, owner, eva, 'Max-profil.png', _png((42, 92, 74)), 'image/png', 'fotografie', objekt=maxp)
+    profil = _asset(salon, owner, eva, 'Max-profil.png', _png((42, 92, 74)), 'image/png', 'fotografie', objekt=maxp)
     _asset(salon, owner, eva, 'Max-detail.png', _png((90, 58, 32)), 'image/png', 'fotografie', objekt=maxp)
-    _asset(salon, owner, petr, 'Micka.png', _png((120, 90, 70)), 'image/png', 'fotografie', objekt=micka)
+    micka_foto = _asset(salon, owner, petr, 'Micka.png', _png((120, 90, 70)), 'image/png', 'fotografie', objekt=micka)
     _asset(
         salon, owner, eva, 'ockovaci-prukaz.pdf', _MIN_PDF, 'application/pdf', 'dokument',
         objekt=maxp, zapis=max_ocko,
     )
     _asset(salon, owner, eva, 'laboratorni-vysledky.pdf', _MIN_PDF, 'application/pdf', 'dokument', objekt=maxp)
     _asset(salon, owner, eva, 'souhlas-gdpr.pdf', _MIN_PDF, 'application/pdf', 'dokument')
-    _asset(salon, owner, lucie, 'Felix.png', _png((60, 70, 90)), 'image/png', 'fotografie', objekt=felix)
+    felix_foto = _asset(salon, owner, lucie, 'Felix.png', _png((60, 70, 90)), 'image/png', 'fotografie', objekt=felix)
+    Object.objects.filter(pk=maxp.pk).update(cover=profil)
+    Object.objects.filter(pk=micka.pk).update(cover=micka_foto)
+    Object.objects.filter(pk=felix.pk).update(cover=felix_foto)
 
     return {
         'zakaznici': Customer.objects.filter(salon=salon).count(),

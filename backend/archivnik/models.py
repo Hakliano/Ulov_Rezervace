@@ -152,6 +152,14 @@ class Object(models.Model):
         on_delete=models.SET_NULL, null=True, blank=True,
     )
     tagy = models.ManyToManyField(Tag, related_name='objekty', blank=True)
+    cover = models.ForeignKey(
+        'Asset',
+        related_name='+',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='hlavní fotografie',
+    )
     vytvoreno = models.DateTimeField(auto_now_add=True)
     upraveno = models.DateTimeField(auto_now=True)
 
@@ -174,6 +182,13 @@ class Object(models.Model):
             raise ValidationError('Objekt musí patřit do stejné provozovny jako zákazník.')
         if self.typ_id and self.typ.salon_id != self.salon_id:
             raise ValidationError('Typ objektu patří jiné provozovně.')
+        if self.cover_id:
+            if self.cover.salon_id != self.salon_id:
+                raise ValidationError('Hlavní fotografie patří jiné provozovně.')
+            if self.cover.objekt_id != self.pk:
+                raise ValidationError('Hlavní fotografie musí patřit tomuto objektu.')
+            if self.cover.druh != 'fotografie':
+                raise ValidationError('Hlavní fotografie musí být fotografie.')
 
     def save(self, *args, **kwargs):
         self.full_clean()

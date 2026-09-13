@@ -108,3 +108,18 @@ def store_file(salon, raw: bytes, content_type: str, filename: str, druh: str, a
     key = f'archivnik/{tenant_uuid(salon)}/{asset_uuid}.{ext}'
     put_bytes(key, data, ctype)
     return str(asset_uuid), key, ctype, len(data)
+
+
+def delete_bytes(storage_key: str) -> None:
+    if not storage_key:
+        return
+    _LOCAL.pop(storage_key, None)
+    if not is_bunny_configured():
+        return
+    storage_url = f'{_storage_host()}/{settings.BUNNY_STORAGE_ZONE}/{storage_key}'
+    req = Request(storage_url, method='DELETE')
+    req.add_header('AccessKey', settings.BUNNY_STORAGE_API_KEY)
+    try:
+        urlopen(req, timeout=15)
+    except (HTTPError, URLError):
+        pass
