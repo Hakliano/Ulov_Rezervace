@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/', include('rezervace.urls')),
     path('api/', include('flow.urls')),
     path('api/', include('partner_hub.urls')),
+    path('api/archivnik/', include('archivnik.urls')),
 ]
 
 if settings.DEBUG:

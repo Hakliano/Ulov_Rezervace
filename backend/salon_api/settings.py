@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     'flow',
     'partner_hub',
     'partner_admin.apps.PartnerAdminConfig',
+    'archivnik.apps.ArchivnikConfig',
 ]
 
 MIDDLEWARE = [
@@ -300,6 +301,7 @@ CORS_ALLOW_HEADERS = [
     'x-admin-actor',
     'x-staff-token',
     'x-flow-token',
+    'x-archivnik-token',
     'x-absence-duvod',
 ]
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']

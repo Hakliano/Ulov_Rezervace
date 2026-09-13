@@ -140,6 +140,11 @@ if [ -d flow ]; then
   mkdir -p www-staging/flow
   rsync -a flow/ www-staging/flow/
 fi
+if [ -d archivnik ]; then
+  bash deploy/pre-deploy-check.sh archivnik || true
+  mkdir -p www-staging/archivnik
+  rsync -a archivnik/ www-staging/archivnik/
+fi
 if [ -d partner ]; then
   bash deploy/pre-deploy-check.sh partner || true
   mkdir -p www-staging/partner
@@ -195,6 +200,8 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
   python manage.py seed_vertical_demos 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py fix_pg_sequences 2>/dev/null || true
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py seed_archivnik_only 2>/dev/null || true
 
 echo "### Reload LIVE nginx (staging vhost + mount www-staging)"
 cp -f deploy/nginx/conf.d/staging.conf deploy/nginx/conf.d/staging.conf 2>/dev/null || true
@@ -244,6 +251,8 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
 echo "=== STAGING hotovo ==="
 echo "Hub:  https://www.staging.ulovklienty.cz/"
 echo "Moderník: https://staging.modernik.cz/ (po DNS + cert)"
+echo "Archivník: https://www.staging.ulovklienty.cz/archivnik/"
+echo "Archivník (modernik host): https://staging.modernik.cz/archivnik/"
 echo "Materiálník app: https://www.staging.ulovklienty.cz/sklad/"
 echo "API:  https://api-staging.ulovklienty.cz/health/"
 echo "Demo: https://www.staging.ulovklienty.cz/salon1/"

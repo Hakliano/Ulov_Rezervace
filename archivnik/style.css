@@ -1,0 +1,188 @@
+:root {
+  --navy: #0a1c33;
+  --navy-deep: #06121f;
+  --gold: #d4b24a;
+  --gold-soft: rgba(212, 178, 74, 0.18);
+  --teal: #2ec8c0;
+  --teal-soft: rgba(46, 200, 192, 0.16);
+  --ink: #f4f1ea;
+  --muted: #9aa6b8;
+  --card: rgba(10, 28, 51, 0.92);
+  --line: rgba(46, 200, 192, 0.22);
+  --line-gold: rgba(212, 178, 74, 0.32);
+  --danger: #e07070;
+  --ok: #7dba7a;
+  --radius: 14px;
+  --font: "DM Sans", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--navy-deep);
+}
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.error { color: var(--danger); margin: 0; }
+
+.login-wrap {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(720px 440px at 12% -8%, rgba(46, 200, 192, .14), transparent 55%),
+    radial-gradient(640px 380px at 92% 8%, rgba(212, 178, 74, .12), transparent 50%),
+    var(--navy-deep);
+}
+.login-card {
+  width: min(420px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line-gold);
+  border-radius: 20px;
+  padding: 28px;
+  display: grid;
+  gap: 12px;
+}
+.logo-login {
+  display: block;
+  width: min(280px, 100%);
+  height: auto;
+  margin: 0 auto 4px;
+}
+label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+input, select, textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #081526;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 1px solid var(--teal);
+  border-color: var(--teal);
+}
+textarea { min-height: 90px; resize: vertical; }
+
+.btn-primary, .btn-ghost, .btn-small {
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 600;
+  padding: 12px 16px;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 0;
+  text-align: left;
+}
+.btn-small {
+  background: transparent;
+  color: var(--teal);
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+}
+
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 248px 1fr;
+}
+.sidebar {
+  background: var(--navy);
+  border-right: 1px solid var(--line);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.brand { display: grid; gap: 8px; }
+.logo-sidebar {
+  display: block;
+  width: 196px;
+  max-width: 100%;
+  height: auto;
+}
+.brand span { color: var(--muted); font-size: 13px; }
+.sidebar nav { display: grid; gap: 4px; }
+.tab {
+  text-align: left;
+  background: transparent;
+  color: var(--ink);
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+.userbox { margin-top: auto; display: grid; gap: 4px; }
+.main { padding: 20px 24px 48px; min-width: 0; }
+.top { margin-bottom: 16px; }
+.search input { max-width: 520px; }
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.kpi, .panel, .card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.kpi strong { display: block; font-size: 28px; color: var(--gold); }
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.row:last-child { border-bottom: 0; }
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.form-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.chip {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--teal);
+  margin-right: 4px;
+}
+.linkish { color: var(--gold); background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
+
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { flex-direction: row; flex-wrap: wrap; }
+  .logo-sidebar { width: 160px; }
+  .userbox { margin-top: 0; width: 100%; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
