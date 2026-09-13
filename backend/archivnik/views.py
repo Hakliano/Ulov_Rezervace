@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import Count, Max, Q
+from django.db.models import Count, Max, Q, Subquery, OuterRef
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -15,7 +15,7 @@ from archivnik.auth import (
     get_actor_from_request,
     get_session_from_request,
 )
-from archivnik.models import Customer, Entry, Object, ObjectType, Reminder, ReminderStav, Stav, Tag
+from archivnik.models import Asset, Customer, Entry, Object, ObjectType, Reminder, ReminderStav, Stav, Tag
 from archivnik.permissions import ArchivnikPermission
 from archivnik.serializers import (
     CustomerListSerializer,
@@ -46,6 +46,11 @@ def _validation_detail(exc):
 
 
 def _objects_qs(salon):
+    cover = Subquery(
+        Asset.objects.filter(objekt_id=OuterRef('pk'), druh='fotografie')
+        .order_by('-vytvoreno')
+        .values('uuid')[:1]
+    )
     return (
         Object.objects.filter(salon=salon)
         .select_related('typ', 'zakaznik')
@@ -58,6 +63,7 @@ def _objects_qs(salon):
                 filter=Q(pripominky__stav=ReminderStav.AKTIVNI),
                 distinct=True,
             ),
+            cover_uuid=cover,
         )
     )
 
@@ -267,7 +273,7 @@ class ObjectTypeListCreateView(APIView):
     permission_classes = [ArchivnikPermission]
 
     def get(self, request):
-        qs = ObjectType.objects.filter(salon=_salon(request))
+        qs = ObjectType.objects.filter(salon=_salon(request)).prefetch_related('pole')
         return Response(ObjectTypeSerializer(qs, many=True).data)
 
     def post(self, request):
@@ -290,7 +296,7 @@ class ObjectListCreateView(APIView):
         q = (request.query_params.get('q') or '').strip()
         if q:
             qs = qs.filter(Q(nazev__icontains=q) | Q(typ__nazev__icontains=q))
-        return Response(ObjectSerializer(qs[:200], many=True).data)
+        return Response(ObjectSerializer(qs[:200], many=True, context={'request': request}).data)
 
     def post(self, request):
         ser = ObjectWriteSerializer(data=request.data)
@@ -323,7 +329,7 @@ class ObjectListCreateView(APIView):
         tags = _tags(salon, data.get('tagy') or [], for_objekt=True)
         if tags.exists():
             obj.tagy.set(tags)
-        return Response(ObjectSerializer(obj).data, status=201)
+        return Response(ObjectSerializer(obj, context={'request': request}).data, status=201)
 
 
 class ObjectDetailView(APIView):
@@ -337,7 +343,7 @@ class ObjectDetailView(APIView):
         obj = self._get(request, object_uuid)
         if not obj:
             return Response({'detail': 'Objekt nenalezen.'}, status=404)
-        return Response(ObjectSerializer(obj).data)
+        return Response(ObjectSerializer(obj, context={'request': request}).data)
 
     def patch(self, request, object_uuid):
         obj = self._get(request, object_uuid)
@@ -365,7 +371,7 @@ class ObjectDetailView(APIView):
             return Response({'detail': _validation_detail(exc)}, status=status.HTTP_400_BAD_REQUEST)
         if 'tagy' in data:
             obj.tagy.set(_tags(salon, data.get('tagy') or [], for_objekt=True))
-        return Response(ObjectSerializer(obj).data)
+        return Response(ObjectSerializer(obj, context={'request': request}).data)
 
 
 class EntryListCreateView(APIView):
@@ -374,7 +380,7 @@ class EntryListCreateView(APIView):
 
     def get(self, request):
         salon = _salon(request)
-        qs = Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'vytvoril')
+        qs = Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'vytvoril').prefetch_related('prilohy')
         cu = request.query_params.get('zakaznik')
         ou = request.query_params.get('objekt')
         if ou:
@@ -384,7 +390,7 @@ class EntryListCreateView(APIView):
                 qs = qs.filter(zakaznik__uuid=cu)
             else:
                 qs = qs.filter(zakaznik__uuid=cu, objekt__isnull=True)
-        return Response(EntrySerializer(qs.order_by('-nastalo', '-id')[:200], many=True).data)
+        return Response(EntrySerializer(qs.order_by('-nastalo', '-id')[:200], many=True, context={'request': request}).data)
 
     def post(self, request):
         ser = EntryWriteSerializer(data=request.data)
@@ -425,7 +431,7 @@ class EntryListCreateView(APIView):
             entry.save()
         except ValidationError as exc:
             return Response({'detail': _validation_detail(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(EntrySerializer(entry).data, status=201)
+        return Response(EntrySerializer(entry, context={'request': request}).data, status=201)
 
 
 class TagListCreateView(APIView):

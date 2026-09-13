@@ -1,6 +1,7 @@
 from django.urls import path
 
 from archivnik import views
+from archivnik import views_evidence
 
 urlpatterns = [
     path('auth/login/', views.LoginView.as_view(), name='archivnik-login'),
@@ -15,11 +16,17 @@ urlpatterns = [
         name='archivnik-customer-detail',
     ),
     path('object-types/', views.ObjectTypeListCreateView.as_view(), name='archivnik-object-types'),
+    path('fields/', views_evidence.FieldListCreateView.as_view(), name='archivnik-fields'),
     path('objects/', views.ObjectListCreateView.as_view(), name='archivnik-objects'),
     path(
         'objects/<uuid:object_uuid>/',
         views.ObjectDetailView.as_view(),
         name='archivnik-object-detail',
+    ),
+    path(
+        'objects/<uuid:object_uuid>/fields/',
+        views_evidence.ObjectFieldValuesView.as_view(),
+        name='archivnik-object-fields',
     ),
     path('entries/', views.EntryListCreateView.as_view(), name='archivnik-entries'),
     path('tags/', views.TagListCreateView.as_view(), name='archivnik-tags'),
@@ -28,5 +35,11 @@ urlpatterns = [
         'reminders/<uuid:reminder_uuid>/done/',
         views.ReminderDoneView.as_view(),
         name='archivnik-reminder-done',
+    ),
+    path('assets/', views_evidence.AssetListCreateView.as_view(), name='archivnik-assets'),
+    path(
+        'assets/<uuid:asset_uuid>/content/',
+        views_evidence.AssetContentView.as_view(),
+        name='archivnik-asset-content',
     ),
 ]

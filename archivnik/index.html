@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=p0ux">
+  <link rel="stylesheet" href="style.css?v=p1ev">
 </head>
 <body>
   <div id="login-screen" class="login-wrap">
@@ -84,6 +84,13 @@
       <div id="modal-body"></div>
     </div>
   </div>
-  <script src="app.js?v=p0ux"></script>
+  <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true">
+    <button type="button" class="lightbox-nav" id="lightbox-prev" aria-label="Předchozí">‹</button>
+    <img id="lightbox-img" alt="">
+    <button type="button" class="lightbox-nav" id="lightbox-next" aria-label="Další">›</button>
+    <button type="button" class="btn-ghost lightbox-close" id="lightbox-close">Zavřít</button>
+    <p id="lightbox-caption" class="lightbox-caption"></p>
+  </div>
+  <script src="app.js?v=p1ev"></script>
 </body>
 </html>

@@ -265,3 +265,127 @@ class Reminder(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class FieldKind(models.TextChoices):
+    TEXT = 'text', 'Text'
+    CISLO = 'cislo', 'Číslo'
+    DATUM = 'datum', 'Datum'
+    ANO_NE = 'ano_ne', 'Ano / ne'
+
+
+class CustomFieldDef(models.Model):
+    """Definice vlastního pole visí na typu objektu, ne na segmentu trhu."""
+
+    salon = models.ForeignKey(Salon, related_name='archivnik_field_defs', on_delete=models.CASCADE)
+    typ = models.ForeignKey(ObjectType, related_name='pole', on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    nazev = models.CharField('název', max_length=80)
+    druh = models.CharField(max_length=16, choices=FieldKind.choices, default=FieldKind.TEXT)
+    poradi = models.PositiveSmallIntegerField(default=0)
+    aktivni = models.BooleanField(default=True)
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'vlastní pole'
+        verbose_name_plural = 'vlastní pole'
+        ordering = ['poradi', 'id']
+        constraints = [
+            models.UniqueConstraint(fields=['typ', 'nazev'], name='archivnik_fielddef_typ_nazev'),
+        ]
+
+    def __str__(self):
+        return self.nazev
+
+    def clean(self):
+        if self.typ_id and self.typ.salon_id != self.salon_id:
+            raise ValidationError('Definice pole musí patřit stejné provozovně jako typ objektu.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class CustomFieldValue(models.Model):
+    objekt = models.ForeignKey(Object, related_name='hodnoty_poli', on_delete=models.CASCADE)
+    pole = models.ForeignKey(CustomFieldDef, related_name='hodnoty', on_delete=models.CASCADE)
+    hodnota = models.CharField(max_length=300, blank=True, default='')
+
+    class Meta:
+        verbose_name = 'hodnota vlastního pole'
+        verbose_name_plural = 'hodnoty vlastních polí'
+        constraints = [
+            models.UniqueConstraint(fields=['objekt', 'pole'], name='archivnik_fieldvalue_objekt_pole'),
+        ]
+
+    def clean(self):
+        if self.pole_id and self.objekt_id:
+            if self.pole.typ_id != self.objekt.typ_id:
+                raise ValidationError('Pole nepatří k typu tohoto objektu.')
+            if self.pole.salon_id != self.objekt.salon_id:
+                raise ValidationError('Pole patří jiné provozovně.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class AssetKind(models.TextChoices):
+    FOTOGRAFIE = 'fotografie', 'Fotografie'
+    DOKUMENT = 'dokument', 'Dokument'
+
+
+class Asset(models.Model):
+    """Jeden soubor na Bunny. Zákazník povinný, objekt i zápis volitelné."""
+
+    salon = models.ForeignKey(Salon, related_name='archivnik_assets', on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    zakaznik = models.ForeignKey(Customer, related_name='soubory', on_delete=models.CASCADE)
+    objekt = models.ForeignKey(
+        Object, related_name='soubory', on_delete=models.CASCADE,
+        null=True, blank=True,
+    )
+    zapis = models.ForeignKey(
+        Entry, related_name='prilohy', on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
+    druh = models.CharField(max_length=16, choices=AssetKind.choices, default=AssetKind.DOKUMENT)
+    nazev = models.CharField('název', max_length=200)
+    content_type = models.CharField(max_length=80)
+    velikost = models.PositiveIntegerField(default=0)
+    storage_key = models.CharField(max_length=400)
+    vytvoril = models.ForeignKey(
+        Zamestnanec, related_name='archivnik_assets_vytvorene',
+        on_delete=models.SET_NULL, null=True, blank=True,
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'soubor'
+        verbose_name_plural = 'soubory'
+        ordering = ['-vytvoreno']
+        indexes = [
+            models.Index(fields=['salon', 'zakaznik']),
+            models.Index(fields=['objekt', 'druh']),
+        ]
+
+    def __str__(self):
+        return self.nazev
+
+    def clean(self):
+        if self.zakaznik_id and self.zakaznik.salon_id != self.salon_id:
+            raise ValidationError('Soubor musí patřit do provozovny zákazníka.')
+        if self.objekt_id:
+            if self.objekt.zakaznik_id != self.zakaznik_id:
+                raise ValidationError('Objekt souboru musí patřit stejnému zákazníkovi.')
+            if self.objekt.salon_id != self.salon_id:
+                raise ValidationError('Objekt souboru patří jiné provozovně.')
+        if self.zapis_id:
+            if self.zapis.zakaznik_id != self.zakaznik_id:
+                raise ValidationError('Zápis souboru musí patřit stejnému zákazníkovi.')
+            if self.objekt_id and self.zapis.objekt_id and self.zapis.objekt_id != self.objekt_id:
+                raise ValidationError('Příloha zápisu musí zůstat u stejného objektu.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

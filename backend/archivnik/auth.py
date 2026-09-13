@@ -48,7 +48,7 @@ def create_session(zamestnanec: Zamestnanec) -> ArchivnikSession:
 
 
 def get_session_from_request(request) -> ArchivnikSession | None:
-    raw = (request.headers.get(HEADER) or '').strip()
+    raw = (request.headers.get(HEADER) or request.GET.get('token') or '').strip()
     if not raw:
         return None
     try:

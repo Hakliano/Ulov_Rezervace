@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from archivnik.models import (
+    Asset,
+    CustomFieldDef,
     Customer,
     Entry,
     Object,
@@ -18,10 +20,71 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class ObjectTypeSerializer(serializers.ModelSerializer):
+    pole = serializers.SerializerMethodField()
+
     class Meta:
         model = ObjectType
-        fields = ['uuid', 'nazev', 'poradi', 'aktivni']
+        fields = ['uuid', 'nazev', 'poradi', 'aktivni', 'pole']
         read_only_fields = ['uuid']
+
+    def get_pole(self, obj):
+        qs = obj.pole.all() if hasattr(obj, '_prefetched_objects_cache') and 'pole' in obj._prefetched_objects_cache else obj.pole.filter(aktivni=True)
+        return CustomFieldDefSerializer(qs, many=True).data
+
+
+class CustomFieldDefSerializer(serializers.ModelSerializer):
+    typ_uuid = serializers.UUIDField(source='typ.uuid', read_only=True)
+
+    class Meta:
+        model = CustomFieldDef
+        fields = ['uuid', 'typ_uuid', 'nazev', 'druh', 'poradi', 'aktivni']
+        read_only_fields = ['uuid']
+
+
+class CustomFieldDefWriteSerializer(serializers.Serializer):
+    typ_uuid = serializers.UUIDField()
+    nazev = serializers.CharField(max_length=80)
+    druh = serializers.ChoiceField(choices=['text', 'cislo', 'datum', 'ano_ne'], required=False, default='text')
+    poradi = serializers.IntegerField(required=False, default=0)
+
+
+class CustomFieldValueSerializer(serializers.Serializer):
+    pole_uuid = serializers.UUIDField()
+    nazev = serializers.CharField(read_only=True)
+    druh = serializers.CharField(read_only=True)
+    hodnota = serializers.CharField(allow_blank=True, max_length=300)
+
+
+class AssetSerializer(serializers.ModelSerializer):
+    zakaznik_uuid = serializers.UUIDField(source='zakaznik.uuid', read_only=True)
+    zakaznik_jmeno = serializers.CharField(source='zakaznik.display_name', read_only=True)
+    objekt_uuid = serializers.UUIDField(source='objekt.uuid', read_only=True, allow_null=True)
+    objekt_nazev = serializers.CharField(source='objekt.nazev', read_only=True, allow_null=True)
+    zapis_uuid = serializers.UUIDField(source='zapis.uuid', read_only=True, allow_null=True)
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Asset
+        fields = [
+            'uuid', 'druh', 'nazev', 'content_type', 'velikost',
+            'zakaznik_uuid', 'zakaznik_jmeno', 'objekt_uuid', 'objekt_nazev',
+            'zapis_uuid', 'url', 'vytvoreno',
+        ]
+
+    def get_url(self, obj):
+        request = self.context.get('request')
+        if not request:
+            return f'/api/archivnik/assets/{obj.uuid}/content/'
+        token = (
+            request.headers.get('X-Archivnik-Token')
+            or request.GET.get('token')
+            or ''
+        )
+        url = request.build_absolute_uri(f'/api/archivnik/assets/{obj.uuid}/content/')
+        if token:
+            sep = '&' if '?' in url else '?'
+            return f'{url}{sep}token={token}'
+        return url
 
 
 class CustomerListSerializer(serializers.ModelSerializer):
@@ -58,6 +121,7 @@ class ObjectSerializer(serializers.ModelSerializer):
     zapisy_pocet = serializers.SerializerMethodField()
     posledni_zapis = serializers.SerializerMethodField()
     pripominky_aktivni = serializers.SerializerMethodField()
+    cover_uuid = serializers.SerializerMethodField()
 
     class Meta:
         model = Object
@@ -65,7 +129,7 @@ class ObjectSerializer(serializers.ModelSerializer):
             'uuid', 'nazev', 'popis', 'stav',
             'typ_uuid', 'typ_nazev', 'zakaznik_uuid', 'zakaznik_jmeno',
             'tagy', 'zapisy_pocet', 'posledni_zapis', 'pripominky_aktivni',
-            'vytvoreno', 'upraveno',
+            'cover_uuid', 'vytvoreno', 'upraveno',
         ]
 
     def get_zapisy_pocet(self, obj):
@@ -85,6 +149,13 @@ class ObjectSerializer(serializers.ModelSerializer):
             return obj.pripominky_aktivni
         return obj.pripominky.filter(stav='aktivni').count()
 
+    def get_cover_uuid(self, obj):
+        val = obj.__dict__.get('cover_uuid')
+        if val:
+            return str(val)
+        photo = obj.soubory.filter(druh='fotografie').order_by('-vytvoreno').values_list('uuid', flat=True).first()
+        return str(photo) if photo else None
+
 
 class ObjectWriteSerializer(serializers.Serializer):
     zakaznik_uuid = serializers.UUIDField(required=False)
@@ -101,12 +172,13 @@ class EntrySerializer(serializers.ModelSerializer):
     objekt_uuid = serializers.UUIDField(source='objekt.uuid', read_only=True, allow_null=True)
     objekt_nazev = serializers.CharField(source='objekt.nazev', read_only=True, allow_null=True)
     autor = serializers.CharField(source='vytvoril.jmeno', read_only=True, allow_null=True)
+    prilohy = AssetSerializer(many=True, read_only=True)
 
     class Meta:
         model = Entry
         fields = [
             'uuid', 'zakaznik_uuid', 'zakaznik_jmeno', 'objekt_uuid', 'objekt_nazev',
-            'nastalo', 'typ_zapisu', 'nadpis', 'text', 'autor',
+            'nastalo', 'typ_zapisu', 'nadpis', 'text', 'autor', 'prilohy',
             'vytvoreno', 'upraveno',
         ]
 

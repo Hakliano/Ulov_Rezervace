@@ -4,7 +4,14 @@ from zoneinfo import ZoneInfo
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from archivnik.models import Customer, Entry, Object, ObjectType, Reminder, Tag, TagScope
+from io import BytesIO
+
+from PIL import Image
+
+from archivnik.models import (
+    Asset, CustomFieldDef, CustomFieldValue, Customer, Entry, Object, ObjectType, Reminder, Tag, TagScope,
+)
+from archivnik.storage import store_file
 from flow.models import FlowUser
 from partner_admin.models import MODUL_ARCHIVNIK
 from partner_admin.services import vytvor_noveho_partnera
@@ -143,6 +150,51 @@ def _entry(salon, owner, zakaznik, text, days, hour=10, objekt=None, typ='Pozná
     )
 
 
+def _png(color, size=320):
+    img = Image.new('RGB', (size, size), color)
+    buf = BytesIO()
+    img.save(buf, format='PNG')
+    return buf.getvalue()
+
+
+_MIN_PDF = b"""%PDF-1.1
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+3 0 obj<</Type/Page/MediaBox[0 0 200 200]/Parent 2 0 R>>endobj
+trailer<</Root 1 0 R>>
+%%EOF
+"""
+
+
+def _field(salon, typ, nazev, druh, poradi):
+    row, _ = CustomFieldDef.objects.get_or_create(
+        salon=salon, typ=typ, nazev=nazev,
+        defaults={'druh': druh, 'poradi': poradi, 'aktivni': True},
+    )
+    return row
+
+
+def _value(objekt, pole, hodnota):
+    CustomFieldValue.objects.update_or_create(objekt=objekt, pole=pole, defaults={'hodnota': hodnota})
+
+
+def _asset(salon, owner, zakaznik, nazev, raw, content_type, druh, objekt=None, zapis=None):
+    asset_uuid, key, ctype, size = store_file(salon, raw, content_type, nazev, druh)
+    return Asset.objects.create(
+        salon=salon,
+        uuid=asset_uuid,
+        zakaznik=zakaznik,
+        objekt=objekt,
+        zapis=zapis,
+        druh=druh,
+        nazev=nazev,
+        content_type=ctype,
+        velikost=size,
+        storage_key=key,
+        vytvoril=owner,
+    )
+
+
 def _reminder(salon, owner, zakaznik, text, days, objekt=None):
     return Reminder.objects.create(
         salon=salon,
@@ -156,6 +208,9 @@ def _reminder(salon, owner, zakaznik, text, days, objekt=None):
 
 
 def _seed_kartoteka(salon, owner):
+    Asset.objects.filter(salon=salon).delete()
+    CustomFieldValue.objects.filter(objekt__salon=salon).delete()
+    CustomFieldDef.objects.filter(salon=salon).delete()
     Entry.objects.filter(salon=salon).delete()
     Reminder.objects.filter(salon=salon).delete()
     Object.objects.filter(salon=salon).delete()
@@ -267,7 +322,7 @@ def _seed_kartoteka(salon, owner):
     _entry(salon, owner, adam, 'První návštěva — štěně z chovu, očkovací průkaz přinese příště.', -5, typ='Poznámka')
 
     _entry(salon, owner, eva, 'Roční prohlídka, mírný nadváha. Doporučena dieta a kontrola za 8 týdnů.', -21, 9, maxp, 'Prohlídka', 'Kontrola hmotnosti')
-    _entry(salon, owner, eva, 'Očkování vzteklina + kombinovaná. Bez reakce.', -21, 10, maxp, 'Očkování')
+    max_ocko = _entry(salon, owner, eva, 'Očkování vzteklina + kombinovaná. Bez reakce.', -21, 10, maxp, 'Očkování')
     _entry(salon, owner, eva, 'Střižení drápků, uši v pořádku.', -6, 11, bara, 'Ošetření')
     _entry(salon, owner, eva, 'Kastrace hojená bez komplikací. Stehy ven za 10 dní.', -90, 8, mourek, 'Zákrok', 'Po kastraci')
     _entry(salon, owner, petr, 'Očkování, odčervení. Majitel hlásí zvracení po mléku — vynechat.', -14, 10, micka, 'Očkování')
@@ -299,10 +354,44 @@ def _seed_kartoteka(salon, owner):
     _reminder(salon, owner, iva, 'Zavolat, zda už má kočku z útulku', 4)
     _reminder(salon, owner, eliska, 'Dentální hygiena Coco', 25, coco)
 
+    pes_plemeno = _field(salon, pes, 'Plemeno', 'text', 1)
+    pes_narozeni = _field(salon, pes, 'Datum narození', 'datum', 2)
+    pes_cip = _field(salon, pes, 'Číslo čipu', 'text', 3)
+    pes_hmotnost = _field(salon, pes, 'Hmotnost', 'cislo', 4)
+    pes_kastr = _field(salon, pes, 'Kastrace', 'ano_ne', 5)
+    _field(salon, kocka, 'Plemeno', 'text', 1)
+    _field(salon, kocka, 'Datum narození', 'datum', 2)
+    _field(salon, kocka, 'Číslo čipu', 'text', 3)
+    kocka_kastr = _field(salon, kocka, 'Kastrace', 'ano_ne', 4)
+    _field(salon, kralik, 'Plemeno', 'text', 1)
+    _field(salon, kralik, 'Datum narození', 'datum', 2)
+    _field(salon, ptak, 'Druh', 'text', 1)
+
+    _value(maxp, pes_plemeno, 'Labrador retriever')
+    _value(maxp, pes_narozeni, '2019-04-12')
+    _value(maxp, pes_cip, '203098765432109')
+    _value(maxp, pes_hmotnost, '32')
+    _value(maxp, pes_kastr, 'ne')
+    _value(micka, kocka_kastr, 'ano')
+    _value(rocky, pes_plemeno, 'Golden retriever')
+    _value(rocky, pes_cip, '203011122233344')
+
+    _asset(salon, owner, eva, 'Max-profil.png', _png((42, 92, 74)), 'image/png', 'fotografie', objekt=maxp)
+    _asset(salon, owner, eva, 'Max-detail.png', _png((90, 58, 32)), 'image/png', 'fotografie', objekt=maxp)
+    _asset(salon, owner, petr, 'Micka.png', _png((120, 90, 70)), 'image/png', 'fotografie', objekt=micka)
+    _asset(
+        salon, owner, eva, 'ockovaci-prukaz.pdf', _MIN_PDF, 'application/pdf', 'dokument',
+        objekt=maxp, zapis=max_ocko,
+    )
+    _asset(salon, owner, eva, 'laboratorni-vysledky.pdf', _MIN_PDF, 'application/pdf', 'dokument', objekt=maxp)
+    _asset(salon, owner, eva, 'souhlas-gdpr.pdf', _MIN_PDF, 'application/pdf', 'dokument')
+    _asset(salon, owner, lucie, 'Felix.png', _png((60, 70, 90)), 'image/png', 'fotografie', objekt=felix)
+
     return {
         'zakaznici': Customer.objects.filter(salon=salon).count(),
         'objekty': Object.objects.filter(salon=salon).count(),
         'zapisy': Entry.objects.filter(salon=salon).count(),
         'pripominky': Reminder.objects.filter(salon=salon).count(),
         'stitky': Tag.objects.filter(salon=salon).count(),
+        'soubory': Asset.objects.filter(salon=salon).count(),
     }

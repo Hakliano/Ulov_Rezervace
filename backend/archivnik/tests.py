@@ -1,12 +1,15 @@
 """P0: Archivník funguje bez FLOW a drží tenant izolaci."""
 
 from datetime import date
+from io import BytesIO
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Count
 from django.test import TestCase
+from PIL import Image
 from rest_framework.test import APIClient
 
-from archivnik.models import Customer, Entry, Object, ObjectType, Reminder
+from archivnik.models import Asset, CustomFieldDef, Customer, Entry, Object, ObjectType, Reminder
 from flow.models import FlowSession, FlowUser
 from partner_admin.models import MODUL_ARCHIVNIK, ModulKatalog, PartnerModul
 from rezervace.models import Zamestnanec
@@ -278,9 +281,128 @@ class SeedArchivnikOnlyTests(TestCase):
         self.assertTrue(Entry.objects.filter(salon=salon, objekt__isnull=True).exists())
         self.assertTrue(Entry.objects.filter(salon=salon, objekt__isnull=False).exists())
         self.assertTrue(Reminder.objects.filter(salon=salon).exists())
+        self.assertTrue(CustomFieldDef.objects.filter(salon=salon).exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, objekt__isnull=False).exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, objekt__isnull=True).exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, zapis__isnull=False).exists())
         self.assertTrue(
             Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n=1).exists()
         )
         self.assertTrue(
             Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n__gte=2).exists()
         )
+
+
+def _png_file(name='foto.png', color=(20, 80, 60)):
+    buf = BytesIO()
+    Image.new('RGB', (80, 80), color).save(buf, format='PNG')
+    return SimpleUploadedFile(name, buf.getvalue(), content_type='image/png')
+
+
+class ArchivnikEvidenceTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.salon, self.owner = _salon_s_majitelem('Evidence', 'evidence@archivnik.test')
+        _zapni_archivnik(self.salon)
+        token = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'evidence@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        self.client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token)
+        self.typ = ObjectType.objects.create(salon=self.salon, nazev='Vozidlo')
+        self.zakaznik = Customer.objects.create(salon=self.salon, prijmeni='Novák', jmeno='Eva')
+        self.objekt = Object.objects.create(
+            salon=self.salon, zakaznik=self.zakaznik, typ=self.typ, nazev='Octavia',
+        )
+
+    def test_vlastni_pole_podle_typu_ne_segmentu(self):
+        res = self.client.post(
+            '/api/archivnik/fields/',
+            {'typ_uuid': str(self.typ.uuid), 'nazev': 'VIN', 'druh': 'text'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 201)
+        put = self.client.put(
+            f'/api/archivnik/objects/{self.objekt.uuid}/fields/',
+            {'hodnoty': [{'pole_uuid': res.data['uuid'], 'hodnota': 'TMB123'}]},
+            format='json',
+        )
+        self.assertEqual(put.status_code, 200)
+        self.assertEqual(put.data[0]['hodnota'], 'TMB123')
+
+    def test_priloha_zapisu_je_jeden_asset_i_v_dokumentaci(self):
+        entry = self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'Kontrola kulhání.', 'nadpis': 'Vyšetření'},
+            format='json',
+        )
+        self.assertEqual(entry.status_code, 201)
+        upload = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': _png_file('laborator.png'),
+                'zapis_uuid': entry.data['uuid'],
+                'druh': 'fotografie',
+                'nazev': 'laborator.png',
+            },
+            format='multipart',
+        )
+        self.assertEqual(upload.status_code, 201, upload.data)
+        asset_uuid = upload.data['uuid']
+        self.assertEqual(upload.data['zapis_uuid'], entry.data['uuid'])
+        self.assertEqual(upload.data['objekt_uuid'], str(self.objekt.uuid))
+
+        u_zapisu = self.client.get(f'/api/archivnik/entries/?objekt={self.objekt.uuid}')
+        self.assertEqual(u_zapisu.data[0]['prilohy'][0]['uuid'], asset_uuid)
+
+        u_objektu = self.client.get(f'/api/archivnik/assets/?objekt={self.objekt.uuid}')
+        self.assertEqual({row['uuid'] for row in u_objektu.data}, {asset_uuid})
+
+        content = self.client.get(f'/api/archivnik/assets/{asset_uuid}/content/')
+        self.assertEqual(content.status_code, 200)
+        self.assertTrue(content.content.startswith(b'\x89PNG'))
+
+    def test_asset_u_zakaznika_bez_objektu(self):
+        res = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': SimpleUploadedFile(
+                    'smlouva.pdf', b'%PDF-1.1\ntrailer<</Root 1 0 R>>\n%%EOF',
+                    content_type='application/pdf',
+                ),
+                'zakaznik_uuid': str(self.zakaznik.uuid),
+                'druh': 'dokument',
+                'nazev': 'smlouva.pdf',
+            },
+            format='multipart',
+        )
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertIsNone(res.data['objekt_uuid'])
+        self.assertEqual(res.data['zakaznik_uuid'], str(self.zakaznik.uuid))
+
+    def test_cizi_tenant_nesmi_cist_soubor(self):
+        other_client = APIClient()
+        salon_b, _owner_b = _salon_s_majitelem('Cizí', 'cizi-ev@archivnik.test')
+        _zapni_archivnik(salon_b)
+        token_b = other_client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'cizi-ev@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        other_client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token_b)
+        created = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': _png_file(),
+                'objekt_uuid': str(self.objekt.uuid),
+                'druh': 'fotografie',
+            },
+            format='multipart',
+        )
+        self.assertEqual(created.status_code, 201)
+        stolen = other_client.get(f'/api/archivnik/assets/{created.data["uuid"]}/content/')
+        self.assertEqual(stolen.status_code, 404)
+        listed = other_client.get('/api/archivnik/assets/')
+        self.assertEqual(listed.data, [])
+

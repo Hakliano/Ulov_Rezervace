@@ -70,6 +70,100 @@ async function api(path, options = {}) {
   return data;
 }
 
+function assetSrc(uuid) {
+  return `${API_PUBLIC_BASE_URL}/assets/${uuid}/content/?token=${encodeURIComponent(getToken())}`;
+}
+
+async function apiUpload(path, formData) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers['X-Archivnik-Token'] = token;
+  const res = await fetch(`${API_PUBLIC_BASE_URL}${path}`, { method: 'POST', headers, body: formData });
+  let data = null;
+  try { data = await res.json(); } catch (_) { data = null; }
+  if (res.status === 401 || res.status === 403) {
+    setToken('');
+    throw new Error(data?.detail || 'Přihlášení vypršelo.');
+  }
+  if (!res.ok) throw new Error(data?.detail || res.statusText || 'Chyba');
+  return data;
+}
+
+let galleryItems = [];
+let galleryIndex = 0;
+
+function openGallery(items, start = 0) {
+  galleryItems = items || [];
+  if (!galleryItems.length) return;
+  galleryIndex = start;
+  showGallery();
+}
+
+function showGallery() {
+  const item = galleryItems[galleryIndex];
+  if (!item) return;
+  $('#lightbox-img').src = assetSrc(item.uuid);
+  $('#lightbox-img').alt = item.nazev || '';
+  $('#lightbox-caption').textContent = item.nazev || '';
+  $('#lightbox').classList.remove('hidden');
+}
+
+function closeGallery() {
+  $('#lightbox').classList.add('hidden');
+  $('#lightbox-img').src = '';
+}
+
+function coverBlock(uuid, alt) {
+  if (!uuid) return '<div class="cover-hero" aria-hidden="true"></div>';
+  return `<img class="cover-hero" src="${assetSrc(uuid)}" alt="${esc(alt)}">`;
+}
+
+function photoGrid(photos) {
+  if (!photos.length) return '<p class="muted">Zatím žádná fotografie.</p>';
+  return `<div class="photo-grid">${photos.map((p, i) => `
+    <button type="button" data-gallery="${i}">
+      <img class="photo-thumb" src="${assetSrc(p.uuid)}" alt="${esc(p.nazev)}">
+    </button>`).join('')}</div>`;
+}
+
+function docRows(docs) {
+  if (!docs.length) return '<p class="muted">Zatím žádný dokument.</p>';
+  return docs.map((d) => `
+    <div class="doc-row">
+      <span class="doc-ico">${(d.content_type || '').includes('pdf') ? 'PDF' : 'SOUB'}</span>
+      <div>
+        <strong>${esc(d.nazev)}</strong>
+        <div class="muted">${d.zapis_uuid ? 'příloha zápisu' : 'dokument karty'} · ${fmtDate(d.vytvoreno)}</div>
+      </div>
+      <a class="btn-small" href="${assetSrc(d.uuid)}" target="_blank" rel="noopener">Otevřít</a>
+    </div>`).join('');
+}
+
+function fieldRows(fields) {
+  if (!fields.length) return '<p class="muted">Pro tento typ objektu zatím nejsou vlastní pole. Přidejte je v Nastavení.</p>';
+  return `<div class="field-grid">${fields.map((f) => `
+    <div class="field-row"><span class="muted">${esc(f.nazev)}</span><strong>${esc(formatField(f) || '—')}</strong></div>
+  `).join('')}</div>`;
+}
+
+function formatField(f) {
+  if (f.druh === 'ano_ne') {
+    if (f.hodnota === 'ano') return 'Ano';
+    if (f.hodnota === 'ne') return 'Ne';
+  }
+  if (f.druh === 'datum') return fmtDate(f.hodnota);
+  return f.hodnota;
+}
+
+function attachHtml(files) {
+  if (!files || !files.length) return '';
+  return `<div class="attach-thumbs">${files.map((a) => (
+    (a.content_type || '').startsWith('image/')
+      ? `<img src="${assetSrc(a.uuid)}" alt="${esc(a.nazev)}">`
+      : `<a href="${assetSrc(a.uuid)}" target="_blank" rel="noopener">PDF</a>`
+  )).join('')}</div>`;
+}
+
 function showLogin(error) {
   $('#app-screen').classList.add('hidden');
   $('#login-screen').classList.remove('hidden');
@@ -182,6 +276,20 @@ $('#modal-close').addEventListener('click', closeModal);
 $('#modal').addEventListener('click', (ev) => {
   if (ev.target.id === 'modal') closeModal();
 });
+$('#lightbox-close').addEventListener('click', closeGallery);
+$('#lightbox').addEventListener('click', (ev) => {
+  if (ev.target.id === 'lightbox') closeGallery();
+});
+$('#lightbox-prev').addEventListener('click', () => {
+  if (!galleryItems.length) return;
+  galleryIndex = (galleryIndex + galleryItems.length - 1) % galleryItems.length;
+  showGallery();
+});
+$('#lightbox-next').addEventListener('click', () => {
+  if (!galleryItems.length) return;
+  galleryIndex = (galleryIndex + 1) % galleryItems.length;
+  showGallery();
+});
 
 $('#search-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
@@ -239,11 +347,24 @@ function timelineItem(e) {
   const isObject = Boolean(e.objekt_uuid);
   const who = isObject ? e.objekt_nazev : e.zakaznik_jmeno;
   return `<article class="timeline-item ${isObject ? 'object' : 'customer'}">
-    <div class="timeline-when">${fmtDate(e.nastalo)} · ${esc(who || 'Zákazník')}</div>
+    <div class="timeline-when">${fmtDate(e.nastalo)} · ${esc(who || 'Zákazník')}${e.typ_zapisu ? ' · ' + esc(e.typ_zapisu) : ''}</div>
     <strong>${esc(e.nadpis || e.typ_zapisu || 'Zápis')}</strong>
     <div>${esc(e.text)}</div>
+    ${attachHtml(e.prilohy)}
     ${e.autor ? `<div class="muted">${esc(e.autor)}</div>` : ''}
   </article>`;
+}
+
+function objCardHtml(o, extra) {
+  return `<button type="button" class="obj-card" data-open-object="${o.uuid}">
+    ${o.cover_uuid ? `<img class="cover-thumb" src="${assetSrc(o.cover_uuid)}" alt="">` : '<div class="cover-thumb"></div>'}
+    <span class="obj-card-copy">
+      <strong>${esc(o.nazev)}</strong>
+      <span class="muted">${esc(extra || o.typ_nazev)}</span>
+      <span class="muted">${o.posledni_zapis ? 'poslední zápis ' + fmtDate(o.posledni_zapis) : 'zatím bez zápisu'}</span>
+      <span class="muted">${o.zapisy_pocet || 0} zápisů · ${o.pripominky_aktivni || 0} připomínek · Otevřít →</span>
+    </span>
+  </button>`;
 }
 
 async function renderOverview() {
@@ -362,11 +483,13 @@ async function openCustomer(uuid, opts = {}) {
     return;
   }
   markActive('#tab-customers .list-item', uuid);
-  const [c, objects, entries, reminders] = await Promise.all([
+  const [c, objects, entries, reminders, photos, docs] = await Promise.all([
     api(`/customers/${uuid}/`),
     api(`/objects/?zakaznik=${uuid}`),
     api(`/entries/?zakaznik=${uuid}&vcetne_objektu=1`),
     api(`/reminders/?stav=aktivni&zakaznik=${uuid}`),
+    api(`/assets/?zakaznik=${uuid}&jen_zakaznik=1&druh=fotografie`),
+    api(`/assets/?zakaznik=${uuid}&jen_zakaznik=1&druh=dokument`),
   ]);
   cache.objects = objects;
   await ensureTypes();
@@ -382,20 +505,22 @@ async function openCustomer(uuid, opts = {}) {
     <div class="actions">
       <button type="button" class="btn-gold" data-act="entry">+ Nový zápis</button>
       <button type="button" class="btn-small" data-act="reminder">+ Připomínka</button>
+      <button type="button" class="btn-small" data-act="photo">+ Fotografie</button>
+      <button type="button" class="btn-small" data-act="doc">+ Dokument</button>
       <button type="button" class="btn-small" data-act="object">+ Přidat objekt</button>
       <button type="button" class="btn-small" data-act="edit">Upravit</button>
     </div>
-    <section class="section">
+    <section class="section" id="c-objekty">
       <h3>Objekty</h3>
-      <div class="obj-grid">
-        ${objects.map((o) => `
-          <button type="button" class="obj-card" data-open-object="${o.uuid}">
-            <strong>${esc(o.nazev)}</strong>
-            <span class="muted">${esc(o.typ_nazev)}</span>
-            <span class="muted">${o.posledni_zapis ? 'poslední zápis ' + fmtDate(o.posledni_zapis) : 'zatím bez zápisu'}</span>
-            <span class="muted">${o.zapisy_pocet || 0} zápisů · ${o.pripominky_aktivni || 0} připomínek · Otevřít →</span>
-          </button>`).join('') || '<p class="muted">Žádný objekt. Přidejte první akcí výše.</p>'}
-      </div>
+      <div class="obj-grid">${objects.map((o) => objCardHtml(o)).join('') || '<p class="muted">Žádný objekt. Přidejte první akcí výše.</p>'}</div>
+    </section>
+    <section class="section" id="c-foto">
+      <h3>Fotografie zákazníka</h3>
+      ${photoGrid(photos)}
+    </section>
+    <section class="section" id="c-docs">
+      <h3>Dokumenty zákazníka</h3>
+      ${docRows(docs)}
     </section>
     <section class="section">
       <h3>Aktivní připomínky</h3>
@@ -409,8 +534,13 @@ async function openCustomer(uuid, opts = {}) {
   `;
   bindNav(box);
   bindDone(box, () => openCustomer(uuid, { skipList: true }));
+  box.querySelectorAll('[data-gallery]').forEach((btn) => {
+    btn.addEventListener('click', () => openGallery(photos, Number(btn.dataset.gallery)));
+  });
   box.querySelector('[data-act="entry"]').addEventListener('click', () => showEntryForm({ zakaznik: c, objects }));
   box.querySelector('[data-act="reminder"]').addEventListener('click', () => showReminderForm({ zakaznik: c, objects }));
+  box.querySelector('[data-act="photo"]').addEventListener('click', () => showAssetForm({ zakaznik: c, druh: 'fotografie' }));
+  box.querySelector('[data-act="doc"]').addEventListener('click', () => showAssetForm({ zakaznik: c, druh: 'dokument' }));
   box.querySelector('[data-act="object"]').addEventListener('click', () => showObjectForm({ zakaznik: c }));
   box.querySelector('[data-act="edit"]').addEventListener('click', () => showEditCustomer(c));
 }
@@ -427,9 +557,12 @@ async function openObject(uuid, opts = {}) {
   const obj = await api(`/objects/${uuid}/`);
   selectedCustomer = obj.zakaznik_uuid;
   await ensureTypes();
-  const [entries, reminders] = await Promise.all([
+  const [entries, reminders, fields, photos, docs] = await Promise.all([
     api(`/entries/?objekt=${uuid}`),
     api(`/reminders/?stav=aktivni&objekt=${uuid}`),
+    api(`/objects/${uuid}/fields/`),
+    api(`/assets/?objekt=${uuid}&druh=fotografie`),
+    api(`/assets/?objekt=${uuid}&druh=dokument`),
   ]);
   let box = $(`#${hostId}`);
   if (!box) {
@@ -443,7 +576,8 @@ async function openObject(uuid, opts = {}) {
     : `<button type="button" class="linkish back" data-open-customer="${obj.zakaznik_uuid}">← ${esc(obj.zakaznik_jmeno)}</button>`;
   box.innerHTML = `
     ${back}
-    <div class="card-head">
+    <div class="card-hero">
+      ${coverBlock(obj.cover_uuid || (photos[0] && photos[0].uuid), obj.nazev)}
       <div>
         <h2>${esc(obj.nazev)}</h2>
         <p class="meta muted">${esc(obj.typ_nazev)} · Majitel: <button type="button" class="linkish" data-open-customer="${obj.zakaznik_uuid}">${esc(obj.zakaznik_jmeno)}</button></p>
@@ -454,15 +588,42 @@ async function openObject(uuid, opts = {}) {
     <div class="actions">
       <button type="button" class="btn-gold" data-act="entry">+ Zápis</button>
       <button type="button" class="btn-small" data-act="reminder">+ Připomínka</button>
+      <button type="button" class="btn-small" data-act="photo">+ Fotografie</button>
+      <button type="button" class="btn-small" data-act="doc">+ Dokument</button>
+      <button type="button" class="btn-small" data-act="fields">Upravit údaje</button>
       <button type="button" class="btn-small" data-act="edit">Upravit</button>
     </div>
-    <section class="section">
+    <nav class="section-nav">
+      <a href="#o-prehled">Přehled</a>
+      <a href="#o-udaje">Vlastní údaje</a>
+      <a href="#o-foto">Fotografie</a>
+      <a href="#o-docs">Dokumenty</a>
+      <a href="#o-remind">Připomínky</a>
+      <a href="#o-hist">Historie</a>
+    </nav>
+    <section class="section" id="o-prehled">
+      <h3>Přehled</h3>
+      <p class="muted">${photos.length} fotografií · ${docs.length} dokumentů · ${entries.length} zápisů · ${reminders.length} aktivních připomínek</p>
+    </section>
+    <section class="section" id="o-udaje">
+      <h3>Vlastní údaje</h3>
+      ${fieldRows(fields)}
+    </section>
+    <section class="section" id="o-foto">
+      <h3>Fotografie</h3>
+      ${photoGrid(photos)}
+    </section>
+    <section class="section" id="o-docs">
+      <h3>Dokumenty</h3>
+      ${docRows(docs)}
+    </section>
+    <section class="section" id="o-remind">
       <h3>Aktivní připomínky</h3>
       ${reminders.map(reminderRow).join('') || '<p class="muted">Nic nečeká.</p>'}
     </section>
-    <section class="section">
+    <section class="section" id="o-hist">
       <h3>Historie objektu</h3>
-      <p class="muted">Jen zápisy tohoto objektu.</p>
+      <p class="muted">Jen zápisy tohoto objektu. Přílohy zápisu jsou i v dokumentaci výše — jde o stejný soubor.</p>
       <div class="timeline">${entries.map(timelineItem).join('') || '<p class="muted">Žádné zápisy.</p>'}</div>
     </section>
   `;
@@ -474,9 +635,15 @@ async function openObject(uuid, opts = {}) {
       renderObjects();
     });
   }
+  box.querySelectorAll('[data-gallery]').forEach((btn) => {
+    btn.addEventListener('click', () => openGallery(photos, Number(btn.dataset.gallery)));
+  });
   bindDone(box, () => openObject(uuid, opts));
   box.querySelector('[data-act="entry"]').addEventListener('click', () => showEntryForm({ objekt: obj }));
   box.querySelector('[data-act="reminder"]').addEventListener('click', () => showReminderForm({ objekt: obj }));
+  box.querySelector('[data-act="photo"]').addEventListener('click', () => showAssetForm({ objekt: obj, druh: 'fotografie' }));
+  box.querySelector('[data-act="doc"]').addEventListener('click', () => showAssetForm({ objekt: obj, druh: 'dokument' }));
+  box.querySelector('[data-act="fields"]').addEventListener('click', () => showFieldsForm(obj, fields));
   box.querySelector('[data-act="edit"]').addEventListener('click', () => showEditObject(obj));
 }
 
@@ -489,23 +656,107 @@ function showEntryForm({ zakaznik, objekt, objects }) {
           <option value="">Zápis k zákazníkovi</option>
           ${objectOptions}
         </select>`}
+      <input name="typ_zapisu" placeholder="Typ zápisu (např. Vyšetření)" value="Poznámka">
       <input name="nadpis" placeholder="Nadpis (volitelně)">
       <textarea name="text" placeholder="Text zápisu" required></textarea>
+      <label>Přílohy
+        <input name="prilohy" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf">
+      </label>
       <button class="btn-primary" type="submit">Uložit zápis</button>
     </form>
   `, (body) => {
     body.querySelector('#form-entry').addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const fd = Object.fromEntries(new FormData(ev.target));
-      const payload = { text: fd.text, nadpis: fd.nadpis };
+      const form = ev.target;
+      const fd = Object.fromEntries(new FormData(form));
+      const payload = { text: fd.text, nadpis: fd.nadpis, typ_zapisu: fd.typ_zapisu || 'Poznámka' };
       if (objekt) payload.objekt_uuid = objekt.uuid;
       else if (fd.objekt_uuid) payload.objekt_uuid = fd.objekt_uuid;
       else payload.zakaznik_uuid = zakaznik.uuid;
       try {
-        await api('/entries/', { method: 'POST', body: JSON.stringify(payload) });
+        const created = await api('/entries/', { method: 'POST', body: JSON.stringify(payload) });
+        const files = form.querySelector('[name=prilohy]').files || [];
+        for (const file of files) {
+          const up = new FormData();
+          up.append('soubor', file);
+          up.append('zapis_uuid', created.uuid);
+          up.append('nazev', file.name);
+          up.append('druh', file.type.startsWith('image/') ? 'fotografie' : 'dokument');
+          await apiUpload('/assets/', up);
+        }
         closeModal();
         if (objekt) await openObject(objekt.uuid, { skipList: true, fromObjects: currentTab === 'objects' });
         else await openCustomer(zakaznik.uuid, { skipList: true });
+      } catch (err) {
+        showModalError(err.message);
+      }
+    });
+  });
+}
+
+function showAssetForm({ zakaznik, objekt, druh }) {
+  const title = druh === 'fotografie' ? 'Nová fotografie' : 'Nový dokument';
+  const accept = druh === 'fotografie' ? 'image/jpeg,image/png,image/webp,image/gif' : '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';
+  openModal(title, `
+    <form id="form-asset" class="form-grid">
+      <input name="nazev" placeholder="Název souboru (volitelně)">
+      <input name="soubor" type="file" required accept="${accept}">
+      <button class="btn-primary" type="submit">Nahrát</button>
+    </form>
+  `, (body) => {
+    body.querySelector('#form-asset').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const form = ev.target;
+      const file = form.soubor.files[0];
+      const up = new FormData();
+      up.append('soubor', file);
+      up.append('druh', druh);
+      up.append('nazev', form.nazev.value.trim() || file.name);
+      if (objekt) up.append('objekt_uuid', objekt.uuid);
+      else up.append('zakaznik_uuid', zakaznik.uuid);
+      try {
+        await apiUpload('/assets/', up);
+        closeModal();
+        if (objekt) await openObject(objekt.uuid, { skipList: true, fromObjects: currentTab === 'objects' });
+        else await openCustomer(zakaznik.uuid, { skipList: true });
+      } catch (err) {
+        showModalError(err.message);
+      }
+    });
+  });
+}
+
+function showFieldsForm(obj, fields) {
+  if (!fields.length) {
+    openModal('Vlastní údaje', '<p class="muted">Nejdřív v Nastavení přidejte pole k tomuto typu objektu.</p>');
+    return;
+  }
+  openModal('Vlastní údaje', `
+    <form id="form-fields" class="form-grid">
+      ${fields.map((f) => {
+        if (f.druh === 'ano_ne') {
+          return `<label>${esc(f.nazev)}
+            <select name="${f.pole_uuid}">
+              <option value="">—</option>
+              <option value="ano" ${f.hodnota === 'ano' ? 'selected' : ''}>Ano</option>
+              <option value="ne" ${f.hodnota === 'ne' ? 'selected' : ''}>Ne</option>
+            </select>
+          </label>`;
+        }
+        const type = f.druh === 'datum' ? 'date' : (f.druh === 'cislo' ? 'number' : 'text');
+        return `<label>${esc(f.nazev)}<input name="${f.pole_uuid}" type="${type}" value="${esc(f.hodnota || '')}"></label>`;
+      }).join('')}
+      <button class="btn-primary" type="submit">Uložit údaje</button>
+    </form>
+  `, (body) => {
+    body.querySelector('#form-fields').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fd = Object.fromEntries(new FormData(ev.target));
+      const hodnoty = Object.entries(fd).map(([pole_uuid, hodnota]) => ({ pole_uuid, hodnota }));
+      try {
+        await api(`/objects/${obj.uuid}/fields/`, { method: 'PUT', body: JSON.stringify({ hodnoty }) });
+        closeModal();
+        await openObject(obj.uuid, { skipList: true, fromObjects: currentTab === 'objects' });
       } catch (err) {
         showModalError(err.message);
       }
@@ -644,13 +895,7 @@ async function renderObjects() {
     <div class="panel">
       <div class="toolbar"><h2>Objekty</h2></div>
       <div class="obj-grid cols-2">
-        ${objects.map((o) => `
-          <button type="button" class="obj-card" data-open-object="${o.uuid}">
-            <strong>${esc(o.nazev)}</strong>
-            <span class="muted">${esc(o.typ_nazev)} · ${esc(o.zakaznik_jmeno)}</span>
-            <span class="muted">${o.posledni_zapis ? 'poslední zápis ' + fmtDate(o.posledni_zapis) : 'zatím bez zápisu'}</span>
-            <span class="muted">${o.zapisy_pocet || 0} zápisů · ${o.pripominky_aktivni || 0} připomínek · Otevřít →</span>
-          </button>`).join('') || '<p class="muted">Zatím žádný objekt.</p>'}
+        ${objects.map((o) => objCardHtml(o, `${o.typ_nazev} · ${o.zakaznik_jmeno}`)).join('') || '<p class="muted">Zatím žádný objekt.</p>'}
       </div>
     </div>
   `;
@@ -690,6 +935,24 @@ async function renderSettings() {
         </form>
       </div>
       <div class="panel">
+        <h2>Vlastní pole podle typu</h2>
+        ${types.map((t) => `
+          <div class="section">
+            <h3>${esc(t.nazev)}</h3>
+            ${(t.pole || []).map((p) => `<div class="row"><span>${esc(p.nazev)}</span><span class="muted">${esc(p.druh)}</span></div>`).join('') || '<p class="muted">Žádná pole.</p>'}
+            <form class="form-grid form-field" data-typ="${t.uuid}">
+              <input name="nazev" placeholder="Název pole" required>
+              <select name="druh">
+                <option value="text">Text</option>
+                <option value="cislo">Číslo</option>
+                <option value="datum">Datum</option>
+                <option value="ano_ne">Ano / ne</option>
+              </select>
+              <button class="btn-primary" type="submit">Přidat pole</button>
+            </form>
+          </div>`).join('')}
+      </div>
+      <div class="panel">
         <h2>Štítky</h2>
         ${tags.map((t) => `<div class="row"><span>${esc(t.nazev)}</span><span class="muted">${esc(t.rozsah)}</span></div>`).join('') || '<p class="muted">Žádné štítky.</p>'}
         <form id="form-tag" class="form-grid">
@@ -721,6 +984,21 @@ async function renderSettings() {
     } catch (err) {
       alert(err.message);
     }
+  });
+  $$('.form-field').forEach((form) => {
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fd = Object.fromEntries(new FormData(form));
+      try {
+        await api('/fields/', {
+          method: 'POST',
+          body: JSON.stringify({ ...fd, typ_uuid: form.dataset.typ }),
+        });
+        await renderSettings();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
   });
 }
 
