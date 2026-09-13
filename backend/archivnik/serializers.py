@@ -55,21 +55,42 @@ class ObjectSerializer(serializers.ModelSerializer):
     zakaznik_uuid = serializers.UUIDField(source='zakaznik.uuid', read_only=True)
     zakaznik_jmeno = serializers.CharField(source='zakaznik.display_name', read_only=True)
     tagy = TagSerializer(many=True, read_only=True)
+    zapisy_pocet = serializers.SerializerMethodField()
+    posledni_zapis = serializers.SerializerMethodField()
+    pripominky_aktivni = serializers.SerializerMethodField()
 
     class Meta:
         model = Object
         fields = [
             'uuid', 'nazev', 'popis', 'stav',
             'typ_uuid', 'typ_nazev', 'zakaznik_uuid', 'zakaznik_jmeno',
-            'tagy', 'vytvoreno', 'upraveno',
+            'tagy', 'zapisy_pocet', 'posledni_zapis', 'pripominky_aktivni',
+            'vytvoreno', 'upraveno',
         ]
+
+    def get_zapisy_pocet(self, obj):
+        if 'zapisy_pocet' in obj.__dict__:
+            return obj.zapisy_pocet
+        return obj.zapisy.count()
+
+    def get_posledni_zapis(self, obj):
+        if 'posledni_zapis' in obj.__dict__:
+            val = obj.posledni_zapis
+            return val.isoformat() if val else None
+        last = obj.zapisy.order_by('-nastalo').values_list('nastalo', flat=True).first()
+        return last.isoformat() if last else None
+
+    def get_pripominky_aktivni(self, obj):
+        if 'pripominky_aktivni' in obj.__dict__:
+            return obj.pripominky_aktivni
+        return obj.pripominky.filter(stav='aktivni').count()
 
 
 class ObjectWriteSerializer(serializers.Serializer):
-    zakaznik_uuid = serializers.UUIDField()
-    typ_uuid = serializers.UUIDField()
-    nazev = serializers.CharField(max_length=160)
-    popis = serializers.CharField(required=False, allow_blank=True, default='')
+    zakaznik_uuid = serializers.UUIDField(required=False)
+    typ_uuid = serializers.UUIDField(required=False)
+    nazev = serializers.CharField(max_length=160, required=False)
+    popis = serializers.CharField(required=False, allow_blank=True)
     stav = serializers.ChoiceField(required=False, choices=['aktivni', 'archivovany'])
     tagy = serializers.ListField(child=serializers.UUIDField(), required=False)
 

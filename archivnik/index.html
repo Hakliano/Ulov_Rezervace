@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=p0ux">
 </head>
 <body>
   <div id="login-screen" class="login-wrap">
@@ -46,12 +46,14 @@
         >
         <span id="sidebar-salon">—</span>
       </div>
-      <nav>
+      <nav class="nav-main" aria-label="Hlavní">
         <button type="button" class="tab active" data-tab="overview">Přehled</button>
         <button type="button" class="tab" data-tab="customers">Zákazníci</button>
+        <button type="button" class="tab" data-tab="objects">Objekty</button>
         <button type="button" class="tab" data-tab="reminders">Připomínky</button>
-        <button type="button" class="tab" data-tab="tags">Štítky</button>
-        <button type="button" class="tab" data-tab="types">Typy objektů</button>
+      </nav>
+      <nav class="nav-settings" aria-label="Nastavení">
+        <button type="button" class="tab" data-tab="settings">Nastavení</button>
       </nav>
       <div class="userbox">
         <strong id="sidebar-name">—</strong>
@@ -67,11 +69,21 @@
       <div id="search-results" class="panel hidden"></div>
       <section id="tab-overview" class="tab-panel"></section>
       <section id="tab-customers" class="tab-panel hidden"></section>
+      <section id="tab-objects" class="tab-panel hidden"></section>
       <section id="tab-reminders" class="tab-panel hidden"></section>
-      <section id="tab-tags" class="tab-panel hidden"></section>
-      <section id="tab-types" class="tab-panel hidden"></section>
+      <section id="tab-settings" class="tab-panel hidden"></section>
     </main>
   </div>
-  <script src="app.js"></script>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-title">Akce</h3>
+        <button type="button" class="btn-ghost" id="modal-close">Zavřít</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+  <script src="app.js?v=p0ux"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -43,6 +43,23 @@ def _validation_detail(exc):
     if getattr(exc, 'messages', None):
         return '; '.join(str(m) for m in exc.messages)
     return str(exc)
+
+
+def _objects_qs(salon):
+    return (
+        Object.objects.filter(salon=salon)
+        .select_related('typ', 'zakaznik')
+        .prefetch_related('tagy')
+        .annotate(
+            zapisy_pocet=Count('zapisy', distinct=True),
+            posledni_zapis=Max('zapisy__nastalo'),
+            pripominky_aktivni=Count(
+                'pripominky',
+                filter=Q(pripominky__stav=ReminderStav.AKTIVNI),
+                distinct=True,
+            ),
+        )
+    )
 
 
 def _tags(salon, uuids, *, for_zakaznik=False, for_objekt=False):
@@ -122,6 +139,9 @@ class OverviewView(APIView):
             .annotate(pocet=Count('id'))
             .order_by('-pocet')
         )
+        upcoming = Reminder.objects.filter(
+            salon=salon, stav=ReminderStav.AKTIVNI,
+        ).select_related('zakaznik', 'objekt', 'prirazeny').order_by('termin', 'id')[:8]
         return Response({
             'provozovna': salon.name,
             'zakaznici': Customer.objects.filter(salon=salon, stav=Stav.AKTIVNI).count(),
@@ -129,6 +149,7 @@ class OverviewView(APIView):
             'zapisy_mesic': Entry.objects.filter(salon=salon, vytvoreno__gte=month_start).count(),
             'pripominky_aktivni': Reminder.objects.filter(salon=salon, stav=ReminderStav.AKTIVNI).count(),
             'podle_typu': [{'typ': r['typ__nazev'], 'pocet': r['pocet']} for r in by_type],
+            'nejblizsi_pripominky': ReminderSerializer(upcoming, many=True).data,
         })
 
 
@@ -262,7 +283,7 @@ class ObjectListCreateView(APIView):
 
     def get(self, request):
         salon = _salon(request)
-        qs = Object.objects.filter(salon=salon).select_related('typ', 'zakaznik').prefetch_related('tagy')
+        qs = _objects_qs(salon)
         cu = request.query_params.get('zakaznik')
         if cu:
             qs = qs.filter(zakaznik__uuid=cu)
@@ -277,6 +298,8 @@ class ObjectListCreateView(APIView):
         data = ser.validated_data
         salon = _salon(request)
         actor = _actor(request)
+        if not data.get('zakaznik_uuid') or not data.get('typ_uuid') or not data.get('nazev'):
+            return Response({'detail': 'Zadejte zákazníka, typ a název objektu.'}, status=400)
         zakaznik = Customer.objects.filter(salon=salon, uuid=data['zakaznik_uuid']).first()
         typ = ObjectType.objects.filter(salon=salon, uuid=data['typ_uuid']).first()
         if not zakaznik:
@@ -308,9 +331,7 @@ class ObjectDetailView(APIView):
     permission_classes = [ArchivnikPermission]
 
     def _get(self, request, object_uuid):
-        return Object.objects.filter(
-            salon=_salon(request), uuid=object_uuid,
-        ).select_related('typ', 'zakaznik').prefetch_related('tagy').first()
+        return _objects_qs(_salon(request)).filter(uuid=object_uuid).first()
 
     def get(self, request, object_uuid):
         obj = self._get(request, object_uuid)
@@ -363,7 +384,7 @@ class EntryListCreateView(APIView):
                 qs = qs.filter(zakaznik__uuid=cu)
             else:
                 qs = qs.filter(zakaznik__uuid=cu, objekt__isnull=True)
-        return Response(EntrySerializer(qs[:200], many=True).data)
+        return Response(EntrySerializer(qs.order_by('-nastalo', '-id')[:200], many=True).data)
 
     def post(self, request):
         ser = EntryWriteSerializer(data=request.data)
@@ -431,7 +452,13 @@ class ReminderListCreateView(APIView):
         stav = request.query_params.get('stav')
         if stav in (ReminderStav.AKTIVNI, ReminderStav.HOTOVO):
             qs = qs.filter(stav=stav)
-        return Response(ReminderSerializer(qs[:200], many=True).data)
+        cu = request.query_params.get('zakaznik')
+        if cu:
+            qs = qs.filter(zakaznik__uuid=cu)
+        ou = request.query_params.get('objekt')
+        if ou:
+            qs = qs.filter(objekt__uuid=ou)
+        return Response(ReminderSerializer(qs.order_by('termin', 'id')[:200], many=True).data)
 
     def post(self, request):
         ser = ReminderWriteSerializer(data=request.data)

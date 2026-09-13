@@ -167,6 +167,17 @@ class ArchivnikEntryModelTests(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertEqual(res.data['objekt_uuid'], str(self.objekt.uuid))
         self.assertEqual(res.data['zakaznik_uuid'], str(self.zakaznik.uuid))
+        self.client.post(
+            '/api/archivnik/entries/',
+            {'zakaznik_uuid': str(self.zakaznik.uuid), 'text': 'Jen k majiteli.'},
+            format='json',
+        )
+        kombinace = self.client.get(
+            f'/api/archivnik/entries/?zakaznik={self.zakaznik.uuid}&vcetne_objektu=1'
+        )
+        self.assertEqual(len(kombinace.data), 2)
+        jen_objekt = self.client.get(f'/api/archivnik/entries/?objekt={self.objekt.uuid}')
+        self.assertEqual(len(jen_objekt.data), 1)
 
     def test_cizi_objekt_u_jineho_zakaznika_400(self):
         res = self.client.post(
@@ -207,6 +218,29 @@ class ArchivnikEntryModelTests(TestCase):
         self.assertEqual(res.data['objekty'], 1)
         self.assertEqual(res.data['pripominky_aktivni'], 1)
         self.assertEqual(res.data['podle_typu'][0]['typ'], 'Vozidlo')
+        self.assertEqual(res.data['nejblizsi_pripominky'][0]['text'], 'Kontrola')
+
+        obj = self.client.get('/api/archivnik/objects/').data[0]
+        self.assertEqual(obj['zapisy_pocet'], 0)
+        self.assertEqual(obj['pripominky_aktivni'], 0)
+
+        self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'Poznámka k vozu.'},
+            format='json',
+        )
+        obj = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/').data
+        self.assertEqual(obj['zapisy_pocet'], 1)
+        self.assertTrue(obj['posledni_zapis'])
+
+        u_zak = self.client.get(
+            f'/api/archivnik/reminders/?stav=aktivni&zakaznik={self.zakaznik.uuid}'
+        )
+        self.assertEqual(len(u_zak.data), 1)
+        u_obj = self.client.get(
+            f'/api/archivnik/reminders/?stav=aktivni&objekt={self.objekt.uuid}'
+        )
+        self.assertEqual(len(u_obj.data), 0)
 
 
 class SeedArchivnikOnlyTests(TestCase):
