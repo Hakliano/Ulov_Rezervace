@@ -180,18 +180,15 @@ function coverBlock(uuid, alt) {
   </button>`;
 }
 
-function photoGrid(photos, coverUuid, objectContext) {
-  if (!photos.length) return '<p class="muted">Zatím žádná fotografie.</p>';
+function photoGrid(photos, coverUuid) {
+  if (!photos.length) return '';
   return `<div class="photo-grid">${photos.map((p, i) => `
     <button type="button" data-gallery="${i}">
       <span class="photo-wrap">
         <img class="photo-thumb" src="${assetSrc(p.uuid)}" alt="${esc(p.nazev)}">
         ${coverUuid && p.uuid === coverUuid ? '<span class="photo-badge">Hlavní</span>' : ''}
       </span>
-    </button>`).join('')}</div>
-    <p class="muted">${objectContext
-      ? 'Kliknutím otevřete náhled. Hlavní fotografie je v hlavičce karty i na kartičkách v seznamu.'
-      : 'Kliknutím otevřete náhled. Smazat lze v náhledu.'}</p>`;
+    </button>`).join('')}</div>`;
 }
 
 function bindAssets(root, { photos, docs, coverUuid, objectUuid, onChange }) {
@@ -227,7 +224,7 @@ function bindAssets(root, { photos, docs, coverUuid, objectUuid, onChange }) {
 }
 
 function docRows(docs) {
-  if (!docs.length) return '<p class="muted">Zatím žádný dokument.</p>';
+  if (!docs.length) return '';
   return docs.map((d) => `
     <div class="doc-row">
       <span class="doc-ico">${(d.content_type || '').includes('pdf') ? 'PDF' : 'SOUB'}</span>
@@ -243,10 +240,34 @@ function docRows(docs) {
 }
 
 function fieldRows(fields) {
-  if (!fields.length) return '<p class="muted">Pro tento typ objektu zatím nejsou vlastní pole. Přidejte je v Nastavení.</p>';
+  if (!fields.length) return '';
   return `<div class="field-grid">${fields.map((f) => `
     <div class="field-row"><span class="muted">${esc(f.nazev)}</span><strong>${esc(formatField(f) || '—')}</strong></div>
   `).join('')}</div>`;
+}
+
+function wrapSection(id, title, inner) {
+  if (!inner) return '';
+  return `<section class="section"${id ? ` id="${id}"` : ''}><h3>${esc(title)}</h3>${inner}</section>`;
+}
+
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function reminderTone(termin) {
+  const day = String(termin || '').slice(0, 10);
+  const today = todayIso();
+  if (day && day < today) return 'overdue';
+  if (day === today) return 'today';
+  return 'later';
+}
+
+function reminderToneLabel(tone) {
+  if (tone === 'overdue') return 'Po termínu';
+  if (tone === 'today') return 'Dnes';
+  return 'Nadcházející';
 }
 
 function formatField(f) {
@@ -494,12 +515,20 @@ function bindNav(root) {
 }
 
 function reminderRow(r) {
-  return `<div class="row">
-    <div>
-      <strong>${esc(r.text)}</strong>
-      <div class="muted">${fmtDate(r.termin)}${r.objekt_nazev ? ' · ' + esc(r.objekt_nazev) : ''}${r.zakaznik_jmeno ? ' · ' + esc(r.zakaznik_jmeno) : ''}</div>
+  const tone = reminderTone(r.termin);
+  return `<div class="reminder-card ${tone}">
+    <div class="reminder-when">
+      <span class="reminder-date">${fmtDate(r.termin)}</span>
+      <span class="reminder-tone">${reminderToneLabel(tone)}</span>
     </div>
-    <button type="button" class="btn-small" data-done="${r.uuid}">Hotovo</button>
+    <div class="reminder-body">
+      <strong>${esc(r.text)}</strong>
+      <div class="reminder-who">
+        <button type="button" class="linkish" data-open-customer="${r.zakaznik_uuid}">${esc(r.zakaznik_jmeno)}</button>
+        ${r.objekt_uuid ? `<span class="muted">·</span><button type="button" class="linkish" data-open-object="${r.objekt_uuid}">${esc(r.objekt_nazev)}</button>` : ''}
+      </div>
+    </div>
+    <button type="button" class="btn-gold" data-done="${r.uuid}">Hotovo</button>
   </div>`;
 }
 
@@ -531,9 +560,9 @@ function objCardHtml(o, extra) {
       : `<div class="cover-thumb avatar-fallback">${esc(initials(o.nazev))}</div>`}
     <span class="obj-card-copy">
       <strong>${esc(o.nazev)}</strong>
-      <span class="muted">${esc(extra || o.typ_nazev)}</span>
-      <span class="muted">${o.posledni_zapis ? 'poslední zápis ' + fmtDate(o.posledni_zapis) : 'zatím bez zápisu'}</span>
-      <span class="muted">${o.zapisy_pocet || 0} zápisů · ${o.pripominky_aktivni || 0} připomínek · Otevřít →</span>
+      <span class="obj-card-meta">${esc(o.typ_nazev)}${o.zakaznik_jmeno ? ' · ' + esc(o.zakaznik_jmeno) : extra ? ' · ' + esc(extra) : ''}</span>
+      <span class="muted">${o.posledni_zapis ? 'Poslední zápis ' + fmtDate(o.posledni_zapis) : 'Bez zápisu'}</span>
+      <span class="obj-card-stats">${o.zapisy_pocet || 0} zápisů · ${o.pripominky_aktivni || 0} připomínek</span>
     </span>
   </button>`;
 }
@@ -549,7 +578,6 @@ async function renderOverview() {
   $('#tab-overview').innerHTML = `
     <div class="hero-line">
       <h1>${greeting()}, ${esc(data.provozovna)}</h1>
-      <p class="muted">Digitální kartotéka. Přehled toho, co se ve vašem archivu děje.</p>
     </div>
     <div class="kpis">
       <div class="kpi"><span class="muted">Zákazníci</span><strong>${data.zakaznici}</strong></div>
@@ -557,37 +585,38 @@ async function renderOverview() {
       <div class="kpi kpi-gold"><span class="muted">Zápisy tento měsíc</span><strong>${data.zapisy_mesic}</strong></div>
       <div class="kpi"><span class="muted">Aktivní připomínky</span><strong>${data.pripominky_aktivni}</strong></div>
     </div>
-    <section class="panel chart-panel">
-      <div class="panel-head">
+    <div class="ov-lead">
+      <section class="panel hlaseni">
+        <img class="hlaseni-mascot" src="${MASCOT_SRC}" alt="Archivník" width="196" height="60">
         <div>
-          <h3>Aktivita za posledních 6 měsíců</h3>
-          <p class="muted">Noví zákazníci a vytvořené zápisy.</p>
+          <h3>Archivník hlásí</h3>
+          <ul>${hlaseni.map((line) => `<li>${esc(line)}</li>`).join('')}</ul>
         </div>
-        <div class="chart-legend">
-          <span><i class="dot gold"></i> Noví zákazníci</span>
-          <span><i class="dot teal"></i> Zápisy</span>
+      </section>
+      <section class="panel chart-panel">
+        <div class="panel-head">
+          <h3>Aktivita za 6 měsíců</h3>
+          <div class="chart-legend">
+            <span><i class="dot gold"></i> Noví zákazníci</span>
+            <span><i class="dot teal"></i> Zápisy</span>
+          </div>
         </div>
-      </div>
-      ${hasActivity ? `<div class="chart" style="--chart-max:${maxVal}">
-        ${months.map((m) => `
-          <div class="chart-col" title="${esc(m.label)}: ${m.zakaznici} zákazníků, ${m.zapisy} zápisů">
-            <div class="chart-bars">
-              <span class="chart-bar gold" style="height:${Math.round(((m.zakaznici || 0) / maxVal) * 100)}%"></span>
-              <span class="chart-bar teal" style="height:${Math.round(((m.zapisy || 0) / maxVal) * 100)}%"></span>
-            </div>
-            <span class="chart-label">${esc(m.label)}</span>
-          </div>`).join('')}
-      </div>` : emptyState('Zatím bez aktivity', 'Jakmile přibydou zákazníci a zápisy, tady uvidíte vývoj za posledních šest měsíců.')}
-    </section>
+        ${hasActivity ? `<div class="chart">
+          ${months.map((m) => `
+            <div class="chart-col" title="${esc(m.label)}: ${m.zakaznici} zákazníků, ${m.zapisy} zápisů">
+              <div class="chart-bars">
+                <span class="chart-bar gold" style="height:${Math.round(((m.zakaznici || 0) / maxVal) * 100)}%"></span>
+                <span class="chart-bar teal" style="height:${Math.round(((m.zapisy || 0) / maxVal) * 100)}%"></span>
+              </div>
+              <span class="chart-label">${esc(m.label)}</span>
+            </div>`).join('')}
+        </div>` : emptyState('Zatím bez aktivity', 'Jakmile přibydou zákazníci a zápisy, tady uvidíte vývoj.')}
+      </section>
+    </div>
     <div class="ov-grid">
       <section class="panel">
         <h3>Co vás čeká</h3>
-        ${soon.length ? soon.map((r) => `
-          <button type="button" class="feed-row" ${r.objekt_uuid ? `data-open-object="${r.objekt_uuid}"` : `data-open-customer="${r.zakaznik_uuid}"`}>
-            <span class="feed-kind">Připomínka</span>
-            <strong>${esc(r.text)}</strong>
-            <span class="muted">${fmtDate(r.termin)}${r.objekt_nazev ? ' · ' + esc(r.objekt_nazev) : ''}${r.zakaznik_jmeno ? ' · ' + esc(r.zakaznik_jmeno) : ''}</span>
-          </button>`).join('') : emptyState('Nic nečeká', 'Žádné aktivní připomínky. Novou přidáte na kartě zákazníka nebo objektu.')}
+        ${soon.length ? soon.map(reminderRow).join('') : emptyState('Nic nečeká', 'Žádné aktivní připomínky.')}
       </section>
       <section class="panel">
         <h3>Poslední aktivita</h3>
@@ -596,19 +625,12 @@ async function renderOverview() {
             <span class="feed-kind ${row.druh}">${esc(ACTIVITY_KIND[row.druh] || row.druh)}</span>
             <strong>${esc(row.titulek)}</strong>
             <span class="muted">${esc(row.subjekt)} · ${fmtRelative(row.cas)}</span>
-          </button>`).join('') : emptyState('Ticho v archivu', 'Nové zápisy, fotografie, dokumenty, objekty a připomínky se tu objeví chronologicky.')}
+          </button>`).join('') : emptyState('Ticho v archivu', 'Nové zápisy, fotografie a dokumenty se tu objeví chronologicky.')}
       </section>
     </div>
-    <section class="panel hlaseni">
-      <img class="hlaseni-mascot" src="${MASCOT_SRC}" alt="Archivník" width="196" height="60">
-      <div>
-        <h3>Archivník hlásí</h3>
-        <p class="muted hlaseni-note">Spočítáno z vaší kartotéky. Nejde o AI.</p>
-        <ul>${hlaseni.map((line) => `<li>${esc(line)}</li>`).join('')}</ul>
-      </div>
-    </section>
   `;
   bindNav($('#tab-overview'));
+  bindDone($('#tab-overview'), renderOverview);
 }
 
 async function renderCustomers() {
@@ -713,26 +735,12 @@ async function openCustomer(uuid, opts = {}) {
     </div>
     <section class="section" id="c-objekty">
       <h3>Objekty</h3>
-      <div class="obj-grid">${objects.map((o) => objCardHtml(o)).join('') || emptyState('Žádný objekt', 'Přidejte první objekt zlatým tlačítkem výše.')}</div>
+      <div class="obj-grid">${objects.map((o) => objCardHtml(o)).join('') || emptyState('Žádný objekt', 'Přidejte první objekt.')}</div>
     </section>
-    <section class="section" id="c-foto">
-      <h3>Fotografie zákazníka</h3>
-      <p class="muted">Fotografie patří primárně objektům. Tady jen soubory přímo k zákazníkovi, ne profilová fotka.</p>
-      ${photoGrid(photos)}
-    </section>
-    <section class="section" id="c-docs">
-      <h3>Dokumenty zákazníka</h3>
-      ${docRows(docs)}
-    </section>
-    <section class="section">
-      <h3>Aktivní připomínky</h3>
-      ${reminders.map(reminderRow).join('') || '<p class="muted">Nic nečeká.</p>'}
-    </section>
-    <section class="section">
-      <h3>Historie</h3>
-      <p class="muted">Zápisy zákazníka i všech jeho objektů. Zlato = zákazník, tyrkys = objekt.</p>
-      <div class="timeline">${entries.map(timelineItem).join('') || '<p class="muted">Žádné zápisy.</p>'}</div>
-    </section>
+    ${wrapSection('c-foto', 'Fotografie', photoGrid(photos))}
+    ${wrapSection('c-docs', 'Dokumenty', docRows(docs))}
+    ${wrapSection('c-remind', 'Připomínky', reminders.length ? reminders.map(reminderRow).join('') : '')}
+    ${wrapSection('c-hist', 'Historie', entries.length ? `<div class="timeline">${entries.map(timelineItem).join('')}</div>` : '')}
   `;
   bindNav(box);
   bindDone(box, () => openCustomer(uuid, { skipList: true }));
@@ -778,14 +786,27 @@ async function openObject(uuid, opts = {}) {
   const back = opts.fromObjects
     ? `<button type="button" class="linkish back" id="back-objects">← Objekty</button>`
     : `<button type="button" class="linkish back" data-open-customer="${obj.zakaznik_uuid}">← ${esc(obj.zakaznik_jmeno)}</button>`;
+  const fieldsHtml = fieldRows(fields);
+  const photosHtml = photoGrid(photos, obj.cover_uuid);
+  const docsHtml = docRows(docs);
+  const remindersHtml = reminders.length ? reminders.map(reminderRow).join('') : '';
+  const historyHtml = entries.length ? `<div class="timeline">${entries.map(timelineItem).join('')}</div>` : '';
+  const nav = [
+    fieldsHtml && ['o-udaje', 'Údaje'],
+    photosHtml && ['o-foto', 'Fotografie'],
+    docsHtml && ['o-docs', 'Dokumenty'],
+    remindersHtml && ['o-remind', 'Připomínky'],
+    historyHtml && ['o-hist', 'Historie'],
+  ].filter(Boolean);
   box.innerHTML = `
     ${back}
     <div class="card-hero">
       ${coverBlock(obj.cover_uuid || (photos[0] && photos[0].uuid), obj.nazev)}
       <div>
         <h2>${esc(obj.nazev)}</h2>
-        <p class="meta muted">${esc(obj.typ_nazev)} · Majitel: <button type="button" class="linkish" data-open-customer="${obj.zakaznik_uuid}">${esc(obj.zakaznik_jmeno)}</button></p>
+        <p class="meta muted">${esc(obj.typ_nazev)} · <button type="button" class="linkish" data-open-customer="${obj.zakaznik_uuid}">${esc(obj.zakaznik_jmeno)}</button></p>
         ${obj.popis ? `<p>${esc(obj.popis)}</p>` : ''}
+        <p class="meta muted">${photos.length} fotografií · ${docs.length} dokumentů · ${entries.length} zápisů · ${reminders.length} připomínek</p>
         <div class="chips">${(obj.tagy || []).map((t) => `<span class="chip">${esc(t.nazev)}</span>`).join('')}</div>
       </div>
     </div>
@@ -797,39 +818,12 @@ async function openObject(uuid, opts = {}) {
       <button type="button" class="btn-small" data-act="fields">Upravit údaje</button>
       <button type="button" class="btn-small" data-act="edit">Upravit</button>
     </div>
-    <nav class="section-nav">
-      <a href="#o-prehled">Přehled</a>
-      <a href="#o-udaje">Vlastní údaje</a>
-      <a href="#o-foto">Fotografie</a>
-      <a href="#o-docs">Dokumenty</a>
-      <a href="#o-remind">Připomínky</a>
-      <a href="#o-hist">Historie</a>
-    </nav>
-    <section class="section" id="o-prehled">
-      <h3>Přehled</h3>
-      <p class="muted">${photos.length} fotografií · ${docs.length} dokumentů · ${entries.length} zápisů · ${reminders.length} aktivních připomínek</p>
-    </section>
-    <section class="section" id="o-udaje">
-      <h3>Vlastní údaje</h3>
-      ${fieldRows(fields)}
-    </section>
-    <section class="section" id="o-foto">
-      <h3>Fotografie</h3>
-      ${photoGrid(photos, obj.cover_uuid, true)}
-    </section>
-    <section class="section" id="o-docs">
-      <h3>Dokumenty</h3>
-      ${docRows(docs)}
-    </section>
-    <section class="section" id="o-remind">
-      <h3>Aktivní připomínky</h3>
-      ${reminders.map(reminderRow).join('') || '<p class="muted">Nic nečeká.</p>'}
-    </section>
-    <section class="section" id="o-hist">
-      <h3>Historie objektu</h3>
-      <p class="muted">Jen zápisy tohoto objektu. Přílohy zápisu jsou i v dokumentaci výše — jde o stejný soubor.</p>
-      <div class="timeline">${entries.map(timelineItem).join('') || '<p class="muted">Žádné zápisy.</p>'}</div>
-    </section>
+    ${nav.length > 1 ? `<nav class="section-nav">${nav.map(([id, label]) => `<a href="#${id}">${label}</a>`).join('')}</nav>` : ''}
+    ${wrapSection('o-udaje', 'Údaje', fieldsHtml)}
+    ${wrapSection('o-foto', 'Fotografie', photosHtml)}
+    ${wrapSection('o-docs', 'Dokumenty', docsHtml)}
+    ${wrapSection('o-remind', 'Připomínky', remindersHtml)}
+    ${wrapSection('o-hist', 'Historie', historyHtml)}
   `;
   bindNav(box);
   const backBtn = box.querySelector('#back-objects');
@@ -1102,8 +1096,8 @@ async function renderObjects() {
   el.innerHTML = `
     <div class="panel">
       <div class="toolbar"><h2>Objekty</h2></div>
-      <div class="obj-grid cols-2">
-        ${objects.map((o) => objCardHtml(o, `${o.typ_nazev} · ${o.zakaznik_jmeno}`)).join('') || emptyState('Zatím žádný objekt', 'Objekt založíte na kartě zákazníka.')}
+      <div class="obj-grid">
+        ${objects.map((o) => objCardHtml(o)).join('') || emptyState('Zatím žádný objekt', 'Objekt založíte na kartě zákazníka.')}
       </div>
     </div>
   `;
@@ -1115,14 +1109,7 @@ async function renderReminders() {
   $('#tab-reminders').innerHTML = `
     <div class="panel">
       <div class="toolbar"><h2>Aktivní připomínky</h2></div>
-      ${data.length ? data.map((r) => `
-        <div class="row reminder-row">
-          <div>
-            <strong>${esc(r.text)}</strong>
-            <div class="muted">${fmtDate(r.termin)} · <button type="button" class="linkish" data-open-customer="${r.zakaznik_uuid}">${esc(r.zakaznik_jmeno)}</button>${r.objekt_uuid ? ' · <button type="button" class="linkish" data-open-object="' + r.objekt_uuid + '">' + esc(r.objekt_nazev) + '</button>' : ''}</div>
-          </div>
-          <button type="button" class="btn-gold" data-done="${r.uuid}">Hotovo</button>
-        </div>`).join('') : emptyState('Nic nečeká', 'Připomínku přidáte na kartě zákazníka nebo objektu. Splněné zmizí z tohoto seznamu.')}
+      ${data.length ? data.map(reminderRow).join('') : emptyState('Nic nečeká', 'Připomínku přidáte na kartě zákazníka nebo objektu.')}
     </div>
   `;
   bindNav($('#tab-reminders'));
@@ -1153,10 +1140,9 @@ async function renderSettings() {
       <div class="panel">
         ${selected ? `
           <h2>${esc(selected.nazev)}</h2>
-          <p class="muted">Vlastní pole jen tohoto typu. Platí v této provozovně, bez zásahu vývoje.</p>
           ${(selected.pole || []).length
             ? selected.pole.map((p) => `<div class="row"><span>${esc(p.nazev)}</span><span class="muted">${esc(fieldKindLabel(p.druh))}</span></div>`).join('')
-            : emptyState('Žádná pole', 'Přidejte údaje, které u tohoto typu potřebujete — VIN, datum narození, hmotnost.')}
+            : emptyState('Žádná pole', 'Přidejte údaje, které u tohoto typu potřebujete.')}
           <form class="form-grid form-field settings-add" data-typ="${selected.uuid}">
             <input name="nazev" placeholder="Název pole" required>
             <select name="druh">
