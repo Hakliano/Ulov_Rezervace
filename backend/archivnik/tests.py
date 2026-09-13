@@ -222,6 +222,12 @@ class ArchivnikEntryModelTests(TestCase):
         self.assertEqual(res.data['pripominky_aktivni'], 1)
         self.assertEqual(res.data['podle_typu'][0]['typ'], 'Vozidlo')
         self.assertEqual(res.data['nejblizsi_pripominky'][0]['text'], 'Kontrola')
+        self.assertEqual(len(res.data['aktivita']), 6)
+        self.assertEqual(res.data['aktivita'][-1]['zakaznici'], 2)
+        self.assertGreaterEqual(res.data['aktivita'][-1]['zapisy'], 0)
+        self.assertTrue(res.data['hlaseni'])
+        self.assertTrue(any(row['druh'] == 'objekt' for row in res.data['posledni_aktivita']))
+        self.assertTrue(any(row['druh'] == 'pripominka' for row in res.data['posledni_aktivita']))
 
         obj = self.client.get('/api/archivnik/objects/').data[0]
         self.assertEqual(obj['zapisy_pocet'], 0)
@@ -235,6 +241,9 @@ class ArchivnikEntryModelTests(TestCase):
         obj = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/').data
         self.assertEqual(obj['zapisy_pocet'], 1)
         self.assertTrue(obj['posledni_zapis'])
+        ov = self.client.get('/api/archivnik/overview/')
+        self.assertTrue(any(row['druh'] == 'zapis' for row in ov.data['posledni_aktivita']))
+        self.assertEqual(ov.data['aktivita'][-1]['zapisy'], 1)
 
         u_zak = self.client.get(
             f'/api/archivnik/reminders/?stav=aktivni&zakaznik={self.zakaznik.uuid}'

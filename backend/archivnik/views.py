@@ -15,7 +15,18 @@ from archivnik.auth import (
     get_actor_from_request,
     get_session_from_request,
 )
-from archivnik.models import Customer, Entry, Object, ObjectType, Reminder, ReminderStav, Stav, Tag
+from archivnik.models import (
+    Asset,
+    AssetKind,
+    Customer,
+    Entry,
+    Object,
+    ObjectType,
+    Reminder,
+    ReminderStav,
+    Stav,
+    Tag,
+)
 from archivnik.permissions import ArchivnikPermission
 from archivnik.serializers import (
     CustomerListSerializer,
@@ -125,6 +136,113 @@ class MeView(APIView):
         })
 
 
+_MONTHS_CS = ('led', 'úno', 'bře', 'dub', 'kvě', 'čvn', 'čvc', 'srp', 'zář', 'říj', 'lis', 'pro')
+
+
+def _add_months(dt, months):
+    y = dt.year + (dt.month - 1 + months) // 12
+    m = (dt.month - 1 + months) % 12 + 1
+    return dt.replace(year=y, month=m, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _overview_aktivita(salon, month_start):
+    rows = []
+    for offset in range(5, -1, -1):
+        start = _add_months(month_start, -offset)
+        end = _add_months(start, 1)
+        rows.append({
+            'mesic': f'{start.year:04d}-{start.month:02d}',
+            'label': _MONTHS_CS[start.month - 1],
+            'zakaznici': Customer.objects.filter(salon=salon, vytvoreno__gte=start, vytvoreno__lt=end).count(),
+            'zapisy': Entry.objects.filter(salon=salon, vytvoreno__gte=start, vytvoreno__lt=end).count(),
+        })
+    return rows
+
+
+def _overview_feed(salon):
+    events = []
+    for row in Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt').order_by('-vytvoreno')[:12]:
+        events.append({
+            'druh': 'zapis',
+            'cas': row.vytvoreno.isoformat(),
+            'titulek': row.nadpis or row.typ_zapisu or 'Zápis',
+            'subjekt': row.objekt.nazev if row.objekt_id else row.zakaznik.display_name,
+            'zakaznik_uuid': str(row.zakaznik.uuid),
+            'objekt_uuid': str(row.objekt.uuid) if row.objekt_id else None,
+        })
+    for row in Asset.objects.filter(salon=salon).select_related('zakaznik', 'objekt').order_by('-vytvoreno')[:12]:
+        events.append({
+            'druh': 'fotografie' if row.druh == AssetKind.FOTOGRAFIE else 'dokument',
+            'cas': row.vytvoreno.isoformat(),
+            'titulek': row.nazev,
+            'subjekt': row.objekt.nazev if row.objekt_id else row.zakaznik.display_name,
+            'zakaznik_uuid': str(row.zakaznik.uuid),
+            'objekt_uuid': str(row.objekt.uuid) if row.objekt_id else None,
+        })
+    for row in Object.objects.filter(salon=salon).select_related('zakaznik', 'typ').order_by('-vytvoreno')[:8]:
+        events.append({
+            'druh': 'objekt',
+            'cas': row.vytvoreno.isoformat(),
+            'titulek': f'Nový objekt {row.nazev}',
+            'subjekt': row.zakaznik.display_name,
+            'zakaznik_uuid': str(row.zakaznik.uuid),
+            'objekt_uuid': str(row.uuid),
+        })
+    for row in Reminder.objects.filter(salon=salon).select_related('zakaznik', 'objekt').order_by('-vytvoreno')[:8]:
+        events.append({
+            'druh': 'pripominka',
+            'cas': row.vytvoreno.isoformat(),
+            'titulek': row.text,
+            'subjekt': row.objekt.nazev if row.objekt_id else row.zakaznik.display_name,
+            'zakaznik_uuid': str(row.zakaznik.uuid),
+            'objekt_uuid': str(row.objekt.uuid) if row.objekt_id else None,
+        })
+    events.sort(key=lambda item: item['cas'], reverse=True)
+    return events[:12]
+
+
+def _overview_hlaseni(salon, month_start, zapisy_mesic, pripominky_aktivni, zakaznici, objekty):
+    last_start = _add_months(month_start, -1)
+    zapisy_minuly = Entry.objects.filter(
+        salon=salon, vytvoreno__gte=last_start, vytvoreno__lt=month_start,
+    ).count()
+    bez_zapisu = (
+        Object.objects.filter(salon=salon, stav=Stav.AKTIVNI)
+        .annotate(n=Count('zapisy'))
+        .filter(n=0)
+        .count()
+    )
+    items = []
+    if zakaznici == 0 and objekty == 0:
+        items.append('Kartotéka je prázdná. Začněte prvním zákazníkem — typy objektů si nastavíte v Nastavení.')
+        return items
+    if pripominky_aktivni:
+        if pripominky_aktivni == 1:
+            items.append('Čeká 1 aktivní připomínka.')
+        else:
+            items.append(f'Čeká {pripominky_aktivni} aktivních připomínek.')
+    if zapisy_mesic > zapisy_minuly:
+        items.append(
+            f'Tento měsíc máte {zapisy_mesic} zápisů, o {zapisy_mesic - zapisy_minuly} víc než minulý měsíc.'
+        )
+    elif zapisy_mesic < zapisy_minuly:
+        items.append(
+            f'Tento měsíc máte {zapisy_mesic} zápisů, o {zapisy_minuly - zapisy_mesic} méně než minulý měsíc.'
+        )
+    elif zapisy_mesic:
+        items.append(f'Tento měsíc máte stejně zápisů jako minulý měsíc ({zapisy_mesic}).')
+    else:
+        items.append('Tento měsíc zatím nemáte žádný zápis.')
+    if bez_zapisu:
+        if bez_zapisu == 1:
+            items.append('1 objekt zatím nemá žádný zápis.')
+        else:
+            items.append(f'{bez_zapisu} objektů zatím nemá žádný zápis.')
+    if not items:
+        items.append('V kartotéce je klid. Nic zásadního teď nevyžaduje pozornost.')
+    return items[:3]
+
+
 class OverviewView(APIView):
     authentication_classes = []
     permission_classes = [ArchivnikPermission]
@@ -142,14 +260,23 @@ class OverviewView(APIView):
         upcoming = Reminder.objects.filter(
             salon=salon, stav=ReminderStav.AKTIVNI,
         ).select_related('zakaznik', 'objekt', 'prirazeny').order_by('termin', 'id')[:8]
+        zakaznici = Customer.objects.filter(salon=salon, stav=Stav.AKTIVNI).count()
+        objekty = Object.objects.filter(salon=salon, stav=Stav.AKTIVNI).count()
+        zapisy_mesic = Entry.objects.filter(salon=salon, vytvoreno__gte=month_start).count()
+        pripominky_aktivni = Reminder.objects.filter(salon=salon, stav=ReminderStav.AKTIVNI).count()
         return Response({
             'provozovna': salon.name,
-            'zakaznici': Customer.objects.filter(salon=salon, stav=Stav.AKTIVNI).count(),
-            'objekty': Object.objects.filter(salon=salon, stav=Stav.AKTIVNI).count(),
-            'zapisy_mesic': Entry.objects.filter(salon=salon, vytvoreno__gte=month_start).count(),
-            'pripominky_aktivni': Reminder.objects.filter(salon=salon, stav=ReminderStav.AKTIVNI).count(),
+            'zakaznici': zakaznici,
+            'objekty': objekty,
+            'zapisy_mesic': zapisy_mesic,
+            'pripominky_aktivni': pripominky_aktivni,
             'podle_typu': [{'typ': r['typ__nazev'], 'pocet': r['pocet']} for r in by_type],
             'nejblizsi_pripominky': ReminderSerializer(upcoming, many=True).data,
+            'aktivita': _overview_aktivita(salon, month_start),
+            'posledni_aktivita': _overview_feed(salon),
+            'hlaseni': _overview_hlaseni(
+                salon, month_start, zapisy_mesic, pripominky_aktivni, zakaznici, objekty,
+            ),
         })
 
 
