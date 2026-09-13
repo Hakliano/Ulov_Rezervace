@@ -2,10 +2,11 @@
 
 from datetime import date
 
+from django.db.models import Count
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from archivnik.models import Customer, Object, ObjectType, Reminder
+from archivnik.models import Customer, Entry, Object, ObjectType, Reminder
 from flow.models import FlowSession, FlowUser
 from partner_admin.models import MODUL_ARCHIVNIK, ModulKatalog, PartnerModul
 from rezervace.models import Zamestnanec
@@ -237,3 +238,15 @@ class SeedArchivnikOnlyTests(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['provozovna'], 'Archivník sólo')
+        self.assertGreaterEqual(Customer.objects.filter(salon=salon).count(), 10)
+        self.assertGreaterEqual(Object.objects.filter(salon=salon).count(), 15)
+        self.assertGreaterEqual(ObjectType.objects.filter(salon=salon).count(), 3)
+        self.assertTrue(Entry.objects.filter(salon=salon, objekt__isnull=True).exists())
+        self.assertTrue(Entry.objects.filter(salon=salon, objekt__isnull=False).exists())
+        self.assertTrue(Reminder.objects.filter(salon=salon).exists())
+        self.assertTrue(
+            Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n=1).exists()
+        )
+        self.assertTrue(
+            Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n__gte=2).exists()
+        )
