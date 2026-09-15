@@ -711,9 +711,12 @@ class PartnerAdminTests(TestCase):
         from partner_admin.loga import (
             LOGO_ARCHIVNIK,
             LOGO_MATERIALNIK,
+            LOGO_MATERIALNIK_ARCHIVNIK,
             LOGO_MODERNIK,
+            LOGO_MODERNIK_ARCHIVNIK,
             LOGO_OSTATNI,
             LOGO_SPOJENI,
+            LOGO_TROJICE,
             LOGO_WEB,
             logo_url_pro_tarif,
         )
@@ -721,9 +724,52 @@ class PartnerAdminTests(TestCase):
         self.assertEqual(logo_url_pro_tarif('Materiálník'), LOGO_MATERIALNIK)
         self.assertEqual(logo_url_pro_tarif('Archivník'), LOGO_ARCHIVNIK)
         self.assertEqual(logo_url_pro_tarif('Moderník + Materiálník'), LOGO_SPOJENI)
+        self.assertEqual(logo_url_pro_tarif('Moderník + Archivník'), LOGO_MODERNIK_ARCHIVNIK)
+        self.assertEqual(logo_url_pro_tarif('Materiálník + Archivník'), LOGO_MATERIALNIK_ARCHIVNIK)
+        self.assertEqual(
+            logo_url_pro_tarif('Moderník + Materiálník + Archivník'), LOGO_TROJICE,
+        )
         self.assertEqual(logo_url_pro_tarif('WEB'), LOGO_WEB)
         self.assertEqual(logo_url_pro_tarif('Partnerský web'), LOGO_OSTATNI)
         self.assertEqual(logo_url_pro_tarif(''), LOGO_OSTATNI)
+
+    def test_katalog_tarifu_archivnik_varianty_a_loga(self):
+        from partner_admin.loga import (
+            LOGO_ARCHIVNIK,
+            LOGO_MATERIALNIK_ARCHIVNIK,
+            LOGO_MODERNIK_ARCHIVNIK,
+            LOGO_TROJICE,
+        )
+
+        varianty = [
+            ('Archivník', LOGO_ARCHIVNIK),
+            ('Moderník + Archivník', LOGO_MODERNIK_ARCHIVNIK),
+            ('Materiálník + Archivník', LOGO_MATERIALNIK_ARCHIVNIK),
+            ('Moderník + Materiálník + Archivník', LOGO_TROJICE),
+        ]
+        self.client.force_login(self.superuser)
+        katalog = self.client.get(reverse('partner_admin:tarify'))
+        self.assertEqual(katalog.status_code, 200)
+        for nazev, _logo in varianty:
+            self.assertTrue(
+                PartnerTarif.objects.filter(nazev=nazev, aktivni=True).exists(),
+                nazev,
+            )
+            self.assertContains(katalog, nazev)
+            tarif = PartnerTarif.objects.get(nazev=nazev)
+            self.assertEqual(tarif.castka, Decimal('0.00'))
+
+        vyber = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        html = vyber.content.decode()
+        for nazev, _logo in varianty:
+            self.assertIn(f'>{nazev}<', html)
+
+        for nazev, logo in varianty:
+            self.partner.tarif = nazev
+            self.partner.save(update_fields=['tarif'])
+            detail = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+            self.assertContains(detail, logo)
+            self.assertContains(detail, nazev)
 
     def test_hromadny_email_jde_vsem_s_adresou(self):
         self.client.force_login(self.superuser)
