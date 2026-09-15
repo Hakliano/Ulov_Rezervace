@@ -1,0 +1,139 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Archivník · {{ salon.name }}{% endblock %}
+
+{% block content %}
+  <div class="breadcrumbs">
+    <a href="{% url 'partner_admin:detail' salon.id %}?tab=partner">← {{ salon.name }}</a>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Archivník</p>
+      <h1>Konfigurace Archivníka</h1>
+      <p class="muted">
+        Interní přehled konfigurace provozovny. V P4.2 jen ke čtení — změny přijdou v P4.3.
+      </p>
+    </div>
+    <div class="head-actions">
+      {% if modul_aktivni and archivnik_public_url %}
+        <a class="btn btn-ink" href="{{ archivnik_public_url }}" target="_blank" rel="noopener">Otevřít Archivník</a>
+      {% endif %}
+      <a class="btn btn-quiet" href="{% url 'partner_admin:detail' salon.id %}?tab=partner">Zpět na partnera</a>
+    </div>
+  </div>
+
+  {% if not modul_aktivni %}
+    <div class="alert-banner">
+      <span>Archivník je vypnutý. Konfigurace a data zůstávají, přihlášení partnera je zablokované.</span>
+    </div>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Obor</p>
+        <h2>Obory provozovny</h2>
+      </div>
+    </div>
+    {% if obory %}
+      <div class="archivnik-obor-list">
+        {% for row in obory %}
+          <article class="archivnik-obor{% if not row.aktualni %} is-historicky{% endif %}">
+            <div class="archivnik-obor-head">
+              <strong>{{ row.obor.nazev }}</strong>
+              {% if row.aktualni %}
+                <span class="badge badge-active">Aktuální</span>
+              {% else %}
+                <span class="badge badge-neutral">Historický</span>
+              {% endif %}
+              {% if row.obor.zdroj_preset %}
+                <span class="badge badge-neutral">preset {{ row.obor.zdroj_preset }}</span>
+              {% else %}
+                <span class="badge badge-neutral">vlastní</span>
+              {% endif %}
+            </div>
+            <p class="form-note">
+              Terminologie: {{ row.obor.objekt_jednotne }} / {{ row.obor.objekt_mnozne }}
+            </p>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Provozovna zatím nemá žádný Obor.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Typy a pole</p>
+        <h2>ObjectTypes a CustomFields</h2>
+      </div>
+    </div>
+    {% for row in obory %}
+      <div class="archivnik-typ-skupina{% if not row.aktualni %} is-historicky{% endif %}">
+        <h3>{{ row.obor.nazev }} {% if row.aktualni %}<span class="badge badge-active">Aktuální</span>{% else %}<span class="badge badge-neutral">Historický</span>{% endif %}</h3>
+        {% if row.typy %}
+          {% for typ in row.typy %}
+            {% include 'partner_admin/_archivnik_typ.html' %}
+          {% endfor %}
+        {% else %}
+          <p class="empty">U tohoto Oboru nejsou žádné typy.</p>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="empty">Žádné Obory — typy bez Oboru jsou níže, pokud existují.</p>
+    {% endfor %}
+    <div class="archivnik-typ-skupina">
+      <h3>Bez oboru</h3>
+      {% if typy_bez_oboru %}
+        {% for typ in typy_bez_oboru %}
+          {% include 'partner_admin/_archivnik_typ.html' %}
+        {% endfor %}
+      {% else %}
+        <p class="empty">Žádné typy mimo Obor.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Přístupy</p>
+        <h2>Zaměstnanci a Archivník</h2>
+      </div>
+    </div>
+    <p class="muted">
+      Archivník používá stejný účet jako web (zaměstnanec provozovny). Vlastní hesla Archivníka neexistují.
+    </p>
+    {% if zamestnanci %}
+      <div class="archivnik-pristupy">
+        {% for row in zamestnanci %}
+          <article class="archivnik-pristup">
+            <div>
+              <strong>{{ row.zamestnanec.jmeno }}</strong>
+              <span>{{ row.zamestnanec.prihlasovaci_jmeno|default:"bez loginu" }}</span>
+            </div>
+            <div class="archivnik-pristup-meta">
+              <span>{{ row.zamestnanec.get_role_display }}</span>
+              {% if row.zamestnanec.aktivni %}
+                <span class="badge badge-active">aktivní</span>
+              {% else %}
+                <span class="badge badge-neutral">neaktivní</span>
+              {% endif %}
+              {% if row.ma_prihlaseni %}
+                <span class="badge badge-ok">má přihlášení</span>
+              {% else %}
+                <span class="badge badge-neutral">nemá přihlášení</span>
+              {% endif %}
+              <span class="muted">Archivník relace: {{ row.session_pocet }}</span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Salon nemá žádné zaměstnance.</p>
+    {% endif %}
+  </section>
+{% endblock %}

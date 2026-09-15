@@ -1,0 +1,40 @@
+<article class="archivnik-typ">
+  <div class="archivnik-typ-head">
+    <strong>{{ typ.nazev }}</strong>
+    {% if typ.aktivni %}
+      <span class="badge badge-active">active</span>
+    {% else %}
+      <span class="badge badge-neutral">inactive</span>
+    {% endif %}
+    {% if typ.zdroj_preset %}
+      <span class="badge badge-neutral">preset</span>
+    {% else %}
+      <span class="badge badge-neutral">vlastní</span>
+    {% endif %}
+  </div>
+  {% if typ.pole.all %}
+    <ul class="archivnik-pole">
+      {% for pole in typ.pole.all %}
+        <li>
+          <span>{{ pole.nazev }}</span>
+          <span class="muted">{{ pole.get_druh_display }}</span>
+          {% if pole.aktivni %}
+            <span class="badge badge-active">active</span>
+          {% else %}
+            <span class="badge badge-neutral">inactive</span>
+          {% endif %}
+          {% if pole.zdroj_preset %}
+            <span class="badge badge-neutral">preset</span>
+          {% else %}
+            <span class="badge badge-neutral">vlastní</span>
+          {% endif %}
+          {% if pole.druh == 'vyber' and pole.volby %}
+            <span class="muted">volby: {{ pole.volby|join:", " }}</span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">Typ nemá žádná pole.</p>
+  {% endif %}
+</article>

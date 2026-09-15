@@ -70,6 +70,7 @@ from .services import (
     vytvor_noveho_partnera,
 )
 from .services_moduly import nastav_modul, partner_modul
+from .services_archivnik import archivnik_sprava_data
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
 
@@ -898,6 +899,20 @@ def nastavit_archivnik(request, salon_id):
     else:
         messages.info(request, f'Stav Archivníka: {row.status}.')
     return _detail_redirect(salon.id, 'partner')
+
+
+@superadmin_required
+def archivnik_sprava(request, salon_id):
+    salon = get_object_or_404(Salon, pk=salon_id)
+    ctx = archivnik_sprava_data(salon)
+    ctx.update({
+        'salon': salon,
+        'partner': _partner(salon),
+        'archivnik_public_url': (
+            (getattr(settings, 'ARCHIVNIK_PUBLIC_URL', '') or '/archivnik/').rstrip('/') + '/'
+        ),
+    })
+    return render(request, 'partner_admin/archivnik_sprava.html', ctx)
 
 
 @superadmin_required

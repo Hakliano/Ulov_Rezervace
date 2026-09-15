@@ -40,6 +40,11 @@ urlpatterns = [
         name='nastavit_materialnik',
     ),
     path(
+        'salon/<int:salon_id>/archivnik/sprava/',
+        views.archivnik_sprava,
+        name='archivnik_sprava',
+    ),
+    path(
         'salon/<int:salon_id>/archivnik/',
         views.nastavit_archivnik,
         name='nastavit_archivnik',
