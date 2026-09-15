@@ -352,7 +352,7 @@ def tarify(request):
     else:
         novy_form = PartnerTarifForm()
     radky = [
-        (row, PartnerTarifForm(instance=row))
+        (row, PartnerTarifForm(instance=row), logo_url_pro_tarif(row.nazev))
         for row in PartnerTarif.objects.all()
     ]
     return render(

@@ -748,16 +748,21 @@ class PartnerAdminTests(TestCase):
             ('Moderník + Materiálník + Archivník', LOGO_TROJICE),
         ]
         self.client.force_login(self.superuser)
+        from partner_admin.loga import logo_url_pro_tarif
+
         katalog = self.client.get(reverse('partner_admin:tarify'))
         self.assertEqual(katalog.status_code, 200)
-        for nazev, _logo in varianty:
+        for nazev, logo in varianty:
             self.assertTrue(
                 PartnerTarif.objects.filter(nazev=nazev, aktivni=True).exists(),
                 nazev,
             )
             self.assertContains(katalog, nazev)
+            self.assertContains(katalog, logo)
             tarif = PartnerTarif.objects.get(nazev=nazev)
             self.assertEqual(tarif.castka, Decimal('0.00'))
+        for row in PartnerTarif.objects.all():
+            self.assertContains(katalog, logo_url_pro_tarif(row.nazev))
 
         vyber = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
         html = vyber.content.decode()
