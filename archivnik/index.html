@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=p3">
+  <link rel="stylesheet" href="style.css?v=p3f">
 </head>
 <body>
   <div id="login-screen" class="login-wrap">
@@ -33,6 +33,19 @@
       <button type="submit" class="btn-primary">Přihlásit se</button>
     </form>
   </div>
+
+      <div id="onboard-screen" class="login-wrap hidden">
+        <div class="login-card onboard-card">
+          <img
+            class="logo-login"
+            src="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp"
+            alt="Archivník"
+            width="280"
+            height="86"
+          >
+          <div id="onboard-body"></div>
+        </div>
+      </div>
 
   <div id="app-screen" class="app hidden">
     <aside class="sidebar">
@@ -97,6 +110,6 @@
       </div>
     </div>
   </div>
-  <script src="app.js?v=p3"></script>
+  <script src="app.js?v=p3f"></script>
 </body>
 </html>

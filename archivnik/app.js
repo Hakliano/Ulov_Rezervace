@@ -77,6 +77,44 @@ function emptyState(title, text) {
   return `<div class="empty-state"><strong>${esc(title)}</strong><p class="muted">${esc(text)}</p></div>`;
 }
 
+function noun(form) {
+  const one = (me && me.objekt_jednotne) || 'Objekt';
+  const many = (me && me.objekt_mnozne) || 'Objekty';
+  return form === 'one' ? one : many;
+}
+
+function typePhrase() {
+  const one = noun('one');
+  return ({
+    Zvíře: 'Typ zvířete',
+    Vozidlo: 'Typ vozidla',
+    Profil: 'Typ profilu',
+    Objekt: 'Typ objektu',
+  })[one] || `Typ: ${one}`;
+}
+
+function addObjectCta() {
+  return `+ Přidat ${noun('one').toLowerCase()}`;
+}
+
+function objName(o) {
+  return (o && (o.display_name || o.nazev || o.typ_nazev)) || '';
+}
+
+function applyTerms() {
+  const tab = document.querySelector('[data-tab="objects"]');
+  if (tab) tab.textContent = noun('many');
+  const search = $('#search-q');
+  if (search) {
+    search.placeholder = `Hledat jméno, telefon, e-mail, ${noun('one').toLowerCase()}…`;
+  }
+}
+
+function lockBadge(row) {
+  if (!(row && (row.zamceno || row.zdroj_preset))) return '';
+  return '<span class="lock-badge" title="Spravováno Archivníkem">🔒 Z presetu</span>';
+}
+
 const ACTIVITY_KIND = {
   zapis: 'Zápis',
   fotografie: 'Fotografie',
@@ -298,6 +336,8 @@ function attachHtml(files) {
 
 function showLogin(error) {
   $('#app-screen').classList.add('hidden');
+  const onboard = $('#onboard-screen');
+  if (onboard) onboard.classList.add('hidden');
   $('#login-screen').classList.remove('hidden');
   $('#login-error').textContent = error || '';
   $('#login-error').classList.toggle('hidden', !error);
@@ -305,9 +345,90 @@ function showLogin(error) {
 
 function showApp() {
   $('#login-screen').classList.add('hidden');
+  const onboard = $('#onboard-screen');
+  if (onboard) onboard.classList.add('hidden');
   $('#app-screen').classList.remove('hidden');
   $('#sidebar-name').textContent = me.jmeno || me.email;
   $('#sidebar-salon').textContent = me.provozovna || '';
+  applyTerms();
+}
+
+function showOnboard() {
+  $('#login-screen').classList.add('hidden');
+  $('#app-screen').classList.add('hidden');
+  const onboard = $('#onboard-screen');
+  if (onboard) onboard.classList.remove('hidden');
+  renderOnboard();
+}
+
+function renderOnboard() {
+  const box = $('#onboard-body');
+  if (!box) return;
+  box.innerHTML = `
+    <h1>Jaký je váš obor?</h1>
+    <p class="muted">Vyberte jednou. Typy a pole z předvyplnění půjde používat, ale později je nebude možné měnit. Vlastní typy si můžete přidat v Nastavení.</p>
+    <div class="onboard-choices">
+      <button type="button" class="onboard-choice" data-preset="vet">Veterinární ordinace</button>
+      <button type="button" class="onboard-choice" data-preset="beauty">Kadeřnický &amp; beauty salon</button>
+      <button type="button" class="onboard-choice" data-preset="pneu">Pneuservis</button>
+      <button type="button" class="onboard-choice" data-preset="">Jiný / vlastní</button>
+    </div>
+    <form id="form-onboard-custom" class="form-grid hidden">
+      <input name="nazev" value="Vlastní obor" required>
+      <button class="btn-gold" type="submit">Založit vlastní obor</button>
+    </form>
+    <p id="onboard-error" class="error hidden"></p>
+  `;
+  const err = () => box.querySelector('#onboard-error');
+  const showErr = (msg) => {
+    err().textContent = msg || '';
+    err().classList.toggle('hidden', !msg);
+  };
+  box.querySelectorAll('[data-preset]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const kod = btn.dataset.preset;
+      if (!kod) {
+        box.querySelector('#form-onboard-custom').classList.remove('hidden');
+        return;
+      }
+      try {
+        await api('/presets/apply/', { method: 'POST', body: JSON.stringify({ kod }) });
+        me = await api('/me/');
+        showApp();
+        await loadTab('overview');
+      } catch (e) {
+        showErr(e.message);
+      }
+    });
+  });
+  box.querySelector('#form-onboard-custom').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const nazev = new FormData(ev.target).get('nazev');
+    try {
+      await api('/obory/', {
+        method: 'POST',
+        body: JSON.stringify({ nazev, objekt_jednotne: 'Objekt', objekt_mnozne: 'Objekty' }),
+      });
+      me = await api('/me/');
+      showApp();
+      await loadTab('settings');
+    } catch (e) {
+      showErr(e.message);
+    }
+  });
+}
+
+async function finishAuth(data) {
+  if (data && data.token) setToken(data.token);
+  if (data && data.jmeno) me = data;
+  else me = await api('/me/');
+  if (!me.onboarded) {
+    showOnboard();
+    return;
+  }
+  currentTab = 'overview';
+  showApp();
+  await loadTab('overview');
 }
 
 function hideSearch() {
@@ -330,7 +451,7 @@ function typeOptionsHtml(types) {
   });
   const blocks = [];
   groups.forEach((g) => {
-    blocks.push(`<optgroup label="${esc(g.nazev)}">${g.typy.map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('')}</optgroup>`);
+    blocks.push(`<optgroup label="${esc(g.nazev)}">${g.typy.map((t) => `<option value="${t.uuid}" data-vyzaduje-nazev="${t.vyzaduje_nazev === false ? '0' : '1'}">${esc(t.nazev)}</option>`).join('')}</optgroup>`);
   });
   if (loose.length) {
     blocks.push(`<optgroup label="Bez oboru">${loose.map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('')}</optgroup>`);
@@ -419,9 +540,7 @@ async function loadTab(tab) {
 async function boot() {
   if (!getToken()) { showLogin(); return; }
   try {
-    me = await api('/me/');
-    showApp();
-    await loadTab(currentTab);
+    await finishAuth(await api('/me/'));
   } catch (err) {
     setToken('');
     showLogin(err.message);
@@ -431,17 +550,13 @@ async function boot() {
 $('#login-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   try {
-    const data = await api('/auth/login/', {
+    await finishAuth(await api('/auth/login/', {
       method: 'POST',
       body: JSON.stringify({
         email: $('#login-email').value,
         password: $('#login-password').value,
       }),
-    });
-    setToken(data.token);
-    me = data;
-    showApp();
-    await loadTab('overview');
+    }));
   } catch (err) {
     showLogin(err.message);
   }
@@ -518,8 +633,8 @@ $('#search-form').addEventListener('submit', async (ev) => {
   box.innerHTML = `
     <h3>Nalezení zákazníci</h3>
     ${(data.zakaznici || []).map((c) => `<div class="row"><button type="button" class="linkish" data-open-customer="${c.uuid}">${esc(c.display_name)}</button><span class="muted">${esc(c.telefon || c.email)}</span></div>`).join('') || '<p class="muted">Nikdo.</p>'}
-    <h3>Objekty</h3>
-    ${(data.objekty || []).map((o) => `<div class="row"><button type="button" class="linkish" data-open-object="${o.uuid}">${esc(o.nazev)}</button><span class="muted">${esc(o.typ_nazev)} · ${esc(o.zakaznik_jmeno)}</span></div>`).join('') || '<p class="muted">Nic.</p>'}
+    <h3>${esc(noun('many'))}</h3>
+    ${(data.objekty || []).map((o) => `<div class="row"><button type="button" class="linkish" data-open-object="${o.uuid}">${esc(objName(o))}</button><span class="muted">${esc(o.typ_nazev)} · ${esc(o.zakaznik_jmeno)}</span></div>`).join('') || '<p class="muted">Nic.</p>'}
   `;
   bindNav(box);
 });
@@ -584,9 +699,9 @@ function objCardHtml(o, extra) {
   return `<button type="button" class="obj-card" data-open-object="${o.uuid}">
     ${o.cover_uuid
       ? `<img class="cover-thumb" src="${assetSrc(o.cover_uuid)}" alt="">`
-      : `<div class="cover-thumb avatar-fallback">${esc(initials(o.nazev))}</div>`}
+      : `<div class="cover-thumb avatar-fallback">${esc(initials(objName(o)))}</div>`}
     <span class="obj-card-copy">
-      <strong>${esc(o.nazev)}</strong>
+      <strong>${esc(objName(o))}</strong>
       <span class="obj-card-meta">${esc(o.typ_nazev)}${o.zakaznik_jmeno ? ' · ' + esc(o.zakaznik_jmeno) : extra ? ' · ' + esc(extra) : ''}</span>
       <span class="muted">${o.posledni_zapis ? 'Poslední zápis ' + fmtDate(o.posledni_zapis) : 'Bez zápisu'}</span>
       <span class="obj-card-stats">${o.zapisy_pocet || 0} zápisů · ${o.pripominky_aktivni || 0} připomínek</span>
@@ -608,7 +723,7 @@ async function renderOverview() {
     </div>
     <div class="kpis">
       <div class="kpi"><span class="muted">Zákazníci</span><strong>${data.zakaznici}</strong></div>
-      <div class="kpi kpi-teal"><span class="muted">Objekty</span><strong>${data.objekty}</strong></div>
+      <div class="kpi kpi-teal"><span class="muted">${esc(noun('many'))}</span><strong>${data.objekty}</strong></div>
       <div class="kpi kpi-gold"><span class="muted">Zápisy tento měsíc</span><strong>${data.zapisy_mesic}</strong></div>
       <div class="kpi"><span class="muted">Aktivní připomínky</span><strong>${data.pripominky_aktivni}</strong></div>
     </div>
@@ -649,7 +764,7 @@ async function renderOverview() {
         <h3>Poslední aktivita</h3>
         ${feed.length ? feed.map((row) => `
           <button type="button" class="feed-row" ${row.objekt_uuid ? `data-open-object="${row.objekt_uuid}"` : `data-open-customer="${row.zakaznik_uuid}"`}>
-            <span class="feed-kind ${row.druh}">${esc(ACTIVITY_KIND[row.druh] || row.druh)}</span>
+            <span class="feed-kind ${row.druh}">${esc(row.druh === 'objekt' ? noun('one') : (ACTIVITY_KIND[row.druh] || row.druh))}</span>
             <strong>${esc(row.titulek)}</strong>
             <span class="muted">${esc(row.subjekt)} · ${fmtRelative(row.cas)}</span>
           </button>`).join('') : emptyState('Ticho v archivu', 'Nové zápisy, fotografie a dokumenty se tu objeví chronologicky.')}
@@ -753,16 +868,16 @@ async function openCustomer(uuid, opts = {}) {
       </div>
     </div>
     <div class="actions">
-      <button type="button" class="btn-gold" data-act="entry">+ Nový zápis</button>
+      <button type="button" class="btn-gold cta-main" data-act="object">${esc(addObjectCta())}</button>
+      <button type="button" class="btn-small" data-act="entry">+ Nový zápis</button>
       <button type="button" class="btn-small" data-act="reminder">+ Připomínka</button>
       <button type="button" class="btn-small" data-act="photo">+ Fotografie</button>
       <button type="button" class="btn-small" data-act="doc">+ Dokument</button>
-      <button type="button" class="btn-small" data-act="object">+ Přidat objekt</button>
       <button type="button" class="btn-small" data-act="edit">Upravit</button>
     </div>
     <section class="section" id="c-objekty">
-      <h3>Objekty</h3>
-      <div class="obj-grid">${objects.map((o) => objCardHtml(o)).join('') || emptyState('Žádný objekt', 'Přidejte první objekt.')}</div>
+      <h3>${esc(noun('many'))}</h3>
+      <div class="obj-grid">${objects.map((o) => objCardHtml(o)).join('') || emptyState(`Žádné ${noun('one').toLowerCase()}`, `Přidejte první ${noun('one').toLowerCase()}.`)}</div>
     </section>
     ${wrapSection('c-foto', 'Fotografie', photoGrid(photos))}
     ${wrapSection('c-docs', 'Dokumenty', docRows(docs))}
@@ -811,7 +926,7 @@ async function openObject(uuid, opts = {}) {
   }
   markActive('#tab-objects .list-item, #tab-objects .obj-card', uuid);
   const back = opts.fromObjects
-    ? `<button type="button" class="linkish back" id="back-objects">← Objekty</button>`
+    ? `<button type="button" class="linkish back" id="back-objects">← ${esc(noun('many'))}</button>`
     : `<button type="button" class="linkish back" data-open-customer="${obj.zakaznik_uuid}">← ${esc(obj.zakaznik_jmeno)}</button>`;
   const fieldsHtml = fieldRows(fields);
   const photosHtml = photoGrid(photos, obj.cover_uuid);
@@ -828,9 +943,9 @@ async function openObject(uuid, opts = {}) {
   box.innerHTML = `
     ${back}
     <div class="card-hero">
-      ${coverBlock(obj.cover_uuid || (photos[0] && photos[0].uuid), obj.nazev)}
+      ${coverBlock(obj.cover_uuid || (photos[0] && photos[0].uuid), objName(obj))}
       <div>
-        <h2>${esc(obj.nazev)}</h2>
+        <h2>${esc(objName(obj))}</h2>
         <p class="meta muted">${esc(obj.typ_nazev)} · <button type="button" class="linkish" data-open-customer="${obj.zakaznik_uuid}">${esc(obj.zakaznik_jmeno)}</button></p>
         ${obj.popis ? `<p>${esc(obj.popis)}</p>` : ''}
         <p class="meta muted">${photos.length} fotografií · ${docs.length} dokumentů · ${entries.length} zápisů · ${reminders.length} připomínek</p>
@@ -877,10 +992,10 @@ async function openObject(uuid, opts = {}) {
 }
 
 function showEntryForm({ zakaznik, objekt, objects }) {
-  const objectOptions = (objects || []).map((o) => `<option value="${o.uuid}">${esc(o.nazev)}</option>`).join('');
+  const objectOptions = (objects || []).map((o) => `<option value="${o.uuid}">${esc(objName(o))}</option>`).join('');
   openModal('Nový zápis', `
     <form id="form-entry" class="form-grid">
-      ${objekt ? `<p class="muted">K objektu ${esc(objekt.nazev)}</p>` : `
+      ${objekt ? `<p class="muted">K ${esc(noun('one').toLowerCase())} ${esc(objName(objekt))}</p>` : `
         <select name="objekt_uuid">
           <option value="">Zápis k zákazníkovi</option>
           ${objectOptions}
@@ -1006,7 +1121,7 @@ function showFieldsForm(obj, fields) {
 }
 
 function showReminderForm({ zakaznik, objekt, objects }) {
-  const objectOptions = (objects || []).map((o) => `<option value="${o.uuid}">${esc(o.nazev)}</option>`).join('');
+  const objectOptions = (objects || []).map((o) => `<option value="${o.uuid}">${esc(objName(o))}</option>`).join('');
   openModal('Nová připomínka', `
     <form id="form-reminder" class="form-grid">
       <input name="termin" type="date" required>
@@ -1039,20 +1154,31 @@ function showReminderForm({ zakaznik, objekt, objects }) {
 
 async function showObjectForm({ zakaznik }) {
   await ensureTypes();
-  openModal('Nový objekt', `
+  openModal(addObjectCta(), `
     <form id="form-object" class="form-grid">
       <select name="typ_uuid" required>
-        <option value="">Typ objektu</option>
+        <option value="">${esc(typePhrase())}</option>
         ${typeOptionsHtml(cache.types)}
       </select>
-      <input name="nazev" placeholder="Název objektu" required>
+      <input name="nazev" placeholder="Název (volitelně podle typu)" required>
       <textarea name="popis" placeholder="Popis"></textarea>
-      <button class="btn-primary" type="submit">Uložit objekt</button>
+      <button class="btn-gold" type="submit">Uložit</button>
     </form>
   `, (body) => {
-    body.querySelector('#form-object').addEventListener('submit', async (ev) => {
+    const form = body.querySelector('#form-object');
+    const typSel = form.querySelector('[name=typ_uuid]');
+    const nazev = form.querySelector('[name=nazev]');
+    const syncName = () => {
+      const opt = typSel.selectedOptions[0];
+      const need = !opt || opt.dataset.vyzadujeNazev !== '0';
+      nazev.required = need;
+      nazev.placeholder = need ? `Název ${noun('one').toLowerCase()}` : `Název (nemusíte vyplňovat — použije se ${esc((opt && opt.textContent) || 'typ')})`;
+    };
+    typSel.addEventListener('change', syncName);
+    syncName();
+    form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const fd = Object.fromEntries(new FormData(ev.target));
+      const fd = Object.fromEntries(new FormData(form));
       try {
         const created = await api('/objects/', {
           method: 'POST',
@@ -1097,12 +1223,12 @@ function showEditCustomer(c) {
 
 async function showEditObject(obj) {
   await ensureTypes();
-  openModal('Upravit objekt', `
+  openModal(`Upravit ${noun('one').toLowerCase()}`, `
     <form id="form-edit-object" class="form-grid">
       <select name="typ_uuid">
-        ${cache.types.map((t) => `<option value="${t.uuid}" ${t.uuid === obj.typ_uuid ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
+        ${cache.types.map((t) => `<option value="${t.uuid}" data-vyzaduje-nazev="${t.vyzaduje_nazev === false ? '0' : '1'}" ${t.uuid === obj.typ_uuid ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
       </select>
-      <input name="nazev" value="${esc(obj.nazev)}" required>
+      <input name="nazev" value="${esc(obj.nazev || '')}" ${obj.vyzaduje_nazev === false ? '' : 'required'}>
       <textarea name="popis">${esc(obj.popis || '')}</textarea>
       <button class="btn-primary" type="submit">Uložit změny</button>
     </form>
@@ -1134,9 +1260,9 @@ async function renderObjects() {
   }
   el.innerHTML = `
     <div class="panel">
-      <div class="toolbar"><h2>Objekty</h2></div>
+      <div class="toolbar"><h2>${esc(noun('many'))}</h2></div>
       <div class="obj-grid">
-        ${objects.map((o) => objCardHtml(o)).join('') || emptyState('Zatím žádný objekt', 'Objekt založíte na kartě zákazníka.')}
+        ${objects.map((o) => objCardHtml(o)).join('') || emptyState(`Zatím žádné ${noun('one').toLowerCase()}`, `${noun('one')} založíte na kartě zákazníka.`)}
       </div>
     </div>
   `;
@@ -1180,14 +1306,14 @@ async function renderSettings() {
   $('#tab-settings').innerHTML = `
     <div class="settings-intro">
       <h2>Nastavení kartotéky</h2>
-      <p class="muted">Nejdřív zvolte, co evidujete. Pak typy objektů a údaje, které u nich chcete zapisovat. Nic z toho není povinné při založení karty.</p>
+      <p class="muted">Typy z předvyplnění jsou zamčené. Můžete přidat vlastní ${noun('one').toLowerCase()} a k němu vlastní pole. Mazání struktury zatím není v provozovně k dispozici.</p>
     </div>
     <div class="settings-grid">
       <div class="panel">
         <h2>Co eviduji</h2>
         ${obory.map((o) => `
           <button type="button" class="list-item ${o.uuid === selectedOborUuid ? 'active' : ''}" data-select-obor="${o.uuid}">
-            <span>${esc(o.nazev)}</span>
+            <span>${esc(o.nazev)} ${o.zdroj_preset ? lockBadge({ zdroj_preset: o.zdroj_preset }) : ''}</span>
             <span class="muted">${o.typy_pocet} typů</span>
           </button>`).join('')}
         ${bezOboru.length ? `
@@ -1195,44 +1321,37 @@ async function renderSettings() {
             <span>Bez oboru</span>
             <span class="muted">${bezOboru.length} typů</span>
           </button>` : ''}
-        ${!obory.length && !bezOboru.length ? emptyState('Zatím nic', 'Použijte předvyplnění, nebo založte vlastní obor.') : ''}
+        ${!obory.length && !bezOboru.length ? emptyState('Zatím nic', 'Obor se volí při prvním spuštění.') : ''}
         <form id="form-obor" class="form-grid settings-add">
-          <input name="nazev" placeholder="Nový obor (např. Dentální hygiena)" required>
+          <input name="nazev" placeholder="Další vlastní obor" required>
           <button class="btn-gold" type="submit">Vlastní obor</button>
         </form>
-        <form id="form-preset" class="form-grid settings-add">
-          <select name="kod" required>
-            <option value="">Předvyplnit z oboru…</option>
-            ${presets.map((p) => `<option value="${esc(p.kod)}">${esc(p.nazev)}</option>`).join('')}
-          </select>
-          <button class="btn-primary" type="submit">Použít předvyplnění</button>
-        </form>
-        <p class="muted settings-hint">Předvyplnění jen jednou zkopíruje typy a pole. Pozdější úpravy katalogu vaši kartotéku nemění.</p>
       </div>
       <div class="panel">
-        <h2>Typy objektů</h2>
+        <h2>${esc(typePhrase())}</h2>
         <p class="muted">${selectedObor ? esc(selectedObor.nazev) : (selectedOborUuid === 'bez' ? 'Typy bez oboru' : 'Nejdřív vyberte obor.')}</p>
         ${typePool.map((t) => `
           <button type="button" class="list-item ${t.uuid === selectedTypeUuid ? 'active' : ''}" data-select-type="${t.uuid}">
-            <span>${esc(t.nazev)}</span>
+            <span>${esc(t.nazev)} ${lockBadge(t)}</span>
             <span class="muted">${(t.pole || []).length} údajů</span>
-          </button>`).join('') || emptyState('Žádný typ', selectedObor ? 'Přidejte typ objektu do tohoto oboru.' : 'Vyberte nebo založte obor.')}
+          </button>`).join('') || emptyState('Žádný typ', selectedObor ? `Přidejte ${typePhrase().toLowerCase()} do tohoto oboru.` : 'Vyberte nebo založte obor.')}
         ${selectedObor ? `
           <form id="form-type" class="form-grid settings-add">
-            <input name="nazev" placeholder="Nový typ objektu" required>
+            <input name="nazev" placeholder="Nový vlastní typ" required>
+            <label class="check-row"><input type="checkbox" name="vyzaduje_nazev" checked> Vyžadovat název</label>
             <button class="btn-gold" type="submit">Přidat typ</button>
           </form>
         ` : ''}
       </div>
       <div class="panel">
         ${selected ? `
-          <h2>${esc(selected.nazev)}</h2>
-          <p class="muted">Jaké informace chci u tohoto typu evidovat</p>
+          <h2>${esc(selected.nazev)} ${lockBadge(selected)}</h2>
+          <p class="muted">${selected.zamceno ? 'Spravováno Archivníkem — definici tohoto typu nelze měnit. Vlastní pole přidat můžete.' : 'Jaké informace chci u tohoto typu evidovat'}</p>
           ${(selected.pole || []).length
-            ? selected.pole.map((p) => `<div class="row"><span>${esc(p.nazev)}</span><span class="muted">${esc(fieldKindLabel(p.druh))}</span></div>`).join('')
+            ? selected.pole.map((p) => `<div class="row"><span>${esc(p.nazev)} ${lockBadge(p)}</span><span class="muted">${esc(fieldKindLabel(p.druh))}</span></div>`).join('')
             : emptyState('Žádné údaje', 'Přidejte pole. Při založení objektu zůstanou volitelná.')}
           <form class="form-grid form-field settings-add" data-typ="${selected.uuid}">
-            <input name="nazev" placeholder="Název pole" required>
+            <input name="nazev" placeholder="Název vlastního pole" required>
             <select name="druh" data-field-kind>
               <option value="text">Text</option>
               <option value="dlouhy_text">Dlouhý text</option>
@@ -1244,7 +1363,7 @@ async function renderSettings() {
             <textarea name="volby" class="hidden" data-field-volby rows="4" placeholder="Možnosti, každá na nový řádek (např. Samec / Samice / Neurčeno)"></textarea>
             <button class="btn-gold" type="submit">Přidat pole</button>
           </form>
-        ` : emptyState('Nejdřív typ', 'Vlevo zvolte typ objektu, potom k němu přidejte údaje.')}
+        ` : emptyState('Nejdřív typ', `Vlevo zvolte ${typePhrase().toLowerCase()}, potom k němu přidejte údaje.`)}
       </div>
       <div class="panel settings-tags">
         <h2>Štítky</h2>
@@ -1315,11 +1434,13 @@ async function renderSettings() {
     typeForm.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       try {
+        const fd = Object.fromEntries(new FormData(ev.target));
         const created = await api('/object-types/', {
           method: 'POST',
           body: JSON.stringify({
-            ...Object.fromEntries(new FormData(ev.target)),
+            nazev: fd.nazev,
             obor_uuid: selectedOborUuid,
+            vyzaduje_nazev: Boolean(fd.vyzaduje_nazev),
           }),
         });
         selectedTypeUuid = created.uuid;

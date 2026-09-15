@@ -3,6 +3,8 @@ from archivnik.presets._fields import POHON, f, t
 PNEU = {
     'kod': 'pneu',
     'nazev': 'Pneuservis',
+    'objekt_jednotne': 'Vozidlo',
+    'objekt_mnozne': 'Vozidla',
     'typy': [
         t('Osobní vůz', [
             f('SPZ', 'text'),

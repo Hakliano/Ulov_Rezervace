@@ -134,7 +134,7 @@ class AssetListCreateView(APIView):
 
     def get(self, request):
         salon = _salon(request)
-        qs = Asset.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'zapis')
+        qs = Asset.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'objekt__typ', 'zapis')
         cu = request.query_params.get('zakaznik')
         ou = request.query_params.get('objekt')
         eu = request.query_params.get('zapis')

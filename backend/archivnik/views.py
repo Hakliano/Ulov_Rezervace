@@ -45,6 +45,19 @@ from archivnik.serializers import (
 )
 
 
+def _user_payload(zam):
+    from archivnik.services import salon_config_status
+    payload = {
+        'jmeno': zam.jmeno,
+        'email': zam.prihlasovaci_jmeno,
+        'role': zam.role,
+        'provozovna': zam.salon.name,
+        'je_spravce': zam.role == zam.ROLE_MAJITEL,
+    }
+    payload.update(salon_config_status(zam.salon))
+    return payload
+
+
 def _actor(request):
     return get_actor_from_request(request)
 
@@ -103,14 +116,9 @@ class LoginView(APIView):
         if not zam:
             return Response({'detail': 'Neplatné přihlašovací údaje.'}, status=status.HTTP_401_UNAUTHORIZED)
         session = create_session(zam)
-        return Response({
-            'token': str(session.token),
-            'jmeno': zam.jmeno,
-            'email': zam.prihlasovaci_jmeno,
-            'role': zam.role,
-            'provozovna': zam.salon.name,
-            'je_spravce': zam.role == zam.ROLE_MAJITEL,
-        })
+        payload = _user_payload(zam)
+        payload['token'] = str(session.token)
+        return Response(payload)
 
 
 class LogoutView(APIView):
@@ -129,14 +137,7 @@ class MeView(APIView):
     permission_classes = [ArchivnikPermission]
 
     def get(self, request):
-        zam = _actor(request)
-        return Response({
-            'jmeno': zam.jmeno,
-            'email': zam.prihlasovaci_jmeno,
-            'role': zam.role,
-            'provozovna': zam.salon.name,
-            'je_spravce': zam.role == zam.ROLE_MAJITEL,
-        })
+        return Response(_user_payload(_actor(request)))
 
 
 _MONTHS_CS = ('led', 'úno', 'bře', 'dub', 'kvě', 'čvn', 'čvc', 'srp', 'zář', 'říj', 'lis', 'pro')
@@ -164,21 +165,21 @@ def _overview_aktivita(salon, month_start):
 
 def _overview_feed(salon):
     events = []
-    for row in Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt').order_by('-vytvoreno')[:12]:
+    for row in Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'objekt__typ').order_by('-vytvoreno')[:12]:
         events.append({
             'druh': 'zapis',
             'cas': row.vytvoreno.isoformat(),
             'titulek': row.nadpis or row.typ_zapisu or 'Zápis',
-            'subjekt': row.objekt.nazev if row.objekt_id else row.zakaznik.display_name,
+            'subjekt': row.objekt.display_name if row.objekt_id else row.zakaznik.display_name,
             'zakaznik_uuid': str(row.zakaznik.uuid),
             'objekt_uuid': str(row.objekt.uuid) if row.objekt_id else None,
         })
-    for row in Asset.objects.filter(salon=salon).select_related('zakaznik', 'objekt').order_by('-vytvoreno')[:12]:
+    for row in Asset.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'objekt__typ').order_by('-vytvoreno')[:12]:
         events.append({
             'druh': 'fotografie' if row.druh == AssetKind.FOTOGRAFIE else 'dokument',
             'cas': row.vytvoreno.isoformat(),
             'titulek': row.nazev,
-            'subjekt': row.objekt.nazev if row.objekt_id else row.zakaznik.display_name,
+            'subjekt': row.objekt.display_name if row.objekt_id else row.zakaznik.display_name,
             'zakaznik_uuid': str(row.zakaznik.uuid),
             'objekt_uuid': str(row.objekt.uuid) if row.objekt_id else None,
         })
@@ -186,17 +187,17 @@ def _overview_feed(salon):
         events.append({
             'druh': 'objekt',
             'cas': row.vytvoreno.isoformat(),
-            'titulek': f'Nový objekt {row.nazev}',
+            'titulek': f'Nový objekt {row.display_name}',
             'subjekt': row.zakaznik.display_name,
             'zakaznik_uuid': str(row.zakaznik.uuid),
             'objekt_uuid': str(row.uuid),
         })
-    for row in Reminder.objects.filter(salon=salon).select_related('zakaznik', 'objekt').order_by('-vytvoreno')[:8]:
+    for row in Reminder.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'objekt__typ').order_by('-vytvoreno')[:8]:
         events.append({
             'druh': 'pripominka',
             'cas': row.vytvoreno.isoformat(),
             'titulek': row.text,
-            'subjekt': row.objekt.nazev if row.objekt_id else row.zakaznik.display_name,
+            'subjekt': row.objekt.display_name if row.objekt_id else row.zakaznik.display_name,
             'zakaznik_uuid': str(row.zakaznik.uuid),
             'objekt_uuid': str(row.objekt.uuid) if row.objekt_id else None,
         })
@@ -262,7 +263,7 @@ class OverviewView(APIView):
         )
         upcoming = Reminder.objects.filter(
             salon=salon, stav=ReminderStav.AKTIVNI,
-        ).select_related('zakaznik', 'objekt', 'prirazeny').order_by('termin', 'id')[:8]
+        ).select_related('zakaznik', 'objekt', 'objekt__typ', 'prirazeny').order_by('termin', 'id')[:8]
         zakaznici = Customer.objects.filter(salon=salon, stav=Stav.AKTIVNI).count()
         objekty = Object.objects.filter(salon=salon, stav=Stav.AKTIVNI).count()
         zapisy_mesic = Entry.objects.filter(salon=salon, vytvoreno__gte=month_start).count()
@@ -406,7 +407,12 @@ class OborListCreateView(APIView):
         ser.is_valid(raise_exception=True)
         try:
             from archivnik.services import create_obor
-            obor = create_obor(salon=_salon(request), nazev=ser.validated_data['nazev'])
+            obor = create_obor(
+                salon=_salon(request),
+                nazev=ser.validated_data['nazev'],
+                objekt_jednotne=ser.validated_data.get('objekt_jednotne') or 'Objekt',
+                objekt_mnozne=ser.validated_data.get('objekt_mnozne') or 'Objekty',
+            )
         except IntegrityError:
             return Response({'detail': 'Obor s tímto názvem už existuje.'}, status=400)
         except Exception as exc:
@@ -428,14 +434,25 @@ class PresetApplyView(APIView):
     permission_classes = [ArchivnikPermission]
 
     def post(self, request):
-        kod = (request.data.get('kod') or '').strip()
+        salon = _salon(request)
         from archivnik.presets import get_preset
-        from archivnik.services import apply_preset
+        from archivnik.services import apply_preset, salon_is_onboarded
+        if salon_is_onboarded(salon):
+            return Response(
+                {
+                    'detail': (
+                        'Obor už je nastavený. Další systémový preset může přidat '
+                        'jen správa Archivníka.'
+                    ),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        kod = (request.data.get('kod') or '').strip()
         try:
             get_preset(kod)
         except KeyError:
             return Response({'detail': 'Neznámý preset.'}, status=400)
-        result = apply_preset(_salon(request), kod)
+        result = apply_preset(salon, kod)
         obor = result['obor']
         payload = OborSerializer(obor).data
         payload.update({
@@ -475,6 +492,7 @@ class ObjectTypeListCreateView(APIView):
                 obor=obor,
                 nazev=data['nazev'].strip(),
                 poradi=data.get('poradi') or (obor.typy.count() + 1),
+                vyzaduje_nazev=data.get('vyzaduje_nazev', True),
             )
             obj.save()
         except IntegrityError:
@@ -505,19 +523,22 @@ class ObjectListCreateView(APIView):
         data = ser.validated_data
         salon = _salon(request)
         actor = _actor(request)
-        if not data.get('zakaznik_uuid') or not data.get('typ_uuid') or not data.get('nazev'):
-            return Response({'detail': 'Zadejte zákazníka, typ a název objektu.'}, status=400)
+        if not data.get('zakaznik_uuid') or not data.get('typ_uuid'):
+            return Response({'detail': 'Zadejte zákazníka a typ objektu.'}, status=400)
         zakaznik = Customer.objects.filter(salon=salon, uuid=data['zakaznik_uuid']).first()
         typ = ObjectType.objects.filter(salon=salon, uuid=data['typ_uuid']).first()
         if not zakaznik:
             return Response({'detail': 'Zákazník nenalezen.'}, status=400)
         if not typ:
             return Response({'detail': 'Typ objektu nenalezen.'}, status=400)
+        nazev = (data.get('nazev') or '').strip()
+        if typ.vyzaduje_nazev and not nazev:
+            return Response({'detail': 'Zadejte název.'}, status=400)
         obj = Object(
             salon=salon,
             zakaznik=zakaznik,
             typ=typ,
-            nazev=data['nazev'].strip(),
+            nazev=nazev,
             popis=(data.get('popis') or '').strip(),
             stav=data.get('stav') or Stav.AKTIVNI,
             vytvoril=actor,
@@ -581,7 +602,7 @@ class EntryListCreateView(APIView):
 
     def get(self, request):
         salon = _salon(request)
-        qs = Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'vytvoril').prefetch_related('prilohy')
+        qs = Entry.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'objekt__typ', 'vytvoril').prefetch_related('prilohy')
         cu = request.query_params.get('zakaznik')
         ou = request.query_params.get('objekt')
         if ou:
@@ -655,7 +676,7 @@ class ReminderListCreateView(APIView):
 
     def get(self, request):
         salon = _salon(request)
-        qs = Reminder.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'prirazeny')
+        qs = Reminder.objects.filter(salon=salon).select_related('zakaznik', 'objekt', 'objekt__typ', 'prirazeny')
         stav = request.query_params.get('stav')
         if stav in (ReminderStav.AKTIVNI, ReminderStav.HOTOVO):
             qs = qs.filter(stav=stav)

@@ -2,7 +2,7 @@
 
 from django.core.management.base import BaseCommand
 
-from archivnik.models import Customer, Obor
+from archivnik.models import Customer, Obor, ObjectType
 from archivnik.services import apply_preset
 from flow.models import FlowUser
 from partner_admin.models import MODUL_ARCHIVNIK
@@ -85,6 +85,8 @@ class Command(BaseCommand):
             if spec['preset'] and not Obor.objects.filter(salon=salon, zdroj_preset=spec['preset']).exists():
                 if not Customer.objects.filter(salon=salon).exists():
                     apply_preset(salon, spec['preset'])
+            if spec['preset'] is None:
+                ObjectType.objects.filter(salon=salon, nazev='Chrup').update(vyzaduje_nazev=False)
             self.stdout.write(
                 f"email={spec['email']} salon_id={salon.id} preset={spec['preset'] or '-'} "
                 f"obory={Obor.objects.filter(salon=salon).count()}"

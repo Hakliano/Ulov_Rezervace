@@ -16,5 +16,5 @@ def f(nazev, druh, volby=None):
     return {'nazev': nazev, 'druh': druh, 'volby': list(volby or [])}
 
 
-def t(nazev, pole):
-    return {'nazev': nazev, 'pole': list(pole)}
+def t(nazev, pole, vyzaduje_nazev=True):
+    return {'nazev': nazev, 'pole': list(pole), 'vyzaduje_nazev': vyzaduje_nazev}

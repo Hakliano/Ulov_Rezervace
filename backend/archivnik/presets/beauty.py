@@ -14,6 +14,8 @@ from archivnik.presets._fields import (
 BEAUTY = {
     'kod': 'beauty',
     'nazev': 'Kadeřnický & beauty salon',
+    'objekt_jednotne': 'Profil',
+    'objekt_mnozne': 'Profily',
     'typy': [
         t('Vlasy', [
             f('Typ vlasů', 'vyber', VLASY_TYP),

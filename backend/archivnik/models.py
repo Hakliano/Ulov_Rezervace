@@ -57,6 +57,8 @@ class Obor(models.Model):
         max_length=32, blank=True, default='',
         help_text='Kód presetu v okamžiku kopie. Nikdy se z katalogu znovu nesynchronizuje.',
     )
+    objekt_jednotne = models.CharField('jednotné číslo objektu', max_length=40, default='Objekt')
+    objekt_mnozne = models.CharField('množné číslo objektu', max_length=40, default='Objekty')
     vytvoreno = models.DateTimeField(auto_now_add=True)
     upraveno = models.DateTimeField(auto_now=True)
 
@@ -91,6 +93,8 @@ class ObjectType(models.Model):
     nazev = models.CharField('název', max_length=80)
     poradi = models.PositiveSmallIntegerField(default=0)
     aktivni = models.BooleanField(default=True)
+    vyzaduje_nazev = models.BooleanField('vyžaduje název objektu', default=True)
+    zdroj_preset = models.CharField(max_length=32, blank=True, default='')
     vytvoreno = models.DateTimeField(auto_now_add=True)
     upraveno = models.DateTimeField(auto_now=True)
 
@@ -187,7 +191,7 @@ class Object(models.Model):
     typ = models.ForeignKey(
         ObjectType, related_name='objekty', on_delete=models.PROTECT,
     )
-    nazev = models.CharField('název', max_length=160)
+    nazev = models.CharField('název', max_length=160, blank=True, default='')
     popis = models.TextField('popis', blank=True, default='')
     stav = models.CharField(max_length=16, choices=Stav.choices, default=Stav.AKTIVNI, db_index=True)
     vytvoril = models.ForeignKey(
@@ -221,10 +225,21 @@ class Object(models.Model):
             models.UniqueConstraint(fields=['id', 'zakaznik'], name='archivnik_object_id_zakaznik'),
         ]
 
+    @property
+    def display_name(self):
+        n = (self.nazev or '').strip()
+        if n:
+            return n
+        if self.typ_id:
+            return self.typ.nazev
+        return 'Bez názvu'
+
     def __str__(self):
-        return self.nazev
+        return self.display_name
 
     def clean(self):
+        if self.typ_id and self.typ.vyzaduje_nazev and not (self.nazev or '').strip():
+            raise ValidationError({'nazev': 'Tento typ objektu vyžaduje název.'})
         if self.zakaznik_id and self.zakaznik.salon_id != self.salon_id:
             raise ValidationError('Objekt musí patřit do stejné provozovny jako zákazník.')
         if self.typ_id and self.typ.salon_id != self.salon_id:
@@ -351,6 +366,7 @@ class CustomFieldDef(models.Model):
     volby = models.JSONField('možnosti výběru', default=list, blank=True)
     poradi = models.PositiveSmallIntegerField(default=0)
     aktivni = models.BooleanField(default=True)
+    zdroj_preset = models.CharField(max_length=32, blank=True, default='')
     vytvoreno = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -17,6 +17,8 @@ def list_presets():
             'kod': row['kod'],
             'nazev': row['nazev'],
             'typy_pocet': len(row['typy']),
+            'objekt_jednotne': row.get('objekt_jednotne') or 'Objekt',
+            'objekt_mnozne': row.get('objekt_mnozne') or 'Objekty',
         }
         for row in PRESETS.values()
     ]

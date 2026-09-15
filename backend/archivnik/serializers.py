@@ -25,7 +25,10 @@ class OborSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Obor
-        fields = ['uuid', 'nazev', 'poradi', 'zdroj_preset', 'typy_pocet']
+        fields = [
+            'uuid', 'nazev', 'poradi', 'zdroj_preset', 'typy_pocet',
+            'objekt_jednotne', 'objekt_mnozne',
+        ]
         read_only_fields = ['uuid', 'poradi', 'zdroj_preset', 'typy_pocet']
 
     def get_typy_pocet(self, obj):
@@ -38,11 +41,20 @@ class ObjectTypeSerializer(serializers.ModelSerializer):
     pole = serializers.SerializerMethodField()
     obor_uuid = serializers.UUIDField(source='obor.uuid', read_only=True, allow_null=True)
     obor_nazev = serializers.CharField(source='obor.nazev', read_only=True, allow_null=True)
+    zamceno = serializers.SerializerMethodField()
 
     class Meta:
         model = ObjectType
-        fields = ['uuid', 'nazev', 'poradi', 'aktivni', 'obor_uuid', 'obor_nazev', 'pole']
-        read_only_fields = ['uuid', 'obor_uuid', 'obor_nazev']
+        fields = [
+            'uuid', 'nazev', 'poradi', 'aktivni', 'vyzaduje_nazev', 'zdroj_preset',
+            'zamceno', 'obor_uuid', 'obor_nazev', 'pole',
+        ]
+        read_only_fields = [
+            'uuid', 'obor_uuid', 'obor_nazev', 'zdroj_preset', 'zamceno',
+        ]
+
+    def get_zamceno(self, obj):
+        return bool(obj.zdroj_preset)
 
     def get_pole(self, obj):
         qs = obj.pole.all() if hasattr(obj, '_prefetched_objects_cache') and 'pole' in obj._prefetched_objects_cache else obj.pole.filter(aktivni=True)
@@ -53,15 +65,20 @@ class ObjectTypeWriteSerializer(serializers.Serializer):
     nazev = serializers.CharField(max_length=80)
     obor_uuid = serializers.UUIDField()
     poradi = serializers.IntegerField(required=False, default=0)
+    vyzaduje_nazev = serializers.BooleanField(required=False, default=True)
 
 
 class CustomFieldDefSerializer(serializers.ModelSerializer):
     typ_uuid = serializers.UUIDField(source='typ.uuid', read_only=True)
+    zamceno = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomFieldDef
-        fields = ['uuid', 'typ_uuid', 'nazev', 'druh', 'volby', 'poradi', 'aktivni']
-        read_only_fields = ['uuid']
+        fields = ['uuid', 'typ_uuid', 'nazev', 'druh', 'volby', 'poradi', 'aktivni', 'zdroj_preset', 'zamceno']
+        read_only_fields = ['uuid', 'zdroj_preset', 'zamceno']
+
+    def get_zamceno(self, obj):
+        return bool(obj.zdroj_preset)
 
 
 class CustomFieldDefWriteSerializer(serializers.Serializer):
@@ -87,7 +104,7 @@ class AssetSerializer(serializers.ModelSerializer):
     zakaznik_uuid = serializers.UUIDField(source='zakaznik.uuid', read_only=True)
     zakaznik_jmeno = serializers.CharField(source='zakaznik.display_name', read_only=True)
     objekt_uuid = serializers.UUIDField(source='objekt.uuid', read_only=True, allow_null=True)
-    objekt_nazev = serializers.CharField(source='objekt.nazev', read_only=True, allow_null=True)
+    objekt_nazev = serializers.SerializerMethodField()
     zapis_uuid = serializers.UUIDField(source='zapis.uuid', read_only=True, allow_null=True)
     url = serializers.SerializerMethodField()
 
@@ -113,6 +130,11 @@ class AssetSerializer(serializers.ModelSerializer):
             sep = '&' if '?' in url else '?'
             return f'{url}{sep}token={token}'
         return url
+
+    def get_objekt_nazev(self, obj):
+        if not obj.objekt_id:
+            return None
+        return obj.objekt.display_name
 
 
 class CustomerListSerializer(serializers.ModelSerializer):
@@ -150,12 +172,15 @@ class ObjectSerializer(serializers.ModelSerializer):
     posledni_zapis = serializers.SerializerMethodField()
     pripominky_aktivni = serializers.SerializerMethodField()
     cover_uuid = serializers.SerializerMethodField()
+    display_name = serializers.CharField(read_only=True)
+    vyzaduje_nazev = serializers.BooleanField(source='typ.vyzaduje_nazev', read_only=True)
 
     class Meta:
         model = Object
         fields = [
-            'uuid', 'nazev', 'popis', 'stav',
-            'typ_uuid', 'typ_nazev', 'zakaznik_uuid', 'zakaznik_jmeno',
+            'uuid', 'nazev', 'display_name', 'popis', 'stav',
+            'typ_uuid', 'typ_nazev', 'vyzaduje_nazev',
+            'zakaznik_uuid', 'zakaznik_jmeno',
             'tagy', 'zapisy_pocet', 'posledni_zapis', 'pripominky_aktivni',
             'cover_uuid', 'vytvoreno', 'upraveno',
         ]
@@ -187,7 +212,7 @@ class ObjectSerializer(serializers.ModelSerializer):
 class ObjectWriteSerializer(serializers.Serializer):
     zakaznik_uuid = serializers.UUIDField(required=False)
     typ_uuid = serializers.UUIDField(required=False)
-    nazev = serializers.CharField(max_length=160, required=False)
+    nazev = serializers.CharField(max_length=160, required=False, allow_blank=True)
     popis = serializers.CharField(required=False, allow_blank=True)
     stav = serializers.ChoiceField(required=False, choices=['aktivni', 'archivovany'])
     tagy = serializers.ListField(child=serializers.UUIDField(), required=False)
@@ -197,7 +222,7 @@ class EntrySerializer(serializers.ModelSerializer):
     zakaznik_uuid = serializers.UUIDField(source='zakaznik.uuid', read_only=True)
     zakaznik_jmeno = serializers.CharField(source='zakaznik.display_name', read_only=True)
     objekt_uuid = serializers.UUIDField(source='objekt.uuid', read_only=True, allow_null=True)
-    objekt_nazev = serializers.CharField(source='objekt.nazev', read_only=True, allow_null=True)
+    objekt_nazev = serializers.SerializerMethodField()
     autor = serializers.CharField(source='vytvoril.jmeno', read_only=True, allow_null=True)
     prilohy = AssetSerializer(many=True, read_only=True)
 
@@ -208,6 +233,11 @@ class EntrySerializer(serializers.ModelSerializer):
             'nastalo', 'typ_zapisu', 'nadpis', 'text', 'autor', 'prilohy',
             'vytvoreno', 'upraveno',
         ]
+
+    def get_objekt_nazev(self, obj):
+        if not obj.objekt_id:
+            return None
+        return obj.objekt.display_name
 
 
 class EntryWriteSerializer(serializers.Serializer):
@@ -223,8 +253,20 @@ class ReminderSerializer(serializers.ModelSerializer):
     zakaznik_uuid = serializers.UUIDField(source='zakaznik.uuid', read_only=True)
     zakaznik_jmeno = serializers.CharField(source='zakaznik.display_name', read_only=True)
     objekt_uuid = serializers.UUIDField(source='objekt.uuid', read_only=True, allow_null=True)
-    objekt_nazev = serializers.CharField(source='objekt.nazev', read_only=True, allow_null=True)
+    objekt_nazev = serializers.SerializerMethodField()
     prirazeny_jmeno = serializers.CharField(source='prirazeny.jmeno', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Reminder
+        fields = [
+            'uuid', 'zakaznik_uuid', 'zakaznik_jmeno', 'objekt_uuid', 'objekt_nazev',
+            'termin', 'text', 'stav', 'prirazeny_jmeno', 'vytvoreno',
+        ]
+
+    def get_objekt_nazev(self, obj):
+        if not obj.objekt_id:
+            return None
+        return obj.objekt.display_name
 
     class Meta:
         model = Reminder

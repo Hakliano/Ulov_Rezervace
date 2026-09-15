@@ -669,6 +669,47 @@ textarea { min-height: 90px; resize: vertical; }
 .settings-intro h2 { margin: 0 0 6px; }
 .settings-intro p { margin: 0; }
 .settings-hint { margin-top: 10px; font-size: 13px; }
+.lock-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.check-row input { width: auto; }
+.cta-main {
+  font-size: 16px;
+  padding: 12px 18px;
+}
+.onboard-card { max-width: 520px; }
+.onboard-card h1 { margin: 8px 0 10px; font-size: 28px; }
+.onboard-choices {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 12px;
+}
+.onboard-choice {
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  cursor: pointer;
+}
+.onboard-choice:hover, .onboard-choice:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+}
 .settings-grid .panel {
   max-height: min(70vh, 720px);
   overflow: auto;

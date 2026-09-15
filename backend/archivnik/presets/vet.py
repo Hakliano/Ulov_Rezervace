@@ -3,6 +3,8 @@ from archivnik.presets._fields import POHLAVI, f, t
 VET = {
     'kod': 'vet',
     'nazev': 'Veterinární ordinace',
+    'objekt_jednotne': 'Zvíře',
+    'objekt_mnozne': 'Zvířata',
     'typy': [
         t('Pes', [
             f('Plemeno', 'text'),
