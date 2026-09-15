@@ -38,6 +38,7 @@ from .evidence import data_souhrnu, parse_datum, seznam_faktur, vychozi_obdobi
 from .extra_faktury import oznacit_extra_uhrazeno, vytvor_extra_fakturu
 from .loga import logo_url_pro_tarif, tarif_loga_pro_sablonu
 from .models import (
+    MODUL_ARCHIVNIK,
     MODUL_MATERIALNIK,
     ExtraFaktura,
     HromadnyEmail,
@@ -779,6 +780,10 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
             'owner_flow': owner_flow_stav(salon),
             'materialnik_modul': partner_modul(salon, MODUL_MATERIALNIK),
             'materialnik_public_url': (getattr(settings, 'MATERIALNIK_PUBLIC_URL', '') or '').rstrip('/'),
+            'archivnik_modul': partner_modul(salon, MODUL_ARCHIVNIK),
+            'archivnik_public_url': (
+                (getattr(settings, 'ARCHIVNIK_PUBLIC_URL', '') or '/archivnik/').rstrip('/') + '/'
+            ),
             'ulov_ucty': seznam_ulov_uctu(),
             'platby': salon.partnerske_platby.select_related('oznacil')[:24],
             'posledni_platba': salon.partnerske_platby.select_related('oznacil').first(),
@@ -871,6 +876,27 @@ def nastavit_materialnik(request, salon_id):
         messages.success(request, 'Materiálník je vypnutý. Data skladu zůstávají, ve FLOW o něm není zmínka.')
     else:
         messages.info(request, f'Stav Materiálníku: {row.get_status_display()}.')
+    return _detail_redirect(salon.id, 'partner')
+
+
+@superadmin_required
+@require_POST
+def nastavit_archivnik(request, salon_id):
+    salon = get_object_or_404(Salon, pk=salon_id)
+    zapnout = request.POST.get('zapnout') == '1'
+    row = nastav_modul(salon, MODUL_ARCHIVNIK, zapnout, request.user)
+    if zapnout and row.status == row.STAV_ACTIVE:
+        messages.success(
+            request,
+            'Archivník je zapnutý. Partner se přihlásí stejným e-mailem a heslem zaměstnance.',
+        )
+    elif not zapnout:
+        messages.success(
+            request,
+            'Archivník je vypnutý. Kartotéka zůstává, přihlášení je zablokované.',
+        )
+    else:
+        messages.info(request, f'Stav Archivníka: {row.status}.')
     return _detail_redirect(salon.id, 'partner')
 
 
