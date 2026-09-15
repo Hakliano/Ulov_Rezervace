@@ -372,6 +372,7 @@ class TechnickaChyba(models.Model):
 
 
 MODUL_MATERIALNIK = 'materialnik'
+MODUL_ARCHIVNIK = 'archivnik'
 
 
 class ModulKatalog(models.Model):

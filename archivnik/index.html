@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archivník</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/webp" href="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=p3f1">
+</head>
+<body>
+  <div id="login-screen" class="login-wrap">
+    <form id="login-form" class="login-card">
+      <img
+        class="logo-login"
+        src="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp"
+        alt="Archivník"
+        width="280"
+        height="86"
+      >
+      <p class="muted">Digitální kartotéka. Funguje samostatně, bez FLOW.</p>
+      <label>E-mail
+        <input id="login-email" type="email" autocomplete="username" required>
+      </label>
+      <label>Heslo
+        <input id="login-password" type="password" autocomplete="current-password" required>
+      </label>
+      <p id="login-error" class="error hidden"></p>
+      <button type="submit" class="btn-primary">Přihlásit se</button>
+    </form>
+  </div>
+
+      <div id="onboard-screen" class="login-wrap hidden">
+        <div class="login-card onboard-card">
+          <img
+            class="logo-login"
+            src="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp"
+            alt="Archivník"
+            width="280"
+            height="86"
+          >
+          <div id="onboard-body"></div>
+        </div>
+      </div>
+
+  <div id="app-screen" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <img
+          class="logo-sidebar"
+          src="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp"
+          alt="Archivník"
+          width="196"
+          height="60"
+        >
+        <span id="sidebar-salon">—</span>
+      </div>
+      <nav class="nav-main" aria-label="Hlavní">
+        <button type="button" class="tab active" data-tab="overview">Přehled</button>
+        <button type="button" class="tab" data-tab="customers">Zákazníci</button>
+        <button type="button" class="tab" data-tab="objects">Objekty</button>
+        <button type="button" class="tab" data-tab="reminders">Připomínky</button>
+      </nav>
+      <nav class="nav-settings" aria-label="Nastavení">
+        <button type="button" class="tab" data-tab="settings">Nastavení</button>
+      </nav>
+      <div class="userbox">
+        <strong id="sidebar-name">—</strong>
+        <button type="button" id="btn-logout" class="btn-ghost">Odhlásit se</button>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="top">
+        <form id="search-form" class="search">
+          <input id="search-q" type="search" placeholder="Hledat jméno, telefon, e-mail, objekt…" minlength="2">
+        </form>
+      </header>
+      <div id="search-results" class="panel hidden"></div>
+      <section id="tab-overview" class="tab-panel"></section>
+      <section id="tab-customers" class="tab-panel hidden"></section>
+      <section id="tab-objects" class="tab-panel hidden"></section>
+      <section id="tab-reminders" class="tab-panel hidden"></section>
+      <section id="tab-settings" class="tab-panel hidden"></section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-title">Akce</h3>
+        <button type="button" class="btn-ghost" id="modal-close">Zavřít</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+  <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true">
+    <button type="button" class="lightbox-nav" id="lightbox-prev" aria-label="Předchozí">‹</button>
+    <img id="lightbox-img" alt="">
+    <button type="button" class="lightbox-nav" id="lightbox-next" aria-label="Další">›</button>
+    <button type="button" class="btn-ghost lightbox-close" id="lightbox-close">Zavřít</button>
+    <div class="lightbox-bar">
+      <p id="lightbox-caption" class="lightbox-caption"></p>
+      <div class="lightbox-actions">
+        <button type="button" class="btn-gold" id="lightbox-cover">Nastavit jako hlavní</button>
+        <button type="button" class="btn-small" id="lightbox-delete">Smazat</button>
+      </div>
+    </div>
+  </div>
+  <script src="app.js?v=p3f1"></script>
+</body>
+</html>

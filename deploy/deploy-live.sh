@@ -125,6 +125,12 @@ if [ -d flow ]; then
   rsync -a flow/ www/flow/
   echo "synced flow"
 fi
+if [ -d archivnik ]; then
+  bash deploy/pre-deploy-check.sh archivnik || true
+  mkdir -p www/archivnik
+  rsync -a archivnik/ www/archivnik/
+  echo "synced archivnik"
+fi
 if [ -d partner ]; then
   bash deploy/pre-deploy-check.sh partner || true
   mkdir -p www/partner
@@ -147,6 +153,7 @@ echo "### 6) Smoke"
 curl -sS -o /dev/null -w "api_health:%{http_code}\n" "https://api.ulovklienty.cz/health/" || true
 curl -sS -o /dev/null -w "hub:%{http_code}\n" "https://ulovklienty.cz/" || true
 curl -sS -o /dev/null -w "flow:%{http_code}\n" "https://www.ulovklienty.cz/flow/" || true
+curl -sS -o /dev/null -w "archivnik:%{http_code}\n" "https://www.modernik.cz/archivnik/" || true
 curl -sS -o /dev/null -w "sklad:%{http_code}\n" "https://www.ulovklienty.cz/sklad/" || true
 curl -sS -o /dev/null -w "salon19:%{http_code}\n" "https://www.ulovklienty.cz/salon19/" || true
 

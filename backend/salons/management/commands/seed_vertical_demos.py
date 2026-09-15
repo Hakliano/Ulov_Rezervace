@@ -2,8 +2,13 @@ from datetime import time
 
 from django.core.management.base import BaseCommand, CommandError
 
+from django.db import connection
+
+from partner_admin.models import PartnerNastaveni, vychozi_variabilni_symbol
 from rezervace.models import RezervacniNastaveni, Zamestnanec, ZamestnanecRozvrh
 from rezervace.services.booking_urls import DEMO_LIVE_BOOKING_URLS
+from rezervace.services.staff_auth import ensure_owner_flow_user
+from salons.management.commands.hulinek_services import hulinek_service_tuples
 from salons.models import CenikPolozka, Novinka, OteviraciDoba, Salon
 
 
@@ -53,11 +58,18 @@ DEMOS = [
         'description': 'Variabilní prostor pro fotografie, tvorbu i setkávání.',
         'services': [('Pronájem studia', 950, 60), ('Portrétní focení', 2400, 60), ('Produktové foto', 1900, 60), ('Workshop', 1200, 90)],
     },
+    {
+        'pk': 20, 'name': 'Veterina Hulínek', 'kind': 'veterina',
+        'email': 'info@veterinahulinek.cz',
+        'owner_login': 'info@veterinahulinek.cz',
+        'description': 'Pracujeme s vlastní laboratoří IDEXX, digitálním RTG a kompletní chirurgií. Ceny jednotlivých výkonů na webu neuvádíme — rádi je sdělíme při objednání nebo po telefonu.',
+        'services': hulinek_service_tuples(),
+    },
 ]
 
 
 class Command(BaseCommand):
-    help = 'Vytvoří idempotentní data pro devět oborových ukázek (salony 9–17).'
+    help = 'Vytvoří idempotentní data pro oborové ukázky (salony 9–17 a 20).'
 
     def handle(self, *args, **options):
         for demo in DEMOS:
@@ -74,12 +86,28 @@ class Command(BaseCommand):
                         f"Salon „{demo['name']}“ už existuje pod PK {conflict.pk}; očekává se PK {demo['pk']}."
                     )
                 salon = Salon(pk=demo['pk'], name=demo['name'])
+            elif demo['pk'] != 20 and CenikPolozka.objects.filter(salon=salon).exists():
+                PartnerNastaveni.objects.filter(salon=salon).update(je_testovaci=True)
+                self.stdout.write(f'{salon.pk}: {salon.name} existuje, obsah nechávám.')
+                continue
 
             salon.description = demo['description']
-            salon.address = f'Ukázková 42, Praha'
-            salon.phone = f'+420 777 000 {demo["pk"]}'
-            salon.email = f'info@{demo["name"].lower().replace(" ", "").replace("ě", "e").replace("í", "i")}.cz'
+            salon.address = demo.get('address') or 'Ukázková 42, Praha'
+            salon.phone = demo.get('phone') or f'+420 777 000 {demo["pk"]}'
+            slug = demo['name'].lower().replace(' ', '').replace('ě', 'e').replace('í', 'i').replace('á', 'a').replace('é', 'e').replace('ý', 'y').replace('ú', 'u').replace('ů', 'u').replace('č', 'c').replace('ř', 'r').replace('š', 's').replace('ž', 'z')
+            salon.email = demo.get('email') or f'info@{slug}.cz'
             salon.save()
+            partner, _ = PartnerNastaveni.objects.get_or_create(
+                salon=salon,
+                defaults={
+                    'fakturacni_email': salon.email,
+                    'je_testovaci': True,
+                    'variabilni_symbol': vychozi_variabilni_symbol(salon.pk) or None,
+                },
+            )
+            if not partner.je_testovaci:
+                partner.je_testovaci = True
+                partner.save(update_fields=['je_testovaci'])
 
             for index, (name, price, duration) in enumerate(demo['services']):
                 CenikPolozka.objects.update_or_create(
@@ -122,7 +150,7 @@ class Command(BaseCommand):
                         nast.web_rezervace_url = mapped
                 nast.save()
 
-            owner_login = f'majitel.salon{salon.pk}@ulov.local'
+            owner_login = demo.get('owner_login') or f'majitel.salon{salon.pk}@ulov.local'
             owner, created = Zamestnanec.objects.get_or_create(
                 salon=salon, role=Zamestnanec.ROLE_MAJITEL,
                 defaults={
@@ -140,6 +168,10 @@ class Command(BaseCommand):
             owner.aktivni = True
             owner.set_password('majitelka123')
             owner.save()
+            try:
+                ensure_owner_flow_user(salon, email=owner.prihlasovaci_jmeno)
+            except ValueError as exc:
+                self.stdout.write(self.style.WARNING(f'{salon.pk}: FLOW účet: {exc}'))
 
             worker, _ = Zamestnanec.objects.get_or_create(
                 salon=salon, jmeno=f'Tým {demo["name"]}',
@@ -157,3 +189,10 @@ class Command(BaseCommand):
                 )
 
             self.stdout.write(self.style.SUCCESS(f'{salon.pk}: {salon.name} připraven.'))
+
+        if connection.vendor == 'postgresql':
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT setval(pg_get_serial_sequence('salons_salon','id'),"
+                    " (SELECT MAX(id) FROM salons_salon))"
+                )

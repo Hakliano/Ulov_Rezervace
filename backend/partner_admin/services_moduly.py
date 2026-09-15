@@ -58,9 +58,34 @@ def nastav_modul(salon, kod, zapnout, actor):
     return _vypnout(salon, row, actor)
 
 
+def _je_materialnik(row):
+    return row.modul.kod == MODUL_MATERIALNIK
+
+
+def _zapnout_lokalni_modul(salon, row, actor):
+    """Zapnutí modulu bez vzdáleného provisioningu (Archivník, budoucí moduly)."""
+    row.status = PartnerModul.STAV_ACTIVE
+    row.provisioning_error = ''
+    row.activated_at = timezone.now()
+    row.deactivated_at = None
+    row.save(update_fields=[
+        'status', 'provisioning_error', 'activated_at', 'deactivated_at', 'aktualizovano',
+    ])
+    log_superadmin(
+        salon,
+        actor,
+        f'{row.modul.nazev} zapnut.',
+        po={'status': row.status},
+    )
+    return row
+
+
 def _zapnout(salon, row, actor):
     if row.status == PartnerModul.STAV_ACTIVE:
         return row
+
+    if not _je_materialnik(row):
+        return _zapnout_lokalni_modul(salon, row, actor)
 
     partner = salon.partner_nastaveni
     row.status = PartnerModul.STAV_PENDING
@@ -110,12 +135,12 @@ def _vypnout(salon, row, actor):
         return row
 
     pred = row.status
-    partner = salon.partner_nastaveni
-    try:
-        deactivate_tenant(tenant_uuid=partner.tenant_uuid)
-    except (MaterialnikUnavailable, MaterialnikRejected) as exc:
-        logger.warning('Deaktivace Materiálníku na dálku selhala: %s', exc)
-        # FLOW flag stejně vypneme — nové eventy nesmí odcházet.
+    if _je_materialnik(row):
+        partner = salon.partner_nastaveni
+        try:
+            deactivate_tenant(tenant_uuid=partner.tenant_uuid)
+        except (MaterialnikUnavailable, MaterialnikRejected) as exc:
+            logger.warning('Deaktivace Materiálníku na dálku selhala: %s', exc)
 
     row.status = PartnerModul.STAV_INACTIVE
     row.deactivated_at = timezone.now()
@@ -124,7 +149,7 @@ def _vypnout(salon, row, actor):
     log_superadmin(
         salon,
         actor,
-        'Materiálník vypnut. Data skladu zůstávají.',
+        f'{row.modul.nazev} vypnut.',
         pred={'status': pred},
         po={'status': row.status},
     )

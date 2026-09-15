@@ -1,0 +1,890 @@
+"""P0: Archivník funguje bez FLOW a drží tenant izolaci."""
+
+from datetime import date
+from io import BytesIO
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models import Count
+from django.test import TestCase
+from PIL import Image
+from rest_framework.test import APIClient
+
+from archivnik.models import Asset, CustomFieldDef, Customer, Entry, Object, ObjectType, Reminder
+from flow.models import FlowSession, FlowUser
+from partner_admin.models import MODUL_ARCHIVNIK, ModulKatalog, PartnerModul
+from rezervace.models import Zamestnanec
+from salons.models import Salon
+
+
+def _zapni_archivnik(salon):
+    katalog, _ = ModulKatalog.objects.get_or_create(
+        kod=MODUL_ARCHIVNIK,
+        defaults={
+            'nazev': 'Archivník',
+            'popis': 'Digitální kartotéka.',
+            'razeni': 20,
+        },
+    )
+    PartnerModul.objects.update_or_create(
+        salon=salon,
+        modul=katalog,
+        defaults={'status': PartnerModul.STAV_ACTIVE},
+    )
+    return katalog
+
+
+def _salon_s_majitelem(name, email, password='archivnik123'):
+    salon = Salon.objects.create(name=name, email=email)
+    owner = Zamestnanec.objects.create(
+        salon=salon,
+        jmeno=f'Majitel {name}',
+        role=Zamestnanec.ROLE_MAJITEL,
+        prihlasovaci_jmeno=email,
+        aktivni=True,
+        zobrazit_na_webu=False,
+    )
+    owner.set_password(password)
+    owner.save(update_fields=['password_hash'])
+    return salon, owner
+
+
+class ArchivnikStandaloneTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.salon, self.owner = _salon_s_majitelem('Archivník sólo', 'solo@archivnik.test')
+        _zapni_archivnik(self.salon)
+
+    def test_login_bez_flow_user(self):
+        self.assertFalse(FlowUser.objects.filter(salon=self.salon).exists())
+        res = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'solo@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data['token'])
+        self.assertEqual(res.data['provozovna'], 'Archivník sólo')
+        self.assertFalse(FlowUser.objects.filter(salon=self.salon).exists())
+        self.assertEqual(FlowSession.objects.count(), 0)
+
+    def test_modul_vypnuty_vraci_403(self):
+        PartnerModul.objects.filter(salon=self.salon, modul__kod=MODUL_ARCHIVNIK).update(
+            status=PartnerModul.STAV_INACTIVE,
+        )
+        res = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'solo@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 403)
+
+    def test_spatne_heslo_401(self):
+        res = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'solo@archivnik.test', 'password': 'spatne'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 401)
+
+
+class ArchivnikTenantIsolationTests(TestCase):
+    def setUp(self):
+        self.a_client = APIClient()
+        self.b_client = APIClient()
+        self.salon_a, self.owner_a = _salon_s_majitelem('Tenant A', 'a@archivnik.test')
+        self.salon_b, self.owner_b = _salon_s_majitelem('Tenant B', 'b@archivnik.test')
+        _zapni_archivnik(self.salon_a)
+        _zapni_archivnik(self.salon_b)
+        token_a = self.a_client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'a@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        token_b = self.b_client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'b@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        self.a_client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token_a)
+        self.b_client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token_b)
+        self.zakaznik_a = Customer.objects.create(
+            salon=self.salon_a, prijmeni='Novák', jmeno='Adam', telefon='777111222',
+        )
+        self.zakaznik_b = Customer.objects.create(
+            salon=self.salon_b, prijmeni='Novák', jmeno='Boris', telefon='777333444',
+        )
+
+    def test_tenant_a_nevidi_zakaznika_b(self):
+        seznam = self.a_client.get('/api/archivnik/customers/')
+        self.assertEqual(seznam.status_code, 200)
+        uuidy = {row['uuid'] for row in seznam.data}
+        self.assertIn(str(self.zakaznik_a.uuid), uuidy)
+        self.assertNotIn(str(self.zakaznik_b.uuid), uuidy)
+
+        detail = self.a_client.get(f'/api/archivnik/customers/{self.zakaznik_b.uuid}/')
+        self.assertEqual(detail.status_code, 404)
+
+    def test_hledani_nevraci_cizi_tenant(self):
+        res = self.a_client.get('/api/archivnik/search/', {'q': 'Novák'})
+        self.assertEqual(res.status_code, 200)
+        jmena = {z['jmeno'] for z in res.data['zakaznici']}
+        self.assertEqual(jmena, {'Adam'})
+
+
+class ArchivnikEntryModelTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.salon, self.owner = _salon_s_majitelem('Kartotéka', 'karta@archivnik.test')
+        _zapni_archivnik(self.salon)
+        token = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'karta@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        self.client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token)
+        self.typ = ObjectType.objects.create(salon=self.salon, nazev='Vozidlo')
+        self.zakaznik = Customer.objects.create(
+            salon=self.salon, prijmeni='Svoboda', jmeno='Eva', email='eva@test.local',
+        )
+        self.jiny = Customer.objects.create(salon=self.salon, prijmeni='Dvořák', jmeno='Jan')
+        self.objekt = Object.objects.create(
+            salon=self.salon, zakaznik=self.zakaznik, typ=self.typ, nazev='Škoda Octavia',
+        )
+
+    def test_zapis_jen_k_zakaznikovi(self):
+        res = self.client.post(
+            '/api/archivnik/entries/',
+            {'zakaznik_uuid': str(self.zakaznik.uuid), 'text': 'Preferuje e-mail.'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertIsNone(res.data['objekt_uuid'])
+        self.assertEqual(res.data['zakaznik_uuid'], str(self.zakaznik.uuid))
+
+    def test_zapis_k_objektu(self):
+        res = self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'STK do června.'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.data['objekt_uuid'], str(self.objekt.uuid))
+        self.assertEqual(res.data['zakaznik_uuid'], str(self.zakaznik.uuid))
+        self.client.post(
+            '/api/archivnik/entries/',
+            {'zakaznik_uuid': str(self.zakaznik.uuid), 'text': 'Jen k majiteli.'},
+            format='json',
+        )
+        kombinace = self.client.get(
+            f'/api/archivnik/entries/?zakaznik={self.zakaznik.uuid}&vcetne_objektu=1'
+        )
+        self.assertEqual(len(kombinace.data), 2)
+        jen_objekt = self.client.get(f'/api/archivnik/entries/?objekt={self.objekt.uuid}')
+        self.assertEqual(len(jen_objekt.data), 1)
+
+    def test_cizi_objekt_u_jineho_zakaznika_400(self):
+        res = self.client.post(
+            '/api/archivnik/entries/',
+            {
+                'zakaznik_uuid': str(self.jiny.uuid),
+                'objekt_uuid': str(self.objekt.uuid),
+                'text': 'Nesmí projít.',
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_hledani_jmeno_telefon_email_objekt_typ(self):
+        Customer.objects.create(
+            salon=self.salon, prijmeni='Horák', jmeno='Petr', telefon='608999000',
+            email='petr@example.test',
+        )
+        res = self.client.get('/api/archivnik/search/', {'q': '608999000'})
+        self.assertEqual(len(res.data['zakaznici']), 1)
+        res = self.client.get('/api/archivnik/search/', {'q': 'petr@example.test'})
+        self.assertEqual(len(res.data['zakaznici']), 1)
+        res = self.client.get('/api/archivnik/search/', {'q': 'Octavia'})
+        self.assertEqual(len(res.data['objekty']), 1)
+        res = self.client.get('/api/archivnik/search/', {'q': 'Vozidlo'})
+        self.assertEqual(len(res.data['objekty']), 1)
+
+    def test_pripominka_a_overview_pocty(self):
+        Reminder.objects.create(
+            salon=self.salon,
+            zakaznik=self.zakaznik,
+            termin=date(2030, 1, 15),
+            text='Kontrola',
+        )
+        res = self.client.get('/api/archivnik/overview/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['zakaznici'], 2)
+        self.assertEqual(res.data['objekty'], 1)
+        self.assertEqual(res.data['pripominky_aktivni'], 1)
+        self.assertEqual(res.data['podle_typu'][0]['typ'], 'Vozidlo')
+        self.assertEqual(res.data['nejblizsi_pripominky'][0]['text'], 'Kontrola')
+        self.assertEqual(len(res.data['aktivita']), 6)
+        self.assertEqual(res.data['aktivita'][-1]['zakaznici'], 2)
+        self.assertGreaterEqual(res.data['aktivita'][-1]['zapisy'], 0)
+        self.assertTrue(res.data['hlaseni'])
+        self.assertTrue(any(row['druh'] == 'objekt' for row in res.data['posledni_aktivita']))
+        self.assertTrue(any(row['druh'] == 'pripominka' for row in res.data['posledni_aktivita']))
+
+        obj = self.client.get('/api/archivnik/objects/').data[0]
+        self.assertEqual(obj['zapisy_pocet'], 0)
+        self.assertEqual(obj['pripominky_aktivni'], 0)
+
+        self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'Poznámka k vozu.'},
+            format='json',
+        )
+        obj = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/').data
+        self.assertEqual(obj['zapisy_pocet'], 1)
+        self.assertTrue(obj['posledni_zapis'])
+        ov = self.client.get('/api/archivnik/overview/')
+        self.assertTrue(any(row['druh'] == 'zapis' for row in ov.data['posledni_aktivita']))
+        self.assertEqual(ov.data['aktivita'][-1]['zapisy'], 1)
+
+        u_zak = self.client.get(
+            f'/api/archivnik/reminders/?stav=aktivni&zakaznik={self.zakaznik.uuid}'
+        )
+        self.assertEqual(len(u_zak.data), 1)
+        u_obj = self.client.get(
+            f'/api/archivnik/reminders/?stav=aktivni&objekt={self.objekt.uuid}'
+        )
+        self.assertEqual(len(u_obj.data), 0)
+
+
+class SeedArchivnikOnlyTests(TestCase):
+    def test_seed_vytvori_provozovnu_bez_aktivniho_flow(self):
+        from django.core.management import call_command
+
+        from archivnik.management.commands.seed_archivnik_only import OWNER_EMAIL, OWNER_PASSWORD
+
+        call_command('seed_archivnik_only')
+        call_command('seed_archivnik_only')
+        owners = Zamestnanec.objects.filter(
+            prihlasovaci_jmeno__iexact=OWNER_EMAIL,
+            role=Zamestnanec.ROLE_MAJITEL,
+        )
+        self.assertEqual(owners.count(), 1)
+        salon = owners.get().salon
+        self.assertFalse(FlowUser.objects.filter(salon=salon, aktivni=True).exists())
+        self.assertEqual(FlowSession.objects.filter(user__salon=salon).count(), 0)
+        self.assertTrue(
+            PartnerModul.objects.filter(
+                salon=salon, modul__kod=MODUL_ARCHIVNIK, status=PartnerModul.STAV_ACTIVE,
+            ).exists()
+        )
+        client = APIClient()
+        res = client.post(
+            '/api/archivnik/auth/login/',
+            {'email': OWNER_EMAIL, 'password': OWNER_PASSWORD},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['provozovna'], 'Archivník sólo')
+        self.assertGreaterEqual(Customer.objects.filter(salon=salon).count(), 10)
+        self.assertGreaterEqual(Object.objects.filter(salon=salon).count(), 15)
+        self.assertGreaterEqual(ObjectType.objects.filter(salon=salon).count(), 3)
+        self.assertTrue(Entry.objects.filter(salon=salon, objekt__isnull=True).exists())
+        self.assertTrue(Entry.objects.filter(salon=salon, objekt__isnull=False).exists())
+        self.assertTrue(Reminder.objects.filter(salon=salon).exists())
+        self.assertTrue(CustomFieldDef.objects.filter(salon=salon).exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, objekt__isnull=False).exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, objekt__isnull=True).exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, zapis__isnull=False).exists())
+        self.assertTrue(
+            Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n=1).exists()
+        )
+        self.assertTrue(
+            Customer.objects.filter(salon=salon).annotate(n=Count('objekty')).filter(n__gte=2).exists()
+        )
+
+    def test_seed_bez_reset_nesmaze_uzivatelsky_asset(self):
+        from django.core.management import call_command
+
+        from archivnik.management.commands.seed_archivnik_only import OWNER_EMAIL
+
+        call_command('seed_archivnik_only')
+        salon = Zamestnanec.objects.get(
+            prihlasovaci_jmeno__iexact=OWNER_EMAIL,
+            role=Zamestnanec.ROLE_MAJITEL,
+        ).salon
+        maxp = Object.objects.get(salon=salon, nazev='Max')
+        user_asset = Asset.objects.create(
+            salon=salon,
+            zakaznik=maxp.zakaznik,
+            objekt=maxp,
+            druh='fotografie',
+            nazev='user-labrador.webp',
+            content_type='image/webp',
+            velikost=96028,
+            storage_key=f'archivnik/test/{maxp.uuid}.webp',
+        )
+        Object.objects.filter(pk=maxp.pk).update(cover=user_asset)
+        before = Asset.objects.filter(salon=salon).count()
+
+        call_command('seed_archivnik_only')
+
+        self.assertTrue(Asset.objects.filter(pk=user_asset.pk).exists())
+        self.assertEqual(Asset.objects.filter(salon=salon).count(), before)
+        maxp.refresh_from_db()
+        self.assertEqual(maxp.cover_id, user_asset.id)
+
+    def test_seed_reset_obnovi_demo_kartoteku(self):
+        from django.core.management import call_command
+
+        from archivnik.management.commands.seed_archivnik_only import OWNER_EMAIL
+
+        call_command('seed_archivnik_only')
+        salon = Zamestnanec.objects.get(
+            prihlasovaci_jmeno__iexact=OWNER_EMAIL,
+            role=Zamestnanec.ROLE_MAJITEL,
+        ).salon
+        maxp = Object.objects.get(salon=salon, nazev='Max')
+        Asset.objects.create(
+            salon=salon,
+            zakaznik=maxp.zakaznik,
+            objekt=maxp,
+            druh='fotografie',
+            nazev='user-labrador.webp',
+            content_type='image/webp',
+            velikost=96028,
+            storage_key=f'archivnik/test/{maxp.uuid}-reset.webp',
+        )
+
+        call_command('seed_archivnik_only', reset=True)
+
+        self.assertFalse(Asset.objects.filter(salon=salon, nazev='user-labrador.webp').exists())
+        self.assertTrue(Object.objects.filter(salon=salon, nazev='Max').exists())
+        self.assertTrue(Asset.objects.filter(salon=salon, nazev='Max-profil.png').exists())
+
+
+def _png_file(name='foto.png', color=(20, 80, 60)):
+    buf = BytesIO()
+    Image.new('RGB', (80, 80), color).save(buf, format='PNG')
+    return SimpleUploadedFile(name, buf.getvalue(), content_type='image/png')
+
+
+class ArchivnikEvidenceTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.salon, self.owner = _salon_s_majitelem('Evidence', 'evidence@archivnik.test')
+        _zapni_archivnik(self.salon)
+        token = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'evidence@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        self.client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token)
+        self.typ = ObjectType.objects.create(salon=self.salon, nazev='Vozidlo')
+        self.zakaznik = Customer.objects.create(salon=self.salon, prijmeni='Novák', jmeno='Eva')
+        self.objekt = Object.objects.create(
+            salon=self.salon, zakaznik=self.zakaznik, typ=self.typ, nazev='Octavia',
+        )
+
+    def test_vlastni_pole_podle_typu_ne_segmentu(self):
+        res = self.client.post(
+            '/api/archivnik/fields/',
+            {'typ_uuid': str(self.typ.uuid), 'nazev': 'VIN', 'druh': 'text'},
+            format='json',
+        )
+        self.assertEqual(res.status_code, 201)
+        put = self.client.put(
+            f'/api/archivnik/objects/{self.objekt.uuid}/fields/',
+            {'hodnoty': [{'pole_uuid': res.data['uuid'], 'hodnota': 'TMB123'}]},
+            format='json',
+        )
+        self.assertEqual(put.status_code, 200)
+        self.assertEqual(put.data[0]['hodnota'], 'TMB123')
+
+    def test_priloha_zapisu_je_jeden_asset_i_v_dokumentaci(self):
+        entry = self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'Kontrola kulhání.', 'nadpis': 'Vyšetření'},
+            format='json',
+        )
+        self.assertEqual(entry.status_code, 201)
+        upload = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': _png_file('laborator.png'),
+                'zapis_uuid': entry.data['uuid'],
+                'druh': 'fotografie',
+                'nazev': 'laborator.png',
+            },
+            format='multipart',
+        )
+        self.assertEqual(upload.status_code, 201, upload.data)
+        asset_uuid = upload.data['uuid']
+        self.assertEqual(upload.data['zapis_uuid'], entry.data['uuid'])
+        self.assertEqual(upload.data['objekt_uuid'], str(self.objekt.uuid))
+
+        u_zapisu = self.client.get(f'/api/archivnik/entries/?objekt={self.objekt.uuid}')
+        self.assertEqual(u_zapisu.data[0]['prilohy'][0]['uuid'], asset_uuid)
+
+        u_objektu = self.client.get(f'/api/archivnik/assets/?objekt={self.objekt.uuid}')
+        self.assertEqual({row['uuid'] for row in u_objektu.data}, {asset_uuid})
+
+        content = self.client.get(f'/api/archivnik/assets/{asset_uuid}/content/')
+        self.assertEqual(content.status_code, 200)
+        self.assertTrue(content.content.startswith(b'\x89PNG'))
+
+    def test_asset_u_zakaznika_bez_objektu(self):
+        res = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': SimpleUploadedFile(
+                    'smlouva.pdf', b'%PDF-1.1\ntrailer<</Root 1 0 R>>\n%%EOF',
+                    content_type='application/pdf',
+                ),
+                'zakaznik_uuid': str(self.zakaznik.uuid),
+                'druh': 'dokument',
+                'nazev': 'smlouva.pdf',
+            },
+            format='multipart',
+        )
+        self.assertEqual(res.status_code, 201, res.data)
+        self.assertIsNone(res.data['objekt_uuid'])
+        self.assertEqual(res.data['zakaznik_uuid'], str(self.zakaznik.uuid))
+
+    def test_cizi_tenant_nesmi_cist_soubor(self):
+        other_client = APIClient()
+        salon_b, _owner_b = _salon_s_majitelem('Cizí', 'cizi-ev@archivnik.test')
+        _zapni_archivnik(salon_b)
+        token_b = other_client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'cizi-ev@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        other_client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token_b)
+        created = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': _png_file(),
+                'objekt_uuid': str(self.objekt.uuid),
+                'druh': 'fotografie',
+            },
+            format='multipart',
+        )
+        self.assertEqual(created.status_code, 201)
+        stolen = other_client.get(f'/api/archivnik/assets/{created.data["uuid"]}/content/')
+        self.assertEqual(stolen.status_code, 404)
+        listed = other_client.get('/api/archivnik/assets/')
+        self.assertEqual(listed.data, [])
+
+    def test_hlavni_fotografie_a_smazani_prilohy(self):
+        first = self.client.post(
+            '/api/archivnik/assets/',
+            {'soubor': _png_file('a.png', (10, 20, 30)), 'objekt_uuid': str(self.objekt.uuid), 'druh': 'fotografie'},
+            format='multipart',
+        )
+        second = self.client.post(
+            '/api/archivnik/assets/',
+            {'soubor': _png_file('b.png', (80, 20, 30)), 'objekt_uuid': str(self.objekt.uuid), 'druh': 'fotografie'},
+            format='multipart',
+        )
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 201)
+        detail = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/')
+        self.assertEqual(detail.data['cover_uuid'], first.data['uuid'])
+
+        cover = self.client.post(
+            f'/api/archivnik/objects/{self.objekt.uuid}/cover/',
+            {'asset_uuid': second.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(cover.status_code, 200)
+        self.assertEqual(cover.data['cover_uuid'], second.data['uuid'])
+
+        entry = self.client.post(
+            '/api/archivnik/entries/',
+            {'objekt_uuid': str(self.objekt.uuid), 'text': 'S přílohou.'},
+            format='json',
+        )
+        priloha = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': _png_file('priloha.png'),
+                'zapis_uuid': entry.data['uuid'],
+                'druh': 'fotografie',
+                'nazev': 'priloha.png',
+            },
+            format='multipart',
+        )
+        self.assertEqual(priloha.status_code, 201)
+        deleted = self.client.delete(f'/api/archivnik/assets/{priloha.data["uuid"]}/')
+        self.assertEqual(deleted.status_code, 204)
+        znovu = self.client.get(f'/api/archivnik/entries/?objekt={self.objekt.uuid}')
+        self.assertEqual(znovu.data[0]['prilohy'], [])
+        docs = self.client.get(f'/api/archivnik/assets/?objekt={self.objekt.uuid}&druh=fotografie')
+        self.assertNotIn(priloha.data['uuid'], {row['uuid'] for row in docs.data})
+
+        self.client.delete(f'/api/archivnik/assets/{second.data["uuid"]}/')
+        after = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/')
+        self.assertEqual(after.data['cover_uuid'], first.data['uuid'])
+
+        self.client.delete(f'/api/archivnik/assets/{first.data["uuid"]}/')
+        empty = self.client.get(f'/api/archivnik/objects/{self.objekt.uuid}/')
+        self.assertIsNone(empty.data['cover_uuid'])
+
+        doc = self.client.post(
+            '/api/archivnik/assets/',
+            {
+                'soubor': SimpleUploadedFile('smlouva.pdf', b'%PDF-1.4 test', content_type='application/pdf'),
+                'objekt_uuid': str(self.objekt.uuid),
+                'druh': 'dokument',
+            },
+            format='multipart',
+        )
+        self.assertEqual(doc.status_code, 201)
+        bad = self.client.post(
+            f'/api/archivnik/objects/{self.objekt.uuid}/cover/',
+            {'asset_uuid': doc.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(bad.status_code, 400)
+
+
+class ArchivnikPresetTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.salon, self.owner = _salon_s_majitelem('P3 Vet', 'p3vet@archivnik.test')
+        _zapni_archivnik(self.salon)
+        token = self.client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'p3vet@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        self.client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token)
+
+    def test_a_prazdna_provozovna_dostane_veterinu(self):
+        from archivnik.models import CustomFieldDef, Obor, ObjectType
+        from archivnik.presets.vet import VET
+
+        res = self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(Obor.objects.filter(salon=self.salon, zdroj_preset='vet').count(), 1)
+        self.assertEqual(ObjectType.objects.filter(salon=self.salon).count(), len(VET['typy']))
+        pes = ObjectType.objects.get(salon=self.salon, nazev='Pes')
+        self.assertEqual(pes.pole.count(), 9)
+        pohlavi = CustomFieldDef.objects.get(typ=pes, nazev='Pohlaví')
+        self.assertEqual(pohlavi.druh, 'vyber')
+        self.assertEqual(pohlavi.volby, ['Samec', 'Samice', 'Neurčeno'])
+        self.assertEqual(pes.zdroj_preset, 'vet')
+        self.assertEqual(pohlavi.zdroj_preset, 'vet')
+        self.assertTrue(ObjectType.objects.filter(salon=self.salon, nazev='Osmák degu').exists())
+        me = self.client.get('/api/archivnik/me/')
+        self.assertTrue(me.data['onboarded'])
+        self.assertFalse(me.data['muze_aplikovat_preset'])
+        self.assertEqual(me.data['objekt_jednotne'], 'Zvíře')
+        self.assertEqual(me.data['objekt_mnozne'], 'Zvířata')
+
+    def test_b_vlastni_typ_s_vyberem_hned_u_zakaznika(self):
+        self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        obor = self.client.get('/api/archivnik/obory/').data[0]
+        typ = self.client.post(
+            '/api/archivnik/object-types/',
+            {'nazev': 'Lama', 'obor_uuid': obor['uuid']},
+            format='json',
+        )
+        self.assertEqual(typ.status_code, 201)
+        self.assertFalse(typ.data['zamceno'])
+        self.assertEqual(typ.data['zdroj_preset'], '')
+        pole = self.client.post(
+            '/api/archivnik/fields/',
+            {
+                'typ_uuid': typ.data['uuid'],
+                'nazev': 'Pohlaví',
+                'druh': 'vyber',
+                'volby': ['Samec', 'Samice', 'Neurčeno'],
+            },
+            format='json',
+        )
+        self.assertEqual(pole.status_code, 201, pole.data)
+        zak = self.client.post(
+            '/api/archivnik/customers/',
+            {'prijmeni': 'Novák', 'jmeno': 'Jan'},
+            format='json',
+        )
+        obj = self.client.post(
+            '/api/archivnik/objects/',
+            {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': typ.data['uuid'], 'nazev': 'Lama Ema'},
+            format='json',
+        )
+        self.assertEqual(obj.status_code, 201)
+        fields = self.client.get(f"/api/archivnik/objects/{obj.data['uuid']}/fields/")
+        self.assertEqual(fields.status_code, 200)
+        self.assertEqual(fields.data[0]['volby'], ['Samec', 'Samice', 'Neurčeno'])
+
+    def test_c_pneuservis_tri_vozidla_ruzna_pole(self):
+        other = APIClient()
+        salon, _owner = _salon_s_majitelem('P3 Pneu', 'p3pneu@archivnik.test')
+        _zapni_archivnik(salon)
+        token = other.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'p3pneu@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        other.credentials(HTTP_X_ARCHIVNIK_TOKEN=token)
+        other.post('/api/archivnik/presets/apply/', {'kod': 'pneu'}, format='json')
+        types = {row['nazev']: row for row in other.get('/api/archivnik/object-types/').data}
+        self.assertIn('Osobní vůz', types)
+        self.assertIn('Dodávka', types)
+        self.assertIn('Přívěsný vozík', types)
+        zak = other.post('/api/archivnik/customers/', {'prijmeni': 'Svoboda', 'jmeno': 'Petr'}, format='json')
+        for nazev, typ_nazev in [
+            ('Octavia – auto syna', 'Osobní vůz'),
+            ('Služební Transit', 'Dodávka'),
+            ('Vozík na chatu', 'Přívěsný vozík'),
+        ]:
+            obj = other.post(
+                '/api/archivnik/objects/',
+                {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': types[typ_nazev]['uuid'], 'nazev': nazev},
+                format='json',
+            )
+            self.assertEqual(obj.status_code, 201)
+            fields = other.get(f"/api/archivnik/objects/{obj.data['uuid']}/fields/").data
+            names = {row['nazev'] for row in fields}
+            self.assertIn('SPZ', names)
+            if typ_nazev == 'Osobní vůz':
+                self.assertIn('Typ pohonu', names)
+            elif typ_nazev == 'Dodávka':
+                self.assertIn('Zesílené / C pneumatiky', names)
+                self.assertNotIn('Typ pohonu', names)
+            else:
+                self.assertIn('Počet náprav', names)
+                self.assertNotIn('Typ pohonu', names)
+
+    def test_d_beauty_preset(self):
+        salon, _owner = _salon_s_majitelem('P3 Beauty', 'p3beauty@archivnik.test')
+        _zapni_archivnik(salon)
+        client = APIClient()
+        token = client.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'p3beauty@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        client.credentials(HTTP_X_ARCHIVNIK_TOKEN=token)
+        res = client.post('/api/archivnik/presets/apply/', {'kod': 'beauty'}, format='json')
+        self.assertEqual(res.status_code, 201)
+        names = {row['nazev'] for row in client.get('/api/archivnik/object-types/').data}
+        self.assertTrue({'Vlasy', 'Vousy', 'Pleť / obličej', 'Obočí', 'Řasy', 'Nehty rukou', 'Nehty nohou'} <= names)
+
+    def test_e_vlastni_obor_bez_presetu(self):
+        obor = self.client.post('/api/archivnik/obory/', {'nazev': 'Dentální hygiena'}, format='json')
+        self.assertEqual(obor.status_code, 201)
+        typ = self.client.post(
+            '/api/archivnik/object-types/',
+            {'nazev': 'Pacient', 'obor_uuid': obor.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(typ.status_code, 201)
+        druhy = [
+            ('Poznámka', 'text', []),
+            ('Anamnéza', 'dlouhy_text', []),
+            ('Počet zubů', 'cislo', []),
+            ('Poslední návštěva', 'datum', []),
+            ('Citlivost', 'ano_ne', []),
+            ('Typ chrupu', 'vyber', ['Mléčný', 'Stálý', 'Smíšený']),
+        ]
+        for nazev, druh, volby in druhy:
+            res = self.client.post(
+                '/api/archivnik/fields/',
+                {'typ_uuid': typ.data['uuid'], 'nazev': nazev, 'druh': druh, 'volby': volby},
+                format='json',
+            )
+            self.assertEqual(res.status_code, 201, res.data)
+        zak = self.client.post('/api/archivnik/customers/', {'prijmeni': 'Dvořáková'}, format='json')
+        obj = self.client.post(
+            '/api/archivnik/objects/',
+            {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': typ.data['uuid'], 'nazev': 'Kartá pacientky'},
+            format='json',
+        )
+        self.assertEqual(obj.status_code, 201)
+        put = self.client.put(
+            f"/api/archivnik/objects/{obj.data['uuid']}/fields/",
+            {'hodnoty': [{'pole_uuid': self.client.get(f"/api/archivnik/objects/{obj.data['uuid']}/fields/").data[1]['pole_uuid'], 'hodnota': 'A' * 400}]},
+            format='json',
+        )
+        self.assertEqual(put.status_code, 200)
+        self.assertEqual(len(put.data[1]['hodnota']), 400)
+
+    def test_f_zmena_katalogu_neprepisuje_tenanta(self):
+        from archivnik.models import CustomFieldDef, ObjectType
+        from archivnik.presets import PRESETS
+
+        self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        pes = ObjectType.objects.get(salon=self.salon, nazev='Pes')
+        original = list(CustomFieldDef.objects.get(typ=pes, nazev='Pohlaví').volby)
+        catalog_pole = PRESETS['vet']['typy'][0]['pole'][1]
+        backup = list(catalog_pole['volby'])
+        catalog_pole['volby'] = ['X', 'Y']
+        try:
+            from archivnik.services import apply_preset
+            apply_preset(self.salon, 'vet')
+            pes_after = CustomFieldDef.objects.get(typ=pes, nazev='Pohlaví')
+            self.assertEqual(list(pes_after.volby), original)
+            self.assertNotEqual(list(pes_after.volby), ['X', 'Y'])
+        finally:
+            catalog_pole['volby'] = backup
+
+    def test_g_druha_aplikace_bez_duplicit(self):
+        from archivnik.models import CustomFieldDef, Obor, ObjectType
+
+        self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        types_before = ObjectType.objects.filter(salon=self.salon).count()
+        fields_before = CustomFieldDef.objects.filter(salon=self.salon).count()
+        blocked = self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        self.assertEqual(blocked.status_code, 403)
+        from archivnik.services import apply_preset
+        apply_preset(self.salon, 'vet')
+        self.assertEqual(Obor.objects.filter(salon=self.salon, zdroj_preset='vet').count(), 1)
+        self.assertEqual(ObjectType.objects.filter(salon=self.salon).count(), types_before)
+        self.assertEqual(CustomFieldDef.objects.filter(salon=self.salon).count(), fields_before)
+
+    def test_h_po_onboardingu_nelze_aplikovat_dalsi_systemovy_preset(self):
+        from archivnik.models import CustomFieldDef, Obor, ObjectType
+        from archivnik.services import apply_preset
+
+        self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        vet_fields = CustomFieldDef.objects.filter(salon=self.salon, typ__nazev='Pes').count()
+        vet_types = ObjectType.objects.filter(salon=self.salon).count()
+        res = self.client.post('/api/archivnik/presets/apply/', {'kod': 'pneu'}, format='json')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(Obor.objects.filter(salon=self.salon).count(), 1)
+        self.assertEqual(CustomFieldDef.objects.filter(salon=self.salon, typ__nazev='Pes').count(), vet_fields)
+        self.assertEqual(ObjectType.objects.filter(salon=self.salon).count(), vet_types)
+        self.assertFalse(ObjectType.objects.filter(salon=self.salon, nazev='Osobní vůz').exists())
+
+        apply_preset(self.salon, 'pneu')
+        self.assertEqual(Obor.objects.filter(salon=self.salon).count(), 2)
+        self.assertTrue(ObjectType.objects.filter(salon=self.salon, nazev='Osobní vůz').exists())
+        self.assertEqual(CustomFieldDef.objects.filter(salon=self.salon, typ__nazev='Pes').count(), vet_fields)
+
+    def test_prazdny_nazev_u_typu_bez_povinnosti(self):
+        obor = self.client.post('/api/archivnik/obory/', {'nazev': 'Dentální hygiena'}, format='json')
+        typ = self.client.post(
+            '/api/archivnik/object-types/',
+            {'nazev': 'Chrup', 'obor_uuid': obor.data['uuid'], 'vyzaduje_nazev': False},
+            format='json',
+        )
+        self.assertEqual(typ.status_code, 201)
+        self.assertFalse(typ.data['vyzaduje_nazev'])
+        zak = self.client.post('/api/archivnik/customers/', {'prijmeni': 'Karel', 'jmeno': 'Test'}, format='json')
+        obj = self.client.post(
+            '/api/archivnik/objects/',
+            {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': typ.data['uuid'], 'nazev': ''},
+            format='json',
+        )
+        self.assertEqual(obj.status_code, 201, obj.data)
+        self.assertEqual(obj.data['nazev'], '')
+        self.assertEqual(obj.data['display_name'], 'Chrup')
+
+    def test_jiny_obor_uzamkne_systemovy_preset(self):
+        empty = self.client.get('/api/archivnik/me/')
+        self.assertFalse(empty.data['onboarded'])
+        self.assertTrue(empty.data['muze_aplikovat_preset'])
+        obor = self.client.post(
+            '/api/archivnik/obory/',
+            {'nazev': 'Vlastní obor', 'objekt_jednotne': 'Objekt', 'objekt_mnozne': 'Objekty'},
+            format='json',
+        )
+        self.assertEqual(obor.status_code, 201)
+        blocked = self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        self.assertEqual(blocked.status_code, 403)
+        from archivnik.models import ObjectType
+        self.assertFalse(ObjectType.objects.filter(salon=self.salon, nazev='Pes').exists())
+
+    def test_existujici_typ_se_neupgraduje_z_katalogu(self):
+        from archivnik.models import CustomFieldDef, ObjectType
+        from archivnik.services import apply_preset
+
+        typ = ObjectType.objects.create(salon=self.salon, nazev='Pes')
+        CustomFieldDef.objects.create(salon=self.salon, typ=typ, nazev='Plemeno', druh='text')
+        apply_preset(self.salon, 'vet')
+        self.assertEqual(CustomFieldDef.objects.filter(typ=typ).count(), 1)
+        self.assertFalse(CustomFieldDef.objects.filter(typ=typ, nazev='Pohlaví').exists())
+        self.assertTrue(ObjectType.objects.filter(salon=self.salon, nazev='Osmák degu').exists())
+
+
+class ArchivnikConfigIsolationTests(TestCase):
+    def setUp(self):
+        self.a = APIClient()
+        self.b = APIClient()
+        self.salon_a, _ = _salon_s_majitelem('Salon A cfg', 'cfg-a@archivnik.test')
+        self.salon_b, _ = _salon_s_majitelem('Salon B cfg', 'cfg-b@archivnik.test')
+        _zapni_archivnik(self.salon_a)
+        _zapni_archivnik(self.salon_b)
+        token_a = self.a.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'cfg-a@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        token_b = self.b.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'cfg-b@archivnik.test', 'password': 'archivnik123'},
+            format='json',
+        ).data['token']
+        self.a.credentials(HTTP_X_ARCHIVNIK_TOKEN=token_a)
+        self.b.credentials(HTTP_X_ARCHIVNIK_TOKEN=token_b)
+
+    def test_vlastni_typ_a_nema_salon_b_a_katalog_se_nemeni(self):
+        from copy import deepcopy
+
+        from archivnik.models import ObjectType
+        from archivnik.presets import PRESETS
+        from archivnik.presets.vet import VET
+
+        catalog_before = deepcopy(PRESETS['vet'])
+
+        apply_a = self.a.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        self.assertEqual(apply_a.status_code, 201)
+        lama = self.a.post(
+            '/api/archivnik/object-types/',
+            {'nazev': 'Lama', 'obor_uuid': apply_a.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(lama.status_code, 201)
+        self.a.post(
+            '/api/archivnik/fields/',
+            {'typ_uuid': lama.data['uuid'], 'nazev': 'Srst', 'druh': 'text'},
+            format='json',
+        )
+
+        apply_b = self.b.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        self.assertEqual(apply_b.status_code, 201)
+        names_b = {row['nazev'] for row in self.b.get('/api/archivnik/object-types/').data}
+        self.assertIn('Pes', names_b)
+        self.assertNotIn('Lama', names_b)
+        self.assertFalse(ObjectType.objects.filter(salon=self.salon_b, nazev='Lama').exists())
+        self.assertTrue(ObjectType.objects.filter(salon=self.salon_a, nazev='Lama').exists())
+
+        self.assertEqual(PRESETS['vet']['nazev'], catalog_before['nazev'])
+        self.assertEqual(len(PRESETS['vet']['typy']), len(catalog_before['typy']))
+        self.assertEqual(len(VET['typy']), len(catalog_before['typy']))
+        self.assertFalse(any(t['nazev'] == 'Lama' for t in PRESETS['vet']['typy']))
+
+        hijack_type = self.a.post(
+            '/api/archivnik/object-types/',
+            {'nazev': 'Cizí typ', 'obor_uuid': apply_b.data['uuid']},
+            format='json',
+        )
+        self.assertEqual(hijack_type.status_code, 400)
+
+        pes_b = ObjectType.objects.get(salon=self.salon_b, nazev='Pes')
+        hijack_field = self.a.post(
+            '/api/archivnik/fields/',
+            {'typ_uuid': str(pes_b.uuid), 'nazev': 'Sabotáž', 'druh': 'text'},
+            format='json',
+        )
+        self.assertEqual(hijack_field.status_code, 400)
+        self.assertFalse(pes_b.pole.filter(nazev='Sabotáž').exists())
+
+        hijack_preset = self.a.post('/api/archivnik/presets/apply/', {'kod': 'pneu'}, format='json')
+        self.assertEqual(hijack_preset.status_code, 403)
+        self.assertFalse(ObjectType.objects.filter(salon=self.salon_b, nazev='Osobní vůz').exists())
+        self.assertFalse(ObjectType.objects.filter(salon=self.salon_a, nazev='Osobní vůz').exists())
+
+

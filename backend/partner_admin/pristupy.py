@@ -32,6 +32,7 @@ DEMO_CESTY = {
     17: 'provoz-studio',
     18: 'provoz-franek',
     19: 'salon19',
+    20: 'zdravi-hulinek',
 }
 
 FLOW_LOCAL = 'http://localhost:8080/flow/'

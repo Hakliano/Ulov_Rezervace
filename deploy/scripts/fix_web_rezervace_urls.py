@@ -20,6 +20,7 @@ LIVE_URLS = {
     16: 'https://www.ulovklienty.cz/provoz-pujcovna/rezervace.html',
     17: 'https://www.ulovklienty.cz/provoz-studio/rezervace.html',
     18: 'https://www.franek-autoservis.cloud/rezervace.html',
+    20: 'https://www.ulovklienty.cz/zdravi-hulinek/rezervace.html',
 }
 
 fixed = 0
