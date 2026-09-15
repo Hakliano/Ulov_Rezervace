@@ -709,6 +709,7 @@ class PartnerAdminTests(TestCase):
 
     def test_logo_tarifu_podle_nazvu(self):
         from partner_admin.loga import (
+            LOGO_ARCHIVNIK,
             LOGO_MATERIALNIK,
             LOGO_MODERNIK,
             LOGO_OSTATNI,
@@ -718,6 +719,7 @@ class PartnerAdminTests(TestCase):
         )
         self.assertEqual(logo_url_pro_tarif('Moderník'), LOGO_MODERNIK)
         self.assertEqual(logo_url_pro_tarif('Materiálník'), LOGO_MATERIALNIK)
+        self.assertEqual(logo_url_pro_tarif('Archivník'), LOGO_ARCHIVNIK)
         self.assertEqual(logo_url_pro_tarif('Moderník + Materiálník'), LOGO_SPOJENI)
         self.assertEqual(logo_url_pro_tarif('WEB'), LOGO_WEB)
         self.assertEqual(logo_url_pro_tarif('Partnerský web'), LOGO_OSTATNI)

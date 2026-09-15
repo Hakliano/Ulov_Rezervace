@@ -14,6 +14,7 @@
     }
     if (key === 'moderník') return mapa['moderník'];
     if (key === 'materiálník') return mapa['materiálník'];
+    if (key === 'archivník') return mapa['archivník'];
     if (key === 'web') return mapa.web;
     return mapa.fallback;
   }
