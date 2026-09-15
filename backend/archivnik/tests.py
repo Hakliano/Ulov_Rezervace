@@ -580,6 +580,8 @@ class ArchivnikPresetTests(TestCase):
         self.assertFalse(me.data['muze_aplikovat_preset'])
         self.assertEqual(me.data['objekt_jednotne'], 'Zvíře')
         self.assertEqual(me.data['objekt_mnozne'], 'Zvířata')
+        obor = Obor.objects.get(salon=self.salon, zdroj_preset='vet')
+        self.assertEqual(me.data['obor_uuid'], str(obor.uuid))
 
     def test_b_vlastni_typ_s_vyberem_hned_u_zakaznika(self):
         self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
@@ -796,6 +798,72 @@ class ArchivnikPresetTests(TestCase):
         self.assertEqual(blocked.status_code, 403)
         from archivnik.models import ObjectType
         self.assertFalse(ObjectType.objects.filter(salon=self.salon, nazev='Pes').exists())
+
+    def test_cizi_obor_typ_nelze_priradit_novemu_objektu(self):
+        from archivnik.models import Obor, ObjectType
+        from archivnik.services import apply_preset
+
+        self.client.post('/api/archivnik/presets/apply/', {'kod': 'vet'}, format='json')
+        apply_preset(self.salon, 'pneu')
+        vet = Obor.objects.get(salon=self.salon, zdroj_preset='vet')
+        me = self.client.get('/api/archivnik/me/')
+        self.assertEqual(me.data['obor_uuid'], str(vet.uuid))
+        names = {row['nazev'] for row in self.client.get('/api/archivnik/object-types/').data}
+        self.assertIn('Pes', names)
+        self.assertIn('Osobní vůz', names)
+        pes = ObjectType.objects.get(salon=self.salon, nazev='Pes')
+        vuz = ObjectType.objects.get(salon=self.salon, nazev='Osobní vůz')
+        lama = self.client.post(
+            '/api/archivnik/object-types/',
+            {'nazev': 'Lama', 'obor_uuid': str(vet.uuid)},
+            format='json',
+        )
+        self.assertEqual(lama.status_code, 201)
+        zak = self.client.post(
+            '/api/archivnik/customers/',
+            {'prijmeni': 'Novák', 'jmeno': 'Jan'},
+            format='json',
+        )
+        self.assertEqual(
+            self.client.post(
+                '/api/archivnik/objects/',
+                {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': lama.data['uuid'], 'nazev': 'Petunie'},
+                format='json',
+            ).status_code,
+            201,
+        )
+        blocked = self.client.post(
+            '/api/archivnik/objects/',
+            {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': str(vuz.uuid), 'nazev': 'Octavia'},
+            format='json',
+        )
+        self.assertEqual(blocked.status_code, 400)
+        pes_obj = self.client.post(
+            '/api/archivnik/objects/',
+            {'zakaznik_uuid': zak.data['uuid'], 'typ_uuid': str(pes.uuid), 'nazev': 'Max'},
+            format='json',
+        )
+        self.assertEqual(pes_obj.status_code, 201)
+        change = self.client.patch(
+            f"/api/archivnik/objects/{pes_obj.data['uuid']}/",
+            {'typ_uuid': str(vuz.uuid)},
+            format='json',
+        )
+        self.assertEqual(change.status_code, 400)
+        zak_obj = Customer.objects.get(uuid=zak.data['uuid'])
+        leftover = Object.objects.create(
+            salon=self.salon, zakaznik=zak_obj, typ=vuz, nazev='Octavia',
+        )
+        seen = self.client.get(f'/api/archivnik/objects/{leftover.uuid}/')
+        self.assertEqual(seen.status_code, 200)
+        keep = self.client.patch(
+            f'/api/archivnik/objects/{leftover.uuid}/',
+            {'typ_uuid': str(vuz.uuid), 'nazev': 'Octavia RS'},
+            format='json',
+        )
+        self.assertEqual(keep.status_code, 200)
+        self.assertEqual(keep.data['nazev'], 'Octavia RS')
+        self.assertEqual(keep.data['typ_nazev'], 'Osobní vůz')
 
     def test_existujici_typ_se_neupgraduje_z_katalogu(self):
         from archivnik.models import CustomFieldDef, ObjectType

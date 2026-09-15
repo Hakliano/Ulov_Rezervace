@@ -443,7 +443,7 @@ async function ensureTypes() {
 function typeOptionsHtml(types) {
   const groups = new Map();
   const loose = [];
-  types.filter((t) => t.aktivni).forEach((t) => {
+  types.filter((t) => t.aktivni !== false).forEach((t) => {
     if (t.obor_uuid) {
       if (!groups.has(t.obor_uuid)) groups.set(t.obor_uuid, { nazev: t.obor_nazev, typy: [] });
       groups.get(t.obor_uuid).typy.push(t);
@@ -456,7 +456,17 @@ function typeOptionsHtml(types) {
   if (loose.length) {
     blocks.push(`<optgroup label="Bez oboru">${loose.map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('')}</optgroup>`);
   }
-  return blocks.join('') || types.filter((t) => t.aktivni).map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('');
+  return blocks.join('') || types.filter((t) => t.aktivni !== false).map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('');
+}
+
+function typesForPrimaryObor(types, extraUuid) {
+  const oborUuid = me && me.obor_uuid;
+  return (types || []).filter((t) => {
+    if (extraUuid && t.uuid === extraUuid) return true;
+    if (t.aktivni === false) return false;
+    if (!oborUuid) return !t.obor_uuid;
+    return t.obor_uuid === oborUuid;
+  });
 }
 
 function markActive(selector, uuid) {
@@ -1158,7 +1168,7 @@ async function showObjectForm({ zakaznik }) {
     <form id="form-object" class="form-grid">
       <select name="typ_uuid" required>
         <option value="">${esc(typePhrase())}</option>
-        ${typeOptionsHtml(cache.types)}
+        ${typeOptionsHtml(typesForPrimaryObor(cache.types))}
       </select>
       <input name="nazev" placeholder="Název (volitelně podle typu)" required>
       <textarea name="popis" placeholder="Popis"></textarea>
@@ -1226,7 +1236,7 @@ async function showEditObject(obj) {
   openModal(`Upravit ${noun('one').toLowerCase()}`, `
     <form id="form-edit-object" class="form-grid">
       <select name="typ_uuid">
-        ${cache.types.map((t) => `<option value="${t.uuid}" data-vyzaduje-nazev="${t.vyzaduje_nazev === false ? '0' : '1'}" ${t.uuid === obj.typ_uuid ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
+        ${typesForPrimaryObor(cache.types, obj.typ_uuid).map((t) => `<option value="${t.uuid}" data-vyzaduje-nazev="${t.vyzaduje_nazev === false ? '0' : '1'}" ${t.uuid === obj.typ_uuid ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
       </select>
       <input name="nazev" value="${esc(obj.nazev || '')}" ${obj.vyzaduje_nazev === false ? '' : 'required'}>
       <textarea name="popis">${esc(obj.popis || '')}</textarea>

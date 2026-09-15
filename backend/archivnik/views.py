@@ -531,6 +531,12 @@ class ObjectListCreateView(APIView):
             return Response({'detail': 'Zákazník nenalezen.'}, status=400)
         if not typ:
             return Response({'detail': 'Typ objektu nenalezen.'}, status=400)
+        from archivnik.services import object_type_allowed_for_assign
+        if not object_type_allowed_for_assign(salon, typ):
+            return Response(
+                {'detail': 'Tento typ nepatří k oboru kartotéky.'},
+                status=400,
+            )
         nazev = (data.get('nazev') or '').strip()
         if typ.vyzaduje_nazev and not nazev:
             return Response({'detail': 'Zadejte název.'}, status=400)
@@ -585,6 +591,12 @@ class ObjectDetailView(APIView):
             typ = ObjectType.objects.filter(salon=salon, uuid=data['typ_uuid']).first()
             if not typ:
                 return Response({'detail': 'Typ objektu nenalezen.'}, status=400)
+            from archivnik.services import object_type_allowed_for_assign
+            if not object_type_allowed_for_assign(salon, typ, current_typ=obj.typ):
+                return Response(
+                    {'detail': 'Tento typ nepatří k oboru kartotéky.'},
+                    status=400,
+                )
             obj.typ = typ
         obj.zmenil = _actor(request)
         try:
