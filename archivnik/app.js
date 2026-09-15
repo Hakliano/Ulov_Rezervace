@@ -1306,7 +1306,7 @@ async function renderSettings() {
   $('#tab-settings').innerHTML = `
     <div class="settings-intro">
       <h2>Nastavení kartotéky</h2>
-      <p class="muted">Typy z předvyplnění jsou zamčené. Můžete přidat vlastní ${noun('one').toLowerCase()} a k němu vlastní pole. Mazání struktury zatím není v provozovně k dispozici.</p>
+      <p class="muted">Typy z předvyplnění jsou zamčené. Můžete přidat vlastní ${typePhrase().toLowerCase()} a k němu vlastní pole. Mazání struktury zatím není v provozovně k dispozici.</p>
     </div>
     <div class="settings-grid">
       <div class="panel">
