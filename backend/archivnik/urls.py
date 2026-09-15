@@ -16,6 +16,9 @@ urlpatterns = [
         name='archivnik-customer-detail',
     ),
     path('object-types/', views.ObjectTypeListCreateView.as_view(), name='archivnik-object-types'),
+    path('obory/', views.OborListCreateView.as_view(), name='archivnik-obory'),
+    path('presets/', views.PresetListView.as_view(), name='archivnik-presets'),
+    path('presets/apply/', views.PresetApplyView.as_view(), name='archivnik-presets-apply'),
     path('fields/', views_evidence.FieldListCreateView.as_view(), name='archivnik-fields'),
     path('objects/', views.ObjectListCreateView.as_view(), name='archivnik-objects'),
     path(

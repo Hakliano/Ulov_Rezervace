@@ -204,6 +204,8 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
 # (to by smazalo nahrané fotografie, dokumenty i zápisy).
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_archivnik_only 2>/dev/null || true
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py seed_archivnik_p3_demos 2>/dev/null || true
 
 echo "### Reload LIVE nginx (staging vhost + mount www-staging)"
 cp -f deploy/nginx/conf.d/staging.conf deploy/nginx/conf.d/staging.conf 2>/dev/null || true

@@ -21,6 +21,7 @@ from archivnik.models import (
     Customer,
     Entry,
     Object,
+    Obor,
     ObjectType,
     Reminder,
     ReminderStav,
@@ -35,6 +36,8 @@ from archivnik.serializers import (
     EntryWriteSerializer,
     ObjectSerializer,
     ObjectTypeSerializer,
+    ObjectTypeWriteSerializer,
+    OborSerializer,
     ObjectWriteSerializer,
     ReminderSerializer,
     ReminderWriteSerializer,
@@ -389,18 +392,95 @@ class CustomerDetailView(APIView):
         return Response(CustomerListSerializer(c).data)
 
 
+class OborListCreateView(APIView):
+    authentication_classes = []
+    permission_classes = [ArchivnikPermission]
+
+    def get(self, request):
+        salon = _salon(request)
+        qs = Obor.objects.filter(salon=salon).annotate(typy_pocet=Count('typy', distinct=True))
+        return Response(OborSerializer(qs, many=True).data)
+
+    def post(self, request):
+        ser = OborSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        try:
+            from archivnik.services import create_obor
+            obor = create_obor(salon=_salon(request), nazev=ser.validated_data['nazev'])
+        except IntegrityError:
+            return Response({'detail': 'Obor s tímto názvem už existuje.'}, status=400)
+        except Exception as exc:
+            return Response({'detail': _validation_detail(exc)}, status=400)
+        return Response(OborSerializer(obor).data, status=201)
+
+
+class PresetListView(APIView):
+    authentication_classes = []
+    permission_classes = [ArchivnikPermission]
+
+    def get(self, request):
+        from archivnik.presets import list_presets
+        return Response(list_presets())
+
+
+class PresetApplyView(APIView):
+    authentication_classes = []
+    permission_classes = [ArchivnikPermission]
+
+    def post(self, request):
+        kod = (request.data.get('kod') or '').strip()
+        from archivnik.presets import get_preset
+        from archivnik.services import apply_preset
+        try:
+            get_preset(kod)
+        except KeyError:
+            return Response({'detail': 'Neznámý preset.'}, status=400)
+        result = apply_preset(_salon(request), kod)
+        obor = result['obor']
+        payload = OborSerializer(obor).data
+        payload.update({
+            'created': result['created'],
+            'skipped': result['skipped'],
+            'created_types': result['created_types'],
+            'created_fields': result['created_fields'],
+        })
+        return Response(payload, status=201 if result['created'] else 200)
+
+
 class ObjectTypeListCreateView(APIView):
     authentication_classes = []
     permission_classes = [ArchivnikPermission]
 
     def get(self, request):
-        qs = ObjectType.objects.filter(salon=_salon(request)).prefetch_related('pole')
+        salon = _salon(request)
+        qs = ObjectType.objects.filter(salon=salon).select_related('obor').prefetch_related('pole')
+        ou = request.query_params.get('obor')
+        if ou == 'bez':
+            qs = qs.filter(obor__isnull=True)
+        elif ou:
+            qs = qs.filter(obor__uuid=ou)
         return Response(ObjectTypeSerializer(qs, many=True).data)
 
     def post(self, request):
-        ser = ObjectTypeSerializer(data=request.data)
+        ser = ObjectTypeWriteSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        obj = ObjectType.objects.create(salon=_salon(request), **ser.validated_data)
+        data = ser.validated_data
+        salon = _salon(request)
+        obor = Obor.objects.filter(salon=salon, uuid=data['obor_uuid']).first()
+        if not obor:
+            return Response({'detail': 'Obor nenalezen.'}, status=400)
+        try:
+            obj = ObjectType(
+                salon=salon,
+                obor=obor,
+                nazev=data['nazev'].strip(),
+                poradi=data.get('poradi') or (obor.typy.count() + 1),
+            )
+            obj.save()
+        except IntegrityError:
+            return Response({'detail': 'Typ s tímto názvem už v provozovně existuje.'}, status=400)
+        except Exception as extra:
+            return Response({'detail': _validation_detail(extra)}, status=400)
         return Response(ObjectTypeSerializer(obj).data, status=201)
 
 

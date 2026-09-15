@@ -46,8 +46,47 @@ class ArchivnikSession(models.Model):
         return self.zamestnanec.aktivni and timezone.now() < self.expirace
 
 
+class Obor(models.Model):
+    """Tenant-specific složka konfigurace. Není evidenční entita kartotéky."""
+
+    salon = models.ForeignKey(Salon, related_name='archivnik_obory', on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    nazev = models.CharField('název', max_length=80)
+    poradi = models.PositiveSmallIntegerField(default=0)
+    zdroj_preset = models.CharField(
+        max_length=32, blank=True, default='',
+        help_text='Kód presetu v okamžiku kopie. Nikdy se z katalogu znovu nesynchronizuje.',
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+    upraveno = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'obor'
+        verbose_name_plural = 'obory'
+        ordering = ['poradi', 'nazev']
+        constraints = [
+            models.UniqueConstraint(fields=['salon', 'nazev'], name='archivnik_obor_salon_nazev'),
+            models.UniqueConstraint(
+                fields=['salon', 'zdroj_preset'],
+                condition=~models.Q(zdroj_preset=''),
+                name='archivnik_obor_salon_preset',
+            ),
+        ]
+
+    def __str__(self):
+        return self.nazev
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class ObjectType(models.Model):
     salon = models.ForeignKey(Salon, related_name='archivnik_object_types', on_delete=models.CASCADE)
+    obor = models.ForeignKey(
+        Obor, related_name='typy', on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     nazev = models.CharField('název', max_length=80)
     poradi = models.PositiveSmallIntegerField(default=0)
@@ -65,6 +104,14 @@ class ObjectType(models.Model):
 
     def __str__(self):
         return self.nazev
+
+    def clean(self):
+        if self.obor_id and self.obor.salon_id != self.salon_id:
+            raise ValidationError('Obor musí patřit stejné provozovně.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Tag(models.Model):
@@ -182,6 +229,8 @@ class Object(models.Model):
             raise ValidationError('Objekt musí patřit do stejné provozovny jako zákazník.')
         if self.typ_id and self.typ.salon_id != self.salon_id:
             raise ValidationError('Typ objektu patří jiné provozovně.')
+        if self.typ_id and self.typ.obor_id and self.typ.obor.salon_id != self.salon_id:
+            raise ValidationError('Obor typu objektu patří jiné provozovně.')
         if self.cover_id:
             if self.cover.salon_id != self.salon_id:
                 raise ValidationError('Hlavní fotografie patří jiné provozovně.')
@@ -284,9 +333,11 @@ class Reminder(models.Model):
 
 class FieldKind(models.TextChoices):
     TEXT = 'text', 'Text'
+    DLOUHY_TEXT = 'dlouhy_text', 'Dlouhý text'
     CISLO = 'cislo', 'Číslo'
     DATUM = 'datum', 'Datum'
     ANO_NE = 'ano_ne', 'Ano / ne'
+    VYBER = 'vyber', 'Výběr'
 
 
 class CustomFieldDef(models.Model):
@@ -297,6 +348,7 @@ class CustomFieldDef(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     nazev = models.CharField('název', max_length=80)
     druh = models.CharField(max_length=16, choices=FieldKind.choices, default=FieldKind.TEXT)
+    volby = models.JSONField('možnosti výběru', default=list, blank=True)
     poradi = models.PositiveSmallIntegerField(default=0)
     aktivni = models.BooleanField(default=True)
     vytvoreno = models.DateTimeField(auto_now_add=True)
@@ -315,6 +367,13 @@ class CustomFieldDef(models.Model):
     def clean(self):
         if self.typ_id and self.typ.salon_id != self.salon_id:
             raise ValidationError('Definice pole musí patřit stejné provozovně jako typ objektu.')
+        if not isinstance(self.volby, list):
+            raise ValidationError('Možnosti výběru musí být seznam.')
+        self.volby = [str(v).strip() for v in self.volby if str(v).strip()]
+        if self.druh == FieldKind.VYBER and len(self.volby) < 2:
+            raise ValidationError('Výběr potřebuje alespoň dvě možnosti.')
+        if self.druh != FieldKind.VYBER:
+            self.volby = []
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -324,7 +383,7 @@ class CustomFieldDef(models.Model):
 class CustomFieldValue(models.Model):
     objekt = models.ForeignKey(Object, related_name='hodnoty_poli', on_delete=models.CASCADE)
     pole = models.ForeignKey(CustomFieldDef, related_name='hodnoty', on_delete=models.CASCADE)
-    hodnota = models.CharField(max_length=300, blank=True, default='')
+    hodnota = models.TextField(blank=True, default='')
 
     class Meta:
         verbose_name = 'hodnota vlastního pole'

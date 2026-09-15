@@ -20,7 +20,7 @@ let me = null;
 let currentTab = 'overview';
 let selectedCustomer = null;
 let selectedObject = null;
-let cache = { customers: [], types: [], tags: [], objects: [] };
+let cache = { customers: [], types: [], tags: [], objects: [], obory: [], presets: [] };
 
 function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
 function setToken(token) {
@@ -63,7 +63,14 @@ function initials(name) {
 }
 
 function fieldKindLabel(druh) {
-  return ({ text: 'Text', cislo: 'Číslo', datum: 'Datum', ano_ne: 'Ano / ne' })[druh] || druh;
+  return ({
+    text: 'Text',
+    dlouhy_text: 'Dlouhý text',
+    cislo: 'Číslo',
+    datum: 'Datum',
+    ano_ne: 'Ano / ne',
+    vyber: 'Výběr',
+  })[druh] || druh;
 }
 
 function emptyState(title, text) {
@@ -79,6 +86,7 @@ const ACTIVITY_KIND = {
 };
 const MASCOT_SRC = 'https://haklweb.b-cdn.net/modernik/logo_archivnik.webp';
 let selectedTypeUuid = null;
+let selectedOborUuid = null;
 
 function greeting() {
   const h = new Date().getHours();
@@ -307,8 +315,27 @@ function hideSearch() {
 }
 
 async function ensureTypes() {
-  if (!cache.types.length) cache.types = await api('/object-types/');
+  cache.types = await api('/object-types/');
   return cache.types;
+}
+
+function typeOptionsHtml(types) {
+  const groups = new Map();
+  const loose = [];
+  types.filter((t) => t.aktivni).forEach((t) => {
+    if (t.obor_uuid) {
+      if (!groups.has(t.obor_uuid)) groups.set(t.obor_uuid, { nazev: t.obor_nazev, typy: [] });
+      groups.get(t.obor_uuid).typy.push(t);
+    } else loose.push(t);
+  });
+  const blocks = [];
+  groups.forEach((g) => {
+    blocks.push(`<optgroup label="${esc(g.nazev)}">${g.typy.map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('')}</optgroup>`);
+  });
+  if (loose.length) {
+    blocks.push(`<optgroup label="Bez oboru">${loose.map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('')}</optgroup>`);
+  }
+  return blocks.join('') || types.filter((t) => t.aktivni).map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('');
 }
 
 function markActive(selector, uuid) {
@@ -945,6 +972,18 @@ function showFieldsForm(obj, fields) {
             </select>
           </label>`;
         }
+        if (f.druh === 'vyber') {
+          const opts = (f.volby || []).map((opt) => `<option value="${esc(opt)}" ${f.hodnota === opt ? 'selected' : ''}>${esc(opt)}</option>`).join('');
+          return `<label>${esc(f.nazev)}
+            <select name="${f.pole_uuid}">
+              <option value="">—</option>
+              ${opts}
+            </select>
+          </label>`;
+        }
+        if (f.druh === 'dlouhy_text') {
+          return `<label>${esc(f.nazev)}<textarea name="${f.pole_uuid}" rows="4">${esc(f.hodnota || '')}</textarea></label>`;
+        }
         const type = f.druh === 'datum' ? 'date' : (f.druh === 'cislo' ? 'number' : 'text');
         return `<label>${esc(f.nazev)}<input name="${f.pole_uuid}" type="${type}" value="${esc(f.hodnota || '')}"></label>`;
       }).join('')}
@@ -1004,7 +1043,7 @@ async function showObjectForm({ zakaznik }) {
     <form id="form-object" class="form-grid">
       <select name="typ_uuid" required>
         <option value="">Typ objektu</option>
-        ${cache.types.filter((t) => t.aktivni).map((t) => `<option value="${t.uuid}">${esc(t.nazev)}</option>`).join('')}
+        ${typeOptionsHtml(cache.types)}
       </select>
       <input name="nazev" placeholder="Název objektu" required>
       <textarea name="popis" placeholder="Popis"></textarea>
@@ -1117,43 +1156,95 @@ async function renderReminders() {
 }
 
 async function renderSettings() {
-  const [tags, types] = await Promise.all([api('/tags/'), api('/object-types/')]);
+  const [tags, types, obory, presets] = await Promise.all([
+    api('/tags/'),
+    api('/object-types/'),
+    api('/obory/'),
+    api('/presets/'),
+  ]);
   cache.types = types;
-  if (!selectedTypeUuid || !types.some((t) => t.uuid === selectedTypeUuid)) {
-    selectedTypeUuid = types[0] ? types[0].uuid : null;
+  cache.obory = obory;
+  cache.presets = presets;
+  const bezOboru = types.filter((t) => !t.obor_uuid);
+  if (!selectedOborUuid || (selectedOborUuid !== 'bez' && !obory.some((o) => o.uuid === selectedOborUuid))) {
+    selectedOborUuid = obory[0] ? obory[0].uuid : (bezOboru.length ? 'bez' : null);
   }
+  const typePool = selectedOborUuid === 'bez'
+    ? bezOboru
+    : types.filter((t) => t.obor_uuid === selectedOborUuid);
+  if (!selectedTypeUuid || !typePool.some((t) => t.uuid === selectedTypeUuid)) {
+    selectedTypeUuid = typePool[0] ? typePool[0].uuid : null;
+  }
+  const selectedObor = obory.find((o) => o.uuid === selectedOborUuid) || null;
   const selected = types.find((t) => t.uuid === selectedTypeUuid) || null;
   $('#tab-settings').innerHTML = `
+    <div class="settings-intro">
+      <h2>Nastavení kartotéky</h2>
+      <p class="muted">Nejdřív zvolte, co evidujete. Pak typy objektů a údaje, které u nich chcete zapisovat. Nic z toho není povinné při založení karty.</p>
+    </div>
     <div class="settings-grid">
       <div class="panel">
+        <h2>Co eviduji</h2>
+        ${obory.map((o) => `
+          <button type="button" class="list-item ${o.uuid === selectedOborUuid ? 'active' : ''}" data-select-obor="${o.uuid}">
+            <span>${esc(o.nazev)}</span>
+            <span class="muted">${o.typy_pocet} typů</span>
+          </button>`).join('')}
+        ${bezOboru.length ? `
+          <button type="button" class="list-item ${selectedOborUuid === 'bez' ? 'active' : ''}" data-select-obor="bez">
+            <span>Bez oboru</span>
+            <span class="muted">${bezOboru.length} typů</span>
+          </button>` : ''}
+        ${!obory.length && !bezOboru.length ? emptyState('Zatím nic', 'Použijte předvyplnění, nebo založte vlastní obor.') : ''}
+        <form id="form-obor" class="form-grid settings-add">
+          <input name="nazev" placeholder="Nový obor (např. Dentální hygiena)" required>
+          <button class="btn-gold" type="submit">Vlastní obor</button>
+        </form>
+        <form id="form-preset" class="form-grid settings-add">
+          <select name="kod" required>
+            <option value="">Předvyplnit z oboru…</option>
+            ${presets.map((p) => `<option value="${esc(p.kod)}">${esc(p.nazev)}</option>`).join('')}
+          </select>
+          <button class="btn-primary" type="submit">Použít předvyplnění</button>
+        </form>
+        <p class="muted settings-hint">Předvyplnění jen jednou zkopíruje typy a pole. Pozdější úpravy katalogu vaši kartotéku nemění.</p>
+      </div>
+      <div class="panel">
         <h2>Typy objektů</h2>
-        ${types.map((t) => `
+        <p class="muted">${selectedObor ? esc(selectedObor.nazev) : (selectedOborUuid === 'bez' ? 'Typy bez oboru' : 'Nejdřív vyberte obor.')}</p>
+        ${typePool.map((t) => `
           <button type="button" class="list-item ${t.uuid === selectedTypeUuid ? 'active' : ''}" data-select-type="${t.uuid}">
             <span>${esc(t.nazev)}</span>
-            <span class="muted">${(t.pole || []).length} polí</span>
-          </button>`).join('') || emptyState('Žádný typ', 'Přidejte typ, například Vozidlo nebo Zvíře. Pole k němu nastavíte vpravo.')}
-        <form id="form-type" class="form-grid settings-add">
-          <input name="nazev" placeholder="Nový typ objektu" required>
-          <button class="btn-gold" type="submit">Přidat typ</button>
-        </form>
+            <span class="muted">${(t.pole || []).length} údajů</span>
+          </button>`).join('') || emptyState('Žádný typ', selectedObor ? 'Přidejte typ objektu do tohoto oboru.' : 'Vyberte nebo založte obor.')}
+        ${selectedObor ? `
+          <form id="form-type" class="form-grid settings-add">
+            <input name="nazev" placeholder="Nový typ objektu" required>
+            <button class="btn-gold" type="submit">Přidat typ</button>
+          </form>
+        ` : ''}
       </div>
       <div class="panel">
         ${selected ? `
           <h2>${esc(selected.nazev)}</h2>
+          <p class="muted">Jaké informace chci u tohoto typu evidovat</p>
           ${(selected.pole || []).length
             ? selected.pole.map((p) => `<div class="row"><span>${esc(p.nazev)}</span><span class="muted">${esc(fieldKindLabel(p.druh))}</span></div>`).join('')
-            : emptyState('Žádná pole', 'Přidejte údaje, které u tohoto typu potřebujete.')}
+            : emptyState('Žádné údaje', 'Přidejte pole. Při založení objektu zůstanou volitelná.')}
           <form class="form-grid form-field settings-add" data-typ="${selected.uuid}">
             <input name="nazev" placeholder="Název pole" required>
-            <select name="druh">
+            <select name="druh" data-field-kind>
               <option value="text">Text</option>
+              <option value="dlouhy_text">Dlouhý text</option>
               <option value="cislo">Číslo</option>
               <option value="datum">Datum</option>
               <option value="ano_ne">Ano / ne</option>
+              <option value="vyber">Výběr</option>
             </select>
+            <textarea name="volby" class="hidden" data-field-volby rows="4" placeholder="Možnosti, každá na nový řádek (např. Samec / Samice / Neurčeno)"></textarea>
             <button class="btn-gold" type="submit">Přidat pole</button>
           </form>
-        ` : emptyState('Nejdřív typ', 'Vlevo založte typ objektu, potom k němu přidejte pole.')}
+        ` : emptyState('Nejdřív typ', 'Vlevo zvolte typ objektu, potom k němu přidejte údaje.')}
       </div>
       <div class="panel settings-tags">
         <h2>Štítky</h2>
@@ -1170,25 +1261,75 @@ async function renderSettings() {
       </div>
     </div>
   `;
+  $$('[data-select-obor]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedOborUuid = btn.dataset.selectObor;
+      selectedTypeUuid = null;
+      renderSettings();
+    });
+  });
   $$('[data-select-type]').forEach((btn) => {
     btn.addEventListener('click', () => {
       selectedTypeUuid = btn.dataset.selectType;
       renderSettings();
     });
   });
-  $('#form-type').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    try {
-      const created = await api('/object-types/', {
-        method: 'POST',
-        body: JSON.stringify(Object.fromEntries(new FormData(ev.target))),
-      });
-      selectedTypeUuid = created.uuid;
-      await renderSettings();
-    } catch (err) {
-      window.alert(err.message);
-    }
-  });
+  const oborForm = $('#form-obor');
+  if (oborForm) {
+    oborForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try {
+        const created = await api('/obory/', {
+          method: 'POST',
+          body: JSON.stringify(Object.fromEntries(new FormData(ev.target))),
+        });
+        selectedOborUuid = created.uuid;
+        selectedTypeUuid = null;
+        await renderSettings();
+      } catch (err) {
+        window.alert(err.message);
+      }
+    });
+  }
+  const presetForm = $('#form-preset');
+  if (presetForm) {
+    presetForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const kod = new FormData(ev.target).get('kod');
+      try {
+        const applied = await api('/presets/apply/', {
+          method: 'POST',
+          body: JSON.stringify({ kod }),
+        });
+        selectedOborUuid = applied.uuid;
+        selectedTypeUuid = null;
+        cache.types = [];
+        await renderSettings();
+      } catch (err) {
+        window.alert(err.message);
+      }
+    });
+  }
+  const typeForm = $('#form-type');
+  if (typeForm) {
+    typeForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try {
+        const created = await api('/object-types/', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...Object.fromEntries(new FormData(ev.target)),
+            obor_uuid: selectedOborUuid,
+          }),
+        });
+        selectedTypeUuid = created.uuid;
+        cache.types = [];
+        await renderSettings();
+      } catch (err) {
+        window.alert(err.message);
+      }
+    });
+  }
   const tagForm = $('#form-tag');
   if (tagForm) {
     tagForm.addEventListener('submit', async (ev) => {
@@ -1201,14 +1342,26 @@ async function renderSettings() {
       }
     });
   }
+  $$('[data-field-kind]').forEach((sel) => {
+    const box = sel.closest('form').querySelector('[data-field-volby]');
+    const sync = () => box.classList.toggle('hidden', sel.value !== 'vyber');
+    sel.addEventListener('change', sync);
+    sync();
+  });
   $$('.form-field').forEach((form) => {
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const fd = Object.fromEntries(new FormData(form));
+      const volby = String(fd.volby || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
       try {
         await api('/fields/', {
           method: 'POST',
-          body: JSON.stringify({ ...fd, typ_uuid: form.dataset.typ }),
+          body: JSON.stringify({
+            nazev: fd.nazev,
+            druh: fd.druh,
+            volby: fd.druh === 'vyber' ? volby : [],
+            typ_uuid: form.dataset.typ,
+          }),
         });
         await renderSettings();
       } catch (err) {

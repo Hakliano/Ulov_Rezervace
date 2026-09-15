@@ -69,7 +69,8 @@ class FieldListCreateView(APIView):
             typ=typ,
             nazev=data['nazev'].strip(),
             druh=data.get('druh') or FieldKind.TEXT,
-            poradi=data.get('poradi') or 0,
+            volby=list(data.get('volby') or []),
+            poradi=data.get('poradi') or (typ.pole.count() + 1),
         )
         try:
             obj.save()
@@ -99,6 +100,7 @@ class ObjectFieldValuesView(APIView):
                 'pole_uuid': str(d.uuid),
                 'nazev': d.nazev,
                 'druh': d.druh,
+                'volby': list(d.volby or []),
                 'hodnota': values.get(d.id, ''),
             })
         return Response(payload)
@@ -120,7 +122,7 @@ class ObjectFieldValuesView(APIView):
                 return Response({'detail': 'Neznámé vlastní pole.'}, status=400)
             CustomFieldValue.objects.update_or_create(
                 objekt=obj, pole=pole,
-                defaults={'hodnota': str(row.get('hodnota') or '').strip()[:300]},
+                defaults={'hodnota': str(row.get('hodnota') or '').strip()},
             )
         return self.get(request, object_uuid)
 

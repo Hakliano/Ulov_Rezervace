@@ -9,8 +9,9 @@ from io import BytesIO
 from PIL import Image
 
 from archivnik.models import (
-    Asset, CustomFieldDef, CustomFieldValue, Customer, Entry, Object, ObjectType, Reminder, Tag, TagScope,
+    Asset, CustomFieldDef, CustomFieldValue, Customer, Entry, Object, Obor, ObjectType, Reminder, Tag, TagScope,
 )
+from archivnik.services import apply_preset
 from archivnik.storage import store_file
 from flow.models import FlowUser
 from partner_admin.models import MODUL_ARCHIVNIK
@@ -247,12 +248,14 @@ def _seed_kartoteka(salon, owner, reset=False):
     Object.objects.filter(salon=salon).delete()
     Customer.objects.filter(salon=salon).delete()
     Tag.objects.filter(salon=salon).delete()
-    ObjectType.objects.filter(salon=salon, nazev='Objekt').delete()
+    ObjectType.objects.filter(salon=salon).delete()
+    Obor.objects.filter(salon=salon).delete()
 
-    pes = _type(salon, 'Pes', 1)
-    kocka = _type(salon, 'Kočka', 2)
-    kralik = _type(salon, 'Králík', 3)
-    ptak = _type(salon, 'Pták', 4)
+    apply_preset(salon, 'vet')
+    pes = ObjectType.objects.get(salon=salon, nazev='Pes')
+    kocka = ObjectType.objects.get(salon=salon, nazev='Kočka')
+    kralik = ObjectType.objects.get(salon=salon, nazev='Králík')
+    ptak = ObjectType.objects.get(salon=salon, nazev='Pták / papoušek')
 
     vip = _tag(salon, 'VIP', TagScope.ZAKAZNIK)
     novy = _tag(salon, 'Nový klient', TagScope.ZAKAZNIK)
@@ -385,18 +388,12 @@ def _seed_kartoteka(salon, owner, reset=False):
     _reminder(salon, owner, iva, 'Zavolat, zda už má kočku z útulku', 4)
     _reminder(salon, owner, eliska, 'Dentální hygiena Coco', 25, coco)
 
-    pes_plemeno = _field(salon, pes, 'Plemeno', 'text', 1)
-    pes_narozeni = _field(salon, pes, 'Datum narození', 'datum', 2)
-    pes_cip = _field(salon, pes, 'Číslo čipu', 'text', 3)
-    pes_hmotnost = _field(salon, pes, 'Hmotnost', 'cislo', 4)
-    pes_kastr = _field(salon, pes, 'Kastrace', 'ano_ne', 5)
-    _field(salon, kocka, 'Plemeno', 'text', 1)
-    _field(salon, kocka, 'Datum narození', 'datum', 2)
-    _field(salon, kocka, 'Číslo čipu', 'text', 3)
-    kocka_kastr = _field(salon, kocka, 'Kastrace', 'ano_ne', 4)
-    _field(salon, kralik, 'Plemeno', 'text', 1)
-    _field(salon, kralik, 'Datum narození', 'datum', 2)
-    _field(salon, ptak, 'Druh', 'text', 1)
+    pes_plemeno = CustomFieldDef.objects.get(typ=pes, nazev='Plemeno')
+    pes_narozeni = CustomFieldDef.objects.get(typ=pes, nazev='Datum narození')
+    pes_cip = CustomFieldDef.objects.get(typ=pes, nazev='Číslo čipu')
+    pes_hmotnost = CustomFieldDef.objects.get(typ=pes, nazev='Hmotnost')
+    pes_kastr = CustomFieldDef.objects.get(typ=pes, nazev='Kastrace')
+    kocka_kastr = CustomFieldDef.objects.get(typ=kocka, nazev='Kastrace')
 
     _value(maxp, pes_plemeno, 'Labrador retriever')
     _value(maxp, pes_narozeni, '2019-04-12')

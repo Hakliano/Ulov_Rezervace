@@ -6,6 +6,7 @@ from archivnik.models import (
     Customer,
     Entry,
     Object,
+    Obor,
     ObjectType,
     Reminder,
     Tag,
@@ -19,17 +20,39 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ['uuid']
 
 
+class OborSerializer(serializers.ModelSerializer):
+    typy_pocet = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Obor
+        fields = ['uuid', 'nazev', 'poradi', 'zdroj_preset', 'typy_pocet']
+        read_only_fields = ['uuid', 'poradi', 'zdroj_preset', 'typy_pocet']
+
+    def get_typy_pocet(self, obj):
+        if hasattr(obj, 'typy_pocet'):
+            return obj.typy_pocet
+        return obj.typy.count()
+
+
 class ObjectTypeSerializer(serializers.ModelSerializer):
     pole = serializers.SerializerMethodField()
+    obor_uuid = serializers.UUIDField(source='obor.uuid', read_only=True, allow_null=True)
+    obor_nazev = serializers.CharField(source='obor.nazev', read_only=True, allow_null=True)
 
     class Meta:
         model = ObjectType
-        fields = ['uuid', 'nazev', 'poradi', 'aktivni', 'pole']
-        read_only_fields = ['uuid']
+        fields = ['uuid', 'nazev', 'poradi', 'aktivni', 'obor_uuid', 'obor_nazev', 'pole']
+        read_only_fields = ['uuid', 'obor_uuid', 'obor_nazev']
 
     def get_pole(self, obj):
         qs = obj.pole.all() if hasattr(obj, '_prefetched_objects_cache') and 'pole' in obj._prefetched_objects_cache else obj.pole.filter(aktivni=True)
         return CustomFieldDefSerializer(qs, many=True).data
+
+
+class ObjectTypeWriteSerializer(serializers.Serializer):
+    nazev = serializers.CharField(max_length=80)
+    obor_uuid = serializers.UUIDField()
+    poradi = serializers.IntegerField(required=False, default=0)
 
 
 class CustomFieldDefSerializer(serializers.ModelSerializer):
@@ -37,14 +60,19 @@ class CustomFieldDefSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomFieldDef
-        fields = ['uuid', 'typ_uuid', 'nazev', 'druh', 'poradi', 'aktivni']
+        fields = ['uuid', 'typ_uuid', 'nazev', 'druh', 'volby', 'poradi', 'aktivni']
         read_only_fields = ['uuid']
 
 
 class CustomFieldDefWriteSerializer(serializers.Serializer):
     typ_uuid = serializers.UUIDField()
     nazev = serializers.CharField(max_length=80)
-    druh = serializers.ChoiceField(choices=['text', 'cislo', 'datum', 'ano_ne'], required=False, default='text')
+    druh = serializers.ChoiceField(
+        choices=['text', 'dlouhy_text', 'cislo', 'datum', 'ano_ne', 'vyber'],
+        required=False,
+        default='text',
+    )
+    volby = serializers.ListField(child=serializers.CharField(max_length=80), required=False, default=list)
     poradi = serializers.IntegerField(required=False, default=0)
 
 
@@ -52,7 +80,7 @@ class CustomFieldValueSerializer(serializers.Serializer):
     pole_uuid = serializers.UUIDField()
     nazev = serializers.CharField(read_only=True)
     druh = serializers.CharField(read_only=True)
-    hodnota = serializers.CharField(allow_blank=True, max_length=300)
+    hodnota = serializers.CharField(allow_blank=True)
 
 
 class AssetSerializer(serializers.ModelSerializer):
