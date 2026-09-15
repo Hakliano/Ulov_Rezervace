@@ -13,15 +13,35 @@ def salon_is_onboarded(salon) -> bool:
     )
 
 
+def primary_obor(salon):
+    """První Obor provozovny podle pořadí. Není to spravovatelný příznak 'hlavní'."""
+    return Obor.objects.filter(salon=salon).order_by('poradi', 'id').first()
+
+
 def salon_config_status(salon) -> dict:
     onboarded = salon_is_onboarded(salon)
-    obor = Obor.objects.filter(salon=salon).order_by('poradi', 'id').first()
+    obor = primary_obor(salon)
     return {
         'onboarded': onboarded,
         'muze_aplikovat_preset': not onboarded,
+        'obor_uuid': str(obor.uuid) if obor else None,
         'objekt_jednotne': obor.objekt_jednotne if obor else 'Objekt',
         'objekt_mnozne': obor.objekt_mnozne if obor else 'Objekty',
     }
+
+
+def object_type_allowed_for_assign(salon, typ, *, current_typ=None) -> bool:
+    """Nový nebo změněný typ musí patřit k terminologickému Oboru. Stávající cizí typ lze ponechat."""
+    if typ is None or typ.salon_id != salon.id:
+        return False
+    if current_typ is not None and typ.id == current_typ.id:
+        return True
+    if not typ.aktivni:
+        return False
+    obor = primary_obor(salon)
+    if obor is None:
+        return typ.obor_id is None
+    return typ.obor_id == obor.id
 
 
 def apply_preset(salon, kod: str) -> dict:
