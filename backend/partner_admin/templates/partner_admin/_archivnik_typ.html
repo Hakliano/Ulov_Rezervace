@@ -1,5 +1,5 @@
-<article class="archivnik-typ">
-  <div class="archivnik-typ-head">
+<details class="archivnik-typ">
+  <summary class="archivnik-typ-head">
     <strong>{{ typ.nazev }}</strong>
     {% if typ.aktivni %}
       <span class="badge badge-active">active</span>
@@ -11,7 +11,8 @@
     {% else %}
       <span class="badge badge-neutral">vlastní</span>
     {% endif %}
-  </div>
+    <span class="muted">{{ typ.pole.all|length }} polí</span>
+  </summary>
   {% if typ.pole.all %}
     <ul class="archivnik-pole">
       {% for pole in typ.pole.all %}
@@ -37,4 +38,4 @@
   {% else %}
     <p class="empty">Typ nemá žádná pole.</p>
   {% endif %}
-</article>
+</details>

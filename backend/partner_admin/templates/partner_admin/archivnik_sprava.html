@@ -72,8 +72,16 @@
       </div>
     </div>
     {% for row in obory %}
-      <div class="archivnik-typ-skupina{% if not row.aktualni %} is-historicky{% endif %}">
-        <h3>{{ row.obor.nazev }} {% if row.aktualni %}<span class="badge badge-active">Aktuální</span>{% else %}<span class="badge badge-neutral">Historický</span>{% endif %}</h3>
+      <details class="archivnik-typ-skupina{% if not row.aktualni %} is-historicky{% endif %}"{% if row.aktualni %} open{% endif %}>
+        <summary>
+          <h3>{{ row.obor.nazev }}</h3>
+          {% if row.aktualni %}
+            <span class="badge badge-active">Aktuální</span>
+          {% else %}
+            <span class="badge badge-neutral">Historický</span>
+          {% endif %}
+          <span class="muted">{{ row.typy|length }} typů</span>
+        </summary>
         {% if row.typy %}
           {% for typ in row.typy %}
             {% include 'partner_admin/_archivnik_typ.html' %}
@@ -81,12 +89,15 @@
         {% else %}
           <p class="empty">U tohoto Oboru nejsou žádné typy.</p>
         {% endif %}
-      </div>
+      </details>
     {% empty %}
       <p class="empty">Žádné Obory — typy bez Oboru jsou níže, pokud existují.</p>
     {% endfor %}
-    <div class="archivnik-typ-skupina">
-      <h3>Bez oboru</h3>
+    <details class="archivnik-typ-skupina">
+      <summary>
+        <h3>Bez oboru</h3>
+        <span class="muted">{{ typy_bez_oboru|length }} typů</span>
+      </summary>
       {% if typy_bez_oboru %}
         {% for typ in typy_bez_oboru %}
           {% include 'partner_admin/_archivnik_typ.html' %}
@@ -94,7 +105,7 @@
       {% else %}
         <p class="empty">Žádné typy mimo Obor.</p>
       {% endif %}
-    </div>
+    </details>
   </section>
 
   <section class="panel">

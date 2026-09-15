@@ -887,12 +887,40 @@ label.check input { width: auto; min-height: 0; }
 .archivnik-typ-skupina,
 .archivnik-pristupy { display: grid; gap: .75rem; }
 .archivnik-typ-skupina { margin-top: 1rem; }
-.archivnik-typ-skupina h3 {
+.archivnik-typ-skupina > summary,
+.archivnik-typ > summary {
+  cursor: pointer;
+  list-style: none;
   display: flex;
   flex-wrap: wrap;
   gap: .4rem;
   align-items: center;
-  margin: 0 0 .35rem;
+}
+.archivnik-typ-skupina > summary::-webkit-details-marker,
+.archivnik-typ > summary::-webkit-details-marker { display: none; }
+.archivnik-typ-skupina > summary::marker,
+.archivnik-typ > summary::marker { content: ''; }
+.archivnik-typ-skupina > summary::before,
+.archivnik-typ > summary::before {
+  content: '▸';
+  color: var(--muted);
+  font-size: .8em;
+}
+.archivnik-typ-skupina[open] > summary::before,
+.archivnik-typ[open] > summary::before { content: '▾'; }
+.archivnik-typ-skupina > summary::marker,
+.archivnik-typ > summary::marker { content: ''; }
+.archivnik-typ-skupina > summary::before,
+.archivnik-typ > summary::before {
+  content: '▸';
+  color: var(--muted);
+  font-size: .8em;
+}
+.archivnik-typ-skupina[open] > summary::before,
+.archivnik-typ[open] > summary::before { content: '▾'; }
+.archivnik-typ-skupina h3 {
+  display: inline;
+  margin: 0;
   font-size: 1rem;
 }
 .archivnik-obor,
