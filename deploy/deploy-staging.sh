@@ -70,6 +70,7 @@ overrides = {
     "CUSTOMER_CARD_CONFIRM_BASE_URL": "https://api-staging.ulovklienty.cz/api",
     "MATERIALNIK_URL": "http://ulov-staging-materialnik:8000",
     "MATERIALNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/sklad",
+    "ARCHIVNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/archivnik/",
     "MATERIALNIK_M2M_KEY": "staging-materialnik-m2m",
     "MATERIALNIK_STUB": "false",
 }

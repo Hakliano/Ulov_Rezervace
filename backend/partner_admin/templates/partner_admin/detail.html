@@ -185,6 +185,51 @@
       {% endif %}
     </div>
   </section>
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Moduly</p>
+        <h2>Archivník</h2>
+      </div>
+      {% if archivnik_modul %}
+        <span class="badge badge-{% if archivnik_modul.status == 'active' %}active{% elif archivnik_modul.status == 'error' %}overdue{% else %}neutral{% endif %}">
+          {{ archivnik_modul.status }}
+        </span>
+      {% else %}
+        <span class="badge badge-neutral">inactive</span>
+      {% endif %}
+    </div>
+    <p class="muted">
+      Digitální kartotéka. Funguje i bez FLOW. Personál se přihlásí stejným e-mailem a heslem.
+      Vypnutí jen znepřístupní produkt — data se nemažou.
+    </p>
+    {% if archivnik_modul %}
+      <p class="form-note">Stav: {{ archivnik_modul.get_status_display }} ({{ archivnik_modul.status }})</p>
+    {% else %}
+      <p class="form-note">Stav: Vypnuto (inactive)</p>
+    {% endif %}
+    {% if archivnik_modul and archivnik_modul.status == 'active' and archivnik_public_url %}
+      <p class="form-note">
+        <a href="{{ archivnik_public_url }}" target="_blank" rel="noopener">Otevřít Archivník</a>
+      </p>
+    {% endif %}
+    <div class="form-actions">
+      {% if not archivnik_modul or archivnik_modul.status != 'active' %}
+        <form method="post" action="{% url 'partner_admin:nastavit_archivnik' salon.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="zapnout" value="1">
+          <button class="btn btn-primary" type="submit">Zapnout Archivník</button>
+        </form>
+      {% endif %}
+      {% if archivnik_modul and archivnik_modul.status == 'active' %}
+        <form method="post" action="{% url 'partner_admin:nastavit_archivnik' salon.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="zapnout" value="0">
+          <button class="btn btn-secondary" type="submit">Vypnout Archivník</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
   {% endif %}
 
   {% if active_tab == 'parovani' %}

@@ -9,11 +9,14 @@
 
   function logoUrl(nazev, mapa) {
     var key = normalizuj(nazev);
-    if (key.indexOf('moderník') !== -1 && key.indexOf('materiálník') !== -1) {
-      return mapa.combo;
-    }
-    if (key === 'moderník') return mapa['moderník'];
-    if (key === 'materiálník') return mapa['materiálník'];
+    var mo = key.indexOf('moderník') !== -1;
+    var ma = key.indexOf('materiálník') !== -1;
+    var ar = key.indexOf('archivník') !== -1;
+    if (mapa[key]) return mapa[key];
+    if (mo && ma && ar) return mapa.trojice;
+    if (mo && ar && !ma) return mapa['moderník + archivník'];
+    if (ma && ar && !mo) return mapa['materiálník + archivník'];
+    if (mo && ma) return mapa.combo;
     if (key === 'web') return mapa.web;
     return mapa.fallback;
   }

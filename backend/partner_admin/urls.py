@@ -39,6 +39,11 @@ urlpatterns = [
         views.nastavit_materialnik,
         name='nastavit_materialnik',
     ),
+    path(
+        'salon/<int:salon_id>/archivnik/',
+        views.nastavit_archivnik,
+        name='nastavit_archivnik',
+    ),
     path('salon/<int:salon_id>/blokovat/', views.blokovat, name='blokovat'),
     path('salon/<int:salon_id>/aktivovat/', views.aktivovat, name='aktivovat'),
     path('salon/<int:salon_id>/platba/', views.potvrdit_platbu, name='potvrdit_platbu'),

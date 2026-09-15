@@ -483,6 +483,152 @@ class PartnerAdminTests(TestCase):
         row.refresh_from_db()
         self.assertEqual(row.status, PartnerModul.STAV_INACTIVE)
 
+    def test_detail_ukazuje_archivnik_vypnuto(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Archivník')
+        self.assertContains(response, 'Zapnout Archivník')
+        self.assertContains(response, 'inactive')
+        self.assertNotContains(response, 'Otevřít Archivník')
+
+    def test_nastavit_archivnik_on_off_zachova_data_a_ostatni_moduly(self):
+        from rest_framework.test import APIClient
+
+        from archivnik.models import Customer
+        from flow.models import FlowUser
+        from partner_admin.models import MODUL_MATERIALNIK, ModulKatalog, PartnerModul
+
+        katalog, _ = ModulKatalog.objects.get_or_create(
+            kod=MODUL_MATERIALNIK,
+            defaults={'nazev': 'Materiálník', 'razeni': 10},
+        )
+        materialnik = PartnerModul.objects.create(
+            salon=self.salon,
+            modul=katalog,
+            status=PartnerModul.STAV_ACTIVE,
+        )
+        flow_pred = FlowUser.objects.filter(salon=self.salon).count()
+        api = APIClient()
+
+        self.client.force_login(self.superuser)
+        off_login = api.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'majitelka', 'password': 'puvodni-heslo'},
+            format='json',
+        )
+        self.assertEqual(off_login.status_code, 403)
+
+        zapnout = self.client.post(
+            reverse('partner_admin:nastavit_archivnik', args=[self.salon.id]),
+            {'zapnout': '1'},
+        )
+        self.assertEqual(zapnout.status_code, 302)
+        row = PartnerModul.objects.get(salon=self.salon, modul__kod='archivnik')
+        self.assertEqual(row.status, PartnerModul.STAV_ACTIVE)
+
+        detail_on = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        self.assertContains(detail_on, 'Otevřít Archivník')
+        self.assertContains(detail_on, 'Vypnout Archivník')
+        self.assertEqual(detail_on.context['archivnik_modul'].status, 'active')
+
+        on_login = api.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'majitelka', 'password': 'puvodni-heslo'},
+            format='json',
+        )
+        self.assertEqual(on_login.status_code, 200)
+        api.credentials(HTTP_X_ARCHIVNIK_TOKEN=on_login.data['token'])
+        created = api.post(
+            '/api/archivnik/customers/',
+            {'prijmeni': 'Nováková', 'jmeno': 'P4'},
+            format='json',
+        )
+        self.assertEqual(created.status_code, 201)
+        customer_uuid = created.data['uuid']
+
+        vypnout = self.client.post(
+            reverse('partner_admin:nastavit_archivnik', args=[self.salon.id]),
+            {'zapnout': '0'},
+        )
+        self.assertEqual(vypnout.status_code, 302)
+        row.refresh_from_db()
+        self.assertEqual(row.status, PartnerModul.STAV_INACTIVE)
+        self.assertTrue(Customer.objects.filter(uuid=customer_uuid, salon=self.salon).exists())
+
+        blocked = api.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'majitelka', 'password': 'puvodni-heslo'},
+            format='json',
+        )
+        self.assertEqual(blocked.status_code, 403)
+        listed_off = api.get('/api/archivnik/customers/')
+        self.assertIn(listed_off.status_code, (401, 403))
+
+        znovu = self.client.post(
+            reverse('partner_admin:nastavit_archivnik', args=[self.salon.id]),
+            {'zapnout': '1'},
+        )
+        self.assertEqual(znovu.status_code, 302)
+        row.refresh_from_db()
+        self.assertEqual(row.status, PartnerModul.STAV_ACTIVE)
+
+        again = api.post(
+            '/api/archivnik/auth/login/',
+            {'email': 'majitelka', 'password': 'puvodni-heslo'},
+            format='json',
+        )
+        self.assertEqual(again.status_code, 200)
+        api.credentials(HTTP_X_ARCHIVNIK_TOKEN=again.data['token'])
+        listed = api.get('/api/archivnik/customers/')
+        self.assertEqual(listed.status_code, 200)
+        self.assertIn(customer_uuid, {row['uuid'] for row in listed.data})
+        self.assertEqual(Customer.objects.filter(salon=self.salon).count(), 1)
+
+        materialnik.refresh_from_db()
+        self.assertEqual(materialnik.status, PartnerModul.STAV_ACTIVE)
+        self.assertEqual(FlowUser.objects.filter(salon=self.salon).count(), flow_pred)
+
+    def test_nastavit_archivnik_jen_superadmin_a_salon_z_url(self):
+        from partner_admin.models import PartnerModul
+
+        jiny = Salon.objects.create(name='Cizí salon', email='cizi@example.test')
+        response = self.client.post(
+            reverse('partner_admin:nastavit_archivnik', args=[self.salon.id]),
+            {'zapnout': '1'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            PartnerModul.objects.filter(salon=self.salon, modul__kod='archivnik').exists()
+        )
+
+        normal_user = get_user_model().objects.create_user(
+            username='operator', password='heslo-12345',
+        )
+        self.client.force_login(normal_user)
+        forbidden = self.client.post(
+            reverse('partner_admin:nastavit_archivnik', args=[self.salon.id]),
+            {'zapnout': '1'},
+        )
+        self.assertEqual(forbidden.status_code, 302)
+        self.assertFalse(
+            PartnerModul.objects.filter(salon=self.salon, modul__kod='archivnik').exists()
+        )
+
+        self.client.force_login(self.superuser)
+        self.client.post(
+            reverse('partner_admin:nastavit_archivnik', args=[self.salon.id]),
+            {'zapnout': '1'},
+        )
+        self.assertTrue(
+            PartnerModul.objects.filter(
+                salon=self.salon, modul__kod='archivnik', status=PartnerModul.STAV_ACTIVE,
+            ).exists()
+        )
+        self.assertFalse(
+            PartnerModul.objects.filter(salon=jiny, modul__kod='archivnik').exists()
+        )
+
     def test_katalog_tarifu_a_vyber_u_partnera(self):
         self.client.force_login(self.superuser)
         modernik = PartnerTarif.objects.get(nazev='Moderník')
@@ -563,19 +709,72 @@ class PartnerAdminTests(TestCase):
 
     def test_logo_tarifu_podle_nazvu(self):
         from partner_admin.loga import (
+            LOGO_ARCHIVNIK,
             LOGO_MATERIALNIK,
+            LOGO_MATERIALNIK_ARCHIVNIK,
             LOGO_MODERNIK,
+            LOGO_MODERNIK_ARCHIVNIK,
             LOGO_OSTATNI,
             LOGO_SPOJENI,
+            LOGO_TROJICE,
             LOGO_WEB,
             logo_url_pro_tarif,
         )
         self.assertEqual(logo_url_pro_tarif('Moderník'), LOGO_MODERNIK)
         self.assertEqual(logo_url_pro_tarif('Materiálník'), LOGO_MATERIALNIK)
+        self.assertEqual(logo_url_pro_tarif('Archivník'), LOGO_ARCHIVNIK)
         self.assertEqual(logo_url_pro_tarif('Moderník + Materiálník'), LOGO_SPOJENI)
+        self.assertEqual(logo_url_pro_tarif('Moderník + Archivník'), LOGO_MODERNIK_ARCHIVNIK)
+        self.assertEqual(logo_url_pro_tarif('Materiálník + Archivník'), LOGO_MATERIALNIK_ARCHIVNIK)
+        self.assertEqual(
+            logo_url_pro_tarif('Moderník + Materiálník + Archivník'), LOGO_TROJICE,
+        )
         self.assertEqual(logo_url_pro_tarif('WEB'), LOGO_WEB)
         self.assertEqual(logo_url_pro_tarif('Partnerský web'), LOGO_OSTATNI)
         self.assertEqual(logo_url_pro_tarif(''), LOGO_OSTATNI)
+
+    def test_katalog_tarifu_archivnik_varianty_a_loga(self):
+        from partner_admin.loga import (
+            LOGO_ARCHIVNIK,
+            LOGO_MATERIALNIK_ARCHIVNIK,
+            LOGO_MODERNIK_ARCHIVNIK,
+            LOGO_TROJICE,
+        )
+
+        varianty = [
+            ('Archivník', LOGO_ARCHIVNIK),
+            ('Moderník + Archivník', LOGO_MODERNIK_ARCHIVNIK),
+            ('Materiálník + Archivník', LOGO_MATERIALNIK_ARCHIVNIK),
+            ('Moderník + Materiálník + Archivník', LOGO_TROJICE),
+        ]
+        self.client.force_login(self.superuser)
+        from partner_admin.loga import logo_url_pro_tarif
+
+        katalog = self.client.get(reverse('partner_admin:tarify'))
+        self.assertEqual(katalog.status_code, 200)
+        for nazev, logo in varianty:
+            self.assertTrue(
+                PartnerTarif.objects.filter(nazev=nazev, aktivni=True).exists(),
+                nazev,
+            )
+            self.assertContains(katalog, nazev)
+            self.assertContains(katalog, logo)
+            tarif = PartnerTarif.objects.get(nazev=nazev)
+            self.assertEqual(tarif.castka, Decimal('0.00'))
+        for row in PartnerTarif.objects.all():
+            self.assertContains(katalog, logo_url_pro_tarif(row.nazev))
+
+        vyber = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+        html = vyber.content.decode()
+        for nazev, _logo in varianty:
+            self.assertIn(f'>{nazev}<', html)
+
+        for nazev, logo in varianty:
+            self.partner.tarif = nazev
+            self.partner.save(update_fields=['tarif'])
+            detail = self.client.get(reverse('partner_admin:detail', args=[self.salon.id]))
+            self.assertContains(detail, logo)
+            self.assertContains(detail, nazev)
 
     def test_hromadny_email_jde_vsem_s_adresou(self):
         self.client.force_login(self.superuser)

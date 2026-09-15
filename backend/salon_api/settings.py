@@ -230,6 +230,9 @@ MATERIALNIK_PUBLIC_URL = os.environ.get('MATERIALNIK_PUBLIC_URL', MATERIALNIK_UR
 MATERIALNIK_M2M_KEY = os.environ.get('MATERIALNIK_M2M_KEY', '').strip()
 MATERIALNIK_STUB = _env_bool('MATERIALNIK_STUB', False)
 
+# Archivník SPA (statika). Prázdné = /archivnik/ na stejném hostu.
+ARCHIVNIK_PUBLIC_URL = (os.environ.get('ARCHIVNIK_PUBLIC_URL') or '/archivnik/').strip()
+
 # E-maily přes frontu (Celery). false = sync SMTP jako dřív (rollback / nouzový režim).
 # Zapínejte jen když běží služba `worker` a Redis.
 EMAIL_VIA_CELERY = _env_bool('EMAIL_VIA_CELERY', False)

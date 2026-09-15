@@ -25,8 +25,11 @@
     </div>
     {% if radky %}
       <div class="tarif-list">
-        {% for tarif, form in radky %}
+        {% for tarif, form, logo_url in radky %}
           <article class="tarif-row">
+            <figure class="tarif-row-logo">
+              <img src="{{ logo_url }}" alt="{{ tarif.nazev }}" referrerpolicy="no-referrer">
+            </figure>
             <form method="post" class="form-grid compact" autocomplete="off">
               {% csrf_token %}
               <input type="hidden" name="akce" value="ulozit">

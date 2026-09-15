@@ -702,11 +702,28 @@ label.check input { width: auto; min-height: 0; }
 .tarif-list { display: grid; gap: .85rem; }
 .tarif-row {
   display: grid;
-  gap: .55rem;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: .75rem;
   padding: .85rem;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: rgba(255,255,255,.04);
+}
+.tarif-row-logo {
+  margin: 0;
+  width: 72px;
+  height: 72px;
+  background: #0b0b0b;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tarif-row-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .kam-row { display: grid; gap: .85rem; }
 .kam-list { display: grid; gap: 1rem; }
@@ -1020,7 +1037,7 @@ small { color: var(--muted); }
   .chrome-search kbd { display: none; }
   .page { width: min(100% - 1rem, 1440px); padding-top: 1rem; }
   .page-head, .partner-main { align-items: flex-start; flex-direction: column; }
-  .metrics, .metrics-six, .filters, .partner-data, .form-grid, .form-grid.compact, .payment-summary, .saved-snapshot, .kpis, .kam-earn, .kam-facts { grid-template-columns: 1fr; }
+  .metrics, .metrics-six, .filters, .partner-data, .form-grid, .form-grid.compact, .payment-summary, .saved-snapshot, .kpis, .kam-earn, .kam-facts, .tarif-row { grid-template-columns: 1fr; }
   .ledger-head, .ledger-row { grid-template-columns: 1fr; }
   .account-card, .account-card form { grid-template-columns: 1fr; }
   .timeline article { grid-template-columns: 1fr; gap: .2rem; }
