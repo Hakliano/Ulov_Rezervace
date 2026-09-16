@@ -1643,11 +1643,12 @@ function applyNovaContactPrefill(contact) {
     $('#nova-email').disabled = false;
     $('#nova-email').value = email;
   }
-  // Formulář nemá pole telefon — tel. + popis zákazníka do interní poznámky.
+  // Formulář nemá pole telefon (type=text, ne textarea) — tel. a popis
+  // musí jít do jedné řádky s viditelným oddělovačem, ne \n.
   const interniParts = [];
   if (telefon) interniParts.push(`Tel. ${telefon}`);
   if (poznamka) interniParts.push(poznamka);
-  if (interniParts.length) $('#nova-interni').value = interniParts.join('\n');
+  if (interniParts.length) $('#nova-interni').value = interniParts.join(' · ');
 }
 
 function closeNova() {

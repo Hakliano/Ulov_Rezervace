@@ -948,39 +948,8 @@ class KartotekaWriteTests(TestCase):
 
 
 class KartotekaP53UiContractTests(TestCase):
-    """P5.3 — nové FLOW UI musí jít jen přes kartotéku, Archivník čte ?zakaznik=."""
-
-    def _repo_root(self):
-        from django.conf import settings
-        return settings.BASE_DIR.parent
-
-    def test_flow_ui_pouziva_kartoteku_ne_legacy_karty(self):
-        root = self._repo_root()
-        js = (root / 'flow' / 'customer-card.js').read_text(encoding='utf-8')
-        html = (root / 'flow' / 'index.html').read_text(encoding='utf-8')
-        self.assertIn('/flow/kartoteka/', js)
-        self.assertIn('archivnik_customer_uuid', js)
-        self.assertIn('Založit zákazníka', js)
-        self.assertIn('Otevřít kartu zákazníka', js)
-        self.assertIn('Otevřít kompletní kartu v Archivníku', js)
-        self.assertIn('data-kt-nova-rez', js)
-        self.assertNotIn('/flow/zakaznicke-karty', js)
-        self.assertNotIn('zakaznicke-karty/', js)
-        self.assertNotIn('customer_card_id', js)
-        self.assertNotIn('ceka_na_potvrzeni', js)
-        self.assertNotIn('ceka_na_potvrzeni', html)
-        self.assertNotIn('Odeslat potvrzení', js)
-        self.assertNotIn('Aktivovat lokálně', js)
-        app_js = (root / 'flow' / 'app.js').read_text(encoding='utf-8')
-        self.assertIn('api-staging.ulovklienty.cz', app_js)
-
-    def test_archivnik_spa_cte_zakaznik_query(self):
-        root = self._repo_root()
-        js = (root / 'archivnik' / 'app.js').read_text(encoding='utf-8')
-        self.assertIn("get('zakaznik')", js)
-        self.assertIn('openDeepLinkCustomer', js)
-        self.assertIn('pendingCustomerUuid', js)
-        self.assertIn('await openCustomer(uuid)', js)
+    """P5.3 backend kontrakt. SPA soubory kontroluje deploy/check_p53_ui_contract.py
+    proti git stromu / www-staging — API image je nemá."""
 
     def test_deeplink_url_ma_query_zakaznik(self):
         from types import SimpleNamespace
