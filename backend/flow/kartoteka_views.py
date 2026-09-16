@@ -1,4 +1,4 @@
-"""FLOW read API kartotéky — data z archivnik.models, auth X-Flow-Token."""
+"""FLOW kartotéka proxy — čtení i zápis archivnik.models, auth X-Flow-Token."""
 from __future__ import annotations
 
 from rest_framework.response import Response
@@ -7,8 +7,13 @@ from rest_framework.views import APIView
 from flow.auth import get_flow_user_from_request
 from flow.kartoteka_services import (
     LIST_PAGE_SIZE_DEFAULT,
+    KartotekaError,
+    create_customer_from_flow,
+    create_entry_from_flow,
+    create_object_from_flow,
     customer_detail,
     customer_for_email,
+    list_assignable_object_types,
     list_customers,
     serialize_customer_list_item,
 )
@@ -47,6 +52,14 @@ class KartotekaCustomerListView(APIView):
         )
         return Response(payload)
 
+    def post(self, request):
+        user = _user(request)
+        try:
+            result = create_customer_from_flow(user, request.data)
+        except KartotekaError as exc:
+            return exc.as_response()
+        return Response(result['body'], status=result['status'])
+
 
 class KartotekaCustomerLookupView(APIView):
     authentication_classes = []
@@ -71,3 +84,38 @@ class KartotekaCustomerDetailView(APIView):
         if not payload:
             return Response({'detail': 'Zákazník nenalezen.'}, status=404)
         return Response(payload)
+
+
+class KartotekaEntryCreateView(APIView):
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, customer_uuid):
+        user = _user(request)
+        try:
+            payload = create_entry_from_flow(user, customer_uuid, request.data)
+        except KartotekaError as exc:
+            return exc.as_response()
+        return Response(payload, status=201)
+
+
+class KartotekaObjectCreateView(APIView):
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, customer_uuid):
+        user = _user(request)
+        try:
+            payload = create_object_from_flow(user, customer_uuid, request.data)
+        except KartotekaError as exc:
+            return exc.as_response()
+        return Response(payload, status=201)
+
+
+class KartotekaObjectTypeListView(APIView):
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def get(self, request):
+        user = _user(request)
+        return Response(list_assignable_object_types(user.salon))

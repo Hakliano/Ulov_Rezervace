@@ -189,6 +189,11 @@ urlpatterns = [
     path('flow/mail/<int:uid>/', mail_views.FlowMailDetailView.as_view(), name='flow-mail-detail'),
     # --- P5.1 FLOW read proxy nad Archivníkem ---
     path(
+        'flow/kartoteka/typy-objektu/',
+        kartoteka_views.KartotekaObjectTypeListView.as_view(),
+        name='flow-kartoteka-typy',
+    ),
+    path(
         'flow/kartoteka/zakaznici/',
         kartoteka_views.KartotekaCustomerListView.as_view(),
         name='flow-kartoteka-zakaznici',
@@ -197,6 +202,16 @@ urlpatterns = [
         'flow/kartoteka/zakaznici/lookup/',
         kartoteka_views.KartotekaCustomerLookupView.as_view(),
         name='flow-kartoteka-lookup',
+    ),
+    path(
+        'flow/kartoteka/zakaznici/<uuid:customer_uuid>/zapisy/',
+        kartoteka_views.KartotekaEntryCreateView.as_view(),
+        name='flow-kartoteka-zapisy',
+    ),
+    path(
+        'flow/kartoteka/zakaznici/<uuid:customer_uuid>/objekty/',
+        kartoteka_views.KartotekaObjectCreateView.as_view(),
+        name='flow-kartoteka-objekty',
     ),
     path(
         'flow/kartoteka/zakaznici/<uuid:customer_uuid>/',

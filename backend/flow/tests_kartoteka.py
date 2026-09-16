@@ -407,7 +407,7 @@ class KartotekaFlowProxyTests(TestCase):
         )
         self.assertEqual(r.status_code, 403)
 
-    def test_write_zatim_neni(self):
+    def test_create_bez_emailu_400(self):
         token = self._login('owner-a@test.local', 'HesloA123')
         post = self.client.post(
             '/api/flow/kartoteka/zakaznici/',
@@ -415,7 +415,8 @@ class KartotekaFlowProxyTests(TestCase):
             content_type='application/json',
             HTTP_X_FLOW_TOKEN=token,
         )
-        self.assertEqual(post.status_code, 405)
+        self.assertEqual(post.status_code, 400)
+        self.assertIn('e-mail', post.json()['detail'].lower())
 
     def test_list_nevraci_cely_nekapacitni_dump_bez_limitu(self):
         token = self._login('owner-a@test.local', 'HesloA123')
@@ -472,3 +473,409 @@ class KartotekaStandaloneArchivnikTests(TestCase):
         self.assertFalse(FlowUser.objects.filter(salon=salon).exists())
         self.assertEqual(FlowSession.objects.filter(user__salon=salon).count(), 0)
         self.assertEqual(Customer.objects.filter(salon=salon).first().stav, Stav.AKTIVNI)
+
+
+class KartotekaWriteTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.salon_a = Salon.objects.create(name='Write A', email='wa@test.local')
+        self.salon_b = Salon.objects.create(name='Write B', email='wb@test.local')
+        self.owner_a, self.flow_a = _flow_ucet(
+            self.salon_a, 'write-a@test.local', 'HesloA123', jmeno='Owner A',
+        )
+        self.staff_a, self.flow_staff = _flow_ucet(
+            self.salon_a, 'staff-a@test.local', 'StaffA123',
+            jmeno='Staff A', role=Zamestnanec.ROLE_ZAMESTNANEC,
+        )
+        self.owner_b, self.flow_b = _flow_ucet(
+            self.salon_b, 'write-b@test.local', 'HesloB123', jmeno='Owner B',
+        )
+        self.typ_a = ObjectType.objects.create(
+            salon=self.salon_a, nazev='Pes', vyzaduje_nazev=True,
+        )
+        self.typ_bez_nazvu = ObjectType.objects.create(
+            salon=self.salon_a, nazev='Chrup', vyzaduje_nazev=False,
+        )
+        self.typ_b = ObjectType.objects.create(
+            salon=self.salon_b, nazev='Pes', vyzaduje_nazev=True,
+        )
+        self.eva = Customer.objects.create(
+            salon=self.salon_a, jmeno='Eva', prijmeni='Nová', email='eva@write.test',
+        )
+        self.max = Object.objects.create(
+            salon=self.salon_a, zakaznik=self.eva, typ=self.typ_a, nazev='Max',
+        )
+        self.archiv = Customer.objects.create(
+            salon=self.salon_a, jmeno='Arch', prijmeni='Ivovaný',
+            email='archiv@write.test', stav=Stav.ARCHIVOVANY,
+        )
+        self.boris = Customer.objects.create(
+            salon=self.salon_b, jmeno='Boris', prijmeni='Cizí', email='boris@write.test',
+        )
+        self.rex = Object.objects.create(
+            salon=self.salon_b, zakaznik=self.boris, typ=self.typ_b, nazev='Rex',
+        )
+
+    def _login(self, email, password):
+        r = self.client.post(
+            '/api/flow/prihlaseni/',
+            data={'email': email, 'password': password},
+            content_type='application/json',
+        )
+        self.assertEqual(r.status_code, 200)
+        return r.json()['token']
+
+    def _post(self, path, token, data):
+        return self.client.post(
+            path, data=data, content_type='application/json', HTTP_X_FLOW_TOKEN=token,
+        )
+
+    def test_create_z_rezervace_jmeno_telefon_autor(self):
+        now = timezone.now()
+        rez = Rezervace.objects.create(
+            salon=self.salon_a,
+            zamestnanec=self.owner_a,
+            zacatek=now,
+            konec=now + timedelta(hours=1),
+            stav='potvrzeno',
+            jmeno_host='Jan Pavel Novák',
+            email_host='JAN.Pavel@Novak.CZ',
+        )
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'rezervace_id': rez.id, 'telefon': '777123456', 'salon_id': self.salon_b.id},
+        )
+        self.assertEqual(r.status_code, 201)
+        body = r.json()
+        self.assertTrue(body['vytvoreno'])
+        z = body['zakaznik']
+        self.assertEqual(z['jmeno'], 'Jan Pavel')
+        self.assertEqual(z['prijmeni'], 'Novák')
+        self.assertEqual(z['email'], 'jan.pavel@novak.cz')
+        self.assertEqual(z['telefon'], '777123456')
+        self.assertEqual(z['stav'], 'aktivni')
+        cust = Customer.objects.get(uuid=z['uuid'])
+        self.assertEqual(cust.salon_id, self.salon_a.id)
+        self.assertEqual(cust.vytvoril_id, self.owner_a.id)
+        from flow.customer_card_models import CustomerCard, CustomerVisit
+        self.assertEqual(CustomerCard.objects.filter(salon=self.salon_a).count(), 0)
+        self.assertEqual(CustomerVisit.objects.count(), 0)
+
+    def test_create_jedno_slovo_prijmeni(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'email': 'jednoslov@test.local', 'kontaktni_jmeno': 'Novák'},
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['zakaznik']['jmeno'], '')
+        self.assertEqual(r.json()['zakaznik']['prijmeni'], 'Novák')
+
+    def test_create_chybejici_email_400(self):
+        now = timezone.now()
+        rez = Rezervace.objects.create(
+            salon=self.salon_a,
+            zamestnanec=self.owner_a,
+            zacatek=now,
+            konec=now + timedelta(hours=1),
+            stav='potvrzeno',
+            jmeno_host='Host',
+            email_host='',
+        )
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post('/api/flow/kartoteka/zakaznici/', token, {'rezervace_id': rez.id})
+        self.assertEqual(r.status_code, 400)
+        blank = self._post(
+            '/api/flow/kartoteka/zakaznici/', token, {'kontaktni_jmeno': 'Jan Novák'},
+        )
+        self.assertEqual(blank.status_code, 400)
+
+    def test_create_existujici_email_bez_duplicity(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'email': 'eva@write.test', 'kontaktni_jmeno': 'Někdo Jiný', 'telefon': '111'},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.json()['vytvoreno'])
+        self.assertEqual(r.json()['zakaznik']['uuid'], str(self.eva.uuid))
+        self.assertEqual(r.json()['zakaznik']['prijmeni'], 'Nová')
+        self.assertEqual(Customer.objects.filter(salon=self.salon_a, email__iexact='eva@write.test').count(), 1)
+
+    def test_create_case_whitespace_duplicate(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        first = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'email': '  DUP@Write.TEST ', 'kontaktni_jmeno': 'Dana Dupová'},
+        )
+        self.assertEqual(first.status_code, 201)
+        second = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'email': 'dup@write.test', 'kontaktni_jmeno': 'Jiná Dana'},
+        )
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.json()['zakaznik']['uuid'], second.json()['zakaznik']['uuid'])
+        self.assertEqual(
+            Customer.objects.filter(salon=self.salon_a, email='dup@write.test').count(), 1,
+        )
+
+    def test_create_integrity_error_vraci_existujiciho(self):
+        from unittest.mock import patch
+        from django.db import IntegrityError
+        token = self._login('write-a@test.local', 'HesloA123')
+        with patch('flow.kartoteka_services.customer_for_email', side_effect=[None, self.eva]):
+            with patch('flow.kartoteka_services.Customer.save', side_effect=IntegrityError('uniq')):
+                r = self._post(
+                    '/api/flow/kartoteka/zakaznici/',
+                    token,
+                    {'email': 'eva@write.test', 'kontaktni_jmeno': 'Eva Nová'},
+                )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.json()['vytvoreno'])
+        self.assertEqual(r.json()['zakaznik']['uuid'], str(self.eva.uuid))
+
+    def test_create_archivovany_stejny_email_409(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'email': 'ARCHIV@write.test', 'kontaktni_jmeno': 'Arch Ivovaný'},
+        )
+        self.assertEqual(r.status_code, 409)
+        self.assertFalse(r.json()['vytvoreno'])
+        self.assertEqual(r.json()['zakaznik']['uuid'], str(self.archiv.uuid))
+        self.assertEqual(r.json()['zakaznik']['stav'], 'archivovany')
+        self.assertEqual(Customer.objects.filter(email='archiv@write.test', salon=self.salon_a).count(), 1)
+
+    def test_create_cizi_rezervace_404(self):
+        now = timezone.now()
+        rez_b = Rezervace.objects.create(
+            salon=self.salon_b,
+            zamestnanec=self.owner_b,
+            zacatek=now,
+            konec=now + timedelta(hours=1),
+            stav='potvrzeno',
+            jmeno_host='Cizí',
+            email_host='cizi-rez@write.test',
+        )
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post('/api/flow/kartoteka/zakaznici/', token, {'rezervace_id': rez_b.id})
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(Customer.objects.filter(email='cizi-rez@write.test').exists())
+
+    def test_create_neslucuje_jmeno_telefon(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {
+                'email': 'jiny-mail@write.test',
+                'kontaktni_jmeno': 'Eva Nová',
+                'telefon': '000',
+            },
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertNotEqual(r.json()['zakaznik']['uuid'], str(self.eva.uuid))
+
+    def test_staff_smí_zapisovat(self):
+        token = self._login('staff-a@test.local', 'StaffA123')
+        r = self._post(
+            '/api/flow/kartoteka/zakaznici/',
+            token,
+            {'email': 'staff-klient@write.test', 'kontaktni_jmeno': 'Klára Staffová'},
+        )
+        self.assertEqual(r.status_code, 201)
+        cust = Customer.objects.get(uuid=r.json()['zakaznik']['uuid'])
+        self.assertEqual(cust.vytvoril_id, self.staff_a.id)
+
+    def test_entry_bez_objektu(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/zapisy/',
+            token,
+            {'text': 'Kontrola, vše v pořádku.', 'objekt_uuid': None},
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertIsNone(r.json()['objekt_uuid'])
+        self.assertEqual(r.json()['typ_zapisu'], 'Poznámka')
+        self.assertEqual(r.json()['autor'], 'Owner A')
+        entry = Entry.objects.get(uuid=r.json()['uuid'])
+        self.assertEqual(entry.zakaznik_id, self.eva.id)
+        self.assertIsNone(entry.objekt_id)
+        self.assertEqual(entry.vytvoril_id, self.owner_a.id)
+
+    def test_entry_s_objektem(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/zapisy/',
+            token,
+            {
+                'text': 'Max je v pořádku.',
+                'objekt_uuid': str(self.max.uuid),
+                'nadpis': 'Kontrola',
+                'typ_zapisu': 'Kontrola',
+            },
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['objekt_uuid'], str(self.max.uuid))
+        self.assertEqual(r.json()['typ_zapisu'], 'Kontrola')
+        self.assertEqual(r.json()['nadpis'], 'Kontrola')
+
+    def test_entry_cizi_customer_404(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.boris.uuid}/zapisy/',
+            token,
+            {'text': 'útok'},
+        )
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(Entry.objects.filter(zakaznik=self.boris, text='útok').exists())
+
+    def test_entry_cizi_object_404(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/zapisy/',
+            token,
+            {'text': 'rex podstrčen', 'objekt_uuid': str(self.rex.uuid)},
+        )
+        self.assertEqual(r.status_code, 404)
+
+    def test_entry_object_jineho_customer_stejny_salon_404(self):
+        jiny = Customer.objects.create(
+            salon=self.salon_a, prijmeni='Jiná', email='jina-obj@write.test',
+        )
+        micka = Object.objects.create(
+            salon=self.salon_a, zakaznik=jiny, typ=self.typ_a, nazev='Micka',
+        )
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/zapisy/',
+            token,
+            {'text': 'cizí pes', 'objekt_uuid': str(micka.uuid)},
+        )
+        self.assertEqual(r.status_code, 404)
+
+    def test_entry_archivovany_409(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.archiv.uuid}/zapisy/',
+            token,
+            {'text': 'nesmí'},
+        )
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.json()['stav'], 'archivovany')
+
+    def test_entry_prazdny_text_400(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/zapisy/',
+            token,
+            {'text': '   '},
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_object_minimal(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_a.uuid), 'nazev': 'Micka'},
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['nazev'], 'Micka')
+        self.assertEqual(r.json()['typ_nazev'], 'Pes')
+        obj = Object.objects.get(uuid=r.json()['uuid'])
+        self.assertEqual(obj.zakaznik_id, self.eva.id)
+        self.assertEqual(obj.typ_id, self.typ_a.id)
+        self.assertEqual(obj.vytvoril_id, self.owner_a.id)
+        from archivnik.models import CustomFieldValue
+        self.assertEqual(CustomFieldValue.objects.filter(objekt=obj).count(), 0)
+
+    def test_object_typ_bez_nazvu(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_bez_nazvu.uuid)},
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['nazev'], '')
+
+    def test_object_typ_vyzaduje_nazev(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_a.uuid), 'nazev': ''},
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_object_cizi_typ_404(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_b.uuid), 'nazev': 'Útok'},
+        )
+        self.assertEqual(r.status_code, 404)
+
+    def test_object_cizi_customer_404(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.boris.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_a.uuid), 'nazev': 'Útok'},
+        )
+        self.assertEqual(r.status_code, 404)
+
+    def test_object_archivovany_409(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.archiv.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_a.uuid), 'nazev': 'Max'},
+        )
+        self.assertEqual(r.status_code, 409)
+
+    def test_object_typ_jineho_oboru_400(self):
+        from archivnik.models import Obor
+        vet = Obor.objects.create(salon=self.salon_a, nazev='Veterina', aktualni=True, poradi=1)
+        pneu = Obor.objects.create(salon=self.salon_a, nazev='Pneu', aktualni=False, poradi=2)
+        self.typ_a.obor = vet
+        self.typ_a.save()
+        self.typ_bez_nazvu.obor = vet
+        self.typ_bez_nazvu.save()
+        vuz = ObjectType.objects.create(
+            salon=self.salon_a, obor=pneu, nazev='Osobní vůz', vyzaduje_nazev=True,
+        )
+        token = self._login('write-a@test.local', 'HesloA123')
+        deny = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(vuz.uuid), 'nazev': 'Octavia'},
+        )
+        self.assertEqual(deny.status_code, 400)
+        ok = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_a.uuid), 'nazev': 'Rexík'},
+        )
+        self.assertEqual(ok.status_code, 201)
+        typy = self.client.get('/api/flow/kartoteka/typy-objektu/', HTTP_X_FLOW_TOKEN=token)
+        uuidy = {t['uuid'] for t in typy.json()}
+        self.assertIn(str(self.typ_a.uuid), uuidy)
+        self.assertNotIn(str(vuz.uuid), uuidy)
+        self.assertNotIn(str(self.typ_b.uuid), uuidy)
+
+    def test_typy_jen_vlastni_salon(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        r = self.client.get('/api/flow/kartoteka/typy-objektu/', HTTP_X_FLOW_TOKEN=token)
+        uuidy = {t['uuid'] for t in r.json()}
+        self.assertIn(str(self.typ_a.uuid), uuidy)
+        self.assertNotIn(str(self.typ_b.uuid), uuidy)
