@@ -2,6 +2,7 @@ from django.urls import path
 
 from flow import mail_views, owner_views, provoz_views, views
 from flow import customer_card_views
+from flow import kartoteka_views
 from flow import materialnik_views as views_materialnik
 from flow import integrations_views
 
@@ -186,6 +187,22 @@ urlpatterns = [
     ),
     path('flow/mail/', mail_views.FlowMailListView.as_view(), name='flow-mail-list'),
     path('flow/mail/<int:uid>/', mail_views.FlowMailDetailView.as_view(), name='flow-mail-detail'),
+    # --- P5.1 FLOW read proxy nad Archivníkem ---
+    path(
+        'flow/kartoteka/zakaznici/',
+        kartoteka_views.KartotekaCustomerListView.as_view(),
+        name='flow-kartoteka-zakaznici',
+    ),
+    path(
+        'flow/kartoteka/zakaznici/lookup/',
+        kartoteka_views.KartotekaCustomerLookupView.as_view(),
+        name='flow-kartoteka-lookup',
+    ),
+    path(
+        'flow/kartoteka/zakaznici/<uuid:customer_uuid>/',
+        kartoteka_views.KartotekaCustomerDetailView.as_view(),
+        name='flow-kartoteka-zakaznik-detail',
+    ),
     # --- Karta zákazníka (feature/flow-customer-card) ---
     path(
         'flow/zakaznicke-karty/',
