@@ -207,8 +207,10 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
   python manage.py seed_archivnik_only 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_archivnik_p3_demos 2>/dev/null || true
+# P5.5: jen založí acceptance sadu, pokud ještě neexistuje. Nikdy --reset / --cleanup-salon
+# (to by smazalo kartotéku). P5.3 seed sem nepatří — umí wipe při každém deployi.
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
-  python manage.py seed_p53_flow_kartoteka 2>/dev/null || true
+  python manage.py seed_p55_acceptance 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py sync_archivnik_pro_modernik 2>/dev/null || true
 
