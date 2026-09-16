@@ -59,6 +59,7 @@ class Obor(models.Model):
     )
     objekt_jednotne = models.CharField('jednotné číslo objektu', max_length=40, default='Objekt')
     objekt_mnozne = models.CharField('množné číslo objektu', max_length=40, default='Objekty')
+    aktualni = models.BooleanField(default=False)
     vytvoreno = models.DateTimeField(auto_now_add=True)
     upraveno = models.DateTimeField(auto_now=True)
 
@@ -72,6 +73,11 @@ class Obor(models.Model):
                 fields=['salon', 'zdroj_preset'],
                 condition=~models.Q(zdroj_preset=''),
                 name='archivnik_obor_salon_preset',
+            ),
+            models.UniqueConstraint(
+                fields=['salon'],
+                condition=models.Q(aktualni=True),
+                name='archivnik_obor_salon_jeden_aktualni',
             ),
         ]
 

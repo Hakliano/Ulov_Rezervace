@@ -933,8 +933,8 @@ label.check input { width: auto; min-height: 0; }
   border-radius: 10px;
   background: rgba(255,255,255,.04);
 }
-.archivnik-obor.is-historicky,
-.archivnik-typ-skupina.is-historicky { opacity: .72; }
+.archivnik-obor.is-historicky { opacity: .72; }
+.archivnik-typ-skupina.is-historicky > summary { opacity: .72; }
 .archivnik-obor-head,
 .archivnik-typ-head,
 .archivnik-pristup-meta {
@@ -943,6 +943,9 @@ label.check input { width: auto; min-height: 0; }
   gap: .4rem;
   align-items: center;
 }
+.archivnik-admin { margin-top: .65rem; display: grid; gap: .55rem; }
+.archivnik-actions { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.archivnik-block { color: var(--danger); margin: 0; font-size: .86rem; }
 .archivnik-pristup span { color: var(--muted); }
 .archivnik-pole {
   margin: .35rem 0 0;

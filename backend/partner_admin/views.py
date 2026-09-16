@@ -70,7 +70,22 @@ from .services import (
     vytvor_noveho_partnera,
 )
 from .services_moduly import nastav_modul, partner_modul
-from .services_archivnik import archivnik_sprava_data
+from .services_archivnik import (
+    ArchivnikSpravaError,
+    archivnik_sprava_data,
+    nastav_aktualni_obor,
+    nastav_pole_aktivni,
+    nastav_typ_aktivni,
+    smaz_obor,
+    smaz_pole,
+    smaz_typ,
+    uloz_obor,
+    uloz_pole,
+    uloz_typ,
+    vytvor_obor,
+    vytvor_pole,
+    vytvor_typ,
+)
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
 
@@ -904,6 +919,8 @@ def nastavit_archivnik(request, salon_id):
 @superadmin_required
 def archivnik_sprava(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
+    if request.method == 'POST':
+        return _archivnik_sprava_post(request, salon)
     ctx = archivnik_sprava_data(salon)
     ctx.update({
         'salon': salon,
@@ -913,6 +930,104 @@ def archivnik_sprava(request, salon_id):
         ),
     })
     return render(request, 'partner_admin/archivnik_sprava.html', ctx)
+
+
+def _post_bool(request, name, default=False):
+    if name not in request.POST:
+        return default
+    return request.POST.get(name) in ('1', 'on', 'true', 'True')
+
+
+def _archivnik_sprava_post(request, salon):
+    akce = (request.POST.get('akce') or '').strip()
+    potvrzeno = request.POST.get('potvrdit') == '1'
+    try:
+        if akce == 'obor_vytvorit':
+            vytvor_obor(
+                salon, request.user,
+                nazev=request.POST.get('nazev', ''),
+                objekt_jednotne=request.POST.get('objekt_jednotne', ''),
+                objekt_mnozne=request.POST.get('objekt_mnozne', ''),
+            )
+            messages.success(request, 'Obor byl vytvořen.')
+        elif akce == 'obor_ulozit':
+            uloz_obor(
+                salon, request.user, request.POST.get('obor_id'),
+                nazev=request.POST.get('nazev', ''),
+                objekt_jednotne=request.POST.get('objekt_jednotne', ''),
+                objekt_mnozne=request.POST.get('objekt_mnozne', ''),
+            )
+            messages.success(request, 'Obor byl uložen.')
+        elif akce == 'obor_aktualni':
+            nastav_aktualni_obor(salon, request.user, request.POST.get('obor_id'))
+            messages.success(request, 'Aktuální Obor byl nastaven.')
+        elif akce == 'obor_smazat':
+            smaz_obor(salon, request.user, request.POST.get('obor_id'), potvrzeno=potvrzeno)
+            messages.success(request, 'Obor byl smazán včetně prázdných typů a polí.')
+        elif akce == 'typ_vytvorit':
+            vytvor_typ(
+                salon, request.user,
+                nazev=request.POST.get('nazev', ''),
+                obor_id=request.POST.get('obor_id') or None,
+                poradi=request.POST.get('poradi'),
+                aktivni=_post_bool(request, 'aktivni'),
+                vyzaduje_nazev=_post_bool(request, 'vyzaduje_nazev'),
+            )
+            messages.success(request, 'Typ byl vytvořen.')
+        elif akce == 'typ_ulozit':
+            uloz_typ(
+                salon, request.user, request.POST.get('typ_id'),
+                nazev=request.POST.get('nazev', ''),
+                obor_id=request.POST.get('obor_id') or None,
+                poradi=request.POST.get('poradi'),
+                aktivni=_post_bool(request, 'aktivni'),
+                vyzaduje_nazev=_post_bool(request, 'vyzaduje_nazev'),
+            )
+            messages.success(request, 'Typ byl uložen.')
+        elif akce == 'typ_aktivni':
+            nastav_typ_aktivni(
+                salon, request.user, request.POST.get('typ_id'),
+                aktivni=_post_bool(request, 'aktivni'),
+            )
+            messages.success(request, 'Stav typu byl změněn. Data objektů zůstávají.')
+        elif akce == 'typ_smazat':
+            smaz_typ(salon, request.user, request.POST.get('typ_id'), potvrzeno=potvrzeno)
+            messages.success(request, 'Typ byl smazán včetně prázdných polí.')
+        elif akce == 'pole_vytvorit':
+            vytvor_pole(
+                salon, request.user,
+                typ_id=request.POST.get('typ_id'),
+                nazev=request.POST.get('nazev', ''),
+                druh=request.POST.get('druh', ''),
+                volby=request.POST.get('volby', ''),
+                poradi=request.POST.get('poradi'),
+                aktivni=_post_bool(request, 'aktivni'),
+            )
+            messages.success(request, 'Pole bylo vytvořeno.')
+        elif akce == 'pole_ulozit':
+            uloz_pole(
+                salon, request.user, request.POST.get('pole_id'),
+                nazev=request.POST.get('nazev', ''),
+                druh=request.POST.get('druh', ''),
+                volby=request.POST.get('volby', ''),
+                poradi=request.POST.get('poradi'),
+                aktivni=_post_bool(request, 'aktivni'),
+            )
+            messages.success(request, 'Pole bylo uloženo.')
+        elif akce == 'pole_aktivni':
+            nastav_pole_aktivni(
+                salon, request.user, request.POST.get('pole_id'),
+                aktivni=_post_bool(request, 'aktivni'),
+            )
+            messages.success(request, 'Stav pole byl změněn. Uložené hodnoty zůstávají.')
+        elif akce == 'pole_smazat':
+            smaz_pole(salon, request.user, request.POST.get('pole_id'), potvrzeno=potvrzeno)
+            messages.success(request, 'Pole bylo smazáno.')
+        else:
+            messages.error(request, 'Neznámá akce.')
+    except ArchivnikSpravaError as exc:
+        messages.error(request, exc.message)
+    return redirect('partner_admin:archivnik_sprava', salon.id)
 
 
 @superadmin_required
