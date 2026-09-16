@@ -15,6 +15,7 @@ from archivnik.auth import (
     get_actor_from_request,
     get_session_from_request,
 )
+from archivnik.kartoteka_delete import KartotekaDeleteError, smaz_kartoteku_zakaznika
 from archivnik.models import (
     Asset,
     AssetKind,
@@ -391,6 +392,28 @@ class CustomerDetailView(APIView):
             c.tagy.set(_tags(_salon(request), data.get('tagy') or [], for_zakaznik=True))
         c.objekty_pocet = c.objekty.count()
         return Response(CustomerListSerializer(c).data)
+
+    def delete(self, request, customer_uuid):
+        actor = _actor(request)
+        if actor.role != actor.ROLE_MAJITEL:
+            return Response(
+                {'detail': 'Odstranit zákazníka smí jen majitel provozovny.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        c = self._get(request, customer_uuid)
+        if not c:
+            return Response({'detail': 'Zákazník nenalezen.'}, status=404)
+        potvrzeni = (request.data.get('potvrzeni') or '').strip()
+        if potvrzeni != c.display_name:
+            return Response(
+                {'detail': 'Pro potvrzení napište přesné jméno zákazníka.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            smaz_kartoteku_zakaznika(actor.salon, c.uuid)
+        except KartotekaDeleteError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_409_CONFLICT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class OborListCreateView(APIView):

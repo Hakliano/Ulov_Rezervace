@@ -144,6 +144,10 @@
         ${archived ? '<span class="badge">archivovaný</span>' : ''}
       </div>
       <p class="meta">${esc(contact || 'Bez e-mailu a telefonu')}</p>
+      <aside class="contact-banner" role="note">
+        <p><strong>🔒 Kontaktní údaje jsou pro péči o zákazníka</strong></p>
+        <p>E-mail a telefon používejte pouze v souvislosti s poskytovanou službou. Archivník není určen pro marketingové rozesílky ani tvorbu marketingových databází. Za způsob použití údajů odpovídá provozovna jako jejich správce.</p>
+      </aside>
       ${c.poznamka ? `<p class="cc-note">${esc(c.poznamka)}</p>` : ''}
       ${writeBlock}
       <h3>Objekty</h3>

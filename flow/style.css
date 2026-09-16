@@ -2517,6 +2517,18 @@ label.flow-switch,
 .kt-remind { margin: 0.25rem 0; }
 .kt-remind.warn { color: #f0d78c; }
 .kt-optional::after { content: ' (volitelné)'; font-weight: 400; opacity: .7; }
+.contact-banner {
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 10px;
+  background: rgba(201, 162, 39, 0.08);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: inherit;
+}
+.contact-banner p { margin: 0; }
+.contact-banner p + p { margin-top: 0.35rem; }
 .cc-detail-col::before {
   content: 'Karta zákazníka';
   display: inline-block;
