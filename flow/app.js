@@ -3,9 +3,12 @@ const API_BASE = (function () {
   const local = window.location.protocol === 'file:'
     || h === '127.0.0.1' || h === '::1' || h === '[::1]'
     || (h && h.indexOf('.') === -1);
-  if (!local) return 'https://api.ulovklienty.cz/api';
-  const apiHost = (h === '::1' || h === '[::1]') ? '127.0.0.1' : (h || '127.0.0.1');
-  return 'http://' + apiHost + ':8000/api';
+  if (local) {
+    const apiHost = (h === '::1' || h === '[::1]') ? '127.0.0.1' : (h || '127.0.0.1');
+    return 'http://' + apiHost + ':8000/api';
+  }
+  if (h && h.indexOf('staging') !== -1) return 'https://api-staging.ulovklienty.cz/api';
+  return 'https://api.ulovklienty.cz/api';
 })();
 const TOKEN_KEY = 'flow_token';
 

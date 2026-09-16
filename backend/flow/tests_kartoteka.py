@@ -359,6 +359,28 @@ class KartotekaFlowProxyTests(TestCase):
         row = self._kalendar(token).json()['rezervace'][0]
         self.assertIsNone(row['archivnik_customer_uuid'])
 
+    def test_kalendar_archivovany_customer_ma_uuid(self):
+        archived = Customer.objects.create(
+            salon=self.salon_a,
+            jmeno='Anna',
+            prijmeni='Archiv',
+            email='anna.archiv@test.local',
+            stav=Stav.ARCHIVOVANY,
+        )
+        now = timezone.now()
+        Rezervace.objects.create(
+            salon=self.salon_a,
+            zamestnanec=self.owner_a,
+            zacatek=now,
+            konec=now + timedelta(hours=1),
+            stav='potvrzeno',
+            jmeno_host='Anna Archiv',
+            email_host='anna.archiv@test.local',
+        )
+        token = self._login('owner-a@test.local', 'HesloA123')
+        row = self._kalendar(token).json()['rezervace'][0]
+        self.assertEqual(row['archivnik_customer_uuid'], str(archived.uuid))
+
     def test_kalendar_zadny_odpovidajici_customer(self):
         now = timezone.now()
         Rezervace.objects.create(
@@ -879,3 +901,90 @@ class KartotekaWriteTests(TestCase):
         uuidy = {t['uuid'] for t in r.json()}
         self.assertIn(str(self.typ_a.uuid), uuidy)
         self.assertNotIn(str(self.typ_b.uuid), uuidy)
+
+    def test_entry_a_object_jsou_okamzite_v_detailu(self):
+        token = self._login('write-a@test.local', 'HesloA123')
+        obj = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/objekty/',
+            token,
+            {'typ_uuid': str(self.typ_a.uuid), 'nazev': 'Max'},
+        )
+        self.assertEqual(obj.status_code, 201)
+        entry = self._post(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/zapisy/',
+            token,
+            {'text': 'Kontrola Max', 'objekt_uuid': obj.json()['uuid']},
+        )
+        self.assertEqual(entry.status_code, 201)
+        detail = self.client.get(
+            f'/api/flow/kartoteka/zakaznici/{self.eva.uuid}/',
+            HTTP_X_FLOW_TOKEN=token,
+        ).json()
+        self.assertIn('Max', {o['nazev'] for o in detail['objekty']})
+        self.assertEqual(detail['posledni_zapisy'][0]['text'], 'Kontrola Max')
+        self.assertEqual(detail['posledni_zapisy'][0]['objekt_nazev'], 'Max')
+
+    def test_create_z_rezervace_pak_kalendar_stejne_uuid(self):
+        now = timezone.now()
+        rez = Rezervace.objects.create(
+            salon=self.salon_a,
+            zamestnanec=self.owner_a,
+            zacatek=now,
+            konec=now + timedelta(hours=1),
+            stav='potvrzeno',
+            jmeno_host='P53 Nový Host',
+            email_host='novy.host@p53.ulov.local',
+        )
+        token = self._login('write-a@test.local', 'HesloA123')
+        created = self._post('/api/flow/kartoteka/zakaznici/', token, {'rezervace_id': rez.id})
+        self.assertEqual(created.status_code, 201)
+        uuid_val = created.json()['zakaznik']['uuid']
+        rows = self.client.get('/api/flow/kalendar/', HTTP_X_FLOW_TOKEN=token).json()['rezervace']
+        self.assertEqual(rows[0]['archivnik_customer_uuid'], uuid_val)
+        self.assertEqual(
+            Customer.objects.filter(salon=self.salon_a, email='novy.host@p53.ulov.local').count(),
+            1,
+        )
+
+
+class KartotekaP53UiContractTests(TestCase):
+    """P5.3 — nové FLOW UI musí jít jen přes kartotéku, Archivník čte ?zakaznik=."""
+
+    def _repo_root(self):
+        from django.conf import settings
+        return settings.BASE_DIR.parent
+
+    def test_flow_ui_pouziva_kartoteku_ne_legacy_karty(self):
+        root = self._repo_root()
+        js = (root / 'flow' / 'customer-card.js').read_text(encoding='utf-8')
+        html = (root / 'flow' / 'index.html').read_text(encoding='utf-8')
+        self.assertIn('/flow/kartoteka/', js)
+        self.assertIn('archivnik_customer_uuid', js)
+        self.assertIn('Založit zákazníka', js)
+        self.assertIn('Otevřít kartu zákazníka', js)
+        self.assertIn('Otevřít kompletní kartu v Archivníku', js)
+        self.assertIn('data-kt-nova-rez', js)
+        self.assertNotIn('/flow/zakaznicke-karty', js)
+        self.assertNotIn('zakaznicke-karty/', js)
+        self.assertNotIn('customer_card_id', js)
+        self.assertNotIn('ceka_na_potvrzeni', js)
+        self.assertNotIn('ceka_na_potvrzeni', html)
+        self.assertNotIn('Odeslat potvrzení', js)
+        self.assertNotIn('Aktivovat lokálně', js)
+        app_js = (root / 'flow' / 'app.js').read_text(encoding='utf-8')
+        self.assertIn('api-staging.ulovklienty.cz', app_js)
+
+    def test_archivnik_spa_cte_zakaznik_query(self):
+        root = self._repo_root()
+        js = (root / 'archivnik' / 'app.js').read_text(encoding='utf-8')
+        self.assertIn("get('zakaznik')", js)
+        self.assertIn('openDeepLinkCustomer', js)
+        self.assertIn('pendingCustomerUuid', js)
+        self.assertIn('await openCustomer(uuid)', js)
+
+    def test_deeplink_url_ma_query_zakaznik(self):
+        from types import SimpleNamespace
+
+        from flow.kartoteka_services import archivnik_customer_url
+        url = archivnik_customer_url(SimpleNamespace(uuid='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'))
+        self.assertIn('?zakaznik=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', url)

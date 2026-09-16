@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=64">
+  <link rel="stylesheet" href="style.css?v=65">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -297,26 +297,26 @@
           </div>
         </div>
 
-        <!-- feature/flow-customer-card -->
+        <!-- P5.3 FLOW kartotéka = Archivník -->
         <div id="pane-karty" class="pane hidden">
           <div class="cc-layout">
             <div class="cc-list-col">
               <div class="row between wrap gap">
-                <h2 class="section-title">Zákaznické karty</h2>
-                <button type="button" class="btn primary" id="cc-btn-new">Nová karta</button>
+                <h2 class="section-title">Zákazníci</h2>
               </div>
               <div class="row wrap gap" style="margin:.75rem 0">
-                <input type="search" id="cc-search" placeholder="Hledat e-mail / jméno" class="input grow">
+                <input type="search" id="cc-search" placeholder="Hledat jméno, e-mail, telefon" class="input grow">
                 <select id="cc-filter-stav" class="input">
-                  <option value="">Všechny stavy</option>
-                  <option value="ceka_na_potvrzeni">Čeká na potvrzení</option>
+                  <option value="">Všichni</option>
                   <option value="aktivni">Aktivní</option>
+                  <option value="archivovany">Archivovaní</option>
                 </select>
               </div>
               <div id="cc-list" class="cc-list"></div>
+              <div id="cc-pager" class="kt-pager"></div>
             </div>
             <div class="cc-detail-col" id="cc-detail">
-              <p class="empty">Vyberte kartu nebo vytvořte novou.</p>
+              <p class="empty">Vyberte zákazníka v seznamu, nebo ho založte z rezervace.</p>
             </div>
           </div>
         </div>
@@ -762,8 +762,8 @@
   </div>
 
   <script src="svatky.js?v=1"></script>
-  <script src="app.js?v=78"></script>
-  <script src="customer-card.js?v=4"></script>
+  <script src="app.js?v=79"></script>
+  <script src="customer-card.js?v=5"></script>
 
 </body>
 </html>

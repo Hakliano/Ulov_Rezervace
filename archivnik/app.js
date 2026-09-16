@@ -395,7 +395,7 @@ function renderOnboard() {
         await api('/presets/apply/', { method: 'POST', body: JSON.stringify({ kod }) });
         me = await api('/me/');
         showApp();
-        await loadTab('overview');
+        await openDeepLinkCustomer();
       } catch (e) {
         showErr(e.message);
       }
@@ -411,11 +411,36 @@ function renderOnboard() {
       });
       me = await api('/me/');
       showApp();
-      await loadTab('settings');
+      await openDeepLinkCustomer();
     } catch (e) {
       showErr(e.message);
     }
   });
+}
+
+function pendingCustomerUuid() {
+  try {
+    const raw = (new URLSearchParams(window.location.search).get('zakaznik') || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) return '';
+    return raw;
+  } catch (_) {
+    return '';
+  }
+}
+
+async function openDeepLinkCustomer() {
+  const uuid = pendingCustomerUuid();
+  if (!uuid) {
+    currentTab = 'overview';
+    await loadTab('overview');
+    return;
+  }
+  try {
+    await openCustomer(uuid);
+  } catch (_) {
+    currentTab = 'overview';
+    await loadTab('overview');
+  }
 }
 
 async function finishAuth(data) {
@@ -426,9 +451,8 @@ async function finishAuth(data) {
     showOnboard();
     return;
   }
-  currentTab = 'overview';
   showApp();
-  await loadTab('overview');
+  await openDeepLinkCustomer();
 }
 
 function hideSearch() {
