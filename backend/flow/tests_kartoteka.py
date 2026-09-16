@@ -350,6 +350,7 @@ class KartotekaFlowProxyTests(TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['archivnik_customer_uuid'], str(self.jan.uuid))
         self.assertEqual(rows[0]['kontaktni_email'], 'jan@novak.cz')
+        self.assertNotIn('customer_card_id', rows[0])
 
     def test_kalendar_host_s_emailem_match(self):
         now = timezone.now()
@@ -605,9 +606,15 @@ class KartotekaWriteTests(TestCase):
         cust = Customer.objects.get(uuid=z['uuid'])
         self.assertEqual(cust.salon_id, self.salon_a.id)
         self.assertEqual(cust.vytvoril_id, self.owner_a.id)
-        from flow.customer_card_models import CustomerCard, CustomerVisit
-        self.assertEqual(CustomerCard.objects.filter(salon=self.salon_a).count(), 0)
-        self.assertEqual(CustomerVisit.objects.count(), 0)
+        from django.apps import apps
+        from django.db import connection
+        with self.assertRaises(LookupError):
+            apps.get_model('flow', 'CustomerCard')
+        with self.assertRaises(LookupError):
+            apps.get_model('flow', 'CustomerVisit')
+        tables = set(connection.introspection.table_names())
+        self.assertNotIn('flow_customercard', tables)
+        self.assertNotIn('flow_customervisit', tables)
 
     def test_create_jedno_slovo_prijmeni(self):
         token = self._login('write-a@test.local', 'HesloA123')

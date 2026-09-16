@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from flow.customer_card_models import CustomerCard, CustomerVisit
 from flow.models import FlowUser
 from rezervace.models import Rezervace, RezervaceSluzba, Zamestnanec, ZamestnanecRozvrh
 from rezervace.services.staff_auth import ensure_owner_flow_user
@@ -37,11 +36,9 @@ class Command(BaseCommand):
         staff = _staff_flow(salon)
         sluzby = _sluzby(salon)
         Rezervace.objects.filter(salon=salon, poznamka_interni=DEMO_TAG).delete()
-        CustomerVisit.objects.filter(card__salon=salon, text__startswith='[demo]').delete()
         created = _rezervace(salon, staff, sluzby)
-        cards = _karty(salon)
         self.stdout.write(self.style.SUCCESS(
-            f'Kudrlinka: {created} rezervací, {cards} karet. '
+            f'Kudrlinka: {created} rezervací. '
             f'Manager: {OWNER_EMAIL} / {OWNER_PASSWORD}. '
             f'Staff FLOW: {", ".join(f"{s.jmeno} ({STAFF_FLOW[i][1]})" for i, s in enumerate(staff))}'
         ))
@@ -235,33 +232,5 @@ def _rezervace(salon, staff, sluzby):
             continue
         start = _at(days, h, m)
         _add(salon, who, sl, start, stav, jmeno, email, zaloha=zaloha, interni=note)
-        n += 1
-    return n
-
-
-def _karty(salon):
-    rows = [
-        ('tereza.kudrlinka@demo.cz', 'Tereza Nováková', '777 119 201', 'Dlouhé vlny, bez amoniaku.'),
-        ('klara.svobodova@demo.cz', 'Klára Svobodová', '777 119 202', 'Balayage každé 3 měsíce.'),
-        ('martina.vesela@demo.cz', 'Martina Veselá', '777 119 208', 'Stálá, barvení kořínků.'),
-        ('eliska.kralova@demo.cz', 'Eliška Králová', '777 119 207', 'Ráda kratší střih.'),
-        ('barbora.kucerova@demo.cz', 'Barbora Kučerová', '777 119 210', 'Blond balayage.'),
-    ]
-    n = 0
-    for email, jmeno, telefon, note in rows:
-        card, created = CustomerCard.objects.get_or_create(
-            salon=salon, email=email,
-            defaults={
-                'jmeno': jmeno, 'telefon': telefon, 'poznamka': note,
-                'stav': CustomerCard.STAV_AKTIVNI, 'confirmed_at': timezone.now(),
-            },
-        )
-        if created or not card.visits.filter(text__startswith='[demo]').exists():
-            CustomerVisit.objects.create(
-                card=card,
-                datum=timezone.localdate() - timedelta(days=12),
-                text=f'[demo] {note}',
-                autor_jmeno='Anna',
-            )
         n += 1
     return n

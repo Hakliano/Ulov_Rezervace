@@ -2469,7 +2469,7 @@ label.flow-switch,
   .tab { padding: 7px 10px; font-size: 0.78rem; }
 }
 
-/* feature/flow-customer-card */
+/* FLOW Zákazníci (Archivník) */
 .cc-layout {
   display: grid;
   grid-template-columns: minmax(220px, 340px) 1fr;

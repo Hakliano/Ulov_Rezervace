@@ -1,7 +1,6 @@
 from django.urls import path
 
 from flow import mail_views, owner_views, provoz_views, views
-from flow import customer_card_views
 from flow import kartoteka_views
 from flow import materialnik_views as views_materialnik
 from flow import integrations_views
@@ -217,41 +216,5 @@ urlpatterns = [
         'flow/kartoteka/zakaznici/<uuid:customer_uuid>/',
         kartoteka_views.KartotekaCustomerDetailView.as_view(),
         name='flow-kartoteka-zakaznik-detail',
-    ),
-    # --- Karta zákazníka (feature/flow-customer-card) ---
-    path(
-        'flow/zakaznicke-karty/',
-        customer_card_views.CustomerCardListCreateView.as_view(),
-        name='flow-customer-cards',
-    ),
-    path(
-        'flow/zakaznicke-karty/lookup/',
-        customer_card_views.CustomerCardLookupView.as_view(),
-        name='flow-customer-card-lookup',
-    ),
-    path(
-        'flow/zakaznicke-karty/<int:card_id>/',
-        customer_card_views.CustomerCardDetailView.as_view(),
-        name='flow-customer-card-detail',
-    ),
-    path(
-        'flow/zakaznicke-karty/<int:card_id>/odeslat-potvrzeni/',
-        customer_card_views.CustomerCardSendConfirmView.as_view(),
-        name='flow-customer-card-send-confirm',
-    ),
-    path(
-        'flow/zakaznicke-karty/<int:card_id>/aktivovat-lokalne/',
-        customer_card_views.CustomerCardActivateLocalView.as_view(),
-        name='flow-customer-card-activate-local',
-    ),
-    path(
-        'flow/zakaznicke-karty/<int:card_id>/navstevy/',
-        customer_card_views.CustomerCardVisitCreateView.as_view(),
-        name='flow-customer-card-visits',
-    ),
-    path(
-        'flow/zakaznicka-karta/potvrdit/<str:token>/',
-        customer_card_views.CustomerCardConfirmPublicView.as_view(),
-        name='flow-customer-card-confirm',
     ),
 ]

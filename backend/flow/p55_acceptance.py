@@ -20,7 +20,6 @@ from archivnik.models import (
     ReminderStav,
     Stav,
 )
-from flow.customer_card_models import CustomerCard, CustomerVisit
 from flow.models import FlowUser
 from partner_admin.models import MODUL_ARCHIVNIK
 from partner_admin.services_moduly import nastav_modul
@@ -358,10 +357,37 @@ def seed_acceptance(salon, *, with_pager=False):
     }
 
 
+LEGACY_TABLES = ('flow_customercard', 'flow_customervisit')
+
+
 def legacy_counts(salon):
+    """Po P5.6B tabulky neexistují. Pokud zůstanou, nahlásit počty — nemazat potichu."""
+    from django.db import connection
+
+    tables = set(connection.introspection.table_names())
+    present = [name for name in LEGACY_TABLES if name in tables]
+    cards = 0
+    visits = 0
+    if 'flow_customercard' in tables:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'SELECT COUNT(*) FROM flow_customercard WHERE salon_id = %s',
+                [salon.id],
+            )
+            cards = cursor.fetchone()[0]
+    if 'flow_customervisit' in tables:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'SELECT COUNT(*) FROM flow_customervisit v '
+                'INNER JOIN flow_customercard c ON c.id = v.card_id '
+                'WHERE c.salon_id = %s',
+                [salon.id],
+            )
+            visits = cursor.fetchone()[0]
     return {
-        'customer_cards': CustomerCard.objects.filter(salon=salon).count(),
-        'customer_visits': CustomerVisit.objects.filter(card__salon=salon).count(),
+        'customer_cards': cards,
+        'customer_visits': visits,
+        'tables_present': present,
     }
 
 

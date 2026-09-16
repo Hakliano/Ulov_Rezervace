@@ -1,4 +1,4 @@
-"""P5.5 — reprodukovatelná acceptance sada, scoped wipe, integrita, legacy freeze."""
+"""P5.5 — reprodukovatelná acceptance sada, scoped wipe, integrita."""
 from __future__ import annotations
 
 from io import StringIO
@@ -17,7 +17,6 @@ from archivnik.models import (
     Reminder,
     Stav,
 )
-from flow.customer_card_models import CustomerCard, CustomerVisit
 from flow.kartoteka_services import attach_archivnik_customer_links
 from flow.models import FlowUser
 from flow.p55_acceptance import (
@@ -31,6 +30,7 @@ from flow.p55_acceptance import (
     P53_NOTE_PREFIX,
     TAG,
     integrity_report,
+    legacy_counts,
     seed_acceptance,
     wipe_p53,
     wipe_salon_kartoteka,
@@ -88,7 +88,6 @@ class P55AcceptanceSeedTests(TestCase):
         return r.json()['token']
 
     def test_seed_vytvori_scenare_a_ne_legacy(self):
-        legacy_before = CustomerCard.objects.count()
         created = seed_acceptance(self.salon_a)
         self.assertEqual(created['jan'].email, EMAIL_A)
         self.assertEqual(created['petr'].email, EMAIL_B)
@@ -101,8 +100,10 @@ class P55AcceptanceSeedTests(TestCase):
         overdue = Reminder.objects.get(zakaznik=created['karel'])
         self.assertLess(overdue.termin, timezone.localdate())
         self.assertEqual(Customer.objects.filter(salon=self.salon_a, email=EMAIL_A).count(), 1)
-        self.assertEqual(CustomerCard.objects.count(), legacy_before)
-        self.assertEqual(CustomerVisit.objects.count(), 0)
+        legacy = legacy_counts(self.salon_a)
+        self.assertEqual(legacy['customer_cards'], 0)
+        self.assertEqual(legacy['customer_visits'], 0)
+        self.assertEqual(legacy['tables_present'], [])
         self.assertEqual(
             PartnerModul.objects.filter(salon=self.salon_a, modul__kod=MODUL_ARCHIVNIK).count(),
             1,
@@ -221,7 +222,6 @@ class P55AcceptanceSeedTests(TestCase):
     def test_zapis_object_create_nepíše_legacy(self):
         created = seed_acceptance(self.salon_a)
         token = self._login('p55-owner-a@test.local', 'HesloA123')
-        before = CustomerCard.objects.count()
         r = self.client.post(
             f'/api/flow/kartoteka/zakaznici/{created["jan"].uuid}/objekty/',
             data={'typ_uuid': str(self.typ_vousy.uuid), 'nazev': 'P5.5 nový objekt'},
@@ -236,8 +236,10 @@ class P55AcceptanceSeedTests(TestCase):
             HTTP_X_FLOW_TOKEN=token,
         )
         self.assertEqual(e.status_code, 201)
-        self.assertEqual(CustomerCard.objects.count(), before)
-        self.assertEqual(CustomerVisit.objects.count(), 0)
+        legacy = legacy_counts(self.salon_a)
+        self.assertEqual(legacy['customer_cards'], 0)
+        self.assertEqual(legacy['customer_visits'], 0)
+        self.assertEqual(legacy['tables_present'], [])
 
     def test_cleanup_salon_nemaže_data_salonu_b(self):
         seed_acceptance(self.salon_a)

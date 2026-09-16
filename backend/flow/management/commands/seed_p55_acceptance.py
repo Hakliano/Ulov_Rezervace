@@ -41,7 +41,7 @@ class Command(BaseCommand):
             action='store_true',
             help=(
                 'Smaže veškerou kartotéku (Customer/Object/Entry/Reminder/Asset) tohoto salonu. '
-                'Obory, ObjectTypes, CustomFields, PartnerModul, FLOW účty a legacy karty nechá.'
+                'Obory, ObjectTypes, CustomFields, PartnerModul a FLOW účty nechá.'
             ),
         )
         parser.add_argument(

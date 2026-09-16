@@ -1,4 +1,4 @@
-"""Demo rezervace a karty pro salon 2 (Studio Krása) — prezentace FLOW."""
+"""Demo rezervace pro salon 2 (Studio Krása) — prezentace FLOW."""
 
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from flow.customer_card_models import CustomerCard, CustomerVisit
 from flow.models import FlowUser
 from rezervace.models import Rezervace, RezervaceSluzba, Zamestnanec, ZamestnanecRozvrh
 from salons.models import CenikPolozka, Salon
@@ -25,7 +24,7 @@ SLUZBY = [
 
 
 class Command(BaseCommand):
-    help = 'Naplní salon 2 prezentovatelnými rezervacemi a kartami zákazníků.'
+    help = 'Naplní salon 2 prezentovatelnými rezervacemi.'
 
     def handle(self, *args, **options):
         salon = Salon.objects.filter(pk=2).first()
@@ -35,11 +34,9 @@ class Command(BaseCommand):
         sluzby = _sluzby(salon)
         _enable_overview(salon)
         Rezervace.objects.filter(salon=salon, poznamka_interni=DEMO_TAG).delete()
-        CustomerVisit.objects.filter(card__salon=salon, text__startswith='[demo]').delete()
         created = _rezervace(salon, staff, sluzby)
-        cards = _karty(salon)
         self.stdout.write(self.style.SUCCESS(
-            f'Demo FLOW: {created} rezervací, {cards} karet, personál {", ".join(s.jmeno for s in staff)}'
+            f'Demo FLOW: {created} rezervací, personál {", ".join(s.jmeno for s in staff)}'
         ))
 
 
@@ -155,33 +152,5 @@ def _rezervace(salon, staff, sluzby):
     n = 0
     for days, h, m, who, sl, stav, jmeno, email, zaloha, note in plan:
         _add(salon, who, sluzby[sl], _at(days, h, m), stav, jmeno, email, zaloha=zaloha, interni=note)
-        n += 1
-    return n
-
-
-def _karty(salon):
-    rows = [
-        ('tereza.novakova@demo.cz', 'Tereza Nováková', '777 111 201', 'Dlouhé vlasy, bez amoniaku.'),
-        ('klara.svobodova@demo.cz', 'Klára Svobodová', '777 111 202', 'Citlivá pokožka, Smartbond.'),
-        ('martina.vesela@demo.cz', 'Martina Veselá', '777 111 208', 'Stálá zákaznice, barva 6.1.'),
-        ('eliska.kralova@demo.cz', 'Eliška Králová', '777 111 207', 'Ráda krátký bob.'),
-        ('barbora.kucerova@demo.cz', 'Barbora Kučerová', '777 111 210', 'Melír každé 8 týdny.'),
-    ]
-    n = 0
-    for email, jmeno, telefon, note in rows:
-        card, created = CustomerCard.objects.get_or_create(
-            salon=salon, email=email,
-            defaults={
-                'jmeno': jmeno, 'telefon': telefon, 'poznamka': note,
-                'stav': CustomerCard.STAV_AKTIVNI, 'confirmed_at': timezone.now(),
-            },
-        )
-        if created or not card.visits.filter(text__startswith='[demo]').exists():
-            CustomerVisit.objects.create(
-                card=card,
-                datum=timezone.localdate() - timedelta(days=12),
-                text=f'[demo] {note}',
-                autor_jmeno='Markéta',
-            )
         n += 1
     return n

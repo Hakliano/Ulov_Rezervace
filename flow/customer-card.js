@@ -1,6 +1,5 @@
 /**
- * P5.3 — FLOW Zákazníci nad Archivníkem (/api/flow/kartoteka/*).
- * Starou kartotéku (CustomerCard) odtud nevolá.
+ * FLOW Zákazníci nad Archivníkem (/api/flow/kartoteka/*).
  */
 (function () {
   'use strict';

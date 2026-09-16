@@ -169,9 +169,6 @@ class FlowKalendarView(APIView):
         rezervace_data = list(AdminRezervaceSerializer(qs.order_by('zacatek'), many=True).data)
         from flow.kartoteka_services import attach_archivnik_customer_links
         attach_archivnik_customer_links(salon.id, rezervace_data)
-        # Rollback pojistka P5.1–P5.5: stará karta ještě existuje, P5.6B ji odstraní.
-        from flow.customer_card_services import attach_customer_card_links
-        attach_customer_card_links(salon.id, rezervace_data)
 
         return Response({
             'mode': mode,

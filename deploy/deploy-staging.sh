@@ -67,7 +67,6 @@ overrides = {
     "EMAIL_VIA_CELERY": "false",
     "FLOW_BASE_URL": "https://www.staging.ulovklienty.cz/flow/",
     "API_PUBLIC_BASE_URL": "https://api-staging.ulovklienty.cz/api",
-    "CUSTOMER_CARD_CONFIRM_BASE_URL": "https://api-staging.ulovklienty.cz/api",
     "MATERIALNIK_URL": "http://ulov-staging-materialnik:8000",
     "MATERIALNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/sklad",
     "ARCHIVNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/archivnik/",
