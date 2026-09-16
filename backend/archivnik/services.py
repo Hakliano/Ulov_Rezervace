@@ -14,8 +14,20 @@ def salon_is_onboarded(salon) -> bool:
 
 
 def primary_obor(salon):
-    """První Obor provozovny podle pořadí. Není to spravovatelný příznak 'hlavní'."""
+    """Explicitní aktuální Obor. Fallback na poradi,id jen při nekonzistentním stavu."""
+    aktualni = Obor.objects.filter(salon=salon, aktualni=True).order_by('id').first()
+    if aktualni:
+        return aktualni
     return Obor.objects.filter(salon=salon).order_by('poradi', 'id').first()
+
+
+def _oznac_aktualni_pokud_chybi(salon, obor):
+    if Obor.objects.filter(salon=salon, aktualni=True).exclude(pk=obor.pk).exists():
+        return obor
+    if not obor.aktualni:
+        obor.aktualni = True
+        obor.save(update_fields=['aktualni', 'upraveno'])
+    return obor
 
 
 def salon_config_status(salon) -> dict:
@@ -91,6 +103,9 @@ def apply_preset(salon, kod: str) -> dict:
                 )
                 created_obor = True
 
+        if created_obor:
+            _oznac_aktualni_pokud_chybi(salon, obor)
+
         created_types = 0
         created_fields = 0
         kod = catalog['kod']
@@ -147,7 +162,7 @@ def create_obor(salon, nazev: str, objekt_jednotne='Objekt', objekt_mnozne='Obje
         objekt_mnozne=mnozne[:40],
     )
     obor.save()
-    return obor
+    return _oznac_aktualni_pokud_chybi(salon, obor)
 
 
 def _snapshot(salon, obor, *, created, skipped, created_types=0, created_fields=0):

@@ -213,6 +213,11 @@
         <a href="{{ archivnik_public_url }}" target="_blank" rel="noopener">Otevřít Archivník</a>
       </p>
     {% endif %}
+    {% if archivnik_modul and archivnik_modul.status == 'active' %}
+      <p class="form-note">
+        <a href="{% url 'partner_admin:archivnik_sprava' salon.id %}">Konfigurace Archivníka</a>
+      </p>
+    {% endif %}
     <div class="form-actions">
       {% if not archivnik_modul or archivnik_modul.status != 'active' %}
         <form method="post" action="{% url 'partner_admin:nastavit_archivnik' salon.id %}">

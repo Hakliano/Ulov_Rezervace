@@ -1,0 +1,245 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Archivník · {{ salon.name }}{% endblock %}
+
+{% block content %}
+  <div class="breadcrumbs">
+    <a href="{% url 'partner_admin:detail' salon.id %}?tab=partner">← {{ salon.name }}</a>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Archivník</p>
+      <h1>Konfigurace Archivníka</h1>
+      <p class="muted">
+        Superadmin správa konfigurace této provozovny.
+        <strong>Deaktivovat</strong> ponechá strukturu i data.
+        <strong>Smazat</strong> je nevratné a jde jen u prázdné konfigurace.
+      </p>
+    </div>
+    <div class="head-actions">
+      {% if modul_aktivni and archivnik_public_url %}
+        <a class="btn btn-ink" href="{{ archivnik_public_url }}" target="_blank" rel="noopener">Otevřít Archivník</a>
+      {% endif %}
+      <a class="btn btn-quiet" href="{% url 'partner_admin:detail' salon.id %}?tab=partner">Zpět na partnera</a>
+    </div>
+  </div>
+
+  {% if not modul_aktivni %}
+    <div class="alert-banner">
+      <span>Archivník je vypnutý. Konfigurace a data zůstávají, přihlášení partnera je zablokované.</span>
+    </div>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Obor</p>
+        <h2>Obory provozovny</h2>
+      </div>
+    </div>
+    {% if obory %}
+      <div class="archivnik-obor-list">
+        {% for row in obory %}
+          <article class="archivnik-obor{% if not row.aktualni %} is-historicky{% endif %}" id="obor-{{ row.obor.id }}">
+            <div class="archivnik-obor-head">
+              <strong>{{ row.obor.nazev }}</strong>
+              {% if row.aktualni %}
+                <span class="badge badge-active">Aktuální</span>
+              {% else %}
+                <span class="badge badge-neutral">Historický</span>
+              {% endif %}
+              {% if row.obor.zdroj_preset %}
+                <span class="badge badge-neutral">preset {{ row.obor.zdroj_preset }}</span>
+              {% else %}
+                <span class="badge badge-neutral">vlastní</span>
+              {% endif %}
+            </div>
+            <div class="archivnik-admin">
+              <form method="post" class="form-grid compact">
+                {% csrf_token %}
+                <input type="hidden" name="akce" value="obor_ulozit">
+                <input type="hidden" name="obor_id" value="{{ row.obor.id }}">
+                <label>Název
+                  <input name="nazev" value="{{ row.obor.nazev }}" required maxlength="80">
+                </label>
+                <label>Jednotné
+                  <input name="objekt_jednotne" value="{{ row.obor.objekt_jednotne }}" maxlength="40">
+                </label>
+                <label>Množné
+                  <input name="objekt_mnozne" value="{{ row.obor.objekt_mnozne }}" maxlength="40">
+                </label>
+                <div class="form-actions">
+                  <button class="btn btn-primary" type="submit">Uložit Obor</button>
+                </div>
+              </form>
+              <div class="archivnik-actions">
+                {% if not row.aktualni %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="akce" value="obor_aktualni">
+                    <input type="hidden" name="obor_id" value="{{ row.obor.id }}">
+                    <button class="btn btn-ink" type="submit">Nastavit jako aktuální</button>
+                  </form>
+                {% endif %}
+                {% if row.obor.muze_smazat %}
+                  <form method="post" onsubmit="return confirm('Smazat Obor {{ row.obor.nazev }} včetně všech jeho typů a polí? Tuto akci nelze vrátit. Provozní data (zákazníci, objekty, zápisy, soubory) se nesmažou, protože u tohoto Oboru žádná nejsou.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="akce" value="obor_smazat">
+                    <input type="hidden" name="obor_id" value="{{ row.obor.id }}">
+                    <input type="hidden" name="potvrdit" value="1">
+                    <button class="btn btn-danger" type="submit">Smazat Obor</button>
+                  </form>
+                {% else %}
+                  <p class="archivnik-block">{{ row.obor.smazat_duvod }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Provozovna zatím nemá žádný Obor.</p>
+    {% endif %}
+    <form method="post" class="form-grid compact archivnik-admin">
+      {% csrf_token %}
+      <input type="hidden" name="akce" value="obor_vytvorit">
+      <label>Nový Obor
+        <input name="nazev" placeholder="Název Oboru" required maxlength="80">
+      </label>
+      <label>Jednotné
+        <input name="objekt_jednotne" value="Objekt" maxlength="40">
+      </label>
+      <label>Množné
+        <input name="objekt_mnozne" value="Objekty" maxlength="40">
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Přidat Obor</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Typy a pole</p>
+        <h2>ObjectTypes a CustomFields</h2>
+      </div>
+    </div>
+    {% for row in obory %}
+      <details class="archivnik-typ-skupina{% if not row.aktualni %} is-historicky{% endif %}"{% if row.aktualni %} open{% endif %} id="skupina-{{ row.obor.id }}">
+        <summary>
+          <h3>{{ row.obor.nazev }}</h3>
+          {% if row.aktualni %}
+            <span class="badge badge-active">Aktuální</span>
+          {% else %}
+            <span class="badge badge-neutral">Historický</span>
+          {% endif %}
+          <span class="muted">{{ row.typy|length }} typů</span>
+        </summary>
+        {% if row.typy %}
+          {% for typ in row.typy %}
+            {% include 'partner_admin/_archivnik_typ.html' %}
+          {% endfor %}
+        {% else %}
+          <p class="empty">U tohoto Oboru nejsou žádné typy.</p>
+        {% endif %}
+        <form method="post" class="form-grid compact archivnik-admin">
+          {% csrf_token %}
+          <input type="hidden" name="akce" value="typ_vytvorit">
+          <input type="hidden" name="obor_id" value="{{ row.obor.id }}">
+          <label>Nový typ
+            <input name="nazev" required maxlength="80">
+          </label>
+          <label>Pořadí
+            <input name="poradi" type="number" min="0" value="{{ row.typy|length|add:1 }}">
+          </label>
+          <label class="check-label">
+            <span class="check-row"><input type="checkbox" name="aktivni" value="1" checked> aktivní</span>
+          </label>
+          <label class="check-label">
+            <span class="check-row"><input type="checkbox" name="vyzaduje_nazev" value="1" checked> vyžaduje název</span>
+          </label>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Přidat typ</button>
+          </div>
+        </form>
+      </details>
+    {% empty %}
+      <p class="empty">Žádné Obory — typy bez Oboru jsou níže, pokud existují.</p>
+    {% endfor %}
+    <details class="archivnik-typ-skupina">
+      <summary>
+        <h3>Bez oboru</h3>
+        <span class="muted">{{ typy_bez_oboru|length }} typů</span>
+      </summary>
+      {% if typy_bez_oboru %}
+        {% for typ in typy_bez_oboru %}
+          {% include 'partner_admin/_archivnik_typ.html' %}
+        {% endfor %}
+      {% else %}
+        <p class="empty">Žádné typy mimo Obor.</p>
+      {% endif %}
+      <form method="post" class="form-grid compact archivnik-admin">
+        {% csrf_token %}
+        <input type="hidden" name="akce" value="typ_vytvorit">
+        <input type="hidden" name="obor_id" value="">
+        <label>Nový typ bez Oboru
+          <input name="nazev" required maxlength="80">
+        </label>
+        <label>Pořadí
+          <input name="poradi" type="number" min="0" value="{{ typy_bez_oboru|length|add:1 }}">
+        </label>
+        <label class="check-label">
+          <span class="check-row"><input type="checkbox" name="aktivni" value="1" checked> aktivní</span>
+        </label>
+        <label class="check-label">
+          <span class="check-row"><input type="checkbox" name="vyzaduje_nazev" value="1" checked> vyžaduje název</span>
+        </label>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Přidat typ</button>
+        </div>
+      </form>
+    </details>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Přístupy</p>
+        <h2>Zaměstnanci a Archivník</h2>
+      </div>
+    </div>
+    <p class="muted">
+      Archivník používá stejný účet jako web (zaměstnanec provozovny). Vlastní hesla Archivníka neexistují.
+    </p>
+    {% if zamestnanci %}
+      <div class="archivnik-pristupy">
+        {% for row in zamestnanci %}
+          <article class="archivnik-pristup">
+            <div>
+              <strong>{{ row.zamestnanec.jmeno }}</strong>
+              <span>{{ row.zamestnanec.prihlasovaci_jmeno|default:"bez loginu" }}</span>
+            </div>
+            <div class="archivnik-pristup-meta">
+              <span>{{ row.zamestnanec.get_role_display }}</span>
+              {% if row.zamestnanec.aktivni %}
+                <span class="badge badge-active">aktivní</span>
+              {% else %}
+                <span class="badge badge-neutral">neaktivní</span>
+              {% endif %}
+              {% if row.ma_prihlaseni %}
+                <span class="badge badge-ok">má přihlášení</span>
+              {% else %}
+                <span class="badge badge-neutral">nemá přihlášení</span>
+              {% endif %}
+              <span class="muted">Archivník relace: {{ row.session_pocet }}</span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Salon nemá žádné zaměstnance.</p>
+    {% endif %}
+  </section>
+{% endblock %}

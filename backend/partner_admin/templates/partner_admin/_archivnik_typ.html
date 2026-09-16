@@ -1,0 +1,172 @@
+<details class="archivnik-typ" id="typ-{{ typ.id }}">
+  <summary class="archivnik-typ-head">
+    <strong>{{ typ.nazev }}</strong>
+    {% if typ.aktivni %}
+      <span class="badge badge-active">active</span>
+    {% else %}
+      <span class="badge badge-neutral">inactive</span>
+    {% endif %}
+    {% if typ.zdroj_preset %}
+      <span class="badge badge-neutral">preset</span>
+    {% else %}
+      <span class="badge badge-neutral">vlastní</span>
+    {% endif %}
+    <span class="muted">{{ typ.pole.all|length }} polí</span>
+  </summary>
+  <div class="archivnik-admin">
+    <form method="post" class="form-grid compact">
+      {% csrf_token %}
+      <input type="hidden" name="akce" value="typ_ulozit">
+      <input type="hidden" name="typ_id" value="{{ typ.id }}">
+      <label>Název
+        <input name="nazev" value="{{ typ.nazev }}" required maxlength="80">
+      </label>
+      <label>Obor
+        <select name="obor_id">
+          <option value="">Bez oboru</option>
+          {% for obor in vsechny_obory %}
+            <option value="{{ obor.id }}"{% if typ.obor_id == obor.id %} selected{% endif %}>{{ obor.nazev }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Pořadí
+        <input name="poradi" type="number" min="0" value="{{ typ.poradi }}">
+      </label>
+      <label class="check-label">
+        <span class="check-row"><input type="checkbox" name="aktivni" value="1"{% if typ.aktivni %} checked{% endif %}> aktivní</span>
+      </label>
+      <label class="check-label">
+        <span class="check-row"><input type="checkbox" name="vyzaduje_nazev" value="1"{% if typ.vyzaduje_nazev %} checked{% endif %}> vyžaduje název</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Uložit typ</button>
+      </div>
+    </form>
+    <div class="archivnik-actions">
+      {% if typ.aktivni %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="akce" value="typ_aktivni">
+          <input type="hidden" name="typ_id" value="{{ typ.id }}">
+          <button class="btn btn-quiet" type="submit">Deaktivovat</button>
+        </form>
+      {% else %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="akce" value="typ_aktivni">
+          <input type="hidden" name="typ_id" value="{{ typ.id }}">
+          <input type="hidden" name="aktivni" value="1">
+          <button class="btn btn-quiet" type="submit">Aktivovat</button>
+        </form>
+      {% endif %}
+      {% if typ.muze_smazat %}
+        <form method="post" onsubmit="return confirm('Smazat typ {{ typ.nazev }} včetně jeho polí? Tuto akci nelze vrátit.');">
+          {% csrf_token %}
+          <input type="hidden" name="akce" value="typ_smazat">
+          <input type="hidden" name="typ_id" value="{{ typ.id }}">
+          <input type="hidden" name="potvrdit" value="1">
+          <button class="btn btn-danger" type="submit">Smazat typ</button>
+        </form>
+      {% else %}
+        <p class="archivnik-block">{{ typ.smazat_duvod }}</p>
+      {% endif %}
+    </div>
+    {% if typ.pole.all %}
+      <ul class="archivnik-pole">
+        {% for pole in typ.pole.all %}
+          <li>
+            <form method="post" class="form-grid compact">
+              {% csrf_token %}
+              <input type="hidden" name="akce" value="pole_ulozit">
+              <input type="hidden" name="pole_id" value="{{ pole.id }}">
+              <label>Pole
+                <input name="nazev" value="{{ pole.nazev }}" required maxlength="80">
+              </label>
+              <label>Druh
+                <select name="druh">
+                  {% for kod, popisek in field_kinds %}
+                    <option value="{{ kod }}"{% if pole.druh == kod %} selected{% endif %}>{{ popisek }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>Pořadí
+                <input name="poradi" type="number" min="0" value="{{ pole.poradi }}">
+              </label>
+              <label class="check-label">
+                <span class="check-row"><input type="checkbox" name="aktivni" value="1"{% if pole.aktivni %} checked{% endif %}> aktivní</span>
+              </label>
+              <label class="full">Volby výběru (každá na řádek)
+                <textarea name="volby" rows="3">{% for volba in pole.volby %}{{ volba }}
+{% endfor %}</textarea>
+              </label>
+              <div class="form-actions archivnik-actions">
+                <button class="btn btn-primary" type="submit">Uložit pole</button>
+                {% if pole.aktivni %}
+                  <button class="btn btn-quiet" type="submit" form="pole-deaktiv-{{ pole.id }}">Deaktivovat</button>
+                {% else %}
+                  <button class="btn btn-quiet" type="submit" form="pole-aktiv-{{ pole.id }}">Aktivovat</button>
+                {% endif %}
+                {% if pole.muze_smazat %}
+                  <button class="btn btn-danger" type="submit" form="pole-smazat-{{ pole.id }}" onclick="return confirm('Smazat pole {{ pole.nazev }}? Tuto akci nelze vrátit.');">Smazat pole</button>
+                {% endif %}
+              </div>
+            </form>
+            {% if pole.aktivni %}
+              <form id="pole-deaktiv-{{ pole.id }}" method="post" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="akce" value="pole_aktivni">
+                <input type="hidden" name="pole_id" value="{{ pole.id }}">
+              </form>
+            {% else %}
+              <form id="pole-aktiv-{{ pole.id }}" method="post" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="akce" value="pole_aktivni">
+                <input type="hidden" name="pole_id" value="{{ pole.id }}">
+                <input type="hidden" name="aktivni" value="1">
+              </form>
+            {% endif %}
+            {% if pole.muze_smazat %}
+              <form id="pole-smazat-{{ pole.id }}" method="post" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="akce" value="pole_smazat">
+                <input type="hidden" name="pole_id" value="{{ pole.id }}">
+                <input type="hidden" name="potvrdit" value="1">
+              </form>
+            {% else %}
+              <p class="archivnik-block">{{ pole.smazat_duvod }}</p>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Typ nemá žádná pole.</p>
+    {% endif %}
+    <form method="post" class="form-grid compact">
+      {% csrf_token %}
+      <input type="hidden" name="akce" value="pole_vytvorit">
+      <input type="hidden" name="typ_id" value="{{ typ.id }}">
+      <label>Nové pole
+        <input name="nazev" required maxlength="80">
+      </label>
+      <label>Druh
+        <select name="druh">
+          {% for kod, popisek in field_kinds %}
+            <option value="{{ kod }}">{{ popisek }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Pořadí
+        <input name="poradi" type="number" min="0" value="{{ typ.pole.all|length|add:1 }}">
+      </label>
+      <label class="check-label">
+        <span class="check-row"><input type="checkbox" name="aktivni" value="1" checked> aktivní</span>
+      </label>
+      <label class="full">Volby výběru (každá na řádek)
+        <textarea name="volby" rows="3" placeholder="jen u Výběru"></textarea>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Přidat pole</button>
+      </div>
+    </form>
+  </div>
+</details>

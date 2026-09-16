@@ -259,6 +259,7 @@ def resetuj_heslo_majitele(majitel, nove, actor):
     majitel.set_password(nove)
     majitel.save(update_fields=['password_hash'])
     majitel.sessiony.all().delete()
+    majitel.archivnik_sessiony.all().delete()
     sync_owner_heslo_do_flow(majitel, nove)
     try:
         zrusit_flow_sessiony(majitel.flow_ucet)

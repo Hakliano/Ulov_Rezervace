@@ -124,9 +124,17 @@ class PartnerAdminTests(TestCase):
         self.assertContains(parovani, platba.cislo_faktury)
 
     def test_reset_hesla_zrusi_stare_relace(self):
+        from archivnik.models import ArchivnikSession
+        from django.utils import timezone
+        from datetime import timedelta
+
         ZamestnanecSession.objects.create(
             zamestnanec=self.majitel,
             expirace='2030-01-01T00:00:00Z',
+        )
+        ArchivnikSession.objects.create(
+            zamestnanec=self.majitel,
+            expirace=timezone.now() + timedelta(days=5),
         )
         self.client.force_login(self.superuser)
         response = self.client.post(
@@ -137,6 +145,7 @@ class PartnerAdminTests(TestCase):
         self.majitel.refresh_from_db()
         self.assertTrue(self.majitel.check_password('nove-bezpecne-heslo'))
         self.assertFalse(self.majitel.sessiony.exists())
+        self.assertFalse(self.majitel.archivnik_sessiony.exists())
         self.assertTrue(SalonAuditLog.objects.filter(salon=self.salon, kategorie='ucty').exists())
 
     def test_rucni_upozorneni_se_zaloguje(self):
