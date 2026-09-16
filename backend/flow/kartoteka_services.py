@@ -38,6 +38,13 @@ def customer_for_email(salon_id: int, email: str) -> Customer | None:
 
 def attach_archivnik_customer_links(salon_id: int, rezervace_items: list[dict]) -> list[dict]:
     """Doplní archivnik_customer_uuid do serializovaných rezervací (runtime, bez FK)."""
+    from partner_admin.models import MODUL_ARCHIVNIK
+    from partner_admin.services_moduly import modul_je_aktivni
+
+    if not modul_je_aktivni(salon_id, MODUL_ARCHIVNIK):
+        for item in rezervace_items:
+            item['archivnik_customer_uuid'] = None
+        return rezervace_items
     emails = set()
     for item in rezervace_items:
         em = normalize_email(item.get('kontaktni_email') or '')

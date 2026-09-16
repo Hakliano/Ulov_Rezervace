@@ -18,10 +18,21 @@ from flow.kartoteka_services import (
     serialize_customer_list_item,
 )
 from flow.permissions import FlowPermission
+from partner_admin.models import MODUL_ARCHIVNIK
+from partner_admin.services_moduly import modul_je_aktivni
 
 
 def _user(request):
     return get_flow_user_from_request(request)
+
+
+def _require_archivnik(user):
+    if modul_je_aktivni(user.salon_id, MODUL_ARCHIVNIK):
+        return None
+    return Response(
+        {'detail': 'Archivník není pro tuto provozovnu aktivní.'},
+        status=403,
+    )
 
 
 def _page_params(request):
@@ -42,6 +53,9 @@ class KartotekaCustomerListView(APIView):
 
     def get(self, request):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         page, page_size = _page_params(request)
         payload = list_customers(
             user.salon_id,
@@ -54,6 +68,9 @@ class KartotekaCustomerListView(APIView):
 
     def post(self, request):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         try:
             result = create_customer_from_flow(user, request.data)
         except KartotekaError as exc:
@@ -67,6 +84,9 @@ class KartotekaCustomerLookupView(APIView):
 
     def get(self, request):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         email = request.query_params.get('email') or ''
         customer = customer_for_email(user.salon_id, email)
         if not customer:
@@ -80,6 +100,9 @@ class KartotekaCustomerDetailView(APIView):
 
     def get(self, request, customer_uuid):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         payload = customer_detail(user.salon_id, customer_uuid)
         if not payload:
             return Response({'detail': 'Zákazník nenalezen.'}, status=404)
@@ -92,6 +115,9 @@ class KartotekaEntryCreateView(APIView):
 
     def post(self, request, customer_uuid):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         try:
             payload = create_entry_from_flow(user, customer_uuid, request.data)
         except KartotekaError as exc:
@@ -105,6 +131,9 @@ class KartotekaObjectCreateView(APIView):
 
     def post(self, request, customer_uuid):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         try:
             payload = create_object_from_flow(user, customer_uuid, request.data)
         except KartotekaError as exc:
@@ -118,4 +147,7 @@ class KartotekaObjectTypeListView(APIView):
 
     def get(self, request):
         user = _user(request)
+        denied = _require_archivnik(user)
+        if denied:
+            return denied
         return Response(list_assignable_object_types(user.salon))

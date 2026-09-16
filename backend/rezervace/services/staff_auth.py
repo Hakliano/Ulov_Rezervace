@@ -270,6 +270,12 @@ def ensure_owner_flow_user(salon, email=None):
         password_hash=majitel.password_hash,
     )
     flow_ucet.save()
+    from partner_admin.services_moduly import zajisti_archivnik_pro_modernik
+
+    class _Actor:
+        username = 'flow-aktivace'
+
+    zajisti_archivnik_pro_modernik(salon, _Actor())
     return flow_ucet, True
 
 

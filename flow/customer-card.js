@@ -30,6 +30,15 @@
     const list = $('#cc-list');
     const pager = $('#cc-pager');
     if (!list) return;
+    if (typeof archivnikJeAktivni === 'function' && !archivnikJeAktivni()) {
+      list.innerHTML = '<p class="empty">Kartotéka tu teď není k dispozici.</p>';
+      if (pager) pager.innerHTML = '';
+      const detail = $('#cc-detail');
+      if (detail) {
+        detail.innerHTML = '<p class="empty">Kartotéka tu teď není k dispozici.</p>';
+      }
+      return;
+    }
     const q = ($('#cc-search')?.value || '').trim();
     const stav = $('#cc-filter-stav')?.value || '';
     const params = new URLSearchParams();
@@ -144,7 +153,7 @@
       ${remHtml}
       <div class="actions" style="margin-top:1rem">
         <button type="button" class="btn primary" data-kt-nova-rez="${esc(c.uuid)}">Nová rezervace</button>
-        ${c.archivnik_url ? `<a class="btn ghost" href="${esc(c.archivnik_url)}" target="_blank" rel="noopener noreferrer" data-kt-archivnik>Otevřít kompletní kartu v Archivníku</a>` : ''}
+        ${(c.archivnik_url && (typeof archivnikJeAktivni !== 'function' || archivnikJeAktivni())) ? `<a class="btn ghost" href="${esc(c.archivnik_url)}" target="_blank" rel="noopener noreferrer" data-kt-archivnik>Otevřít kompletní kartu v Archivníku</a>` : ''}
       </div>
     `;
   }
@@ -224,6 +233,7 @@
   }
 
   function attachCalendarButtons(container, items) {
+    if (typeof archivnikJeAktivni === 'function' && !archivnikJeAktivni()) return;
     const byId = new Map((items || []).map((r) => [String(r.id), r]));
     container.querySelectorAll('article.item[data-id]').forEach((art) => {
       if (art.querySelector('[data-kt-open], [data-kt-create], [data-kt-noemail]')) return;

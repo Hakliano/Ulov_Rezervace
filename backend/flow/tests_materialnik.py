@@ -48,6 +48,19 @@ class MaterialnikIntegrationsTests(TestCase):
         me = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=token)
         self.assertEqual(me.status_code, 200)
         self.assertNotIn('materialnik', me.json().get('moduly') or {})
+        self.assertFalse(me.json().get('archivnik_active'))
+        self.assertNotIn('archivnik', me.json().get('moduly') or {})
+
+    def test_me_archivnik_active_z_partnermodulu(self):
+        nastav_modul(self.salon, 'archivnik', True, Actor())
+        token = self._login_flow()
+        with self.settings(ARCHIVNIK_PUBLIC_URL='https://www.staging.ulovklienty.cz/archivnik/'):
+            me = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=token)
+        self.assertTrue(me.json()['archivnik_active'])
+        self.assertEqual(
+            me.json()['moduly']['archivnik']['url'],
+            'https://www.staging.ulovklienty.cz/archivnik/',
+        )
 
     def test_me_s_modulem_ma_url(self):
         nastav_modul(self.salon, 'materialnik', True, Actor())

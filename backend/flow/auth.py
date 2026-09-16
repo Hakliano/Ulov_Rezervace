@@ -168,12 +168,15 @@ def prepnout_personu(user, persona: str):
 
 def _flow_moduly(user):
     """Jen aktivní moduly — vypnutý Materiálník ve FLOW neexistuje."""
-    from partner_admin.services_moduly import materialnik_pro_me
+    from partner_admin.services_moduly import archivnik_pro_me, materialnik_pro_me
 
     out = {}
     info = materialnik_pro_me(user.salon)
     if info:
         out['materialnik'] = info
+    archivnik = archivnik_pro_me(user.salon)
+    if archivnik:
+        out['archivnik'] = archivnik
     return out
 
 
@@ -218,6 +221,7 @@ def flow_user_do_dict(user):
                 po_splatnosti_dni = nast.dni_po_splatnosti
             povolit_technicke_nastaveni = bool(nast.povolit_technicke_nastaveni)
     aktivni_kod = 'majitel' if active.id == primary.id else 'pracovnik'
+    from partner_admin.services_moduly import archivnik_je_aktivni
     return {
         'id': user.id,
         'email': user.email,
@@ -227,6 +231,7 @@ def flow_user_do_dict(user):
         'po_splatnosti_dni': po_splatnosti_dni,
         'povolit_technicke_nastaveni': povolit_technicke_nastaveni,
         'moduly': _flow_moduly(user),
+        'archivnik_active': archivnik_je_aktivni(user.salon),
         'salon': {
             'id': user.salon_id,
             'name': user.salon.name,

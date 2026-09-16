@@ -12,8 +12,18 @@ import archivnik.models as archivnik_models
 import archivnik.views as archivnik_views
 from archivnik.models import Customer, Entry, Object, ObjectType, Reminder, ReminderStav, Stav
 from flow.models import FlowSession, FlowUser
+from partner_admin.models import MODUL_ARCHIVNIK
+from partner_admin.services_moduly import nastav_modul
 from rezervace.models import Rezervace, Zakaznik, Zamestnanec
 from salons.models import Salon
+
+
+class _Actor:
+    username = 'p54-test'
+
+
+def _zapni_archivnik(salon):
+    nastav_modul(salon, MODUL_ARCHIVNIK, True, _Actor())
 
 
 def _flow_ucet(salon, email, password, *, jmeno='Majitel', role=None):
@@ -47,6 +57,8 @@ class KartotekaFlowProxyTests(TestCase):
         self.salon_b = Salon.objects.create(name='Salon B', email='b@test.local')
         self.owner_a, self.flow_a = _flow_ucet(self.salon_a, 'owner-a@test.local', 'HesloA123', jmeno='Owner A')
         self.owner_b, self.flow_b = _flow_ucet(self.salon_b, 'owner-b@test.local', 'HesloB123', jmeno='Owner B')
+        _zapni_archivnik(self.salon_a)
+        _zapni_archivnik(self.salon_b)
 
         self.typ_a = ObjectType.objects.create(salon=self.salon_a, nazev='Pes')
         self.typ_kocka = ObjectType.objects.create(salon=self.salon_a, nazev='Kočka')
@@ -160,6 +172,16 @@ class KartotekaFlowProxyTests(TestCase):
     def test_bez_tokenu_403(self):
         r = self.client.get('/api/flow/kartoteka/zakaznici/')
         self.assertEqual(r.status_code, 403)
+
+    def test_bez_entitlementu_403(self):
+        from partner_admin.models import PartnerModul
+        PartnerModul.objects.filter(
+            salon=self.salon_a, modul__kod=MODUL_ARCHIVNIK,
+        ).update(status=PartnerModul.STAV_INACTIVE)
+        token = self._login('owner-a@test.local', 'HesloA123')
+        r = self._get('/api/flow/kartoteka/zakaznici/', token)
+        self.assertEqual(r.status_code, 403)
+        self.assertIn('Archivník', r.json()['detail'])
 
     def test_list_jen_vlastni_tenant(self):
         token = self._login('owner-a@test.local', 'HesloA123')
@@ -512,6 +534,8 @@ class KartotekaWriteTests(TestCase):
         self.owner_b, self.flow_b = _flow_ucet(
             self.salon_b, 'write-b@test.local', 'HesloB123', jmeno='Owner B',
         )
+        _zapni_archivnik(self.salon_a)
+        _zapni_archivnik(self.salon_b)
         self.typ_a = ObjectType.objects.create(
             salon=self.salon_a, nazev='Pes', vyzaduje_nazev=True,
         )

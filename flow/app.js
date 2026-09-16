@@ -2365,6 +2365,10 @@ function applyTechnickeNastaveniUi(user = currentUser) {
   $('#owner-zone-tech')?.classList.toggle('hidden', !allowed);
 }
 
+function archivnikJeAktivni(user = currentUser) {
+  return Boolean(user && user.archivnik_active);
+}
+
 function materialnikInfo(user = currentUser) {
   return user?.moduly?.materialnik || null;
 }
