@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archivník — digitální paměť provozovny</title>
+  <meta name="description" content="Archivník si pamatuje za vás. Zákazníci, profily, historie, fotografie, dokumenty a připomínky na jednom místě. Samostatně, s FLOW, nebo jako součást Moderníka.">
+  <link rel="icon" type="image/webp" href="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/hub.css?v=9">
+  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="/cookie-consent.css?v=1">
+  <script>
+    /* P6.2 — samostatná cena před finálním rozhodnutím.
+       Před release stačí vyplnit soloAmount (např. "499").
+       Prázdný řetězec = bezpečný placeholder, žádná fiktivní cena. */
+    window.ARCHIVNIK_PRICING = {
+      soloAmount: "",
+      soloUnit: "Kč / měsíc",
+      soloPlaceholder: "Cenu upřesníme",
+      soloNote: "Samostatný tarif ještě ladíme. Ozvěte se — Archivníka ukážeme na vašem oboru a cenu dohodneme."
+    };
+  </script>
+</head>
+<body class="arc-page">
+  <header class="hub-header">
+    <div class="hub-wrap hub-header-inner">
+      <a href="/" class="hub-brand">
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="" width="52" height="52">
+        <span>ULOV KLIENTY</span>
+      </a>
+      <div class="hub-header-actions">
+        <a href="#ukazka" class="hub-header-link">Jak funguje</a>
+        <a href="#cena" class="hub-header-link">Cena</a>
+        <a href="#poptavka" class="hub-header-cta">Chci ukázku</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="arc-hero">
+      <div class="hub-wrap arc-hero-grid">
+        <div>
+          <p class="hub-eyebrow">Projekt rodiny ULOV KLIENTY</p>
+          <h1>Archivník si pamatuje za vás.</h1>
+          <p class="hub-lead">
+            Zákazníci, jejich profily, historie, fotografie, dokumenty
+            i připomínky. Všechno tam, kde to příště najdete.
+          </p>
+          <p class="arc-hero-note">Pro veteriny, salony, autoservisy, řemeslníky i další provozovny.</p>
+          <div class="arc-hero-actions">
+            <a class="arc-btn arc-btn-gold" href="#poptavka">Chci ukázku Archivníku</a>
+            <a class="arc-btn arc-btn-ghost" href="#ukazka">Podívat se, jak funguje</a>
+          </div>
+        </div>
+        <img
+          class="arc-hero-logo"
+          src="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp"
+          alt="Archivník"
+          width="640"
+          height="427"
+          fetchpriority="high"
+          decoding="async"
+        >
+      </div>
+    </section>
+
+    <section class="arc-section" id="princip">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>Všechno o zákazníkovi na jednom místě</h2>
+          <p>
+            Poznámky v telefonu. Fotky v galerii. Dokumenty v počítači.
+            A za půl roku už nikdo neví, co se řešilo minule.
+          </p>
+        </div>
+        <p class="arc-lead-block">
+          Archivník spojuje zákazníka, jeho profily, historii,
+          fotografie, dokumenty a připomínky do jedné přehledné karty.
+        </p>
+        <ol class="arc-chain">
+          <li>Zákazník</li>
+          <li>Jeho profil</li>
+          <li>Historie</li>
+          <li>Fotografie a dokumenty</li>
+          <li>Připomínky</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="arc-section" id="provozovny">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>Jeden Archivník. Různé provozovny.</h2>
+          <p>
+            Každá provozovna si může evidovat to, co skutečně potřebuje.
+            Archivník se přizpůsobí vašemu oboru – ne naopak.
+          </p>
+        </div>
+        <div class="arc-verticals">
+          <article>
+            <h3>Veterinární ordinace</h3>
+            <p>Zákazník → zvíře → historie péče</p>
+          </article>
+          <article>
+            <h3>Kadeřnictví / beauty</h3>
+            <p>Zákazník → profil vlasů / nehtů → historie služeb</p>
+          </article>
+          <article>
+            <h3>Autoservis / pneuservis</h3>
+            <p>Zákazník → vozidlo → historie práce</p>
+          </article>
+          <article>
+            <h3>Řemeslník / servis</h3>
+            <p>Zákazník → zařízení / objekt → historie zásahů</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="arc-section" id="ukazka">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>Skutečný Archivník. Ne mockup.</h2>
+          <p>
+            Ukázka z veterinární ordinace PawCare. Stejná aplikace — jen evidujete
+            to, co patří k vašemu oboru.
+          </p>
+        </div>
+
+        <article class="arc-showcase">
+          <div class="arc-showcase-copy">
+            <p class="arc-kicker">Přehled</p>
+            <h3>Co se děje, vidíte hned po přihlášení</h3>
+            <p>
+              Zákazníci, profily, aktivita i připomínky na jednom místě.
+              U PawCare je na úvodu 15 zákazníků, 22 zvířat, zápisy za měsíc
+              a 12 aktivních připomínek. Vpravo poslední fotografie a dokumenty —
+              rentgen, zpráva, snímky z galerie.
+            </p>
+          </div>
+          <figure class="arc-shot">
+            <button type="button" class="arc-shot-open" data-lightbox="shot-prehled" aria-label="Zvětšit snímek přehledu">
+              <img
+                src="https://haklweb.b-cdn.net/archivnik/ukazky/Sn%C3%ADmek%20obrazovky%202026-09-18%20020246.webp"
+                alt="Přehled Archivníku u PawCare: počty, co vás čeká a poslední aktivita"
+                width="1900"
+                height="831"
+                loading="lazy"
+                decoding="async"
+              >
+            </button>
+            <figcaption>Přehled kartotéky PawCare</figcaption>
+          </figure>
+        </article>
+
+        <article class="arc-showcase is-reverse">
+          <div class="arc-showcase-copy">
+            <p class="arc-kicker">Zákazník a jeho profily</p>
+            <h3>Jeden zákazník. Více životů, aut i zakázek.</h3>
+            <p>
+              Martin Jelínek má u sebe Bellu a Charlieho — každé zvíře
+              s vlastní fotografií, historií a připomínkami.
+              Stejně tak může mít kadeřnictví víc profilů vlasů,
+              servis víc vozidel.
+            </p>
+          </div>
+          <figure class="arc-shot">
+            <button type="button" class="arc-shot-open" data-lightbox="shot-profily" aria-label="Zvětšit snímek zákazníka a profilů">
+              <img
+                src="https://haklweb.b-cdn.net/archivnik/ukazky/Sn%C3%ADmek%20obrazovky%202026-09-18%20020309.webp"
+                alt="Karta zákazníka Martina Jelínka se dvěma zvířaty, fotografiemi a historií"
+                width="1040"
+                height="849"
+                loading="lazy"
+                decoding="async"
+              >
+            </button>
+            <figcaption>Zákazník a dva profily</figcaption>
+          </figure>
+        </article>
+
+        <article class="arc-showcase">
+          <div class="arc-showcase-copy">
+            <p class="arc-kicker">Historie, která nezmizí</p>
+            <h3>Co se řešilo minule, je u karty</h3>
+            <p>
+              U Dunka zůstávají prohlídky i ošetření v pořadí, jak šly.
+              Kontrola uší, preventivní prohlídka, poznámka majitelky.
+              Příště nemusíte listovat sešitem ani hledat v chatu.
+            </p>
+          </div>
+          <figure class="arc-shot">
+            <button type="button" class="arc-shot-open" data-lightbox="shot-historie" aria-label="Zvětšit snímek historie">
+              <img
+                src="https://haklweb.b-cdn.net/archivnik/ukazky/Sn%C3%ADmek%20obrazovky%202026-09-18%20020322.webp"
+                alt="Historie a připomínky u zákazníka Michala Svobody a fretky Dunky"
+                width="1102"
+                height="821"
+                loading="lazy"
+                decoding="async"
+              >
+            </button>
+            <figcaption>Historie u konkrétního profilu</figcaption>
+          </figure>
+        </article>
+
+        <article class="arc-showcase is-reverse">
+          <div class="arc-showcase-copy">
+            <p class="arc-kicker">Fotografie a údaje</p>
+            <h3>Soubory i detaily zůstávají u profilu</h3>
+            <p>
+              Kočka Lili má na kartě fotografii, plemeno, hmotnost
+              i záznam očkování. Příště to není v galerii telefonu
+              ani v jiné složce — je to přímo u ní.
+            </p>
+          </div>
+          <figure class="arc-shot">
+            <button type="button" class="arc-shot-open" data-lightbox="shot-foto" aria-label="Zvětšit snímek profilu a fotografií">
+              <img
+                src="https://haklweb.b-cdn.net/archivnik/ukazky/Sn%C3%ADmek%20obrazovky%202026-09-18%20020432.webp"
+                alt="Profil kočky Lili s fotografií, vlastními údaji a historií"
+                width="1313"
+                height="760"
+                loading="lazy"
+                decoding="async"
+              >
+            </button>
+            <figcaption>Profil s fotografiemi a údaji</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <section class="arc-section" id="funkce">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>Co v Archivníku skutečně máte</h2>
+          <p>Plný produkt. Ne ořezaná verze, ne Core / Plus / Premium.</p>
+        </div>
+        <div class="arc-features">
+          <article>
+            <h3>Zákazníci</h3>
+            <p>Kontakty a provozní informace přehledně na jednom místě.</p>
+          </article>
+          <article>
+            <h3>Profily</h3>
+            <p>Zvířata, vozidla, vlasy, zařízení nebo cokoli, co potřebujete u zákazníka evidovat.</p>
+          </article>
+          <article>
+            <h3>Historie</h3>
+            <p>Zápisy a předchozí práce nebo péče v chronologickém pořadí.</p>
+          </article>
+          <article>
+            <h3>Fotografie</h3>
+            <p>Fotografie přímo u konkrétního profilu nebo zápisu.</p>
+          </article>
+          <article>
+            <h3>Dokumenty</h3>
+            <p>PDF a další soubory tam, kde je příště opravdu najdete.</p>
+          </article>
+          <article>
+            <h3>Připomínky</h3>
+            <p>Co je potřeba udělat příště a kdy.</p>
+          </article>
+          <article>
+            <h3>Vlastní údaje</h3>
+            <p>Provozovna si může evidenci přizpůsobit svému oboru.</p>
+          </article>
+          <article>
+            <h3>Vyhledávání</h3>
+            <p>Rychlé nalezení zákazníka nebo jeho profilu.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="arc-section" id="pripominky">
+      <div class="hub-wrap arc-remind">
+        <div>
+          <p class="arc-kicker">Připomínky</p>
+          <h2>Archivník nejen pamatuje. Také připomene.</h2>
+          <p>
+            Kontrola, další návštěva, očkování, servis nebo cokoli,
+            co nechcete pustit z hlavy.
+          </p>
+          <p>
+            Připomínku spojíte přímo se zákazníkem nebo konkrétním profilem.
+            Na přehledu pak vidíte, co vás čeká — u PawCare třeba očkování,
+            kontrolu chrupu nebo dentální ošetření.
+          </p>
+        </div>
+        <figure class="arc-shot">
+          <button type="button" class="arc-shot-open" data-lightbox="shot-pripominky" aria-label="Zvětšit snímek připomínek">
+            <img
+              src="https://haklweb.b-cdn.net/archivnik/ukazky/Sn%C3%ADmek%20obrazovky%202026-09-18%20020246.webp"
+              alt="Seznam nadcházejících připomínek na přehledu Archivníku"
+              width="1900"
+              height="831"
+              loading="lazy"
+              decoding="async"
+            >
+          </button>
+          <figcaption>Co vás čeká — připomínky na přehledu</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="arc-section" id="modernik">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>S Moderníkem je Archivník ještě silnější.</h2>
+          <p>
+            Archivník může fungovat samostatně.
+            Pokud používáte Moderníka, propojí se s FLOW a rezervacemi,
+            takže provozovna může pracovat se stejnou kartotékou
+            přímo při každodenním provozu.
+          </p>
+        </div>
+        <div class="arc-modernik-banner">
+          <p>Plný Archivník je součástí Moderníka.<br>Bez dalšího příplatku.</p>
+          <a class="arc-btn arc-btn-gold" href="https://www.modernik.cz/" target="_blank" rel="noopener">Poznat Moderníka →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="arc-section" id="cena">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>Jak Archivníka pořídíte</h2>
+          <p>Vždy plný produkt. Žádný Archivník Core, Plus ani Premium.</p>
+        </div>
+        <div class="arc-prices">
+          <article class="arc-price-card">
+            <h3>Archivník samostatně</h3>
+            <p class="arc-price-value" data-price-solo>Cenu upřesníme</p>
+            <p class="arc-price-note" data-price-note>
+              Samostatný tarif ještě ladíme. Ozvěte se — Archivníka ukážeme na vašem oboru a cenu dohodneme.
+            </p>
+            <a class="arc-btn arc-btn-ghost" href="#poptavka">Chci ukázku</a>
+          </article>
+          <article class="arc-price-card is-featured">
+            <h3>Archivník s Moderníkem</h3>
+            <p class="arc-price-value">0&nbsp;Kč navíc</p>
+            <p class="arc-price-note">
+              Plný Archivník je součástí Moderníka bez dalšího příplatku.
+            </p>
+            <a class="arc-btn arc-btn-gold" href="https://www.modernik.cz/" target="_blank" rel="noopener">Poznat Moderníka →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="arc-section" id="faq">
+      <div class="hub-wrap">
+        <div class="hub-section-head">
+          <h2>Časté otázky</h2>
+        </div>
+        <div class="arc-faq">
+          <details open>
+            <summary>Musím mít Moderníka?</summary>
+            <p>Ne. Archivník může fungovat také samostatně.</p>
+          </details>
+          <details>
+            <summary>Co dostanu s Moderníkem?</summary>
+            <p>Plný Archivník je součástí Moderníka bez dalšího příplatku a může spolupracovat s FLOW a rezervacemi.</p>
+          </details>
+          <details>
+            <summary>Je Archivník jen pro veterináře?</summary>
+            <p>Ne. Veterinární PawCare je pouze naše ukázka. Archivník je univerzální a lze jej přizpůsobit různým provozovnám.</p>
+          </details>
+          <details>
+            <summary>Mohu ukládat fotografie a dokumenty?</summary>
+            <p>Ano. Fotografie a dokumenty lze ukládat k zákazníkovi, jeho profilu nebo historii podle konkrétního použití.</p>
+          </details>
+          <details>
+            <summary>Může mít jeden zákazník více profilů?</summary>
+            <p>Ano. Například více zvířat nebo více vozidel.</p>
+          </details>
+          <details>
+            <summary>Je Archivník určený pro marketingové rozesílky?</summary>
+            <p>Ne. Archivník je provozní kartotéka, nikoli nástroj pro tvorbu marketingových databází a rozesílání newsletterů.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="hub-contact arc-section" id="poptavka">
+      <div class="hub-wrap hub-contact-grid">
+        <div>
+          <h2>Chci ukázku Archivníku</h2>
+          <p class="hub-lead">
+            Nechte nám kontakt. Archivníka vám ukážeme na konkrétním
+            příkladu podle vašeho typu provozovny.
+          </p>
+          <ul class="hub-contact-list">
+            <li><a href="tel:+420797756746">+420 797 756 746</a></li>
+            <li><a href="mailto:info@ulovklienty.cz">info@ulovklienty.cz</a></li>
+          </ul>
+        </div>
+
+        <form id="poptavka-form" class="hub-form" novalidate
+          data-source="Archivník (prezentace)"
+          data-captcha-lock-hours="4"
+          data-captcha-options='[{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/15.webp","answer":"15"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/1860.webp","answer":"1860"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/333.webp","answer":"333"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/42.webp","answer":"42"},{"img":"https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp","answer":"4"}]'>
+          <input type="text" name="_gotcha" class="form-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label>Jméno
+            <input type="text" id="p-jmeno" required maxlength="120" autocomplete="name">
+          </label>
+          <label>Firma / provozovna
+            <input type="text" id="p-salon" maxlength="200" placeholder="Název provozovny">
+          </label>
+          <label>E-mail
+            <input type="email" id="p-email" required autocomplete="email">
+          </label>
+          <label>Telefon
+            <input type="tel" id="p-telefon" autocomplete="tel">
+          </label>
+          <label>Typ provozovny
+            <select id="p-balicek">
+              <option value="Archivník — ukázka">Vyberte (volitelné)</option>
+              <option value="Archivník — veterinární ordinace">Veterinární ordinace</option>
+              <option value="Archivník — kadeřnictví / beauty">Kadeřnictví / beauty</option>
+              <option value="Archivník — autoservis / pneuservis">Autoservis / pneuservis</option>
+              <option value="Archivník — řemeslník / servis">Řemeslník / servis</option>
+              <option value="Archivník — jiná provozovna">Jiná provozovna</option>
+            </select>
+          </label>
+          <label>Poznámka
+            <textarea id="p-zprava" rows="4" placeholder="Čím se zabýváte a co byste chtěli evidovat?"></textarea>
+          </label>
+          <label class="hub-check">
+            <input type="checkbox" id="p-souhlas" required>
+            <span>Souhlasím se zpracováním údajů za účelem odpovědi na poptávku.</span>
+          </label>
+
+          <div class="form-captcha" id="pCaptchaRow">
+            <label for="p-captcha">Zadejte číslo z obrázku</label>
+            <p class="form-captcha-note">
+              Bezpečnostní ochrana před roboty — ověříme, že nám píše reálná osoba.
+            </p>
+            <div class="form-captcha-wrap">
+              <div class="form-captcha-img-wrap">
+                <img
+                  class="form-captcha-img"
+                  id="pCaptchaImg"
+                  src="https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp"
+                  alt="Číslo na obrázku"
+                  width="120"
+                  height="120"
+                  loading="eager"
+                >
+                <button type="button" class="form-captcha-refresh" id="pCaptchaRefresh" aria-label="Zobrazit jiný obrázek">
+                  Jiný obrázek
+                </button>
+              </div>
+              <input
+                id="p-captcha"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="?"
+                maxlength="4"
+                aria-label="Číslo z obrázku"
+                class="form-captcha-input"
+              >
+            </div>
+          </div>
+
+          <p class="form-reassure">Odpovíme zpravidla během 24 hodin.</p>
+          <button type="submit" class="hub-btn">Chci ukázku</button>
+          <p id="form-msg" class="form-msg" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="hub-footer">
+    <div class="hub-wrap hub-footer-inner">
+      <p>Archivník je projekt rodiny ULOV KLIENTY · služby poskytuje Jiří Hakl</p>
+      <p>
+        <a href="/">ULOV KLIENTY</a>
+        · <a href="https://www.modernik.cz/" target="_blank" rel="noopener">Moderník</a>
+        · <a href="/materialnik/">Materiálník</a>
+        · <a href="/flow/">FLOW</a>
+        · <a href="/gdpr.html">GDPR</a>
+        · <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
+      </p>
+    </div>
+  </footer>
+
+  <dialog class="arc-lightbox" id="arc-lightbox" aria-label="Zvětšený snímek">
+    <button type="button" class="arc-lightbox-close" id="arc-lightbox-close">Zavřít</button>
+    <img id="arc-lightbox-img" alt="">
+  </dialog>
+
+  <script>
+    window.ULOV_COOKIE_CONSENT = {
+      gaMeasurementId: "",
+      privacyUrl: "/gdpr.html"
+    };
+  </script>
+  <script src="/cookie-consent.js?v=1" defer></script>
+  <script src="/hub-form.js?v=2" defer></script>
+  <script src="app.js?v=1" defer></script>
+</body>
+</html>
