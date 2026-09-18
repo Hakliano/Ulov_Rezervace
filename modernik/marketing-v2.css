@@ -472,10 +472,6 @@ a { color: inherit; text-decoration: none; }
   background: rgba(201, 166, 74, 0.16);
 }
 
-a.tile-probe-link {
-  text-decoration: none;
-}
-
 .price-archivnik-value {
   margin: 1.15rem auto 0;
   max-width: 52rem;

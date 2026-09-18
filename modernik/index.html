@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=21">
+  <link rel="stylesheet" href="marketing-v2.css?v=22">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -510,11 +510,60 @@
             <p class="tile-addon-badge">V ceně Moderníka</p>
             <h3>Archivník</h3>
             <p class="tile-teaser">Zákazníci, jejich profily, historie, fotografie, dokumenty a připomínky na jednom místě.</p>
-            <a
-              class="tile-probe tile-probe-link"
-              href="https://www.staging.ulovklienty.cz/archivnik-prezentace/"
-              data-archivnik-prezentace
-            >Poznat Archivníka</a>
+            <button type="button" class="tile-probe" aria-expanded="false" aria-label="Prozkoumat detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+              <span class="tile-probe-label">Prozkoumat</span>
+            </button>
+            <div class="tile-expand tile-expand-rich">
+              <div class="tile-detail">
+                <h4>Archivník si pamatuje za vás.</h4>
+                <p>Archivník je plná digitální kartotéka zákazníků a všeho, co k nim potřebujete evidovat. Uchová kontakty, profily, historii, fotografie, dokumenty i připomínky na jednom místě.</p>
+                <p>V Moderníkovi je Archivník součástí každého partnerství bez dalšího příplatku.</p>
+
+                <div class="tile-feature-grid">
+                  <div class="tile-feature">
+                    <h5>Zákazníci a profily</h5>
+                    <p>Každý zákazník má vlastní kartu a může mít jeden nebo více profilů podle typu provozovny.</p>
+                    <ul>
+                      <li>Veterina: zákazník → zvíře</li>
+                      <li>Beauty: zákazník → profil vlasů / nehtů</li>
+                      <li>Autoservis: zákazník → vozidlo</li>
+                      <li>Řemeslník: zákazník → zařízení / objekt</li>
+                    </ul>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Historie</h5>
+                    <p>Zápisy a předchozí práce nebo péče zůstávají v chronologickém pořadí u konkrétního zákazníka nebo profilu.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Fotografie a dokumenty</h5>
+                    <p>K zákazníkovi nebo profilu lze ukládat fotografie a dokumenty, aby byly příště dostupné přímo tam, kde je potřebujete.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Připomínky</h5>
+                    <p>Archivník umí evidovat, co je potřeba udělat příště a kdy. Připomínku lze spojit přímo se zákazníkem nebo jeho profilem.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>Vlastní údaje</h5>
+                    <p>Provozovna si může evidenci přizpůsobit svému oboru pomocí vlastních typů a údajů.</p>
+                  </div>
+                  <div class="tile-feature">
+                    <h5>FLOW + Archivník</h5>
+                    <p>FLOW řeší každodenní provoz a rezervace. Archivník uchovává zákazníka, jeho profily a historii. V Moderníkovi spolu oba systémy pracují nad stejnou kartotékou.</p>
+                  </div>
+                </div>
+
+                <div class="tile-actions">
+                  <a
+                    class="btn btn-gold"
+                    href="https://www.staging.ulovklienty.cz/archivnik-prezentace/"
+                    data-archivnik-prezentace
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >Poznat Archivníka</a>
+                </div>
+              </div>
+            </div>
           </article>
 
           <article class="tile" data-tile="podpora">
@@ -1434,6 +1483,6 @@
     };
   </script>
   <script src="cookie-consent.js?v=2" defer></script>
-  <script src="marketing-v2.js?v=7" defer></script>
+  <script src="marketing-v2.js?v=8" defer></script>
 </body>
 </html>

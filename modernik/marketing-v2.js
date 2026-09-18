@@ -41,15 +41,13 @@
     tiles.forEach((tile) => {
       if (tile === except) return;
       tile.classList.remove('is-open');
-      const probe = tile.querySelector('.tile-probe');
-      if (probe && probe.tagName === 'BUTTON') setProbeLabel(probe, false);
+      setProbeLabel(tile.querySelector('.tile-probe'), false);
     });
   }
 
   tiles.forEach((tile) => {
     const probe = tile.querySelector('.tile-probe');
-    if (!probe || probe.tagName !== 'BUTTON') return;
-    probe.addEventListener('click', (e) => {
+    probe?.addEventListener('click', (e) => {
       e.stopPropagation();
       const open = tile.classList.contains('is-open');
       closeAllTiles();
