@@ -10,6 +10,13 @@
       : 'https://api.ulovklienty.cz/api');
   const POPTAVKA_SOURCE = isModernik ? 'Moderník (modernik.cz)' : 'ULOV KLIENTY (ulovklienty.cz)';
   const CONTACT_EMAIL = isModernik ? 'info@modernik.cz' : 'info@ulovklienty.cz';
+  const ARCHIVNIK_PREZENTACE = isStaging
+    ? 'https://www.staging.ulovklienty.cz/archivnik-prezentace/'
+    : 'https://www.ulovklienty.cz/archivnik-prezentace/';
+
+  document.querySelectorAll('[data-archivnik-prezentace]').forEach((a) => {
+    a.setAttribute('href', ARCHIVNIK_PREZENTACE);
+  });
 
   const tiles = document.querySelectorAll('.tile[data-tile]');
   const tabs = document.querySelectorAll('.portfolio-tabs .tab');
@@ -34,13 +41,15 @@
     tiles.forEach((tile) => {
       if (tile === except) return;
       tile.classList.remove('is-open');
-      setProbeLabel(tile.querySelector('.tile-probe'), false);
+      const probe = tile.querySelector('.tile-probe');
+      if (probe && probe.tagName === 'BUTTON') setProbeLabel(probe, false);
     });
   }
 
   tiles.forEach((tile) => {
     const probe = tile.querySelector('.tile-probe');
-    probe?.addEventListener('click', (e) => {
+    if (!probe || probe.tagName !== 'BUTTON') return;
+    probe.addEventListener('click', (e) => {
       e.stopPropagation();
       const open = tile.classList.contains('is-open');
       closeAllTiles();
