@@ -61,6 +61,32 @@
     });
   });
 
+  const lightbox = document.getElementById('tile-lightbox');
+  const lightboxImg = document.getElementById('tile-lightbox-img');
+  const lightboxClose = document.getElementById('tile-lightbox-close');
+
+  function openTileLightbox(img) {
+    if (!lightbox || !lightboxImg || !img) return;
+    lightboxImg.src = img.currentSrc || img.src;
+    lightboxImg.alt = img.alt || '';
+    if (typeof lightbox.showModal === 'function') lightbox.showModal();
+  }
+
+  function closeTileLightbox() {
+    if (lightbox?.open) lightbox.close();
+  }
+
+  document.querySelectorAll('.tile-shot-open').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openTileLightbox(btn.querySelector('img'));
+    });
+  });
+  lightboxClose?.addEventListener('click', closeTileLightbox);
+  lightbox?.addEventListener('click', (event) => {
+    if (event.target === lightbox) closeTileLightbox();
+  });
+
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const cat = tab.dataset.category || 'all';

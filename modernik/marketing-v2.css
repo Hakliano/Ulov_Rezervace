@@ -725,6 +725,80 @@ a { color: inherit; text-decoration: none; }
   max-width: 42rem;
 }
 
+.tile-shots-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+  gap: 1rem;
+  margin: 0 0 0.35rem;
+}
+
+.tile-shots-pair figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.tile-shots-pair figcaption {
+  margin: 0.45rem 0 0;
+  color: var(--gold-light);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.tile-shot-open {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.tile-shot-open img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.tile-lightbox {
+  width: min(96vw, 1200px);
+  max-height: 92vh;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #06121f;
+  color: var(--text);
+}
+
+.tile-lightbox::backdrop {
+  background: rgba(6, 18, 31, 0.78);
+}
+
+.tile-lightbox img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(92vh - 3.2rem);
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.tile-lightbox-close {
+  display: inline-flex;
+  margin-bottom: 0.55rem;
+  padding: 0.35rem 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--navy-deep);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .tile-shots-1 {
   grid-template-columns: minmax(0, 28rem);
   margin-top: 0.35rem;
@@ -1860,7 +1934,8 @@ a.promo-card-img:hover {
   .tile-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tile-shots,
   .tile-shots-4,
-  .tile-shots-2 { grid-template-columns: 1fr 1fr; }
+  .tile-shots-2,
+  .tile-shots-pair { grid-template-columns: 1fr 1fr; }
   .extras-web-grid,
   .extras-web-grid-3 { grid-template-columns: 1fr; }
   .price-addon-grid { grid-template-columns: 1fr; }
@@ -1873,6 +1948,7 @@ a.promo-card-img:hover {
   .tile-feature-grid { grid-template-columns: 1fr; }
   .tile-shots,
   .tile-shots-4,
-  .tile-shots-2 { grid-template-columns: 1fr; }
+  .tile-shots-2,
+  .tile-shots-pair { grid-template-columns: 1fr; }
   .extras-items { grid-template-columns: 1fr; }
 }
