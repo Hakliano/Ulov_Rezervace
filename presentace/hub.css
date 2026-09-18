@@ -162,8 +162,20 @@ a { color: inherit; text-decoration: none; }
 
 .hub-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: 1fr;
   gap: 1.25rem;
+}
+
+@media (min-width: 720px) {
+  .hub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1120px) {
+  .hub-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .hub-card {
@@ -226,6 +238,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hub-card-logo-materialnik {
+  max-height: 8.5rem;
+  width: auto;
+  max-width: 22rem;
+}
+
+.hub-card-logo-archivnik {
   max-height: 8.5rem;
   width: auto;
   max-width: 22rem;
