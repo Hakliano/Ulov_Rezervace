@@ -206,6 +206,10 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
   python manage.py seed_archivnik_only 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_archivnik_p3_demos 2>/dev/null || true
+# P6.0 PawCare salon 10: jen doplní kartotéku, pokud ještě neexistuje. Nikdy --reset
+# (to by smazalo ručně nahrané fotografie). Nespouštět na LIVE.
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py seed_pawcare_showcase 2>/dev/null || true
 # P5.5: jen založí acceptance sadu, pokud ještě neexistuje. Nikdy --reset / --cleanup-salon
 # (to by smazalo kartotéku). P5.3 seed sem nepatří — umí wipe při každém deployi.
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
