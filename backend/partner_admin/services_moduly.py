@@ -14,7 +14,7 @@ from .materialnik_client import (
     deactivate_tenant,
     provision_tenant,
 )
-from .models import MODUL_MATERIALNIK, ModulKatalog, PartnerModul
+from .models import MODUL_ARCHIVNIK, MODUL_MATERIALNIK, ModulKatalog, PartnerModul
 from .services import log_superadmin
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,27 @@ def materialnik_pro_me(salon):
         return None
     url = (getattr(settings, 'MATERIALNIK_PUBLIC_URL', '') or '').rstrip('/')
     return {'url': url}
+
+
+def archivnik_je_aktivni(salon):
+    """Autoritativní entitlement Archivníka = PartnerModul, ne frontend."""
+    return modul_je_aktivni(getattr(salon, 'pk', salon), MODUL_ARCHIVNIK)
+
+
+def archivnik_pro_me(salon):
+    """Do /api/flow/me/ — URL jen když je modul aktivní."""
+    if not archivnik_je_aktivni(salon):
+        return None
+    url = (getattr(settings, 'ARCHIVNIK_PUBLIC_URL', '') or '/archivnik/').rstrip('/') + '/'
+    return {'url': url}
+
+
+def zajisti_archivnik_pro_modernik(salon, actor):
+    """Moderník (FLOW) obsahuje plný Archivník. Idempotentní, nemaže data.
+
+    Vypnutí Moderníka / FLOW sem nepatří — Archivník zůstává samostatný produkt.
+    """
+    return nastav_modul(salon, MODUL_ARCHIVNIK, True, actor)
 
 
 @transaction.atomic

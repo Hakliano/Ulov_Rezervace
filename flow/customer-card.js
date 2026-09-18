@@ -1,224 +1,359 @@
 /**
- * feature/flow-customer-card — FLOW UI pro Kartu zákazníka.
- * Samostatný soubor: při rollbacku stačí odstranit tento script + tab v index.html.
+ * FLOW Zákazníci nad Archivníkem (/api/flow/kartoteka/*).
  */
 (function () {
   'use strict';
 
-  let ccSelectedId = null;
-  let ccSearchTimer = null;
+  const PAGE_SIZE = 50;
+  let ktSelectedUuid = null;
+  let ktPage = 1;
+  let ktSearchTimer = null;
 
-  function todayYmd() {
-    const d = new Date();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${d.getFullYear()}-${m}-${day}`;
+  function fmtDay(iso) {
+    if (!iso) return '';
+    const raw = String(iso);
+    const d = raw.length <= 10 ? new Date(`${raw}T00:00:00`) : new Date(raw);
+    if (Number.isNaN(d.getTime())) return esc(raw);
+    return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
   }
 
-  /** Lokální vývoj — aktivace bez e-mailu (backend jen při DEBUG). */
-  function isLocalDev() {
-    const h = window.location.hostname;
-    return h === '127.0.0.1' || h === '::1' || h === '[::1]' || (h && h.indexOf('.') === -1);
+  function displayName(c) {
+    return (c.display_name || `${c.jmeno || ''} ${c.prijmeni || ''}`).trim() || c.email || 'Zákazník';
   }
 
-  async function loadCustomerCards() {
+  function isArchived(c) {
+    return c && c.stav === 'archivovany';
+  }
+
+  async function loadCustomers() {
     const list = $('#cc-list');
-    const detail = $('#cc-detail');
+    const pager = $('#cc-pager');
     if (!list) return;
+    if (typeof archivnikJeAktivni === 'function' && !archivnikJeAktivni()) {
+      list.innerHTML = '<p class="empty">Kartotéka tu teď není k dispozici.</p>';
+      if (pager) pager.innerHTML = '';
+      const detail = $('#cc-detail');
+      if (detail) {
+        detail.innerHTML = '<p class="empty">Kartotéka tu teď není k dispozici.</p>';
+      }
+      return;
+    }
     const q = ($('#cc-search')?.value || '').trim();
     const stav = $('#cc-filter-stav')?.value || '';
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (stav) params.set('stav', stav);
+    params.set('page', String(ktPage));
+    params.set('page_size', String(PAGE_SIZE));
     list.innerHTML = '<p class="empty">Načítám…</p>';
+    if (pager) pager.innerHTML = '';
     try {
-      const rows = await api(`/flow/zakaznicke-karty/?${params}`);
+      const data = await api(`/flow/kartoteka/zakaznici/?${params}`);
+      const rows = data.vysledky || [];
       if (!rows.length) {
-        list.innerHTML = '<p class="empty">Zatím žádné zákaznické karty.</p>';
+        list.innerHTML = '<p class="empty">Zatím žádní zákazníci v kartotéce.</p>';
       } else {
         list.innerHTML = rows.map((c) => `
-          <button type="button" class="cc-list-item${c.id === ccSelectedId ? ' active' : ''}" data-cc-id="${c.id}">
-            <strong>${esc(c.jmeno || c.email)}</strong>
-            <span class="meta">${esc(c.email)}</span>
-            <span class="badge">${esc(c.stav_label || c.stav)}</span>
+          <button type="button" class="cc-list-item${c.uuid === ktSelectedUuid ? ' active' : ''}" data-kt-uuid="${esc(c.uuid)}">
+            <strong>${esc(displayName(c))}</strong>
+            <span class="meta">${esc(c.email || 'bez e-mailu')}${c.telefon ? ' · ' + esc(c.telefon) : ''}</span>
+            ${isArchived(c) ? '<span class="badge">archivovaný</span>' : ''}
           </button>
         `).join('');
       }
-      if (ccSelectedId) {
-        await openCustomerCard(ccSelectedId);
-      } else if (detail && !detail.querySelector('#cc-form-new')) {
-        detail.innerHTML = '<p class="empty">Vyberte kartu nebo vytvořte novou.</p>';
+      if (pager && data.celkem_stranek > 1) {
+        pager.innerHTML = `
+          <button type="button" class="btn tiny ghost" data-kt-page="prev" ${ktPage <= 1 ? 'disabled' : ''}>←</button>
+          <span class="meta">Stránka ${esc(data.stranka)} / ${esc(data.celkem_stranek)}</span>
+          <button type="button" class="btn tiny ghost" data-kt-page="next" ${ktPage >= data.celkem_stranek ? 'disabled' : ''}>→</button>
+        `;
+      }
+      const detail = $('#cc-detail');
+      if (ktSelectedUuid) {
+        await openCustomer(ktSelectedUuid);
+      } else if (detail && !detail.querySelector('#kt-entry-form, #kt-object-form')) {
+        detail.innerHTML = '<p class="empty">Vyberte zákazníka v seznamu, nebo ho založte z rezervace.</p>';
       }
     } catch (e) {
       list.innerHTML = `<p class="empty">${esc(e.message || 'Chyba načtení')}</p>`;
     }
   }
 
-  function renderNewCardForm() {
-    ccSelectedId = null;
-    $$('.cc-list-item').forEach((el) => el.classList.remove('active'));
-    const detail = $('#cc-detail');
-    if (!detail) return;
-    detail.innerHTML = `
-      <h2 class="section-title">Nová zákaznická karta</h2>
-      <form id="cc-form-new" class="cc-form">
-        <label>E-mail *<input class="input" name="email" type="email" required></label>
-        <label>Jméno<input class="input" name="jmeno" type="text"></label>
-        <label>Telefon<input class="input" name="telefon" type="text"></label>
-        <label>Poznámka o zákazníkovi<textarea class="input" name="poznamka" rows="2"></textarea></label>
-        <hr class="cc-hr">
-        <h3>První zápis návštěvy</h3>
-        <label>Datum *<input class="input" name="visit_datum" type="date" value="${todayYmd()}" required></label>
-        <label>Text zápisu *<textarea class="input" name="visit_text" rows="5" required placeholder="Co proběhlo, na co navázat…"></textarea></label>
-        <label class="cc-check"><input type="checkbox" name="odeslat_potvrzeni" checked> Odeslat žádost o potvrzení zákaznické karty</label>
-        <div class="actions">
-          <button type="submit" class="btn primary">Uložit návrh karty</button>
-        </div>
-        <p id="cc-form-msg" class="msg" hidden></p>
-      </form>
-    `;
-  }
-
-  async function openCustomerCard(id) {
-    ccSelectedId = id;
+  async function openCustomer(uuid) {
+    if (!uuid) return;
+    ktSelectedUuid = uuid;
     $$('.cc-list-item').forEach((el) => {
-      el.classList.toggle('active', Number(el.dataset.ccId) === Number(id));
+      el.classList.toggle('active', el.dataset.ktUuid === uuid);
     });
     const detail = $('#cc-detail');
     if (!detail) return;
     detail.innerHTML = '<p class="empty">Načítám kartu…</p>';
     try {
-      const c = await api(`/flow/zakaznicke-karty/${id}/`);
-      const canAddVisit = c.stav === 'aktivni';
-      const visits = (c.visits || []).map((v) => `
-        <article class="item">
-          <div class="item-top">
-            <time>${esc(v.datum)}</time>
-            <span class="meta">${esc(v.autor_jmeno || '')}</span>
-          </div>
-          <p class="cc-visit-text">${esc(v.text)}</p>
-        </article>
-      `).join('') || '<p class="empty">Bez zápisů.</p>';
-
-      detail.innerHTML = `
-        <div class="row between wrap gap">
-          <h2 class="section-title">${esc(c.jmeno || c.email)}</h2>
-          <span class="badge">${esc(c.stav_label || c.stav)}</span>
-        </div>
-        <p class="meta">${esc(c.email)}${c.telefon ? ' · ' + esc(c.telefon) : ''}</p>
-        ${c.poznamka ? `<p class="cc-note">${esc(c.poznamka)}</p>` : ''}
-        ${c.confirmed_at ? `<p class="meta">Potvrzeno: ${esc(String(c.confirmed_at).replace('T', ' ').slice(0, 19))}${c.confirmed_ip ? ' · IP ' + esc(c.confirmed_ip) : ''}</p>` : ''}
-        <div class="actions" style="margin: .75rem 0">
-          ${c.stav === 'aktivni' ? `<button type="button" class="btn primary" data-cc-nova-rez="${c.id}">Nová rezervace</button>` : ''}
-          ${c.stav === 'ceka_na_potvrzeni' ? `<button type="button" class="btn primary" data-cc-send="${c.id}">Odeslat žádost o potvrzení zákaznické karty</button>` : ''}
-          ${c.stav === 'ceka_na_potvrzeni' && isLocalDev() ? `<button type="button" class="btn ghost" data-cc-activate-local="${c.id}">Aktivovat lokálně (bez e-mailu)</button>` : ''}
-          <button type="button" class="btn ghost" data-cc-edit="${c.id}">Upravit údaje</button>
-          <button type="button" class="btn danger" data-cc-delete="${c.id}">Vyřadit zákazníka</button>
-        </div>
-        <div id="cc-edit-box" class="hidden"></div>
-        <h3>Historie</h3>
-        <div class="list">${visits}</div>
-        ${canAddVisit ? `
-          <form id="cc-visit-form" class="cc-form" data-card="${c.id}">
-            <h3>Nový zápis</h3>
-            <label>Datum *<input class="input" name="datum" type="date" value="${todayYmd()}" required></label>
-            <label>Text *<textarea class="input" name="text" rows="4" required></textarea></label>
-            <button type="submit" class="btn primary">Přidat zápis</button>
-            <p id="cc-visit-msg" class="msg" hidden></p>
-          </form>
-        ` : `<p class="hint">Další zápisy až po potvrzení karty zákazníkem.</p>`}
-      `;
+      const c = await api(`/flow/kartoteka/zakaznici/${uuid}/`);
+      renderDetail(c);
     } catch (e) {
-      detail.innerHTML = `<p class="empty">${esc(e.message || 'Chyba')}</p>`;
+      const msg = e.message || 'Zákazník nenalezen.';
+      detail.innerHTML = `<p class="empty">${esc(msg)}</p>`;
     }
   }
 
-  function showEditForm(card) {
-    const box = $('#cc-edit-box');
+  function renderDetail(c) {
+    const detail = $('#cc-detail');
+    if (!detail) return;
+    const archived = isArchived(c);
+    const objects = c.objekty || [];
+    const entries = c.posledni_zapisy || [];
+    const reminders = c.pripominky || [];
+    const contact = [c.email, c.telefon].filter(Boolean).join(' · ');
+    const objHtml = objects.length
+      ? `<ul class="kt-objects">${objects.map((o) => `<li>${esc(o.display_name || o.nazev || 'Objekt')} · ${esc(o.typ_nazev || '')}</li>`).join('')}</ul>`
+      : '<p class="empty">Zákazník zatím nemá žádný objekt.</p>';
+    const entryHtml = entries.length
+      ? `<div class="list">${entries.map((e) => `
+          <article class="item">
+            <div class="item-top">
+              <time>${esc(fmtDay(e.nastalo))}</time>
+              <span class="meta">${esc(e.typ_zapisu || 'Poznámka')}${e.objekt_nazev ? ' · ' + esc(e.objekt_nazev) : ''}</span>
+            </div>
+            ${e.nadpis ? `<p class="meta">${esc(e.nadpis)}</p>` : ''}
+            <p class="cc-visit-text">${esc(e.text)}</p>
+          </article>
+        `).join('')}</div>`
+      : '<p class="empty">Zatím žádné zápisy.</p>';
+    const remHtml = reminders.length
+      ? `<div class="kt-reminders">${reminders.map((r) => {
+          const mark = r.prosla ? '⚠ ' : '';
+          const obj = r.objekt_nazev ? ` · ${r.objekt_nazev}` : '';
+          const when = r.termin ? ` · ${fmtDay(r.termin)}` : '';
+          return `<p class="kt-remind${r.prosla ? ' warn' : ''}">${esc(mark + (r.text || 'Připomínka') + obj)}${esc(when)}</p>`;
+        }).join('')}</div>`
+      : '';
+    const writeBlock = archived
+      ? '<p class="hint">Archivovaný zákazník je ve FLOW jen ke čtení. Zápis a objekt se zakládají v Archivníku po případné reaktivaci.</p>'
+      : `
+        <div class="actions" style="margin:.75rem 0">
+          <button type="button" class="btn primary" data-kt-entry="${esc(c.uuid)}">Přidat zápis</button>
+          <button type="button" class="btn ghost" data-kt-object="${esc(c.uuid)}">Založit objekt</button>
+        </div>
+        <div id="kt-write-box"></div>
+      `;
+    detail.innerHTML = `
+      <div class="row between wrap gap">
+        <h2 class="section-title">${esc(displayName(c))}</h2>
+        ${archived ? '<span class="badge">archivovaný</span>' : ''}
+      </div>
+      <p class="meta">${esc(contact || 'Bez e-mailu a telefonu')}</p>
+      <aside class="contact-banner" role="note">
+        <p><strong>🔒 Kontaktní údaje jsou pro péči o zákazníka</strong></p>
+        <p>E-mail a telefon používejte pouze v souvislosti s poskytovanou službou. Archivník není určen pro marketingové rozesílky ani tvorbu marketingových databází. Za způsob použití údajů odpovídá provozovna jako jejich správce.</p>
+      </aside>
+      ${c.poznamka ? `<p class="cc-note">${esc(c.poznamka)}</p>` : ''}
+      ${writeBlock}
+      <h3>Objekty</h3>
+      ${objHtml}
+      <h3>Poslední zápisy</h3>
+      ${entryHtml}
+      ${remHtml}
+      <div class="actions" style="margin-top:1rem">
+        <button type="button" class="btn primary" data-kt-nova-rez="${esc(c.uuid)}">Nová rezervace</button>
+        ${(c.archivnik_url && (typeof archivnikJeAktivni !== 'function' || archivnikJeAktivni())) ? `<a class="btn ghost" href="${esc(c.archivnik_url)}" target="_blank" rel="noopener noreferrer" data-kt-archivnik>Otevřít kompletní kartu v Archivníku</a>` : ''}
+      </div>
+    `;
+  }
+
+  function showEntryForm(c) {
+    const box = $('#kt-write-box');
     if (!box) return;
-    box.classList.remove('hidden');
+    const opts = (c.objekty || []).map((o) =>
+      `<option value="${esc(o.uuid)}">${esc(o.display_name || o.nazev)} · ${esc(o.typ_nazev || '')}</option>`
+    ).join('');
     box.innerHTML = `
-      <form id="cc-edit-form" class="cc-form">
-        <label>Jméno<input class="input" name="jmeno" value="${esc(card.jmeno || '')}"></label>
-        <label>Telefon<input class="input" name="telefon" value="${esc(card.telefon || '')}"></label>
-        <label>Poznámka<textarea class="input" name="poznamka" rows="3">${esc(card.poznamka || '')}</textarea></label>
-        <button type="submit" class="btn primary">Uložit</button>
+      <form id="kt-entry-form" class="cc-form" data-uuid="${esc(c.uuid)}">
+        <h3>Nový zápis</h3>
+        <label>Zápis<textarea class="input" name="text" rows="4" required></textarea></label>
+        <label>Objekt
+          <select class="input" name="objekt_uuid">
+            <option value="">Bez objektu</option>
+            ${opts}
+          </select>
+        </label>
+        <div class="actions">
+          <button type="submit" class="btn primary">Přidat</button>
+          <button type="button" class="btn ghost" data-kt-cancel-write>Zpět</button>
+        </div>
+        <p id="kt-write-msg" class="msg" hidden></p>
       </form>
     `;
-    box.querySelector('#cc-edit-form').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      const fd = new FormData(ev.target);
-      await api(`/flow/zakaznicke-karty/${card.id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          jmeno: fd.get('jmeno'),
-          telefon: fd.get('telefon'),
-          poznamka: fd.get('poznamka'),
-        }),
-      });
-      await openCustomerCard(card.id);
-      await loadCustomerCards();
+  }
+
+  async function showObjectForm(uuid) {
+    const box = $('#kt-write-box');
+    if (!box) return;
+    box.innerHTML = '<p class="empty">Načítám typy…</p>';
+    try {
+      const typy = await api('/flow/kartoteka/typy-objektu/');
+      if (!typy.length) {
+        box.innerHTML = '<p class="empty">Nejsou k dispozici typy objektů. Doplňte je v Archivníku.</p>';
+        return;
+      }
+      const opts = typy.map((t) =>
+        `<option value="${esc(t.uuid)}" data-need-name="${t.vyzaduje_nazev ? '1' : '0'}">${esc(t.nazev)}</option>`
+      ).join('');
+      box.innerHTML = `
+        <form id="kt-object-form" class="cc-form" data-uuid="${esc(uuid)}">
+          <h3>Nový objekt</h3>
+          <label>Typ<select class="input" name="typ_uuid" id="kt-typ">${opts}</select></label>
+          <label id="kt-nazev-wrap">Název<input class="input" name="nazev" id="kt-nazev" type="text"></label>
+          <div class="actions">
+            <button type="submit" class="btn primary">Založit</button>
+            <button type="button" class="btn ghost" data-kt-cancel-write>Zpět</button>
+          </div>
+          <p id="kt-write-msg" class="msg" hidden></p>
+        </form>
+      `;
+      syncObjectNameRequired();
+      box.querySelector('#kt-typ')?.addEventListener('change', syncObjectNameRequired);
+    } catch (e) {
+      box.innerHTML = `<p class="empty">${esc(e.message || 'Typy se nepodařilo načíst.')}</p>`;
+    }
+  }
+
+  function syncObjectNameRequired() {
+    const sel = $('#kt-typ');
+    const input = $('#kt-nazev');
+    const wrap = $('#kt-nazev-wrap');
+    if (!sel || !input) return;
+    const need = sel.options[sel.selectedIndex]?.dataset.needName === '1';
+    input.required = need;
+    if (wrap) wrap.classList.toggle('kt-optional', !need);
+  }
+
+  function showWriteMsg(text) {
+    const m = $('#kt-write-msg');
+    if (!m) return;
+    m.hidden = false;
+    m.textContent = text;
+  }
+
+  function attachCalendarButtons(container, items) {
+    if (typeof archivnikJeAktivni === 'function' && !archivnikJeAktivni()) return;
+    const byId = new Map((items || []).map((r) => [String(r.id), r]));
+    container.querySelectorAll('article.item[data-id]').forEach((art) => {
+      if (art.querySelector('[data-kt-open], [data-kt-create], [data-kt-noemail]')) return;
+      const r = byId.get(String(art.dataset.id));
+      if (!r) return;
+      let actions = art.querySelector('.actions');
+      if (!actions) {
+        actions = document.createElement('div');
+        actions.className = 'actions';
+        art.appendChild(actions);
+      }
+      const uuid = r.archivnik_customer_uuid;
+      const email = (r.kontaktni_email || '').trim();
+      if (uuid) {
+        actions.insertAdjacentHTML(
+          'beforeend',
+          `<button type="button" class="btn tiny ghost" data-kt-open="${esc(uuid)}">Otevřít kartu zákazníka</button>`,
+        );
+      } else if (email) {
+        actions.insertAdjacentHTML(
+          'beforeend',
+          `<button type="button" class="btn tiny ghost" data-kt-create="${r.id}">Založit zákazníka</button>`,
+        );
+      } else {
+        actions.insertAdjacentHTML(
+          'beforeend',
+          '<p class="meta" data-kt-noemail>Zákazníka nelze automaticky propojit – rezervace nemá e-mail.</p>',
+        );
+      }
     });
   }
 
-  // —— hooks into app.js globals ——
-  if (typeof setTab === 'function') {
-    const _setTab = setTab;
-    // eslint-disable-next-line no-global-assign
-    setTab = function (name) {
+  if (typeof window.setTab === 'function') {
+    const _setTab = window.setTab;
+    window.setTab = function (name) {
       _setTab(name);
-      if (name === 'karty') loadCustomerCards();
+      if (name === 'karty') loadCustomers();
     };
   }
 
-  if (typeof renderRezervaceList === 'function') {
-    const _render = renderRezervaceList;
-    // eslint-disable-next-line no-global-assign
-    renderRezervaceList = function (container, items, options) {
+  if (typeof window.renderRezervaceList === 'function') {
+    const _render = window.renderRezervaceList;
+    window.renderRezervaceList = function (container, items, options) {
       _render(container, items, options);
-      const byId = new Map((items || []).map((r) => [String(r.id), r]));
-      container.querySelectorAll('article.item[data-id]').forEach((art) => {
-        const r = byId.get(String(art.dataset.id));
-        if (!r || !r.customer_card_id) return;
-        if (art.querySelector('[data-cc-open]')) return;
-        const wrap = document.createElement('div');
-        wrap.className = 'actions';
-        wrap.innerHTML = `<button type="button" class="btn tiny ghost" data-cc-open="${r.customer_card_id}">Otevřít kartu zákazníka</button>`;
-        art.appendChild(wrap);
-      });
+      attachCalendarButtons(container, items);
     };
   }
 
   document.addEventListener('click', async (ev) => {
-    const openBtn = ev.target.closest('[data-cc-open]');
+    const pageBtn = ev.target.closest('[data-kt-page]');
+    if (pageBtn && !pageBtn.disabled) {
+      ktPage += pageBtn.dataset.ktPage === 'next' ? 1 : -1;
+      if (ktPage < 1) ktPage = 1;
+      await loadCustomers();
+      return;
+    }
+    const openBtn = ev.target.closest('[data-kt-open]');
     if (openBtn) {
-      const id = Number(openBtn.dataset.ccOpen);
-      setTab('karty');
-      ccSelectedId = id;
-      await loadCustomerCards();
-      await openCustomerCard(id);
+      ktSelectedUuid = openBtn.dataset.ktOpen;
+      window.setTab('karty');
+      await openCustomer(ktSelectedUuid);
       return;
     }
-    const listBtn = ev.target.closest('[data-cc-id]');
+    const createBtn = ev.target.closest('[data-kt-create]');
+    if (createBtn) {
+      createBtn.disabled = true;
+      try {
+        const created = await api('/flow/kartoteka/zakaznici/', {
+          method: 'POST',
+          body: JSON.stringify({ rezervace_id: Number(createBtn.dataset.ktCreate) }),
+        });
+        const uuid = created.zakaznik?.uuid;
+        if (!uuid) throw new Error(created.detail || 'Zákazníka se nepodařilo založit.');
+        createBtn.outerHTML = `<button type="button" class="btn tiny ghost" data-kt-open="${esc(uuid)}">Otevřít kartu zákazníka</button>`;
+        ktSelectedUuid = uuid;
+        window.setTab('karty');
+        await openCustomer(uuid);
+      } catch (e) {
+        alert(e.message || 'Založení selhalo');
+        createBtn.disabled = false;
+      }
+      return;
+    }
+    const listBtn = ev.target.closest('[data-kt-uuid]');
     if (listBtn && listBtn.closest('#cc-list')) {
-      await openCustomerCard(Number(listBtn.dataset.ccId));
+      await openCustomer(listBtn.dataset.ktUuid);
       return;
     }
-    const novaRezBtn = ev.target.closest('[data-cc-nova-rez]');
+    const entryBtn = ev.target.closest('[data-kt-entry]');
+    if (entryBtn) {
+      try {
+        const c = await api(`/flow/kartoteka/zakaznici/${entryBtn.dataset.ktEntry}/`);
+        showEntryForm(c);
+      } catch (e) {
+        alert(e.message || 'Chyba');
+      }
+      return;
+    }
+    const objBtn = ev.target.closest('[data-kt-object]');
+    if (objBtn) {
+      await showObjectForm(objBtn.dataset.ktObject);
+      return;
+    }
+    if (ev.target.closest('[data-kt-cancel-write]')) {
+      if (ktSelectedUuid) await openCustomer(ktSelectedUuid);
+      return;
+    }
+    const novaRezBtn = ev.target.closest('[data-kt-nova-rez]');
     if (novaRezBtn) {
-      const id = Number(novaRezBtn.dataset.ccNovaRez);
       if (typeof openNova !== 'function') {
         alert('Formulář rezervace není dostupný.');
         return;
       }
       try {
-        const c = await api(`/flow/zakaznicke-karty/${id}/`);
-        if (c.stav !== 'aktivni') {
-          alert('Novou rezervaci lze vytvořit jen z aktivní karty.');
-          return;
-        }
+        const c = await api(`/flow/kartoteka/zakaznici/${novaRezBtn.dataset.ktNovaRez}/`);
         await openNova('', {
-          nick: c.jmeno || '',
+          nick: displayName(c),
           email: c.email || '',
           telefon: c.telefon || '',
           poznamka: c.poznamka || '',
@@ -226,125 +361,61 @@
       } catch (e) {
         alert(e.message || 'Nelze otevřít rezervaci');
       }
-      return;
-    }
-    if (ev.target.id === 'cc-btn-new') {
-      renderNewCardForm();
-      return;
-    }
-    const sendBtn = ev.target.closest('[data-cc-send]');
-    if (sendBtn) {
-      const id = Number(sendBtn.dataset.ccSend);
-      sendBtn.disabled = true;
-      try {
-        const res = await api(`/flow/zakaznicke-karty/${id}/odeslat-potvrzeni/`, { method: 'POST', body: '{}' });
-        alert(res.detail || 'Odesláno.');
-        await openCustomerCard(id);
-      } catch (e) {
-        alert(e.message || 'Chyba odeslání');
-      } finally {
-        sendBtn.disabled = false;
-      }
-      return;
-    }
-    const actLocal = ev.target.closest('[data-cc-activate-local]');
-    if (actLocal) {
-      const id = Number(actLocal.dataset.ccActivateLocal);
-      actLocal.disabled = true;
-      try {
-        await api(`/flow/zakaznicke-karty/${id}/aktivovat-lokalne/`, { method: 'POST', body: '{}' });
-        await loadCustomerCards();
-        await openCustomerCard(id);
-      } catch (e) {
-        alert(e.message || 'Aktivace selhala');
-      } finally {
-        actLocal.disabled = false;
-      }
-      return;
-    }
-    const delBtn = ev.target.closest('[data-cc-delete]');
-    if (delBtn) {
-      const id = Number(delBtn.dataset.ccDelete);
-      if (!confirm('Vyřadit zákazníka? Karta i historie se trvale smažou. Operace je nevratná.')) return;
-      await api(`/flow/zakaznicke-karty/${id}/`, { method: 'DELETE' });
-      ccSelectedId = null;
-      await loadCustomerCards();
-      $('#cc-detail').innerHTML = '<p class="empty">Zákazník byl vyřazen.</p>';
-      return;
-    }
-    const editBtn = ev.target.closest('[data-cc-edit]');
-    if (editBtn) {
-      const id = Number(editBtn.dataset.ccEdit);
-      const c = await api(`/flow/zakaznicke-karty/${id}/`);
-      showEditForm(c);
     }
   });
 
   document.addEventListener('submit', async (ev) => {
-    if (ev.target.id === 'cc-form-new') {
+    if (ev.target.id === 'kt-entry-form') {
       ev.preventDefault();
+      const uuid = ev.target.dataset.uuid;
       const fd = new FormData(ev.target);
-      const msg = $('#cc-form-msg');
+      const objekt = (fd.get('objekt_uuid') || '').trim();
       try {
-        const created = await api('/flow/zakaznicke-karty/', {
+        await api(`/flow/kartoteka/zakaznici/${uuid}/zapisy/`, {
           method: 'POST',
           body: JSON.stringify({
-            email: fd.get('email'),
-            jmeno: fd.get('jmeno') || '',
-            telefon: fd.get('telefon') || '',
-            poznamka: fd.get('poznamka') || '',
-            visit_datum: fd.get('visit_datum'),
-            visit_text: fd.get('visit_text'),
-            odeslat_potvrzeni: fd.get('odeslat_potvrzeni') === 'on',
+            text: fd.get('text'),
+            objekt_uuid: objekt || null,
           }),
         });
-        ccSelectedId = created.id;
-        await loadCustomerCards();
-        await openCustomerCard(created.id);
-        if (msg) {
-          msg.hidden = false;
-          msg.textContent = created.email_odeslan
-            ? 'Karta uložena, potvrzovací e-mail odeslán.'
-            : 'Karta uložena. E-mail se nepodařilo odeslat (zkontrolujte SMTP).';
-        }
+        await openCustomer(uuid);
       } catch (e) {
-        if (msg) {
-          msg.hidden = false;
-          msg.textContent = e.message || 'Chyba uložení';
-        }
+        showWriteMsg(e.message || 'Zápis se nepodařilo uložit.');
       }
       return;
     }
-    if (ev.target.id === 'cc-visit-form') {
+    if (ev.target.id === 'kt-object-form') {
       ev.preventDefault();
-      const cardId = Number(ev.target.dataset.card);
+      const uuid = ev.target.dataset.uuid;
       const fd = new FormData(ev.target);
       try {
-        await api(`/flow/zakaznicke-karty/${cardId}/navstevy/`, {
+        await api(`/flow/kartoteka/zakaznici/${uuid}/objekty/`, {
           method: 'POST',
           body: JSON.stringify({
-            datum: fd.get('datum'),
-            text: fd.get('text'),
+            typ_uuid: fd.get('typ_uuid'),
+            nazev: fd.get('nazev') || '',
           }),
         });
-        await openCustomerCard(cardId);
+        await openCustomer(uuid);
       } catch (e) {
-        const m = $('#cc-visit-msg');
-        if (m) {
-          m.hidden = false;
-          m.textContent = e.message || 'Chyba';
-        }
+        showWriteMsg(e.message || 'Objekt se nepodařilo založit.');
       }
     }
   });
 
   document.addEventListener('input', (ev) => {
-    if (ev.target.id === 'cc-search' || ev.target.id === 'cc-filter-stav') {
-      clearTimeout(ccSearchTimer);
-      ccSearchTimer = setTimeout(loadCustomerCards, 250);
+    if (ev.target.id === 'cc-search') {
+      clearTimeout(ktSearchTimer);
+      ktSearchTimer = setTimeout(() => {
+        ktPage = 1;
+        loadCustomers();
+      }, 250);
     }
   });
   document.addEventListener('change', (ev) => {
-    if (ev.target.id === 'cc-filter-stav') loadCustomerCards();
+    if (ev.target.id === 'cc-filter-stav') {
+      ktPage = 1;
+      loadCustomers();
+    }
   });
 })();

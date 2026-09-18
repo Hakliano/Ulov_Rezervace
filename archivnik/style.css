@@ -118,6 +118,19 @@ textarea { min-height: 90px; resize: vertical; }
   cursor: pointer;
 }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.contact-banner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(28, 49, 78, 0.12);
+  border-radius: 10px;
+  background: #f4f1ea;
+  color: var(--navy);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.contact-banner p { margin: 0; }
+.contact-banner p + p { margin-top: 0.35rem; }
+.form-grid .contact-banner { grid-column: 1 / -1; }
 
 .app {
   min-height: 100vh;

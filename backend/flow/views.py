@@ -58,6 +58,12 @@ class FlowAktivaceView(APIView):
             user, created = ensure_owner_flow_user(salon, email=email)
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        from partner_admin.services_moduly import zajisti_archivnik_pro_modernik
+
+        class _Actor:
+            username = getattr(request.user, 'username', None) or 'flow-aktivace'
+
+        zajisti_archivnik_pro_modernik(salon, _Actor())
         stav = owner_flow_stav(salon)
         stav['flow_path'] = '/flow/'
         stav['vytvoreno'] = created

@@ -110,7 +110,46 @@ def store_file(salon, raw: bytes, content_type: str, filename: str, druh: str, a
     return str(asset_uuid), key, ctype, len(data)
 
 
+def stored_file_exists(storage_key: str) -> bool:
+    if not storage_key:
+        return False
+    if storage_key in _LOCAL:
+        return True
+    if not is_bunny_configured():
+        return False
+    try:
+        get_bytes(storage_key)
+        return True
+    except BunnyUploadError:
+        return False
+
+
+def delete_stored_file(storage_key: str) -> None:
+    """Smaže jeden soubor. HTTP 404 = už neexistuje (OK). Jiná chyba se nesmí spolknout."""
+    if not storage_key:
+        return
+    if not is_bunny_configured():
+        _LOCAL.pop(storage_key, None)
+        return
+    storage_url = f'{_storage_host()}/{settings.BUNNY_STORAGE_ZONE}/{storage_key}'
+    req = Request(storage_url, method='DELETE')
+    req.add_header('AccessKey', settings.BUNNY_STORAGE_API_KEY)
+    try:
+        with urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 202, 204):
+                raise BunnyUploadError(f'Bunny.net DELETE vrátilo stav {resp.status}')
+    except HTTPError as e:
+        if e.code == 404:
+            _LOCAL.pop(storage_key, None)
+            return
+        raise BunnyUploadError(f'Odstranění souboru selhalo: HTTP {e.code}') from e
+    except URLError as e:
+        raise BunnyUploadError(f'Chyba připojení k Bunny.net při mazání: {e.reason}') from e
+    _LOCAL.pop(storage_key, None)
+
+
 def delete_bytes(storage_key: str) -> None:
+    """Tiché mazání pro jednotlivý Asset v UI. Kompletní výmaz kartotéky používá delete_stored_file."""
     if not storage_key:
         return
     _LOCAL.pop(storage_key, None)

@@ -98,6 +98,8 @@ def vytvor_noveho_partnera(*, data: dict, actor):
     flow_user = None
     if data.get('aktivovat_flow', True):
         flow_user, _ = ensure_owner_flow_user(salon, email=data['majitel_email'])
+        from .services_moduly import zajisti_archivnik_pro_modernik
+        zajisti_archivnik_pro_modernik(salon, actor)
 
     if data.get('aktivovat_materialnik'):
         from .services_moduly import nastav_modul

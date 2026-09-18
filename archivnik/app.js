@@ -97,6 +97,13 @@ function addObjectCta() {
   return `+ Přidat ${noun('one').toLowerCase()}`;
 }
 
+function contactBannerHtml() {
+  return `<aside class="contact-banner" role="note">
+    <p><strong>🔒 Kontaktní údaje jsou pro péči o zákazníka</strong></p>
+    <p>E-mail a telefon používejte pouze v souvislosti s poskytovanou službou. Archivník není určen pro marketingové rozesílky ani tvorbu marketingových databází. Za způsob použití údajů odpovídá provozovna jako jejich správce.</p>
+  </aside>`;
+}
+
 function objName(o) {
   return (o && (o.display_name || o.nazev || o.typ_nazev)) || '';
 }
@@ -146,9 +153,12 @@ async function api(path, options = {}) {
   if (res.status === 204) return null;
   let data = null;
   try { data = await res.json(); } catch (_) { data = null; }
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 401) {
     if (path !== '/auth/login/') setToken('');
     throw new Error(data?.detail || 'Přihlášení vypršelo.');
+  }
+  if (res.status === 403) {
+    throw new Error(data?.detail || 'Tato akce není povolena.');
   }
   if (!res.ok) throw new Error(data?.detail || res.statusText || 'Chyba');
   return data;
@@ -395,7 +405,7 @@ function renderOnboard() {
         await api('/presets/apply/', { method: 'POST', body: JSON.stringify({ kod }) });
         me = await api('/me/');
         showApp();
-        await loadTab('overview');
+        await openDeepLinkCustomer();
       } catch (e) {
         showErr(e.message);
       }
@@ -411,11 +421,36 @@ function renderOnboard() {
       });
       me = await api('/me/');
       showApp();
-      await loadTab('settings');
+      await openDeepLinkCustomer();
     } catch (e) {
       showErr(e.message);
     }
   });
+}
+
+function pendingCustomerUuid() {
+  try {
+    const raw = (new URLSearchParams(window.location.search).get('zakaznik') || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) return '';
+    return raw;
+  } catch (_) {
+    return '';
+  }
+}
+
+async function openDeepLinkCustomer() {
+  const uuid = pendingCustomerUuid();
+  if (!uuid) {
+    currentTab = 'overview';
+    await loadTab('overview');
+    return;
+  }
+  try {
+    await openCustomer(uuid);
+  } catch (_) {
+    currentTab = 'overview';
+    await loadTab('overview');
+  }
 }
 
 async function finishAuth(data) {
@@ -426,9 +461,8 @@ async function finishAuth(data) {
     showOnboard();
     return;
   }
-  currentTab = 'overview';
   showApp();
-  await loadTab('overview');
+  await openDeepLinkCustomer();
 }
 
 function hideSearch() {
@@ -813,6 +847,7 @@ async function renderCustomers() {
 
 function showNewCustomerForm() {
   openModal('Nový zákazník', `
+    ${contactBannerHtml()}
     <form id="form-customer" class="form-grid">
       <input name="jmeno" placeholder="Jméno">
       <input name="prijmeni" placeholder="Příjmení / název" required>
@@ -877,6 +912,7 @@ async function openCustomer(uuid, opts = {}) {
         </div>
       </div>
     </div>
+    ${contactBannerHtml()}
     <div class="actions">
       <button type="button" class="btn-gold cta-main" data-act="object">${esc(addObjectCta())}</button>
       <button type="button" class="btn-small" data-act="entry">+ Nový zápis</button>
@@ -884,6 +920,7 @@ async function openCustomer(uuid, opts = {}) {
       <button type="button" class="btn-small" data-act="photo">+ Fotografie</button>
       <button type="button" class="btn-small" data-act="doc">+ Dokument</button>
       <button type="button" class="btn-small" data-act="edit">Upravit</button>
+      ${me && me.je_spravce ? '<button type="button" class="btn-danger" data-act="delete">Odstranit zákazníka a jeho data</button>' : ''}
     </div>
     <section class="section" id="c-objekty">
       <h3>${esc(noun('many'))}</h3>
@@ -907,6 +944,8 @@ async function openCustomer(uuid, opts = {}) {
   box.querySelector('[data-act="doc"]').addEventListener('click', () => showAssetForm({ zakaznik: c, druh: 'dokument' }));
   box.querySelector('[data-act="object"]').addEventListener('click', () => showObjectForm({ zakaznik: c }));
   box.querySelector('[data-act="edit"]').addEventListener('click', () => showEditCustomer(c));
+  const delBtn = box.querySelector('[data-act="delete"]');
+  if (delBtn) delBtn.addEventListener('click', () => showDeleteCustomer(c));
 }
 
 async function openObject(uuid, opts = {}) {
@@ -1205,6 +1244,7 @@ async function showObjectForm({ zakaznik }) {
 
 function showEditCustomer(c) {
   openModal('Upravit zákazníka', `
+    ${contactBannerHtml()}
     <form id="form-edit-customer" class="form-grid">
       <input name="jmeno" value="${esc(c.jmeno)}" placeholder="Jméno">
       <input name="prijmeni" value="${esc(c.prijmeni)}" required>
@@ -1224,6 +1264,36 @@ function showEditCustomer(c) {
         });
         closeModal();
         await openCustomer(c.uuid, { skipList: true });
+      } catch (err) {
+        showModalError(err.message);
+      }
+    });
+  });
+}
+
+function showDeleteCustomer(c) {
+  const name = c.display_name || '';
+  openModal('Odstranit zákazníka a jeho data', `
+    <p class="confirm-copy">Tato akce je nevratná. Odstraní celou kartotéku včetně objektů, zápisů, připomínek, fotografií a dokumentů.</p>
+    <form id="form-delete-customer" class="form-grid">
+      <label>Pro potvrzení napište přesné jméno zákazníka
+        <input name="potvrzeni" autocomplete="off" required placeholder="${esc(name)}">
+      </label>
+      <button type="submit" class="btn-danger">Odstranit zákazníka a jeho data</button>
+    </form>
+  `, (body) => {
+    body.querySelector('#form-delete-customer').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const potvrzeni = (new FormData(ev.target).get('potvrzeni') || '').trim();
+      try {
+        await api(`/customers/${c.uuid}/`, {
+          method: 'DELETE',
+          body: JSON.stringify({ potvrzeni }),
+        });
+        closeModal();
+        selectedCustomer = null;
+        selectedObject = null;
+        await renderCustomers();
       } catch (err) {
         showModalError(err.message);
       }

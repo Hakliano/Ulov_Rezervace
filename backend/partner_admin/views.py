@@ -1328,6 +1328,8 @@ def aktivovat_flow(request, salon_id):
     except ValueError as exc:
         messages.error(request, str(exc))
         return _detail_redirect(salon.id, 'pristupy')
+    from partner_admin.services_moduly import zajisti_archivnik_pro_modernik
+    zajisti_archivnik_pro_modernik(salon, request.user)
     log_superadmin(
         salon,
         request.user,

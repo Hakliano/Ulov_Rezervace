@@ -67,7 +67,6 @@ overrides = {
     "EMAIL_VIA_CELERY": "false",
     "FLOW_BASE_URL": "https://www.staging.ulovklienty.cz/flow/",
     "API_PUBLIC_BASE_URL": "https://api-staging.ulovklienty.cz/api",
-    "CUSTOMER_CARD_CONFIRM_BASE_URL": "https://api-staging.ulovklienty.cz/api",
     "MATERIALNIK_URL": "http://ulov-staging-materialnik:8000",
     "MATERIALNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/sklad",
     "ARCHIVNIK_PUBLIC_URL": "https://www.staging.ulovklienty.cz/archivnik/",
@@ -207,6 +206,16 @@ docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.sta
   python manage.py seed_archivnik_only 2>/dev/null || true
 docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
   python manage.py seed_archivnik_p3_demos 2>/dev/null || true
+# P6.0 PawCare salon 10: jen doplní kartotéku, pokud ještě neexistuje. Nikdy --reset
+# (to by smazalo ručně nahrané fotografie). Nespouštět na LIVE.
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py seed_pawcare_showcase 2>/dev/null || true
+# P5.5: jen založí acceptance sadu, pokud ještě neexistuje. Nikdy --reset / --cleanup-salon
+# (to by smazalo kartotéku). P5.3 seed sem nepatří — umí wipe při každém deployi.
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py seed_p55_acceptance 2>/dev/null || true
+docker compose -p ulov-staging -f docker-compose.staging.yml --env-file .env.staging exec -T staging-api \
+  python manage.py sync_archivnik_pro_modernik 2>/dev/null || true
 
 echo "### Reload LIVE nginx (staging vhost + mount www-staging)"
 cp -f deploy/nginx/conf.d/staging.conf deploy/nginx/conf.d/staging.conf 2>/dev/null || true

@@ -3,9 +3,12 @@ const API_BASE = (function () {
   const local = window.location.protocol === 'file:'
     || h === '127.0.0.1' || h === '::1' || h === '[::1]'
     || (h && h.indexOf('.') === -1);
-  if (!local) return 'https://api.ulovklienty.cz/api';
-  const apiHost = (h === '::1' || h === '[::1]') ? '127.0.0.1' : (h || '127.0.0.1');
-  return 'http://' + apiHost + ':8000/api';
+  if (local) {
+    const apiHost = (h === '::1' || h === '[::1]') ? '127.0.0.1' : (h || '127.0.0.1');
+    return 'http://' + apiHost + ':8000/api';
+  }
+  if (h && h.indexOf('staging') !== -1) return 'https://api-staging.ulovklienty.cz/api';
+  return 'https://api.ulovklienty.cz/api';
 })();
 const TOKEN_KEY = 'flow_token';
 
@@ -1640,11 +1643,12 @@ function applyNovaContactPrefill(contact) {
     $('#nova-email').disabled = false;
     $('#nova-email').value = email;
   }
-  // Formulář nemá pole telefon — tel. + popis zákazníka do interní poznámky.
+  // Formulář nemá pole telefon (type=text, ne textarea) — tel. a popis
+  // musí jít do jedné řádky s viditelným oddělovačem, ne \n.
   const interniParts = [];
   if (telefon) interniParts.push(`Tel. ${telefon}`);
   if (poznamka) interniParts.push(poznamka);
-  if (interniParts.length) $('#nova-interni').value = interniParts.join('\n');
+  if (interniParts.length) $('#nova-interni').value = interniParts.join(' · ');
 }
 
 function closeNova() {
@@ -2359,6 +2363,10 @@ function applyTechnickeNastaveniUi(user = currentUser) {
   const allowed = !!user?.povolit_technicke_nastaveni && isOwnerUser(user);
   $$('.tab-tech').forEach((t) => t.classList.toggle('hidden', !allowed));
   $('#owner-zone-tech')?.classList.toggle('hidden', !allowed);
+}
+
+function archivnikJeAktivni(user = currentUser) {
+  return Boolean(user && user.archivnik_active);
 }
 
 function materialnikInfo(user = currentUser) {

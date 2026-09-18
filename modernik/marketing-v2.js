@@ -10,6 +10,13 @@
       : 'https://api.ulovklienty.cz/api');
   const POPTAVKA_SOURCE = isModernik ? 'Moderník (modernik.cz)' : 'ULOV KLIENTY (ulovklienty.cz)';
   const CONTACT_EMAIL = isModernik ? 'info@modernik.cz' : 'info@ulovklienty.cz';
+  const ARCHIVNIK_PREZENTACE = isStaging
+    ? 'https://www.staging.ulovklienty.cz/archivnik-prezentace/'
+    : 'https://www.ulovklienty.cz/archivnik-prezentace/';
+
+  document.querySelectorAll('[data-archivnik-prezentace]').forEach((a) => {
+    a.setAttribute('href', ARCHIVNIK_PREZENTACE);
+  });
 
   const tiles = document.querySelectorAll('.tile[data-tile]');
   const tabs = document.querySelectorAll('.portfolio-tabs .tab');
@@ -52,6 +59,32 @@
         setProbeLabel(probe, false);
       }
     });
+  });
+
+  const lightbox = document.getElementById('tile-lightbox');
+  const lightboxImg = document.getElementById('tile-lightbox-img');
+  const lightboxClose = document.getElementById('tile-lightbox-close');
+
+  function openTileLightbox(img) {
+    if (!lightbox || !lightboxImg || !img) return;
+    lightboxImg.src = img.currentSrc || img.src;
+    lightboxImg.alt = img.alt || '';
+    if (typeof lightbox.showModal === 'function') lightbox.showModal();
+  }
+
+  function closeTileLightbox() {
+    if (lightbox?.open) lightbox.close();
+  }
+
+  document.querySelectorAll('.tile-shot-open').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openTileLightbox(btn.querySelector('img'));
+    });
+  });
+  lightboxClose?.addEventListener('click', closeTileLightbox);
+  lightbox?.addEventListener('click', (event) => {
+    if (event.target === lightbox) closeTileLightbox();
   });
 
   tabs.forEach((tab) => {
