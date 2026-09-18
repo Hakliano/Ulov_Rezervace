@@ -14,14 +14,12 @@
   <link rel="stylesheet" href="style.css?v=1">
   <link rel="stylesheet" href="/cookie-consent.css?v=1">
   <script>
-    /* P6.2 — samostatná cena před finálním rozhodnutím.
-       Před release stačí vyplnit soloAmount (např. "499").
-       Prázdný řetězec = bezpečný placeholder, žádná fiktivní cena. */
+    /* P6.2 — samostatná prezentační cena Archivníku. */
     window.ARCHIVNIK_PRICING = {
-      soloAmount: "",
+      soloAmount: "350",
       soloUnit: "Kč / měsíc",
-      soloPlaceholder: "Cenu upřesníme",
-      soloNote: "Samostatný tarif ještě ladíme. Ozvěte se — Archivníka ukážeme na vašem oboru a cenu dohodneme."
+      soloPlaceholder: "350 Kč / měsíc",
+      soloNote: "Plný Archivník se všemi funkcemi. Bez omezených verzí a bez příplatků za jednotlivé funkce."
     };
   </script>
 </head>
@@ -336,9 +334,10 @@
         <div class="arc-prices">
           <article class="arc-price-card">
             <h3>Archivník samostatně</h3>
-            <p class="arc-price-value" data-price-solo>Cenu upřesníme</p>
+            <p class="arc-price-value" data-price-solo>350&nbsp;Kč / měsíc</p>
             <p class="arc-price-note" data-price-note>
-              Samostatný tarif ještě ladíme. Ozvěte se — Archivníka ukážeme na vašem oboru a cenu dohodneme.
+              Plný Archivník se všemi funkcemi. Bez omezených verzí
+              a bez příplatků za jednotlivé funkce.
             </p>
             <a class="arc-btn arc-btn-ghost" href="#poptavka">Chci ukázku</a>
           </article>
@@ -505,6 +504,6 @@
   </script>
   <script src="/cookie-consent.js?v=1" defer></script>
   <script src="/hub-form.js?v=2" defer></script>
-  <script src="app.js?v=1" defer></script>
+  <script src="app.js?v=2" defer></script>
 </body>
 </html>
