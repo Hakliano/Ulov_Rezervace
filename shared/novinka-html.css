@@ -41,3 +41,31 @@
 .news-card-text small {
   font-size: 0.86em;
 }
+
+.novinka-help {
+  line-height: 1.45;
+  max-width: 36em;
+}
+textarea.novinka-text {
+  min-height: 8.5em;
+}
+.novinka-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.45rem 0 0.4rem;
+}
+.novinka-toolbar button {
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  padding: 0.32rem 0.58rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.novinka-toolbar button:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
