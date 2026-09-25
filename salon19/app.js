@@ -529,13 +529,15 @@ function renderSalon(data) {
   const novinky = data.novinky || [];
   document.getElementById('novinky-list').innerHTML = novinky.length
     ? novinky.map(n =>
-      `<article class="news-card">
-        <div class="news-card-body">
+      `<article class="news-card${n.obrazek ? ' news-card-has-media' : ''}">
+        <header class="news-card-head">
           <time>${formatDate(n.datum)}</time>
           <h3>${esc(n.nadpis)}</h3>
-          <p>${formatNovinkaHtml(n.text)}</p>
+        </header>
+        <div class="news-card-row">
+          ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
+          <p class="news-card-text">${formatNovinkaHtml(n.text)}</p>
         </div>
-        ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
       </article>`
     ).join('')
     : emptySlot('Zatím žádné novinky. První text napíšete v ⚙ → Novinky.');
