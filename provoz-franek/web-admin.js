@@ -505,7 +505,7 @@ function renderSalon(data) {
           <div class="news-card-body">
             <time>${formatDate(n.datum)}</time>
             <h3>${esc(n.nadpis)}</h3>
-            <p>${esc(n.text)}</p>
+            <p>${formatNovinkaHtml(n.text)}</p>
           </div>
           ${n.obrazek ? `<figure class="news-card-media news-card-media-zoom" data-url="${esc(n.obrazek)}" role="button" tabindex="0" aria-label="Zvětšit fotku">
             <img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy">

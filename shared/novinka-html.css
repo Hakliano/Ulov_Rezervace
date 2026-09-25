@@ -1,0 +1,9 @@
+.news-card p big,
+.news-card-text big {
+  font-size: 1.22em;
+  line-height: 1.35;
+}
+.news-card p small,
+.news-card-text small {
+  font-size: 0.86em;
+}

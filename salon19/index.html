@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=3">
   <link rel="stylesheet" href="../shared/creator-footer.css?v=2">
+  <link rel="stylesheet" href="../shared/novinka-html.css?v=1">
 </head>
 <body>
   <div class="blob-field" aria-hidden="true">
@@ -294,6 +295,7 @@
         </div>
 
         <div class="tab-panel" data-panel="novinky">
+          <p class="admin-hint">Enter = nový řádek. Povolené značky: &lt;b&gt;tučně&lt;/b&gt;, &lt;big&gt;větší&lt;/big&gt;, &lt;small&gt;menší&lt;/small&gt;. Ostatní HTML se zobrazí jako text.</p>
           <div id="novinky-edit"></div>
           <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
         </div>
@@ -312,6 +314,7 @@
   </div>
 
   <script src="../shared/owner-flow-admin.js"></script>
-  <script src="app.js?v=3"></script>
+  <script src="../shared/novinka-html.js?v=1"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
