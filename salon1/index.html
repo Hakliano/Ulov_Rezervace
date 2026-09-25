@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="../shared/creator-footer.css">
+  <link rel="stylesheet" href="../shared/novinka-html.css?v=4">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -267,6 +268,7 @@
           <button type="button" id="btn-add-cenik" class="btn btn-secondary btn-sm">+ Položka</button>
         </div>
         <div class="tab-panel" data-panel="novinky">
+          <p class="admin-hint novinka-help">Pište obyčejný text, jako když píšete SMS. Nový řádek = klávesa Enter. Chcete tučné písmo, kurzívu, nadpis nebo seznam? Označte slova a klepněte na tlačítko nad rámečkem.</p>
           <div id="novinky-edit"></div>
           <button type="button" id="btn-add-novinka" class="btn btn-secondary btn-sm">+ Novinka</button>
         </div>
@@ -284,6 +286,7 @@
   </div>
 
   <script src="../shared/owner-flow-admin.js"></script>
-  <script src="app.js"></script>
+  <script src="../shared/novinka-html.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

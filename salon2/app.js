@@ -478,7 +478,7 @@ function renderSalon(data) {
       <div class="news-card-body">
         <time>${formatDate(n.datum)}</time>
         <h3>${esc(n.nadpis)}</h3>
-        <p>${esc(n.text)}</p>
+        <div class="news-card-text">${formatNovinkaHtml(n.text)}</div>
       </div>
       ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
     </article>`

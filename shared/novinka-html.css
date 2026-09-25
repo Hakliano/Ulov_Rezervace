@@ -1,0 +1,82 @@
+.news-card-text {
+  min-width: 0;
+  line-height: 1.45;
+}
+.news-card-text p,
+.news-card-text ul,
+.news-card-text ol,
+.news-card-text h1,
+.news-card-text h2,
+.news-card-text h3,
+.news-card-text h4,
+.news-card-text h5 {
+  margin: 0.4em 0;
+  padding: 0;
+}
+.news-card-text > :first-child {
+  margin-top: 0;
+}
+.news-card-text > :last-child {
+  margin-bottom: 0;
+}
+.news-card-text h1,
+.news-card-text h2,
+.news-card-text h3,
+.news-card-text h4,
+.news-card-text h5 {
+  font-size: 1.12em;
+  line-height: 1.3;
+}
+.news-card-text ul,
+.news-card-text ol {
+  padding-left: 1.2em;
+  margin-left: 0;
+}
+.news-card-text li {
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+}
+.news-card-text li + li {
+  margin-top: 0.12em;
+}
+.news-card-text hr {
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.25;
+  margin: 0.55em 0;
+}
+.news-card-text big {
+  font-size: 1.15em;
+}
+.news-card-text small {
+  font-size: 0.86em;
+}
+
+.novinka-help {
+  line-height: 1.45;
+  max-width: 36em;
+}
+textarea.novinka-text {
+  min-height: 8.5em;
+}
+.novinka-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.45rem 0 0.4rem;
+}
+.novinka-toolbar button {
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  padding: 0.32rem 0.58rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.novinka-toolbar button:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}

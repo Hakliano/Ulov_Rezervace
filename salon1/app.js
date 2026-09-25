@@ -421,7 +421,7 @@ function renderSalon(data) {
       <div class="news-content">
         <time>${formatDate(n.datum)}</time>
         <h3>${esc(n.nadpis)}</h3>
-        <p>${esc(n.text)}</p>
+        <div class="news-card-text">${formatNovinkaHtml(n.text)}</div>
       </div>
     </article>`
   ).join('');
