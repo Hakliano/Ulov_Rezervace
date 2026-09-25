@@ -1,19 +1,24 @@
-/** Povolené HTML v textu novinek: b/strong, i/em, small, big, br. Enter = nový řádek. Ostatní značky se escapují. */
+/** Povolené HTML v textu novinek — jen značky bez atributů. Enter = nový řádek. */
 (function (global) {
+  var VOID_TAGS = "br|hr";
+  var PAIR_TAGS = "b|strong|u|i|em|p|h1|h2|h3|h4|h5|ul|ol|li|small|big";
+
   function escapeHtml(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   function formatNovinkaHtml(raw) {
     return escapeHtml(raw)
-      .replace(/\r\n|\r|\n/g, '<br>')
-      .replace(/&lt;br\s*\/?&gt;/gi, '<br>')
-      .replace(/&lt;(\/?)(b|strong|i|em|small|big)\s*&gt;/gi, function (_, slash, tag) {
-        return '<' + slash + tag.toLowerCase() + '>';
+      .replace(/\r\n|\r|\n/g, "<br>")
+      .replace(new RegExp("&lt;(" + VOID_TAGS + ")\\s*\\/?&gt;", "gi"), function (_, tag) {
+        return "<" + tag.toLowerCase() + ">";
+      })
+      .replace(new RegExp("&lt;(\\/?)(" + PAIR_TAGS + ")\\s*&gt;", "gi"), function (_, slash, tag) {
+        return "<" + slash + tag.toLowerCase() + ">";
       });
   }
 

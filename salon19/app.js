@@ -536,7 +536,7 @@ function renderSalon(data) {
         </header>
         <div class="news-card-row">
           ${n.obrazek ? `<figure class="news-card-media"><img src="${esc(n.obrazek)}" alt="${esc(n.nadpis)}" loading="lazy"></figure>` : ''}
-          <p class="news-card-text">${formatNovinkaHtml(n.text)}</p>
+          <div class="news-card-text">${formatNovinkaHtml(n.text)}</div>
         </div>
       </article>`
     ).join('')
