@@ -1,0 +1,65 @@
+.price-copy-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  flex: 1;
+}
+.price-copy .price-value {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.price-popis {
+  font-size: 0.82em;
+  font-weight: 400;
+  line-height: 1.35;
+  opacity: 0.72;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cenik-cena-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+.cenik-cena-row input {
+  width: 7.2rem;
+  max-width: 100%;
+}
+textarea.cenik-popis {
+  width: 100%;
+  margin-top: 0.45rem;
+  min-height: 4.2em;
+}
+.cenik-flag {
+  margin: 0.35rem 0 0;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+.cenik-cena-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+.cenik-cena-row input {
+  width: 7.2rem;
+  max-width: 100%;
+}
+textarea.cenik-popis {
+  width: 100%;
+  margin-top: 0.45rem;
+  min-height: 4.2em;
+}
+.cenik-flag {
+  margin: 0.35rem 0 0;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.85rem;
+}

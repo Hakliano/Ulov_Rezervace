@@ -518,7 +518,7 @@ function renderPublicServices(items) {
   return groups.map(([title, rows]) => `
     <article class="svc-group">
       <h3>${esc(title)}</h3>
-      <ul>${rows.map((item) => `<li>${esc(item.nazev)}</li>`).join('')}</ul>
+      <ul>${rows.map((item) => { const p = (typeof formatCenikCena === 'function' ? formatCenikCena(item) : ''); return `<li>${esc(item.nazev)}${p ? ` — ${esc(p)}` : ''}${item.popis ? `<small class="price-popis"> ${esc(item.popis)}</small>` : ''}</li>`; }).join('')}</ul>
     </article>
   `).join('');
 }
@@ -681,7 +681,7 @@ renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = d.cenik.map(item => cenikEditRow(item)).join('');
   document.getElementById('btn-add-cenik').onclick = () => {
-    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0, obrazek: '' }));
+    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: null, obrazek: '' }));
   };
 
   const novinkyEdit = document.getElementById('novinky-edit');
@@ -799,8 +799,8 @@ function cenikEditRow(item) {
   return `<div class="edit-block cenik-edit-item" data-id="${item.id || ''}" data-obrazek="${attrEsc(url)}">
     <div class="edit-row">
       <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Služba">
-      <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kč">
     </div>
+    ${typeof cenikAdminPriceHtml === 'function' ? cenikAdminPriceHtml(item) : ''}
     <label class="checkbox" style="margin:0.4rem 0;display:flex;gap:0.4rem;align-items:center;font-size:0.85rem">
       <input type="checkbox" class="cenik-rizikovy" ${riz}>
       Rizikový produkt (možná záloha — upozorní FLOW)
@@ -827,7 +827,7 @@ function refreshCenikEdit() {
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = (salonData.cenik || []).map(item => cenikEditRow(item)).join('');
   document.getElementById('btn-add-cenik').onclick = () => {
-    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0, obrazek: '' }));
+    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: null, obrazek: '' }));
   };
 }
 
@@ -993,7 +993,7 @@ function collectFormData() {
     const id = el.dataset.id;
     const item = {
       nazev: el.querySelector('.cenik-nazev').value,
-      cena: parseInt(el.querySelector('.cenik-cena').value, 10) || 0,
+      ...((typeof collectCenikCenaFields === 'function') ? collectCenikCenaFields(el) : { cena: parseInt(el.querySelector('.cenik-cena').value, 10) || 0 }),
       rizikovy: !!el.querySelector('.cenik-rizikovy')?.checked,
       poradi: i,
     };
