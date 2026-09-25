@@ -1,10 +1,22 @@
 .news-card-text {
   min-width: 0;
+  line-height: 1.45;
 }
-.news-card-text p {
-  margin: 0 0 0.65em;
+.news-card-text p,
+.news-card-text ul,
+.news-card-text ol,
+.news-card-text h1,
+.news-card-text h2,
+.news-card-text h3,
+.news-card-text h4,
+.news-card-text h5 {
+  margin: 0.4em 0;
+  padding: 0;
 }
-.news-card-text p:last-child {
+.news-card-text > :first-child {
+  margin-top: 0;
+}
+.news-card-text > :last-child {
   margin-bottom: 0;
 }
 .news-card-text h1,
@@ -14,26 +26,25 @@
 .news-card-text h5 {
   font-size: 1.12em;
   line-height: 1.3;
-  margin: 0.7em 0 0.35em;
-}
-.news-card-text h1:first-child,
-.news-card-text h2:first-child,
-.news-card-text h3:first-child {
-  margin-top: 0;
 }
 .news-card-text ul,
 .news-card-text ol {
-  margin: 0.35em 0 0.65em 1.2em;
-  padding: 0;
+  padding-left: 1.2em;
+  margin-left: 0;
 }
 .news-card-text li {
-  margin: 0.15em 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+}
+.news-card-text li + li {
+  margin-top: 0.12em;
 }
 .news-card-text hr {
   border: 0;
   border-top: 1px solid currentColor;
   opacity: 0.25;
-  margin: 0.85em 0;
+  margin: 0.55em 0;
 }
 .news-card-text big {
   font-size: 1.15em;

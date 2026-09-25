@@ -11,8 +11,10 @@
       .replace(/"/g, "&quot;");
   }
 
+  var BLOCK = "ul|ol|li|p|h1|h2|h3|h4|h5|hr";
+
   function formatNovinkaHtml(raw) {
-    return escapeHtml(raw)
+    var html = escapeHtml(raw)
       .replace(/\r\n|\r|\n/g, "<br>")
       .replace(new RegExp("&lt;(" + VOID_TAGS + ")\\s*\\/?&gt;", "gi"), function (_, tag) {
         return "<" + tag.toLowerCase() + ">";
@@ -20,6 +22,13 @@
       .replace(new RegExp("&lt;(\\/?)(" + PAIR_TAGS + ")\\s*&gt;", "gi"), function (_, slash, tag) {
         return "<" + slash + tag.toLowerCase() + ">";
       });
+    // Enter around lists/headings must not become extra <br> — that blows up card height.
+    html = html.replace(new RegExp("(?:<br>)+(?=</?(?:" + BLOCK + ")\\b)", "gi"), "");
+    html = html.replace(new RegExp("(</?(?:" + BLOCK + ")>|<hr>)(?:<br>)+", "gi"), "$1");
+    html = html.replace(new RegExp("(<(?:" + BLOCK + ")>)\\s+", "gi"), "$1");
+    html = html.replace(new RegExp("\\s+(</(?:" + BLOCK + ")>)", "gi"), "$1");
+    html = html.replace(/(?:<br>\s*){3,}/gi, "<br><br>");
+    return html;
   }
 
   function replaceSelection(ta, insert, cursorOffset) {
@@ -57,9 +66,9 @@
     var items = lines.map(function (line) {
       var clean = line.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "");
       return "<li>" + (clean || "položka") + "</li>";
-    }).join("\n");
+    }).join("");
     var tag = ordered ? "ol" : "ul";
-    var block = "<" + tag + ">\n" + items + "\n</" + tag + ">";
+    var block = "<" + tag + ">" + items + "</" + tag + ">";
     replaceSelection(ta, block, block.length);
   }
 
@@ -70,7 +79,7 @@
     { label: "Nadpis", title: "Nadpis v článku", run: function (ta) { wrapSelection(ta, "<h2>", "</h2>", "Nadpis"); } },
     { label: "Odrážky", title: "Seznam s odrážkami", run: function (ta) { wrapList(ta, false); } },
     { label: "Čísla", title: "Číslovaný seznam", run: function (ta) { wrapList(ta, true); } },
-    { label: "Čára", title: "Oddělovací čára", run: function (ta) { replaceSelection(ta, "\n<hr>\n"); } },
+    { label: "Čára", title: "Oddělovací čára", run: function (ta) { replaceSelection(ta, "<hr>"); } },
   ];
 
   function enhanceTextarea(ta) {
