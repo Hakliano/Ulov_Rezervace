@@ -1610,7 +1610,7 @@ async function openNova(prefillDate = '', contact = null) {
         <input type="checkbox" value="${s.id}">
         <span>
           ${esc(s.nazev)}
-          <span class="sluzba-meta">${esc(s.delka_minut)} min · ${esc(s.cena)} Kč</span>
+          <span class="sluzba-meta">${esc(s.delka_minut)} min${s.cena_zobrazeni ? ` · ${esc(s.cena_zobrazeni)}` : ''}</span>
         </span>
       </label>
     `).join('');

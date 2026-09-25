@@ -408,9 +408,12 @@ function renderSalon(data) {
       ${item.obrazek ? `<figure class="price-media"><img src="${esc(item.obrazek)}" alt="${esc(item.nazev)}" loading="lazy"></figure>` : ''}
       <div class="price-copy">
         <span class="price-idx">${String(i + 1).padStart(2, '0')}</span>
-        <span class="price-name">${esc(item.nazev)}</span>
+        <div class="price-copy-text">
+          <span class="price-name">${esc(item.nazev)}</span>
+          ${item.popis ? `<span class="price-popis">${esc(item.popis)}</span>` : ''}
+        </div>
         <span class="price-dots"></span>
-        <span class="price-value">${item.cena} Kč</span>
+        ${typeof formatCenikCena === 'function' && formatCenikCena(item) ? `<span class="price-value">${esc(formatCenikCena(item))}</span>` : ''}
       </div>
     </div>`
   ).join('');
@@ -590,7 +593,7 @@ renderBrandPreview('logo-preview', d.logo_url, 'Žádné logo');
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = d.cenik.map(item => cenikEditRow(item)).join('');
   document.getElementById('btn-add-cenik').onclick = () => {
-    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0, obrazek: '' }));
+    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: null, obrazek: '' }));
   };
 
   const novinkyEdit = document.getElementById('novinky-edit');
@@ -766,8 +769,8 @@ function cenikEditRow(item) {
   return `<div class="edit-block cenik-edit-item" data-id="${item.id || ''}" data-obrazek="${attrEsc(url)}">
     <div class="edit-row">
       <input type="text" class="cenik-nazev" value="${esc(item.nazev)}" placeholder="Služba">
-      <input type="number" class="cenik-cena" value="${item.cena}" placeholder="Kč">
     </div>
+    ${typeof cenikAdminPriceHtml === 'function' ? cenikAdminPriceHtml(item) : ''}
     <label class="checkbox" style="margin:0.4rem 0;display:flex;gap:0.4rem;align-items:center;font-size:0.85rem">
       <input type="checkbox" class="cenik-rizikovy" ${riz}>
       Rizikový produkt (možná záloha — upozorní FLOW)
@@ -794,7 +797,7 @@ function refreshCenikEdit() {
   const cenikEdit = document.getElementById('cenik-edit');
   cenikEdit.innerHTML = (salonData.cenik || []).map(item => cenikEditRow(item)).join('');
   document.getElementById('btn-add-cenik').onclick = () => {
-    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: 0, obrazek: '' }));
+    cenikEdit.insertAdjacentHTML('beforeend', cenikEditRow({ nazev: '', cena: null, obrazek: '' }));
   };
 }
 
@@ -961,7 +964,7 @@ function collectFormData() {
     const id = el.dataset.id;
     const item = {
       nazev: el.querySelector('.cenik-nazev').value,
-      cena: parseInt(el.querySelector('.cenik-cena').value, 10) || 0,
+      ...((typeof collectCenikCenaFields === 'function') ? collectCenikCenaFields(el) : { cena: parseInt(el.querySelector('.cenik-cena').value, 10) || 0 }),
       rizikovy: !!el.querySelector('.cenik-rizikovy')?.checked,
       poradi: i,
     };

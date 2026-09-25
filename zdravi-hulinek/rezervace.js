@@ -118,7 +118,7 @@ async function loadInfo() {
           <label class="sluzba-card">
             <input type="checkbox" value="${s.id}" data-delka="${s.delka_minut + s.rezerva_minut}">
             <span class="sluzba-name">${esc(s.nazev)}</span>
-            <span class="sluzba-meta">${s.delka_minut} min</span>
+            <span class="sluzba-meta">${s.delka_minut} min${s.cena_zobrazeni ? ` · ${esc(s.cena_zobrazeni)}` : ''}</span>
           </label>
         `).join('')}
       </div>

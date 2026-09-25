@@ -30,7 +30,10 @@ class CenikPolozka(models.Model):
         Salon, related_name='cenik', on_delete=models.CASCADE, verbose_name='salon'
     )
     nazev = models.CharField('název služby', max_length=200)
-    cena = models.DecimalField('cena (Kč)', max_digits=10, decimal_places=0)
+    popis = models.TextField('popis služby', blank=True)
+    cena = models.DecimalField('cena (Kč)', max_digits=10, decimal_places=0, null=True, blank=True)
+    cena_do = models.DecimalField('cena do (Kč)', max_digits=10, decimal_places=0, null=True, blank=True)
+    zobrazit_od = models.BooleanField('na webu napsat Od', default=False)
     obrazek = models.URLField('obrázek služby (URL)', blank=True, max_length=500)
     poradi = models.PositiveIntegerField('pořadí', default=0)
     delka_minut = models.PositiveIntegerField('délka služby (min)', default=30)
@@ -47,8 +50,13 @@ class CenikPolozka(models.Model):
         verbose_name_plural = 'položky ceníku'
         ordering = ['poradi', 'id']
 
+    def cena_zobrazeni(self):
+        from .cenik_cena import format_cenik_cena
+        return format_cenik_cena(self.cena, self.cena_do, self.zobrazit_od)
+
     def __str__(self):
-        return f'{self.nazev} – {self.cena} Kč'
+        label = self.cena_zobrazeni() or 'bez ceny'
+        return f'{self.nazev} – {label}'
 
 
 class Novinka(models.Model):

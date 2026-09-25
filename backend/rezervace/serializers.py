@@ -31,7 +31,9 @@ from salons.models import CenikPolozka
 
 class SluzbaRezervaceSerializer(serializers.ModelSerializer):
     nazev = serializers.CharField(source='sluzba.nazev', read_only=True)
-    cena = serializers.DecimalField(source='sluzba.cena', max_digits=10, decimal_places=0, read_only=True)
+    cena = serializers.DecimalField(
+        source='sluzba.cena', max_digits=10, decimal_places=0, read_only=True, allow_null=True,
+    )
     delka_minut = serializers.IntegerField(source='sluzba.delka_minut', read_only=True)
 
     class Meta:
@@ -362,9 +364,21 @@ class RezervacniNastaveniSerializer(serializers.ModelSerializer):
 
 
 class SluzbaPublicSerializer(serializers.ModelSerializer):
+    cena_zobrazeni = serializers.SerializerMethodField()
+
     class Meta:
         model = CenikPolozka
-        fields = ['id', 'nazev', 'cena', 'delka_minut', 'rezerva_minut', 'poradi']
+        fields = [
+            'id', 'nazev', 'popis', 'cena', 'cena_do', 'zobrazit_od', 'cena_zobrazeni',
+            'delka_minut', 'rezerva_minut', 'poradi',
+        ]
+        extra_kwargs = {
+            'cena': {'allow_null': True, 'required': False},
+            'cena_do': {'allow_null': True, 'required': False},
+        }
+
+    def get_cena_zobrazeni(self, obj):
+        return obj.cena_zobrazeni()
 
 
 class SalonVyjimkaSerializer(serializers.ModelSerializer):

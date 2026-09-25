@@ -6,18 +6,26 @@ from .models import CenikPolozka, Novinka, Salon, SalonObrazek
 
 class CenikPolozkaSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
+    cena_zobrazeni = serializers.SerializerMethodField()
 
     class Meta:
         model = CenikPolozka
         fields = [
-            'id', 'nazev', 'cena', 'obrazek', 'poradi', 'delka_minut', 'rezerva_minut',
+            'id', 'nazev', 'popis', 'cena', 'cena_do', 'zobrazit_od', 'cena_zobrazeni',
+            'obrazek', 'poradi', 'delka_minut', 'rezerva_minut',
             'aktivni', 'rizikovy',
         ]
         extra_kwargs = {
             'obrazek': {'required': False, 'allow_blank': True},
+            'popis': {'required': False, 'allow_blank': True},
+            'cena': {'required': False, 'allow_null': True},
+            'cena_do': {'required': False, 'allow_null': True},
             # Prázdný řádek z „+ Položka“ — frontend odfiltruje; sync stejně přeskočí
             'nazev': {'required': False, 'allow_blank': True},
         }
+
+    def get_cena_zobrazeni(self, obj):
+        return obj.cena_zobrazeni()
 
 
 class NovinkaSerializer(serializers.ModelSerializer):
@@ -145,26 +153,27 @@ class SalonSerializer(serializers.ModelSerializer):
 
     def _sync_cenik(self, salon, items):
         existing_ids = []
+        skip_keys = {'id', 'cena_zobrazeni'}
         for item in items:
             if not str(item.get('nazev') or '').strip():
                 # Prázdný řádek z omylem přidané položky — neukládat, nepřerušit save
                 continue
+            payload = {k: v for k, v in item.items() if k not in skip_keys}
             item_id = item.get('id')
             if item_id:
                 try:
                     obj = CenikPolozka.objects.get(id=item_id, salon=salon)
                     old_url = obj.obrazek
-                    for key, val in item.items():
-                        if key != 'id':
-                            setattr(obj, key, val)
-                    if 'obrazek' in item and old_url and old_url != (item.get('obrazek') or ''):
+                    for key, val in payload.items():
+                        setattr(obj, key, val)
+                    if 'obrazek' in payload and old_url and old_url != (payload.get('obrazek') or ''):
                         delete_image(old_url)
                     obj.save()
                     existing_ids.append(obj.id)
                 except CenikPolozka.DoesNotExist:
                     pass
             else:
-                obj = CenikPolozka.objects.create(salon=salon, **item)
+                obj = CenikPolozka.objects.create(salon=salon, **payload)
                 existing_ids.append(obj.id)
         to_delete = salon.cenik.exclude(id__in=existing_ids)
         for cenik in to_delete:
