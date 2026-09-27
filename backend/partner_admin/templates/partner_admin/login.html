@@ -1,0 +1,46 @@
+{% load static %}
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Přihlášení · ULOV KLIENTY</title>
+  <link rel="stylesheet" href="{% static 'partner_admin/panel.css' %}">
+</head>
+<body class="login-shell">
+  <aside class="sidebar login-sidebar">
+    <div class="sidebar-brand">
+      <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/New%20Project.webp" alt="ULOV KLIENTY" referrerpolicy="no-referrer">
+      <span>Partner-admin</span>
+    </div>
+    <p class="login-brand-copy">Správa partnerů ULOV KLIENTY. Tým i superadmin sem.</p>
+  </aside>
+  <main class="login-workspace">
+    <section class="panel login-card">
+      <p class="eyebrow">Přihlášení</p>
+      <h1>Partner-admin</h1>
+      <p class="muted login-lead">E-mail týmu, nebo uživatelské jméno superadmina.</p>
+      <form method="post" action="{% url 'partner_admin:login' %}" novalidate>
+        {% csrf_token %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+        {% if form.non_field_errors %}
+          <div class="message error" role="alert">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+        <label class="{% if form.username.errors %}has-error{% endif %}">
+          {{ form.username.label }}
+          {{ form.username }}
+          {% if form.username.errors %}<small class="field-error">{{ form.username.errors|striptags }}</small>{% endif %}
+        </label>
+        <label class="{% if form.password.errors %}has-error{% endif %}">
+          {{ form.password.label }}
+          {{ form.password }}
+          {% if form.password.errors %}<small class="field-error">{{ form.password.errors|striptags }}</small>{% endif %}
+        </label>
+        <button class="btn btn-primary" type="submit">Přihlásit se</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

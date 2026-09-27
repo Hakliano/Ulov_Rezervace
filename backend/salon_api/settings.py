@@ -212,8 +212,10 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Tým ULOV po přihlášení na /admin/login/ → partner-admin (superuser má ?next=/admin/).
+# Tým ULOV i superadmin: branded login. Superuser pak může otevřít /admin/.
+LOGIN_URL = '/partner-admin/login/'
 LOGIN_REDIRECT_URL = '/partner-admin/'
+LOGOUT_REDIRECT_URL = '/partner-admin/login/'
 
 # Legacy globální heslo jen pro lokální DEBUG (hlavička X-Admin-Password).
 # Žádný default — chybějící/prázdná hodnota = bypass vypnutý.

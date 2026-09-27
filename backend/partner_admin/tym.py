@@ -35,7 +35,7 @@ def _odesli_pristup(jmeno, email, heslo, role, request):
         'heslo': heslo,
         'role_label': dict(PartnerAdminProfil.ROLE_CHOICES).get(role, role),
         'panel_url': partner_admin_url(request),
-        'login_url': '/admin/login/?next=/partner-admin/',
+        'login_url': '/partner-admin/login/',
     }
     text = render_to_string('partner_admin/emails/pristup.txt', ctx)
     html = render_to_string('partner_admin/emails/pristup.html', ctx)

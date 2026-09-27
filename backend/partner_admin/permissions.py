@@ -1,6 +1,7 @@
 """Oprávnění partner-admin: superuser, nebo staff s rolí kam / admin_finance."""
 from functools import wraps
 
+from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseForbidden
@@ -13,7 +14,7 @@ WRITE = 2
 ROLE_KAM = 'kam'
 ROLE_ADMIN_FINANCE = 'admin_finance'
 
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/partner-admin/login/'
 SAFE_METHODS = frozenset({'GET', 'HEAD', 'OPTIONS'})
 
 PREHLED = 'prehled'
@@ -191,10 +192,11 @@ def partner_admin_perm(zasob):
         @wraps(view_func)
         def _wrapped(request, *args, **kwargs):
             user = request.user
+            login_url = getattr(settings, 'LOGIN_URL', LOGIN_URL) or LOGIN_URL
             if not getattr(user, 'is_authenticated', False) or not user.is_active:
-                return redirect_to_login(request.get_full_path(), LOGIN_URL)
+                return redirect_to_login(request.get_full_path(), login_url)
             if not muze_do_panelu(user):
-                return redirect_to_login(request.get_full_path(), LOGIN_URL)
+                return redirect_to_login(request.get_full_path(), login_url)
             uroven = uroven_opravneni(user, zasob)
             if uroven == FORBIDDEN:
                 return HttpResponseForbidden('Nemáte oprávnění k této stránce.')

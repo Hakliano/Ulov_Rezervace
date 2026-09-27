@@ -1227,8 +1227,50 @@ small { color: var(--muted); }
   line-height: 1.45;
 }
 
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+}
+.login-sidebar {
+  justify-content: center;
+}
+.login-brand-copy {
+  margin: 0;
+  color: rgba(244, 231, 194, .72);
+  font-size: .82rem;
+  line-height: 1.45;
+  text-align: center;
+}
+.login-workspace {
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+.login-card {
+  width: min(440px, 100%);
+  margin: 0;
+  padding: 1.6rem 1.45rem 1.5rem;
+}
+.login-card h1 {
+  margin: 0 0 .35rem;
+  font-family: var(--display);
+  font-size: clamp(1.85rem, 4vw, 2.4rem);
+  font-weight: 700;
+  color: var(--gold-2);
+}
+.login-lead { margin: 0 0 1.15rem; }
+.login-card form { display: grid; gap: .9rem; }
+.login-card .btn-primary {
+  width: 100%;
+  min-height: 46px;
+  margin-top: .2rem;
+}
+.login-card label.has-error input { border-color: var(--danger); }
+.login-card .field-error { color: var(--danger); }
+
 @media (max-width: 1000px) {
-  .shell { grid-template-columns: 1fr; }
+  .shell, .login-shell { grid-template-columns: 1fr; }
   .sidebar {
     position: static;
     height: auto;

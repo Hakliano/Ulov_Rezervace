@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm, UsernameField
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils import timezone
 
@@ -666,7 +668,7 @@ class TymUzivatelForm(forms.Form):
     email = forms.EmailField(
         label='E-mail (přihlášení)',
         max_length=150,
-        help_text='Tímto e-mailem se přihlásí na /admin/login/.',
+        help_text='Tímto e-mailem se přihlásí na /partner-admin/login/.',
     )
     heslo = forms.CharField(
         label='Heslo',
@@ -686,3 +688,57 @@ class TymUzivatelForm(forms.Form):
 
     def clean_jmeno(self):
         return (self.cleaned_data.get('jmeno') or '').strip()
+
+
+class PartnerAdminLoginForm(AuthenticationForm):
+    """E-mail nebo username. Účet bez přístupu do panelu se nepřihlásí."""
+
+    username = UsernameField(
+        label='E-mail nebo uživatelské jméno',
+        widget=forms.TextInput(attrs={
+            'autofocus': True,
+            'autocomplete': 'username',
+            'autocapitalize': 'none',
+            'autocorrect': 'off',
+            'spellcheck': 'false',
+        }),
+    )
+    password = forms.CharField(
+        label='Heslo',
+        strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
+    )
+    error_messages = {
+        'invalid_login': 'Neplatný e-mail, jméno nebo heslo.',
+        'inactive': 'Tento účet je deaktivovaný.',
+        'no_access': 'Tento účet nemá přístup do partner-admin.',
+    }
+
+    def clean(self):
+        username = (self.cleaned_data.get('username') or '').strip()
+        if username:
+            self.cleaned_data['username'] = self._resolve_username(username)
+        return super().clean()
+
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        from .permissions import muze_do_panelu
+
+        if not muze_do_panelu(user):
+            raise ValidationError(
+                self.error_messages['no_access'],
+                code='no_access',
+            )
+
+    @staticmethod
+    def _resolve_username(raw):
+        User = get_user_model()
+        found = User.objects.filter(username__iexact=raw).first()
+        if found:
+            return found.get_username()
+        if '@' not in raw:
+            return raw
+        matches = list(User.objects.filter(email__iexact=raw)[:2])
+        if len(matches) == 1:
+            return matches[0].get_username()
+        return raw
