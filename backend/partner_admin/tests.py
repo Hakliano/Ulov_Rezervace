@@ -70,6 +70,12 @@ class PartnerAdminTests(TestCase):
         self.assertContains(response, 'New%20Project.webp')
         self.assertContains(response, 'Superadmin')
         self.assertContains(response, 'Přijato tento měsíc')
+        self.assertContains(
+            response,
+            'https://haklweb.b-cdn.net/modernik/Modern%C3%ADk%20%2C%20Archivn%C3%ADk%20a%20Materi%C3%A1ln%C3%ADk%20v%20prax.mp4',
+        )
+        self.assertIn('media-src', response.headers.get('Content-Security-Policy', ''))
+        self.assertIn('haklweb.b-cdn.net', response.headers.get('Content-Security-Policy', ''))
 
         seznam = self.client.get(reverse('partner_admin:partneri'))
         self.assertEqual(seznam.status_code, 200)

@@ -20,6 +20,7 @@ class SecurityHeadersMiddleware:
                     "style-src 'self' 'unsafe-inline'; "
                     "script-src 'self' 'unsafe-inline'; "
                     "img-src 'self' data: https://haklweb.b-cdn.net; "
+                    "media-src 'self' https://haklweb.b-cdn.net; "
                     "font-src 'self' data:; "
                     "frame-ancestors 'none'"
                 )
