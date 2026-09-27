@@ -21,7 +21,7 @@
       {% if partner.domena %}
         <a class="btn btn-ink" href="https://{{ partner.domena }}" target="_blank" rel="noopener">Otevřít web</a>
       {% endif %}
-      {% if partner.stav == 'blocked' %}
+      {% if partner.stav == 'blocked' and pa_can_write.blokace %}
         <form method="post" action="{% url 'partner_admin:aktivovat' salon.id %}">
           {% csrf_token %}
           <input type="hidden" name="tab" value="stav">
@@ -276,18 +276,22 @@
           <a class="btn btn-primary" href="{% url 'partner_admin:stahnout_fakturu' salon.id posledni_platba.id %}" target="_blank" rel="noopener">Otevřít PDF</a>
         {% else %}
           <p>PDF faktury k této platbě ještě není. Vygeneruje se jen jednou, až po spárování.</p>
+          {% if pa_can_write.platby %}
           <form class="inline-form" method="post" action="{% url 'partner_admin:vygenerovat_fakturu' salon.id posledni_platba.id %}">
             {% csrf_token %}
             <input type="hidden" name="tab" value="parovani">
             <button class="btn btn-primary" type="submit">Vygenerovat fakturu</button>
           </form>
+          {% endif %}
         {% endif %}
+        {% if pa_can_write.platby %}
         <form class="inline-form faktura-upload" method="post" action="{% url 'partner_admin:nahrat_fakturu' salon.id posledni_platba.id %}" enctype="multipart/form-data">
           {% csrf_token %}
           <input type="hidden" name="tab" value="parovani">
           <input type="file" name="faktura_pdf" accept="application/pdf,.pdf" required>
           <button class="btn btn-secondary" type="submit">{% if posledni_platba.faktura_pdf %}Nahradit PDF{% else %}Nahrát PDF{% endif %}</button>
         </form>
+        {% endif %}
       </div>
     {% endif %}
 
@@ -308,6 +312,7 @@
         </dd>
       </div>
     </dl>
+    {% if pa_can_write.platby %}
     <form class="form-grid compact" method="post" action="{% url 'partner_admin:potvrdit_platbu' salon.id %}" enctype="multipart/form-data">
       {% csrf_token %}
       <input type="hidden" name="tab" value="parovani">
@@ -318,6 +323,7 @@
         <button class="btn btn-success" type="submit">Označit jako ZAPLACENO</button>
       </div>
     </form>
+    {% endif %}
   </section>
   {% endif %}
 
@@ -330,6 +336,7 @@
       </div>
     </div>
     <p class="muted">Vizitky, NFC, jednorázová služba. Nemění splatnost partnerství ani KAM. VS je 6 + rok + číslo faktury.</p>
+    {% if pa_can_write.faktury %}
     <form class="form-grid compact" method="post" action="{% url 'partner_admin:vytvorit_extra_fakturu' salon.id %}">
       {% csrf_token %}
       <input type="hidden" name="tab" value="extra">
@@ -344,6 +351,7 @@
         <button class="btn btn-primary" type="submit">Vystavit fakturu</button>
       </div>
     </form>
+    {% endif %}
   </section>
   <section class="panel">
     <div class="panel-head"><h2>Extra faktury tohoto partnera</h2></div>
@@ -374,7 +382,7 @@
                   {% if faktura.faktura_pdf %}
                     <a class="btn btn-quiet" href="{% url 'partner_admin:stahnout_fakturu_evidence' 'extra' faktura.id %}">PDF</a>
                   {% endif %}
-                  {% if faktura.stav == 'k_uhrade' %}
+                  {% if faktura.stav == 'k_uhrade' and pa_can_write.faktury %}
                     <form class="inline-form" method="post" action="{% url 'partner_admin:extra_faktura_uhrazena' salon.id faktura.id %}">
                       {% csrf_token %}
                       <button class="btn btn-success btn-tiny" type="submit">Označit uhrazeno</button>
@@ -396,7 +404,9 @@
   <section class="panel">
     <div class="panel-head">
       <h2>Historie plateb</h2>
+      {% if pa_can_see.platby %}
       <a class="btn btn-quiet" href="{% url 'partner_admin:export_platby_csv' salon.id %}">Export CSV</a>
+      {% endif %}
     </div>
     <div class="table-wrap">
       <table>
@@ -413,24 +423,28 @@
               <td class="faktura-cell">
                 {% if platba.faktura_pdf %}
                   <a class="btn btn-quiet btn-tiny" href="{% url 'partner_admin:stahnout_fakturu' salon.id platba.id %}" target="_blank" rel="noopener">Otevřít PDF</a>
+                  {% if pa_can_write.platby %}
                   <form class="inline-form" method="post" action="{% url 'partner_admin:smazat_fakturu' salon.id platba.id %}" onsubmit="return confirm('Smazat PDF fakturu u této platby?');">
                     {% csrf_token %}
                     <input type="hidden" name="tab" value="platby">
                     <button class="btn btn-danger btn-tiny" type="submit">Smazat</button>
                   </form>
-                {% else %}
+                  {% endif %}
+                {% elif pa_can_write.platby %}
                   <form class="inline-form" method="post" action="{% url 'partner_admin:vygenerovat_fakturu' salon.id platba.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="tab" value="platby">
                     <button class="btn btn-primary btn-tiny" type="submit">Vygenerovat</button>
                   </form>
                 {% endif %}
+                {% if pa_can_write.platby %}
                 <form class="inline-form faktura-upload" method="post" action="{% url 'partner_admin:nahrat_fakturu' salon.id platba.id %}" enctype="multipart/form-data">
                   {% csrf_token %}
                   <input type="hidden" name="tab" value="platby">
                   <input type="file" name="faktura_pdf" accept="application/pdf,.pdf" required>
                   <button class="btn btn-secondary btn-tiny" type="submit">{% if platba.faktura_pdf %}Nahradit{% else %}Nahrát{% endif %}</button>
                 </form>
+                {% endif %}
               </td>
             </tr>
           {% empty %}
@@ -450,6 +464,7 @@
         <h2>Odeslat upozornění</h2>
       </div>
     </div>
+    {% if pa_can_write.platby %}
     <form class="reminder-form" id="upozorneni-form" method="post" action="{% url 'partner_admin:odeslat_upozorneni' salon.id %}">
       {% csrf_token %}
       <input type="hidden" name="tab" value="upozorneni">
@@ -479,6 +494,9 @@
         {{ partner.fakturacni_email|default:"chybějící e-mail" }}
       </button>
     </form>
+    {% else %}
+      <p class="muted">Odeslání upozornění k platbě může jen role s právem zápisu plateb.</p>
+    {% endif %}
   </section>
   <section class="panel">
     <div class="panel-head"><h2>Odeslaná upozornění</h2></div>
@@ -558,6 +576,7 @@
             <strong>{{ majitel.jmeno }}</strong>
             <span>{{ majitel.prihlasovaci_jmeno|default:"Bez přihlašovacího jména" }}</span>
           </div>
+          {% if pa_can_write.reset_hesla %}
           <form method="post" action="{% url 'partner_admin:reset_hesla' salon.id majitel.id %}">
             {% csrf_token %}
             <input type="hidden" name="tab" value="pristupy">
@@ -567,6 +586,7 @@
             </label>
             <button class="btn btn-secondary" type="submit">Resetovat heslo</button>
           </form>
+          {% endif %}
         </article>
       {% empty %}
         <p class="empty">Salon nemá účet role majitel/správce.</p>
@@ -585,6 +605,7 @@
     </div>
     {% if partner.stav == 'active' %}
       <p>BLOCK okamžitě zablokuje API salonu. Platby tento stav nikdy nemění automaticky.</p>
+      {% if pa_can_write.blokace %}
       <form class="form-grid compact" method="post" action="{% url 'partner_admin:blokovat' salon.id %}">
         {% csrf_token %}
         <input type="hidden" name="tab" value="stav">
@@ -592,13 +613,18 @@
         <label>Interní důvod<input type="text" name="duvod" maxlength="300"></label>
         <button class="btn btn-danger" type="submit">Zablokovat salon</button>
       </form>
+      {% else %}
+        <p class="muted">Blokaci může provést jen superadmin.</p>
+      {% endif %}
     {% else %}
       <p><strong>Salon je BLOCKED.</strong> {{ partner.duvod_blokace }}</p>
+      {% if pa_can_write.blokace %}
       <form method="post" action="{% url 'partner_admin:aktivovat' salon.id %}">
         {% csrf_token %}
         <input type="hidden" name="tab" value="stav">
         <button class="btn btn-success" type="submit">Obnovit ACTIVE</button>
       </form>
+      {% endif %}
     {% endif %}
   </section>
   {% endif %}
@@ -643,7 +669,7 @@
           <p class="mono">{{ chyba.metoda }} {{ chyba.cesta }}{% if chyba.query %}?{{ chyba.query }}{% endif %}</p>
           <div class="form-actions-row">
             <a class="btn btn-secondary" href="{% url 'partner_admin:chyba_detail' chyba.id %}">Celý traceback</a>
-            {% if not chyba.vyreseno %}
+            {% if not chyba.vyreseno and pa_can_write.chyby %}
               <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="tab" value="chyby">
@@ -780,7 +806,9 @@
       <li>Web: <a id="link-web" href="#" target="_blank" rel="noopener"></a></li>
       <li>Rezervace / majitelka: <a id="link-rez" href="#" target="_blank" rel="noopener"></a></li>
       <li>FLOW: <a id="link-flow" href="#" target="_blank" rel="noopener">FLOW</a></li>
+      {% if pa_can_see.django_admin %}
       <li>Django admin: <a id="link-django" href="#" target="_blank" rel="noopener">/admin/</a></li>
+      {% endif %}
     </ul>
   </section>
   {% endif %}

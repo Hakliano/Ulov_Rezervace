@@ -101,7 +101,7 @@
 
     <p class="vypis-total">K výplatě: {{ k_vyplate|floatformat:2 }} Kč</p>
 
-    {% if k_vyplate > 0 %}
+    {% if k_vyplate > 0 and pa_can_write.kam %}
       <form method="post" action="{% url 'partner_admin:kam_vyplatit' kam.id %}" class="form-actions no-print" onsubmit="return confirm('Označit {{ mesic_nazev }} {{ rok }} jako vyplacený?');">
         {% csrf_token %}
         <input type="hidden" name="rok" value="{{ rok }}">

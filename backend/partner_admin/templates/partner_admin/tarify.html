@@ -30,6 +30,7 @@
             <figure class="tarif-row-logo">
               <img src="{{ logo_url }}" alt="{{ tarif.nazev }}" referrerpolicy="no-referrer">
             </figure>
+            {% if pa_can_write.tarify %}
             <form method="post" class="form-grid compact" autocomplete="off">
               {% csrf_token %}
               <input type="hidden" name="akce" value="ulozit">
@@ -61,6 +62,14 @@
               <input type="hidden" name="id" value="{{ tarif.id }}">
               <button class="btn btn-quiet" type="submit">Smazat</button>
             </form>
+            {% else %}
+            <dl class="saved-snapshot">
+              <div><dt>Název</dt><dd>{{ tarif.nazev }}</dd></div>
+              <div><dt>Výchozí cena</dt><dd>{{ tarif.castka|floatformat:2 }} Kč</dd></div>
+              <div><dt>Pořadí</dt><dd>{{ tarif.razeni }}</dd></div>
+              <div><dt>Stav</dt><dd>{% if tarif.aktivni %}Aktivní{% else %}Neaktivní{% endif %}</dd></div>
+            </dl>
+            {% endif %}
           </article>
         {% endfor %}
       </div>
@@ -69,6 +78,7 @@
     {% endif %}
   </section>
 
+  {% if pa_can_write.tarify %}
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -101,4 +111,5 @@
       </div>
     </form>
   </section>
+  {% endif %}
 {% endblock %}

@@ -11,13 +11,13 @@
       <p class="muted">Request ID {{ chyba.request_id }}{% if chyba.status_kod %} · HTTP {{ chyba.status_kod }}{% endif %}</p>
     </div>
     <div class="head-actions">
-      {% if not chyba.vyreseno %}
+      {% if not chyba.vyreseno and pa_can_write.chyby %}
         <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
           {% csrf_token %}
           <input type="hidden" name="zpet" value="seznam">
           <button class="btn btn-primary" type="submit">Označit vyřešeno</button>
         </form>
-      {% else %}
+      {% elif chyba.vyreseno %}
         <span class="badge badge-ok">Vyřešeno</span>
       {% endif %}
     </div>

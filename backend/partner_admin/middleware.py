@@ -1,7 +1,7 @@
 import re
 import traceback
 
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 
 from .models import PartnerNastaveni, TechnickaChyba
 
@@ -25,6 +25,21 @@ def _bezpecny_query(request):
         else:
             casti.append(f'{klic}={str(hodnota)[:80]}')
     return '&'.join(casti)[:400]
+
+
+class JenSuperuserDjangoAdminMiddleware:
+    """Tým ULOV (is_staff) se přihlásí přes /admin/login/, ale /admin/ neotevře."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path or ''
+        if path.startswith('/admin/') and not path.startswith('/admin/logout'):
+            user = getattr(request, 'user', None)
+            if user is not None and user.is_authenticated and not user.is_superuser:
+                return HttpResponseRedirect('/partner-admin/')
+        return self.get_response(request)
 
 
 class BlokovanyPartnerMiddleware:

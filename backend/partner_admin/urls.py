@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import potencialni, tym, views
 
 
 app_name = 'partner_admin'
@@ -8,6 +8,14 @@ app_name = 'partner_admin'
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('partneri/', views.partneri, name='partneri'),
+    path('potencialni/', potencialni.seznam, name='potencialni'),
+    path('potencialni/pridat/', potencialni.pridat, name='potencialni_pridat'),
+    path('potencialni/import/', potencialni.import_json, name='potencialni_import'),
+    path('potencialni/export.json', potencialni.export_json, name='potencialni_export'),
+    path('potencialni/sektor/', potencialni.pridat_sektor, name='potencialni_sektor'),
+    path('potencialni/<int:pk>/ulozit/', potencialni.ulozit, name='potencialni_ulozit'),
+    path('potencialni/<int:pk>/stav/', potencialni.zmenit_stav, name='potencialni_stav'),
+    path('potencialni/<int:pk>/web/', potencialni.zmenit_web, name='potencialni_web'),
     path('novy/', views.novy_partner, name='novy'),
     path('tarify/', views.tarify, name='tarify'),
     path('testovaci-pristupy/', views.testovaci_pristupy, name='testovaci_pristupy'),
@@ -28,6 +36,8 @@ urlpatterns = [
     ),
     path('vydaje/', views.vydaje, name='vydaje'),
     path('emaily/', views.hromadne_emaily, name='emaily'),
+    path('tym/', tym.seznam, name='tym'),
+    path('tym/<int:pk>/smazat/', tym.smazat, name='tym_smazat'),
     path('chyby/', views.seznam_chyb, name='chyby'),
     path('chyby/<int:chyba_id>/', views.detail_chyby, name='chyba_detail'),
     path('export.csv', views.export_csv, name='export_csv'),

@@ -5,9 +5,12 @@ from .models import (
     HromadnyEmail,
     KamProvize,
     KeyAccountManager,
+    PartnerAdminProfil,
     PartnerNastaveni,
     PartnerTarif,
     PlatbaPartnera,
+    PotencialniKontakt,
+    PotencialniSektor,
     TechnickaChyba,
     UlovCisloUctu,
     UpozorneniPlatby,
@@ -113,3 +116,24 @@ class VydajAdmin(admin.ModelAdmin):
 @admin.register(VydajSablona)
 class VydajSablonaAdmin(admin.ModelAdmin):
     list_display = ['nazev', 'castka', 'ucet']
+
+
+@admin.register(PotencialniSektor)
+class PotencialniSektorAdmin(admin.ModelAdmin):
+    list_display = ['nazev', 'razeni']
+    list_editable = ['razeni']
+
+
+@admin.register(PartnerAdminProfil)
+class PartnerAdminProfilAdmin(admin.ModelAdmin):
+    list_display = ['jmeno', 'user', 'role', 'vytvoreno']
+    list_filter = ['role']
+    search_fields = ['jmeno', 'user__email', 'user__username']
+    raw_id_fields = ['user']
+
+
+@admin.register(PotencialniKontakt)
+class PotencialniKontaktAdmin(admin.ModelAdmin):
+    list_display = ['jmeno', 'email', 'stav', 'sektor', 'telefon', 'web']
+    list_filter = ['stav', 'sektor']
+    search_fields = ['jmeno', 'email', 'telefon', 'web']

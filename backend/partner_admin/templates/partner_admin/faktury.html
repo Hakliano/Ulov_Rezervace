@@ -46,10 +46,12 @@
       <div class="label">K úhradě</div>
       <div class="value">{{ souhrn.k_uhrade }} Kč</div>
     </article>
+    {% if pa_can_see.vydaje %}
     <article class="kpi">
       <div class="label">Výdaje</div>
       <div class="value">{{ souhrn.vydaje }} Kč</div>
     </article>
+    {% endif %}
   </section>
 
   <section class="panel">

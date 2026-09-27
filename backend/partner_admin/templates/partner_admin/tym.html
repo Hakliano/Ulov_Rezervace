@@ -1,0 +1,100 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Tým ULOV{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Systém</p>
+      <h1>Tým ULOV</h1>
+      <p class="muted">
+        Účty do partner-admin. Superadmin zůstává Django superuser.
+        KAM karta v menu KAM není přihlášení.
+      </p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Seznam</p>
+        <h2>Členové týmu</h2>
+      </div>
+    </div>
+    {% if clenove %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Jméno</th>
+              <th>E-mail</th>
+              <th>Role</th>
+              <th>Vytvořeno</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for clen in clenove %}
+              <tr>
+                <td>{{ clen.jmeno }}</td>
+                <td>{{ clen.user.email }}</td>
+                <td>{{ clen.get_role_display }}</td>
+                <td>{{ clen.vytvoreno|date:"d.m.Y H:i" }}</td>
+                <td>
+                  {% if clen.user_id != request.user.id %}
+                    <form method="post" action="{% url 'partner_admin:tym_smazat' clen.id %}" onsubmit="return confirm('Smazat účet {{ clen.jmeno }}?');">
+                      {% csrf_token %}
+                      <button class="btn btn-danger btn-tiny" type="submit">Smazat</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">Zatím žádný týmový účet. Superadmin se tady nevypisuje.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Nový</p>
+        <h2>Přidat člena týmu</h2>
+      </div>
+    </div>
+    <form class="form-grid" method="post" action="{% url 'partner_admin:tym' %}" autocomplete="off">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="full">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <label>
+        {{ form.jmeno.label }}
+        {{ form.jmeno }}
+        {% if form.jmeno.errors %}<small class="field-error">{{ form.jmeno.errors|striptags }}</small>{% endif %}
+      </label>
+      <label>
+        {{ form.email.label }}
+        {{ form.email }}
+        {% if form.email.help_text %}<small>{{ form.email.help_text }}</small>{% endif %}
+        {% if form.email.errors %}<small class="field-error">{{ form.email.errors|striptags }}</small>{% endif %}
+      </label>
+      <label>
+        {{ form.heslo.label }}
+        {{ form.heslo }}
+        {% if form.heslo.help_text %}<small>{{ form.heslo.help_text }}</small>{% endif %}
+        {% if form.heslo.errors %}<small class="field-error">{{ form.heslo.errors|striptags }}</small>{% endif %}
+      </label>
+      <label>
+        {{ form.role.label }}
+        {{ form.role }}
+        {% if form.role.errors %}<small class="field-error">{{ form.role.errors|striptags }}</small>{% endif %}
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Vytvořit účet a poslat e-mail</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

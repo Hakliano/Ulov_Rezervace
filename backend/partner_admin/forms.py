@@ -1,10 +1,19 @@
 from decimal import Decimal
 
 from django import forms
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import ExtraFaktura, KeyAccountManager, PartnerNastaveni, PartnerTarif, UlovCisloUctu, vychozi_variabilni_symbol
+from .models import (
+    ExtraFaktura,
+    KeyAccountManager,
+    PartnerAdminProfil,
+    PartnerNastaveni,
+    PartnerTarif,
+    UlovCisloUctu,
+    vychozi_variabilni_symbol,
+)
 
 
 class CeskaCastkaField(forms.DecimalField):
@@ -650,3 +659,30 @@ class VydajForm(forms.Form):
             else:
                 data['nazev_sablony'] = nazev[:80]
         return data
+
+
+class TymUzivatelForm(forms.Form):
+    jmeno = forms.CharField(label='Jméno', max_length=150)
+    email = forms.EmailField(
+        label='E-mail (přihlášení)',
+        max_length=150,
+        help_text='Tímto e-mailem se přihlásí na /admin/login/.',
+    )
+    heslo = forms.CharField(
+        label='Heslo',
+        min_length=10,
+        max_length=128,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+        help_text='Minimálně 10 znaků. Odešle se v e-mailu s přístupem.',
+    )
+    role = forms.ChoiceField(label='Role', choices=PartnerAdminProfil.ROLE_CHOICES)
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        User = get_user_model()
+        if User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).exists():
+            raise forms.ValidationError('Účet s tímto e-mailem už existuje.')
+        return email
+
+    def clean_jmeno(self):
+        return (self.cleaned_data.get('jmeno') or '').strip()
