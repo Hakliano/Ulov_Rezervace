@@ -28,7 +28,7 @@ def _bezpecny_query(request):
 
 
 class JenSuperuserDjangoAdminMiddleware:
-    """Tým ULOV (is_staff) se přihlásí přes /admin/login/, ale /admin/ neotevře."""
+    """Tým ULOV (is_staff) se přihlásí přes /partner-admin/login/, ale /admin/ neotevře."""
 
     def __init__(self, get_response):
         self.get_response = get_response

@@ -24,6 +24,8 @@ class PartnerAdminConfig(AppConfig):
         _original_login = admin.site.login
 
         def _login(request, extra_context=None):
+            from django.contrib.auth.views import redirect_to_login
+
             user = getattr(request, 'user', None)
             if (
                 user is not None
@@ -32,6 +34,9 @@ class PartnerAdminConfig(AppConfig):
                 and not user.is_superuser
             ):
                 return HttpResponseRedirect('/partner-admin/')
+            if not (user is not None and getattr(user, 'is_authenticated', False)):
+                next_url = request.GET.get('next') or '/partner-admin/'
+                return redirect_to_login(next_url, '/partner-admin/login/')
             return _original_login(request, extra_context=extra_context)
 
         admin.site.login = _login

@@ -116,7 +116,7 @@
       </a>
       {% endif %}
     </nav>
-    <form class="sidebar-logout" method="post" action="/admin/logout/">
+    <form class="sidebar-logout" method="post" action="{% url 'partner_admin:logout' %}">
       {% csrf_token %}
       <button type="submit">Odhlásit</button>
     </form>

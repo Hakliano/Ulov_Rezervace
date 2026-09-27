@@ -8,6 +8,6 @@ Heslo: {{ heslo }}
 Otevřete panel zde:
 {{ panel_url }}
 
-Přihlášení je přes /admin/login/?next=/partner-admin/. Django admin (/admin/) tým neotevře.
+Přihlášení je na /partner-admin/login/. Django admin (/admin/) tým neotevře.
 
 ULOV KLIENTY · partner-admin

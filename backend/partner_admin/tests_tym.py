@@ -164,7 +164,7 @@ class TymPristupyTests(TestCase):
         self.client.force_login(staff)
         response = self.client.get(reverse('partner_admin:dashboard'))
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/admin/login/', response['Location'])
+        self.assertIn('/partner-admin/login/', response['Location'])
 
     def test_vytvor_tym_uzivatele_helper(self):
         user, profil, email_ok, _chyba = vytvor_tym_uzivatele(
@@ -177,3 +177,62 @@ class TymPristupyTests(TestCase):
         self.assertTrue(user.check_password('helper-heslo-10'))
         self.assertEqual(profil.role, ROLE_ADMIN_FINANCE)
         self.assertEqual(len(mail.outbox), 1)
+
+
+class PartnerAdminLoginTests(TestCase):
+    def test_branded_login_page_vraci_200_a_ulov_branding(self):
+        response = self.client.get('/partner-admin/login/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ULOV KLIENTY')
+        self.assertContains(response, 'New%20Project.webp')
+        self.assertContains(response, 'csrfmiddlewaretoken')
+        self.assertContains(response, 'E-mail nebo uživatelské jméno')
+        self.assertContains(response, 'Heslo')
+        self.assertNotContains(response, 'Django administration')
+
+    def test_neuspesne_prihlaseni_neotevre_panel(self):
+        response = self.client.post(
+            '/partner-admin/login/',
+            {'username': 'nikdo@example.test', 'password': 'spatne-heslo-99'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Neplatný e-mail, jméno nebo heslo.')
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+    def test_uspesne_prihlaseni_jde_do_panelu(self):
+        User = get_user_model()
+        User.objects.create_superuser(
+            username='superadmin',
+            email='admin@example.test',
+            password='bezpecne-test-heslo',
+        )
+        response = self.client.post(
+            '/partner-admin/login/',
+            {'username': 'admin@example.test', 'password': 'bezpecne-test-heslo'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/partner-admin/')
+        panel = self.client.get('/partner-admin/')
+        self.assertEqual(panel.status_code, 200)
+
+    def test_staff_bez_profilu_se_neprihlasi(self):
+        User = get_user_model()
+        User.objects.create_user(
+            username='staff@example.test',
+            email='staff@example.test',
+            password='heslo-staff-10',
+            is_staff=True,
+        )
+        response = self.client.post(
+            '/partner-admin/login/',
+            {'username': 'staff@example.test', 'password': 'heslo-staff-10'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'nemá přístup do partner-admin')
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+    def test_admin_login_presmeruje_na_branded(self):
+        response = self.client.get('/admin/login/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/partner-admin/login/', response['Location'])
+

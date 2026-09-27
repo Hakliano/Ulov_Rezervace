@@ -1,11 +1,13 @@
 from django.urls import path
 
-from . import potencialni, tym, views
+from . import potencialni, prihlaseni, tym, views
 
 
 app_name = 'partner_admin'
 
 urlpatterns = [
+    path('login/', prihlaseni.prihlaseni, name='login'),
+    path('logout/', prihlaseni.odhlaseni, name='logout'),
     path('', views.dashboard, name='dashboard'),
     path('partneri/', views.partneri, name='partneri'),
     path('potencialni/', potencialni.seznam, name='potencialni'),
