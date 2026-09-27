@@ -3,7 +3,6 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Q, When
@@ -88,11 +87,7 @@ from .services_archivnik import (
 )
 from rezervace.services.staff_auth import ensure_owner_flow_user, owner_flow_stav
 
-
-superadmin_required = user_passes_test(
-    lambda user: user.is_authenticated and user.is_active and user.is_superuser,
-    login_url='/admin/login/',
-)
+from .permissions import partner_admin_perm
 
 DETAIL_TABS = {
     'partner',
@@ -314,7 +309,7 @@ def _export_querystring(filtry):
     return urlencode({key: value for key, value in filtry.items() if value})
 
 
-@superadmin_required
+@partner_admin_perm('novy_partner')
 def novy_partner(request):
     """Založení nového partnera — jen základní data do DB."""
     if request.method == 'POST':
@@ -342,7 +337,7 @@ def novy_partner(request):
     return render(request, 'partner_admin/novy.html', {'form': form})
 
 
-@superadmin_required
+@partner_admin_perm('tarify')
 def tarify(request):
     if request.method == 'POST':
         akce = request.POST.get('akce')
@@ -413,7 +408,7 @@ def _katalog_crud(request, *, model, form_cls, template, redirect_name, smazat_o
     return render(request, template, {'radky': radky, 'novy_form': novy_form})
 
 
-@superadmin_required
+@partner_admin_perm('testovaci_pristupy')
 def testovaci_pristupy(request):
     nove_heslo = request.session.pop('demo_nove_heslo', '')
     nove_id = request.session.pop('demo_nove_heslo_salon_id', None)
@@ -427,7 +422,7 @@ def testovaci_pristupy(request):
     )
 
 
-@superadmin_required
+@partner_admin_perm('testovaci_pristupy')
 @require_POST
 def regenerovat_demo_heslo(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id, partner_nastaveni__je_testovaci=True)
@@ -450,7 +445,7 @@ def regenerovat_demo_heslo(request, salon_id):
     return redirect('partner_admin:testovaci_pristupy')
 
 
-@superadmin_required
+@partner_admin_perm('kam')
 def kamove(request):
     edit_form = None
     edit_id = None
@@ -525,7 +520,7 @@ def _posun_mesic(rok, mesic, delta):
     return rok, mesic
 
 
-@superadmin_required
+@partner_admin_perm('kam')
 def kam_vypis(request, kam_id):
     kam = get_object_or_404(KeyAccountManager, pk=kam_id)
     dnes = timezone.localdate()
@@ -549,7 +544,7 @@ def kam_vypis(request, kam_id):
     return render(request, 'partner_admin/kam_vypis.html', data)
 
 
-@superadmin_required
+@partner_admin_perm('kam')
 @require_POST
 def kam_vyplatit(request, kam_id):
     kam = get_object_or_404(KeyAccountManager, pk=kam_id)
@@ -575,7 +570,7 @@ def _po_ulozeni_ulov_uctu():
     synchronizuj_ulov_ucty()
 
 
-@superadmin_required
+@partner_admin_perm('ucty')
 def ulov_ucty(request):
     return _katalog_crud(
         request,
@@ -587,13 +582,13 @@ def ulov_ucty(request):
     )
 
 
-@superadmin_required
+@partner_admin_perm('prehled')
 def dashboard(request):
     _zajisti_partner_nastaveni()
     return render(request, 'partner_admin/dashboard.html', data_prehledu())
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 def partneri(request):
     dnes = timezone.localdate()
     _zajisti_partner_nastaveni()
@@ -622,7 +617,7 @@ def partneri(request):
     )
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 def export_csv(request):
     dnes = timezone.localdate()
     _zajisti_partner_nastaveni()
@@ -680,7 +675,7 @@ def export_csv(request):
     return response
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 def export_platby_csv(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     dnes = timezone.localdate()
@@ -812,13 +807,13 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
     )
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 def detail_partnera(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     return _render_detail_partnera(request, salon)
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 @require_POST
 def ulozit_nastaveni(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -878,7 +873,7 @@ def ulozit_nastaveni(request, salon_id):
     return _detail_redirect(salon.id, _tab_z_request(request, 'partner'))
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 @require_POST
 def nastavit_materialnik(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -895,7 +890,7 @@ def nastavit_materialnik(request, salon_id):
     return _detail_redirect(salon.id, 'partner')
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 @require_POST
 def nastavit_archivnik(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -916,7 +911,7 @@ def nastavit_archivnik(request, salon_id):
     return _detail_redirect(salon.id, 'partner')
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 def archivnik_sprava(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     if request.method == 'POST':
@@ -1030,7 +1025,7 @@ def _archivnik_sprava_post(request, salon):
     return redirect('partner_admin:archivnik_sprava', salon.id)
 
 
-@superadmin_required
+@partner_admin_perm('blokace')
 @require_POST
 def blokovat(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -1050,7 +1045,7 @@ def blokovat(request, salon_id):
     return _detail_redirect(salon.id, 'stav')
 
 
-@superadmin_required
+@partner_admin_perm('blokace')
 @require_POST
 def aktivovat(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -1063,7 +1058,7 @@ def aktivovat(request, salon_id):
     return _detail_redirect(salon.id, 'stav')
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 @require_POST
 def potvrdit_platbu(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -1098,7 +1093,7 @@ def potvrdit_platbu(request, salon_id):
     return _detail_redirect(salon.id, 'parovani')
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 @require_POST
 def nahrat_fakturu_platby(request, salon_id, platba_id):
     """Zpětně nahrát / nahradit PDF faktury u existující platby."""
@@ -1128,7 +1123,7 @@ def nahrat_fakturu_platby(request, salon_id, platba_id):
     return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 @require_POST
 def vygenerovat_fakturu(request, salon_id, platba_id):
     """Jedno kliknutí po spárování. K platbě vznikne nejvýš jedna faktura."""
@@ -1161,7 +1156,7 @@ def vygenerovat_fakturu(request, salon_id, platba_id):
     return _detail_redirect(salon.id, _tab_z_request(request, 'parovani'))
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 def pripravit_fakturu(request, salon_id, platba_id):
     """Šablona faktury k úpravě. PDF vznikne až po potvrzení."""
     from .faktura import uloz_fakturu_k_platbe, vychozi_data_faktury
@@ -1201,7 +1196,7 @@ def pripravit_fakturu(request, salon_id, platba_id):
     )
 
 
-@superadmin_required
+@partner_admin_perm('faktury')
 def stahnout_fakturu_platby(request, salon_id, platba_id):
     """Stažení PDF přes přihlášený partner-admin (ne veřejné /media/)."""
     from django.http import FileResponse, Http404
@@ -1218,7 +1213,7 @@ def stahnout_fakturu_platby(request, salon_id, platba_id):
     return FileResponse(handle, as_attachment=False, filename=filename, content_type='application/pdf')
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 @require_POST
 def smazat_fakturu_platby(request, salon_id, platba_id):
     """Smazat PDF faktury u existující platby."""
@@ -1244,7 +1239,7 @@ def smazat_fakturu_platby(request, salon_id, platba_id):
     return _detail_redirect(salon.id, _tab_z_request(request, 'platby'))
 
 
-@superadmin_required
+@partner_admin_perm('platby')
 @require_POST
 def odeslat_upozorneni(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -1297,7 +1292,7 @@ def odeslat_upozorneni(request, salon_id):
     return _detail_redirect(salon.id, 'upozorneni')
 
 
-@superadmin_required
+@partner_admin_perm('reset_hesla')
 @require_POST
 def reset_hesla(request, salon_id, zamestnanec_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -1317,7 +1312,7 @@ def reset_hesla(request, salon_id, zamestnanec_id):
     return _detail_redirect(salon.id, 'pristupy')
 
 
-@superadmin_required
+@partner_admin_perm('partneri')
 @require_POST
 def aktivovat_flow(request, salon_id):
     """I7 — založí FLOW účet majitele (sdílené heslo + e-mail)."""
@@ -1349,7 +1344,7 @@ def aktivovat_flow(request, salon_id):
     return _detail_redirect(salon.id, 'pristupy')
 
 
-@superadmin_required
+@partner_admin_perm('chyby')
 @require_POST
 def vyresit_chybu(request, chyba_id):
     chyba = get_object_or_404(TechnickaChyba, pk=chyba_id)
@@ -1360,7 +1355,7 @@ def vyresit_chybu(request, chyba_id):
     return _detail_redirect(chyba.salon_id, 'chyby')
 
 
-@superadmin_required
+@partner_admin_perm('chyby')
 def seznam_chyb(request):
     qs = TechnickaChyba.objects.select_related('salon')
     jen_nove = request.GET.get('stav') != 'vse'
@@ -1377,13 +1372,13 @@ def seznam_chyb(request):
     )
 
 
-@superadmin_required
+@partner_admin_perm('chyby')
 def detail_chyby(request, chyba_id):
     chyba = get_object_or_404(TechnickaChyba.objects.select_related('salon'), pk=chyba_id)
     return render(request, 'partner_admin/chyba_detail.html', {'chyba': chyba})
 
 
-@superadmin_required
+@partner_admin_perm('emaily')
 def hromadne_emaily(request):
     tarify = PartnerTarif.objects.filter(aktivni=True)
     if request.method == 'POST':
@@ -1461,7 +1456,7 @@ def _pdf_response(soubor, filename):
     )
 
 
-@superadmin_required
+@partner_admin_perm('faktury')
 def evidence_faktur(request):
     dnes = timezone.localdate()
     vychozi_od, vychozi_do = vychozi_obdobi(dnes)
@@ -1494,7 +1489,7 @@ def evidence_faktur(request):
     )
 
 
-@superadmin_required
+@partner_admin_perm('faktury')
 def stahnout_fakturu_evidence(request, zdroj, pk):
     if zdroj == 'partnerstvi':
         platba = get_object_or_404(PlatbaPartnera, pk=pk)
@@ -1507,7 +1502,7 @@ def stahnout_fakturu_evidence(request, zdroj, pk):
     raise Http404()
 
 
-@superadmin_required
+@partner_admin_perm('vydaje')
 def vydaje(request):
     form = VydajForm(request.POST or None)
     if request.method == 'GET' and request.GET.get('sablona'):
@@ -1561,7 +1556,7 @@ def vydaje(request):
     )
 
 
-@superadmin_required
+@partner_admin_perm('faktury')
 @require_POST
 def vytvorit_extra_fakturu(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
@@ -1592,7 +1587,7 @@ def vytvorit_extra_fakturu(request, salon_id):
     return _detail_redirect(salon.id, 'extra')
 
 
-@superadmin_required
+@partner_admin_perm('faktury')
 @require_POST
 def extra_faktura_uhrazena(request, salon_id, faktura_id):
     salon = get_object_or_404(Salon, pk=salon_id)

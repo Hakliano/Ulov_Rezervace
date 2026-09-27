@@ -104,6 +104,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'partner_admin.middleware.JenSuperuserDjangoAdminMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -210,6 +211,9 @@ STORAGES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Tým ULOV po přihlášení na /admin/login/ → partner-admin (superuser má ?next=/admin/).
+LOGIN_REDIRECT_URL = '/partner-admin/'
 
 # Legacy globální heslo jen pro lokální DEBUG (hlavička X-Admin-Password).
 # Žádný default — chybějící/prázdná hodnota = bypass vypnutý.

@@ -13,66 +13,108 @@
   <aside class="sidebar">
     <a class="sidebar-brand" href="{% url 'partner_admin:dashboard' %}">
       <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/New%20Project.webp" alt="ULOV KLIENTY" referrerpolicy="no-referrer">
-      <span>Superadmin</span>
+      <span>{{ pa_role_label|default:"Superadmin" }}</span>
     </a>
     <nav class="sidebar-nav">
       <p class="nav-label">Přehled</p>
+      {% if pa_can_see.prehled %}
       <a class="nav-link{% if url_name == 'dashboard' %} is-active{% endif %}" href="{% url 'partner_admin:dashboard' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
         Přehled
       </a>
+      {% endif %}
+      {% if pa_can_see.partneri %}
       <a class="nav-link{% if url_name == 'partneri' and request.GET.platba != 'po_splatnosti' or url_name == 'detail' %} is-active{% endif %}" href="{% url 'partner_admin:partneri' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Partneři
       </a>
+      {% endif %}
+      {% if pa_can_see.testovaci_pristupy %}
       <a class="nav-link{% if url_name == 'testovaci_pristupy' %} is-active{% endif %}" href="{% url 'partner_admin:testovaci_pristupy' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h6"/></svg>
         Testovací přístupy
       </a>
+      {% endif %}
+      {% if pa_can_see.platby %}
       <a class="nav-link{% if url_name == 'partneri' and request.GET.platba == 'po_splatnosti' %} is-active{% endif %}" href="{% url 'partner_admin:partneri' %}?platba=po_splatnosti">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 6V4m8 2V4"/></svg>
         Platby
         {% if nav_po_splatnosti %}<span class="nav-badge">{{ nav_po_splatnosti }}</span>{% endif %}
       </a>
+      {% endif %}
+      {% if pa_can_see.faktury %}
       <a class="nav-link{% if url_name == 'faktury' %} is-active{% endif %}" href="{% url 'partner_admin:faktury' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M9 13h6M9 17h4"/></svg>
         Faktury
       </a>
+      {% endif %}
+      {% if pa_can_see.chyby %}
       <a class="nav-link{% if url_name == 'chyby' or url_name == 'chyba_detail' %} is-active{% endif %}" href="{% url 'partner_admin:chyby' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 4.7 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.7a2 2 0 0 0-3.4 0z"/></svg>
         Chyby
         {% if nav_chyby %}<span class="nav-badge">{{ nav_chyby }}</span>{% endif %}
       </a>
+      {% endif %}
+      {% if pa_can_see.novy_partner or pa_can_see.tarify or pa_can_see.kam or pa_can_see.potencialni or pa_can_see.ucty or pa_can_see.vydaje or pa_can_see.emaily %}
       <p class="nav-label">Partner</p>
+      {% endif %}
+      {% if pa_can_see.novy_partner %}
       <a class="nav-link{% if url_name == 'novy' %} is-active{% endif %}" href="{% url 'partner_admin:novy' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
         Nový partner
       </a>
+      {% endif %}
+      {% if pa_can_see.tarify %}
       <a class="nav-link{% if url_name == 'tarify' %} is-active{% endif %}" href="{% url 'partner_admin:tarify' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
         Tarify
       </a>
+      {% endif %}
+      {% if pa_can_see.kam %}
       <a class="nav-link{% if url_name == 'kam' or url_name == 'kam_vypis' %} is-active{% endif %}" href="{% url 'partner_admin:kam' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M3 19a5 5 0 0 1 10 0M13 19a5 5 0 0 1 8 0"/></svg>
         KAM
       </a>
+      {% endif %}
+      {% if pa_can_see.potencialni %}
+      <a class="nav-link{% if 'potencialni' in url_name %} is-active{% endif %}" href="{% url 'partner_admin:potencialni' %}">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5h16v14z"/><path d="M8 9h8M8 13h5M8 17h8"/></svg>
+        Potenciální klienti
+      </a>
+      {% endif %}
+      {% if pa_can_see.ucty %}
       <a class="nav-link{% if url_name == 'ucty' %} is-active{% endif %}" href="{% url 'partner_admin:ucty' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
         Účty ULOV
       </a>
+      {% endif %}
+      {% if pa_can_see.vydaje %}
       <a class="nav-link{% if url_name == 'vydaje' %} is-active{% endif %}" href="{% url 'partner_admin:vydaje' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19V5h10l6 6v8z"/><path d="M14 5v6h6M8 13h5M8 16h8"/></svg>
         Výdaje
       </a>
+      {% endif %}
+      {% if pa_can_see.emaily %}
       <a class="nav-link{% if url_name == 'emaily' %} is-active{% endif %}" href="{% url 'partner_admin:emaily' %}">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
         E-maily
       </a>
+      {% endif %}
+      {% if pa_can_see.tym or pa_can_see.django_admin %}
       <p class="nav-label">Systém</p>
+      {% endif %}
+      {% if pa_can_see.tym %}
+      <a class="nav-link{% if url_name == 'tym' %} is-active{% endif %}" href="{% url 'partner_admin:tym' %}">
+        <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Tým ULOV
+      </a>
+      {% endif %}
+      {% if pa_can_see.django_admin %}
       <a class="nav-link" href="/admin/">
         <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
         Django admin
       </a>
+      {% endif %}
     </nav>
     <form class="sidebar-logout" method="post" action="/admin/logout/">
       {% csrf_token %}
@@ -95,10 +137,10 @@
         </a>
       {% endif %}
       <div class="chrome-user">
-        <span class="user-avatar" aria-hidden="true">{{ request.user.username|slice:":1"|upper }}</span>
+        <span class="user-avatar" aria-hidden="true">{{ pa_display_name|default:request.user.username|slice:":1"|upper }}</span>
         <div>
-          <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-          <small>Superadmin</small>
+          <strong>{{ pa_display_name|default:request.user.get_full_name|default:request.user.username }}</strong>
+          <small>{{ pa_role_label|default:"Superadmin" }}</small>
         </div>
       </div>
     </header>

@@ -28,6 +28,7 @@
       <div class="tarif-list">
         {% for ucet, form in radky %}
           <article class="tarif-row">
+            {% if pa_can_write.ucty %}
             <form method="post" class="form-grid compact" autocomplete="off">
               {% csrf_token %}
               <input type="hidden" name="akce" value="ulozit">
@@ -61,6 +62,14 @@
               <input type="hidden" name="id" value="{{ ucet.id }}">
               <button class="btn btn-quiet" type="submit">Smazat</button>
             </form>
+            {% else %}
+            <dl class="saved-snapshot">
+              <div><dt>Číslo účtu</dt><dd>{{ ucet.cislo }}</dd></div>
+              <div><dt>Popisek</dt><dd>{{ ucet.popisek|default:"—" }}</dd></div>
+              <div><dt>Pořadí</dt><dd>{{ ucet.razeni }}</dd></div>
+              <div><dt>Stav</dt><dd>{% if ucet.primarni %}Primární · {% endif %}{% if ucet.aktivni %}Aktivní{% else %}Neaktivní{% endif %}</dd></div>
+            </dl>
+            {% endif %}
           </article>
         {% endfor %}
       </div>
@@ -69,6 +78,7 @@
     {% endif %}
   </section>
 
+  {% if pa_can_write.ucty %}
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -103,4 +113,5 @@
       </div>
     </form>
   </section>
+  {% endif %}
 {% endblock %}

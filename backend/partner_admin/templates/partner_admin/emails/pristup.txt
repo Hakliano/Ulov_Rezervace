@@ -1,0 +1,13 @@
+Dobrý den {{ jmeno }},
+
+byl vám vytvořen přístup do partner-admin ULOV KLIENTY jako {{ role_label }}.
+
+Přihlášení: {{ email }}
+Heslo: {{ heslo }}
+
+Otevřete panel zde:
+{{ panel_url }}
+
+Přihlášení je přes /admin/login/?next=/partner-admin/. Django admin (/admin/) tým neotevře.
+
+ULOV KLIENTY · partner-admin

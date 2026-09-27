@@ -5,14 +5,20 @@
 {% block content %}
   <div class="page-head">
     <div>
-      <p class="eyebrow">Superadmin</p>
+      <p class="eyebrow">{{ pa_role_label|default:"Superadmin" }}</p>
       <h1>Přehled</h1>
       <p class="muted">Tržby, splatnosti a věci, které je potřeba řešit. Seznam partnerů je o krok vedle.</p>
     </div>
     <div class="head-actions">
-      <a class="btn btn-primary" href="{% url 'partner_admin:novy' %}">+ Nový partner</a>
-      <a class="btn btn-secondary" href="{% url 'partner_admin:partneri' %}">Všichni partneři</a>
-      <a class="btn btn-secondary" href="{% url 'partner_admin:emaily' %}">Napsat e-mail</a>
+      {% if pa_can_write.novy_partner %}
+        <a class="btn btn-primary" href="{% url 'partner_admin:novy' %}">+ Nový partner</a>
+      {% endif %}
+      {% if pa_can_see.partneri %}
+        <a class="btn btn-secondary" href="{% url 'partner_admin:partneri' %}">Všichni partneři</a>
+      {% endif %}
+      {% if pa_can_see.emaily %}
+        <a class="btn btn-secondary" href="{% url 'partner_admin:emaily' %}">Napsat e-mail</a>
+      {% endif %}
     </div>
   </div>
 
@@ -22,11 +28,13 @@
       <div class="value">{{ prijato_mesic|floatformat:0 }} Kč</div>
       <div class="hint">označené platby partnerů</div>
     </article>
+    {% if pa_can_see.vydaje %}
     <article class="kpi">
       <div class="label">Zisk tento měsíc</div>
       <div class="value">{{ zisk_mesic|floatformat:0 }} Kč</div>
       <div class="hint">přijato {{ prijato_mesic|floatformat:0 }} − KAM {{ kam_mesic|floatformat:0 }} − výdaje {{ vydaje_mesic|floatformat:0 }}</div>
     </article>
+    {% endif %}
     <article class="kpi">
       <div class="label">Přijato minulý měsíc</div>
       <div class="value">{{ prijato_minuly|floatformat:0 }} Kč</div>
@@ -37,11 +45,13 @@
       <div class="value">{{ mesicni_tarif|floatformat:0 }} Kč</div>
       <div class="hint">ACTIVE, roční přepočtené / 12</div>
     </article>
+    {% if pa_can_see.vydaje %}
     <article class="kpi">
       <div class="label">Výdaje tento měsíc</div>
       <div class="value">{{ vydaje_mesic|floatformat:0 }} Kč</div>
       <div class="hint">interní výdaje, ne faktury partnerům</div>
     </article>
+    {% endif %}
     <article class="kpi {% if po_splatnosti_pocet %}kpi-warn{% endif %}">
       <div class="label">Partneři</div>
       <div class="value">{{ partneru }}</div>
@@ -96,7 +106,7 @@
           <p class="eyebrow">Splatnost</p>
           <h2>Kdo ještě nezaplatil</h2>
         </div>
-        <a class="btn btn-quiet" href="{% url 'partner_admin:partneri' %}?platba=po_splatnosti">Všichni</a>
+        <a class="btn btn-quiet" href="{% if pa_can_see.platby %}{% url 'partner_admin:partneri' %}?platba=po_splatnosti{% else %}{% url 'partner_admin:partneri' %}{% endif %}">Všichni</a>
       </div>
       {% if po_splatnosti %}
         <div class="feed">

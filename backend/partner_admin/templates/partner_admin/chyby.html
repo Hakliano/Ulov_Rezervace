@@ -49,7 +49,7 @@
           </p>
           <div class="form-actions-row">
             <a class="btn btn-secondary" href="{% url 'partner_admin:chyba_detail' chyba.id %}">Otevřít detail</a>
-            {% if not chyba.vyreseno %}
+            {% if not chyba.vyreseno and pa_can_write.chyby %}
               <form method="post" action="{% url 'partner_admin:vyresit_chybu' chyba.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="zpet" value="seznam">

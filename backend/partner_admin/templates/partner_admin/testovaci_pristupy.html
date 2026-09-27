@@ -80,7 +80,7 @@
         </div>
 
         <div class="form-actions">
-          {% if karta.majitel %}
+          {% if karta.majitel and pa_can_write.testovaci_pristupy %}
             <form method="post" action="{% url 'partner_admin:regenerovat_demo_heslo' karta.salon.id %}" onsubmit="return confirm('Vygenerovat nové heslo pro {{ karta.salon.name }}? Staré přestane platit.');">
               {% csrf_token %}
               <button class="btn btn-primary" type="submit">Vygenerovat heslo</button>

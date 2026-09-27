@@ -605,3 +605,110 @@ class VydajSablona(models.Model):
 
     def __str__(self):
         return self.nazev
+
+
+class PotencialniSektor(models.Model):
+    """Číselník sektorů jen pro seznam potenciálních klientů. Bez vazby na partnery."""
+
+    KOD_NEZARAZENO = 'nezařazeno'
+
+    nazev = models.CharField('název', max_length=80, unique=True)
+    razeni = models.PositiveSmallIntegerField('pořadí', default=100)
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'sektor potenciálního klienta'
+        verbose_name_plural = 'sektory potenciálních klientů'
+        ordering = ['razeni', 'nazev']
+
+    def __str__(self):
+        return self.nazev
+
+
+class PotencialniKontakt(models.Model):
+    """Samostatný seznam leadů. Žádný FK na Salon / PartnerNastaveni / tarif."""
+
+    STAV_LEAD_PRED = 'lead_pred_webu'
+    STAV_LEAD_PO = 'lead_po_webu'
+    STAV_EMAIL = 'kontakt_email'
+    STAV_SMS = 'kontakt_sms'
+    STAV_TELEFON = 'kontakt_telefon'
+    STAV_OSOBNE = 'kontakt_osobne'
+    STAV_NEMA_ZAJEM = 'nema_zajem'
+    STAV_MA_ZAJEM = 'ma_zajem'
+    STAV_NECHCEME = 'nechceme'
+    STAVY = [
+        (STAV_LEAD_PRED, 'Lead před kontrolou webu'),
+        (STAV_LEAD_PO, 'Lead po kontrole webu'),
+        (STAV_EMAIL, 'Kontaktován e-mailem'),
+        (STAV_SMS, 'Kontaktován SMS'),
+        (STAV_TELEFON, 'Kontaktován telefonicky'),
+        (STAV_OSOBNE, 'Kontaktován osobně'),
+        (STAV_NEMA_ZAJEM, 'Nemá zájem'),
+        (STAV_MA_ZAJEM, 'Má zájem'),
+        (STAV_NECHCEME, 'Nechceme'),
+    ]
+
+    jmeno = models.CharField('jméno', max_length=200, db_index=True)
+    email = models.EmailField('e-mail', unique=True)
+    telefon = models.CharField('telefon', max_length=200, blank=True, default='')
+    web = models.CharField('web', max_length=400, blank=True, default='')
+    adresa = models.TextField('adresa', blank=True, default='')
+    ico = models.CharField('IČO', max_length=20, blank=True, default='')
+    poznamka = models.TextField('poznámka', blank=True, default='')
+    stav = models.CharField(
+        'stav', max_length=32, choices=STAVY, default=STAV_LEAD_PRED, db_index=True,
+    )
+    sektor = models.ForeignKey(
+        PotencialniSektor,
+        related_name='kontakty',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+    upraveno = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'potenciální klient'
+        verbose_name_plural = 'potenciální klienti'
+        ordering = ['-id']
+        indexes = [
+            models.Index(fields=['stav', 'jmeno'], name='potkontakt_stav_jmeno_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.jmeno} <{self.email}>'
+
+    def save(self, *args, **kwargs):
+        self.email = (self.email or '').strip().lower()
+        self.jmeno = (self.jmeno or '').strip()
+        super().save(*args, **kwargs)
+
+
+class PartnerAdminProfil(models.Model):
+    """Přihlašovací účet týmu ULOV (ne KAM karta, ne majitel salonu)."""
+
+    ROLE_KAM = 'kam'
+    ROLE_ADMIN_FINANCE = 'admin_finance'
+    ROLE_CHOICES = [
+        (ROLE_KAM, 'KAM'),
+        (ROLE_ADMIN_FINANCE, 'ADMIN/Finance'),
+    ]
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='partner_admin_profil',
+    )
+    jmeno = models.CharField('jméno', max_length=150)
+    role = models.CharField('role', max_length=32, choices=ROLE_CHOICES)
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'profil partner-admin'
+        verbose_name_plural = 'profily partner-admin'
+        ordering = ['jmeno']
+
+    def __str__(self):
+        return f'{self.jmeno} ({self.get_role_display()})'

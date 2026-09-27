@@ -72,7 +72,7 @@
               </div>
             </dl>
 
-            {% if karta.edituje %}
+            {% if karta.edituje and pa_can_write.kam %}
               <form method="post" class="form-grid compact kam-edit" autocomplete="off">
                 {% csrf_token %}
                 <input type="hidden" name="akce" value="ulozit">
@@ -115,7 +115,9 @@
               </form>
             {% else %}
               <div class="kam-card-actions">
+                {% if pa_can_write.kam %}
                 <a class="btn btn-primary" href="{% url 'partner_admin:kam' %}?upravit={{ karta.kam.id }}">Upravit</a>
+                {% endif %}
                 <a class="btn btn-quiet" href="{% url 'partner_admin:kam_vypis' karta.kam.id %}">Výpis provizí</a>
               </div>
             {% endif %}
@@ -142,10 +144,11 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty">Zatím žádný KAM. Přidej ho níže.</p>
+      <p class="empty">Zatím žádný KAM.{% if pa_can_write.kam %} Přidej ho níže.{% endif %}</p>
     {% endif %}
   </section>
 
+  {% if pa_can_write.kam %}
   <section class="panel">
     <div class="panel-head">
       <div>
@@ -185,4 +188,5 @@
       </div>
     </form>
   </section>
+  {% endif %}
 {% endblock %}

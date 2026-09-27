@@ -1,0 +1,33 @@
+{% if stranka.has_other_pages %}
+  <nav class="lead-pager" aria-label="Stránkování">
+    {% if stranka.has_previous %}
+      <a href="?{% if export_qs %}{{ export_qs }}&amp;{% endif %}stranka={{ stranka.previous_page_number }}">←</a>
+    {% endif %}
+    <div class="lead-pager-pages">
+      {% for n in stranky %}
+        {% if n is None %}
+          <span class="lead-pager-gap">…</span>
+        {% elif n == stranka.number %}
+          <span class="is-current" aria-current="page">{{ n }}</span>
+        {% else %}
+          <a href="?{% if export_qs %}{{ export_qs }}&amp;{% endif %}stranka={{ n }}">{{ n }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% if stranka.has_next %}
+      <a href="?{% if export_qs %}{{ export_qs }}&amp;{% endif %}stranka={{ stranka.next_page_number }}">→</a>
+    {% endif %}
+    <form class="lead-pager-jump" method="get" action="{% url 'partner_admin:potencialni' %}">
+      {% if lead_filtry.q %}<input type="hidden" name="q" value="{{ lead_filtry.q }}">{% endif %}
+      {% if lead_filtry.stav %}<input type="hidden" name="stav" value="{{ lead_filtry.stav }}">{% endif %}
+      {% if lead_filtry.sektor %}<input type="hidden" name="sektor" value="{{ lead_filtry.sektor }}">{% endif %}
+      {% if lead_filtry.web %}<input type="hidden" name="web" value="{{ lead_filtry.web }}">{% endif %}
+      {% if lead_filtry.telefon %}<input type="hidden" name="telefon" value="{{ lead_filtry.telefon }}">{% endif %}
+      <label>Jít na
+        <input type="number" name="stranka" min="1" max="{{ stranka.paginator.num_pages }}" value="{{ stranka.number }}" aria-label="Číslo stránky">
+      </label>
+      <span class="muted">/ {{ stranka.paginator.num_pages }}</span>
+      <button class="btn btn-quiet btn-sm" type="submit">OK</button>
+    </form>
+  </nav>
+{% endif %}

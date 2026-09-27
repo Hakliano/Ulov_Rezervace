@@ -10,7 +10,9 @@
       <p class="muted">Platební stav je informační. Nikdy automaticky neblokuje salon.</p>
     </div>
     <div class="head-actions">
+      {% if pa_can_write.novy_partner %}
       <a class="btn btn-primary" href="{% url 'partner_admin:novy' %}">+ Nový partner</a>
+      {% endif %}
       <a class="btn btn-secondary" href="{% url 'partner_admin:tarify' %}">Tarify</a>
       <a class="btn btn-secondary" href="{% url 'partner_admin:export_csv' %}{% if export_qs %}?{{ export_qs }}{% endif %}">
         Export CSV

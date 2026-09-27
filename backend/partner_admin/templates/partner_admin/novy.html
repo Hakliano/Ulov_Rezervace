@@ -36,7 +36,9 @@
         </label>
       {% endfor %}
       <div class="form-actions">
+        {% if pa_can_write.novy_partner %}
         <button class="btn btn-primary" type="submit">Založit partnera</button>
+        {% endif %}
         <a class="btn btn-quiet" href="{% url 'partner_admin:dashboard' %}">Zrušit</a>
       </div>
     </form>

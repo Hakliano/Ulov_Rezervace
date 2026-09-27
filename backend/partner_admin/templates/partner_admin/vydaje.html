@@ -18,6 +18,7 @@
         <h2>Zadat výdaj</h2>
       </div>
     </div>
+    {% if pa_can_write.vydaje %}
     {% if sablony %}
       <p class="muted">Použít šablonu:
         {% for s in sablony %}
@@ -40,6 +41,9 @@
         <button class="btn btn-primary" type="submit">Uložit výdaj</button>
       </div>
     </form>
+    {% else %}
+      <p class="muted">Nový výdaj může zadat jen role s právem zápisu.</p>
+    {% endif %}
   </section>
 
   <form class="filters filters-faktury" method="get">

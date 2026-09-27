@@ -1,0 +1,262 @@
+{% extends 'partner_admin/base.html' %}
+{% load static %}
+
+{% block title %}Potenciální klienti{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Obchod</p>
+      <h1>Potenciální klienti</h1>
+      <p class="muted">Samostatný seznam. Nesouvisí s tarify ani se salony, které už platí.</p>
+    </div>
+    <div class="head-actions">
+      {% if pa_can_write.potencialni %}
+      <a class="btn btn-secondary" href="{% url 'partner_admin:potencialni_export' %}{% if export_qs %}?{{ export_qs }}{% endif %}">Export JSON</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="metrics">
+    <article><span>Ve filtru</span><strong>{{ souhrn.celkem }}</strong></article>
+    <article><span>Před kontrolou webu</span><strong>{{ souhrn.pred_webu }}</strong></article>
+    <article><span>Bez webu</span><strong>{{ souhrn.bez_webu }}</strong></article>
+    <article><span>Bez telefonu</span><strong>{{ souhrn.bez_telefonu }}</strong></article>
+  </section>
+
+  <section class="panel lead-stav-graf">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Pipeline</p>
+        <h2>Stavy ze všech kontaktů</h2>
+        <p class="muted">Každý sloupec je podíl vůči 100&nbsp;% evidovaných potenciálních klientů. Filtr seznamu na to nemá vliv.</p>
+      </div>
+      <span class="muted">{{ graf_celkem }} celkem</span>
+    </div>
+    {% if graf_celkem %}
+      <div class="lead-stack" role="img" aria-label="Podíl stavů">
+        {% for r in graf_stavy %}
+          {% if r.pocet %}
+            <span class="lead-stack-seg stav-{{ r.kod }}" style="width: {{ r.sirka_css }}%" title="{{ r.label }}: {{ r.procento }} % ({{ r.pocet }})"></span>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <ul class="lead-stack-legend">
+        {% for r in graf_stavy %}
+          <li>
+            <a href="?stav={{ r.kod }}">
+              <i class="stav-{{ r.kod }}" aria-hidden="true"></i>
+              <span>{{ r.label }}</span>
+              <b>{{ r.procento }}&nbsp;%</b>
+              <em>{{ r.pocet }}</em>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Až budou v seznamu kontakty, tady uvidíš rozložení stavů.</p>
+    {% endif %}
+  </section>
+
+  <form class="filters filters-leads" method="get" action="{% url 'partner_admin:potencialni' %}">
+    <label>
+      Jméno nebo e-mail
+      <input type="search" name="q" value="{{ lead_filtry.q }}" placeholder="Hledat…">
+    </label>
+    <label>
+      Stav
+      <select name="stav">
+        <option value="">Všechny</option>
+        {% for kod, label in stavy %}
+          <option value="{{ kod }}" {% if lead_filtry.stav == kod %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Sektor
+      <select name="sektor">
+        <option value="">Všechny</option>
+        {% for s in sektory %}
+          <option value="{{ s.id }}" {% if lead_filtry.sektor == s.id|stringformat:"s" %}selected{% endif %}>{{ s.nazev }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Web
+      <select name="web">
+        <option value="">Vše</option>
+        <option value="ano" {% if lead_filtry.web == 'ano' %}selected{% endif %}>Má web</option>
+        <option value="ne" {% if lead_filtry.web == 'ne' %}selected{% endif %}>Nemá web</option>
+      </select>
+    </label>
+    <label>
+      Telefon
+      <select name="telefon">
+        <option value="">Vše</option>
+        <option value="ano" {% if lead_filtry.telefon == 'ano' %}selected{% endif %}>Má telefon</option>
+        <option value="ne" {% if lead_filtry.telefon == 'ne' %}selected{% endif %}>Nemá telefon</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">Filtrovat</button>
+    <a class="btn btn-quiet" href="{% url 'partner_admin:potencialni' %}">Zrušit</a>
+  </form>
+
+  {% include 'partner_admin/_potencialni_pager.html' %}
+
+  <section class="lead-table-wrap" aria-label="Seznam potenciálních klientů">
+    <div class="lead-head" aria-hidden="true">
+      <span>Jméno</span>
+      <span>Kontakt</span>
+      <span>Sektor</span>
+      <span>Stav</span>
+      <span></span>
+    </div>
+    {% for k in stranka %}
+      <article id="lead-{{ k.id }}" class="lead-row{% if edit_id == k.id|stringformat:'s' %} is-editing{% endif %}" data-id="{{ k.id }}">
+        <div class="lead-id">
+          <strong>{{ k.jmeno }}</strong>
+          {% if k.ico %}<span class="lead-meta">IČO {{ k.ico }}</span>{% endif %}
+          {% if k.adresa %}<span class="lead-meta">{{ k.adresa }}</span>{% endif %}
+        </div>
+        <div class="lead-contact">
+          <span>{{ k.email }}</span>
+          <span class="lead-meta">{% if k.telefon %}{{ k.telefon }}{% else %}bez telefonu{% endif %}</span>
+          <span class="lead-meta lead-web">{% if k.web %}{{ k.web }}{% else %}bez webu{% endif %}</span>
+        </div>
+        <div class="lead-sektor">{{ k.sektor.nazev|default:"nezařazeno" }}</div>
+          {% if pa_can_write.potencialni %}
+          <form class="lead-stav" method="post" action="{% url 'partner_admin:potencialni_stav' k.id %}{% if list_qs %}?{{ list_qs }}{% endif %}" data-autosave>
+          {% csrf_token %}
+          <select name="stav" aria-label="Stav {{ k.jmeno }}">
+            {% for kod, label in stavy %}
+              <option value="{{ kod }}" {% if k.stav == kod %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <span class="lead-saved" hidden>uloženo</span>
+        </form>
+        {% else %}
+        <div class="lead-stav">{{ k.get_stav_display }}</div>
+        {% endif %}
+        {% if pa_can_write.potencialni %}
+        <div class="lead-actions">
+          <button type="button" class="btn btn-secondary btn-sm" data-web-toggle>{% if k.web %}Web{% else %}+ Web{% endif %}</button>
+          <a class="btn btn-secondary btn-sm" href="?{% if list_qs %}{{ list_qs }}&amp;{% endif %}edit={{ k.id }}#lead-{{ k.id }}">Upravit</a>
+        </div>
+        <form class="lead-web-form" method="post" action="{% url 'partner_admin:potencialni_web' k.id %}{% if list_qs %}?{{ list_qs }}{% endif %}" data-web-save hidden>
+          {% csrf_token %}
+          <label>Webová adresa
+            <input type="text" name="web_new" value="{{ k.web }}" placeholder="https://www.salon.cz" autocomplete="off">
+          </label>
+          <button class="btn btn-primary btn-sm" type="submit">Uložit web</button>
+          <button class="btn btn-quiet btn-sm" type="button" data-web-cancel>Zrušit</button>
+        </form>
+        {% endif %}
+        {% if pa_can_write.potencialni and edit_id == k.id|stringformat:'s' %}
+          <form class="lead-edit form-grid compact" method="post" action="{% url 'partner_admin:potencialni_ulozit' k.id %}{% if list_qs %}?{{ list_qs }}{% endif %}">
+            {% csrf_token %}
+            <label>Jméno <input type="text" name="jmeno" value="{{ k.jmeno }}" required></label>
+            <label>E-mail <input type="email" name="email" value="{{ k.email }}" required></label>
+            <label>Telefon <input type="text" name="telefon" value="{{ k.telefon }}"></label>
+            <label>Web <input type="text" name="web_new" value="{{ k.web }}"></label>
+            <label>IČO <input type="text" name="ico" value="{{ k.ico }}"></label>
+            <label>Sektor
+              <select name="sektor_id">
+                {% for s in sektory %}
+                  <option value="{{ s.id }}" {% if k.sektor_id == s.id %}selected{% endif %}>{{ s.nazev }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="full">Adresa <input type="text" name="adresa" value="{{ k.adresa }}"></label>
+            <label class="full">Poznámka <textarea name="poznamka" rows="3">{{ k.poznamka }}</textarea></label>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Uložit změny</button>
+              <a class="btn btn-quiet" href="{% url 'partner_admin:potencialni' %}{% if list_qs %}?{{ list_qs }}{% endif %}#lead-{{ k.id }}">Zavřít</a>
+            </div>
+          </form>
+        {% endif %}
+      </article>
+    {% empty %}
+      <p class="muted">V tomto filtru nikdo není.</p>
+    {% endfor %}
+  </section>
+
+  {% include 'partner_admin/_potencialni_pager.html' %}
+
+  {% if pa_can_write.potencialni %}
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Ručně</p>
+        <h2>Nový kontakt</h2>
+      </div>
+    </div>
+    <form method="post" action="{% url 'partner_admin:potencialni_pridat' %}{% if export_qs %}?{{ export_qs }}{% endif %}" class="form-grid compact">
+      {% csrf_token %}
+      <label>Jméno * <input type="text" name="jmeno" required></label>
+      <label>E-mail * <input type="email" name="email" required></label>
+      <label>Telefon <input type="text" name="telefon"></label>
+      <label>Web <input type="text" name="web_new"></label>
+      <label>IČO <input type="text" name="ico"></label>
+      <label>Sektor
+        <select name="sektor_id">
+          {% for s in sektory %}
+            <option value="{{ s.id }}" {% if s.nazev == 'nezařazeno' %}selected{% endif %}>{{ s.nazev }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="full">Adresa <input type="text" name="adresa"></label>
+      <label class="full">Poznámka <textarea name="poznamka" rows="2"></textarea></label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Přidat</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Číselník</p>
+        <h2>Nový sektor</h2>
+        <p class="muted">Beauty, Veterina, Servis a nezařazeno už jsou. Tady přidáš další.</p>
+      </div>
+    </div>
+    <form method="post" action="{% url 'partner_admin:potencialni_sektor' %}{% if export_qs %}?{{ export_qs }}{% endif %}" class="form-grid compact">
+      {% csrf_token %}
+      <label>Název sektoru <input type="text" name="sektor_nazev" required placeholder="např. Dental"></label>
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="submit">Přidat sektor</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">Hromadně</p>
+        <h2>Import JSON</h2>
+        <p class="muted">Stav z JSON se ignoruje — každý nový záznam začíná jako „Lead před kontrolou webu“. Duplicitní e-mail se přeskočí.</p>
+      </div>
+    </div>
+    <form method="post" action="{% url 'partner_admin:potencialni_import' %}" enctype="multipart/form-data" class="form-grid">
+      {% csrf_token %}
+      <label class="full">Soubor JSON <input type="file" name="json_file" accept="application/json,.json"></label>
+      <label class="full">Nebo vlož JSON
+        <textarea name="json_text" rows="10" placeholder="[{&quot;email&quot;:&quot;…&quot;,&quot;company_name&quot;:&quot;VET - …&quot;}]"></textarea>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Importovat</button>
+      </div>
+    </form>
+    <details class="lead-help">
+      <summary>Jak má JSON vypadat</summary>
+      <p>Povinné je jen <code>email</code> a jméno (<code>company_name</code> nebo <code>jmeno</code>). Zbytek může chybět. <code>status</code> a <code>email_template</code> bereme na vědomí, ale stav se vždy nastaví na Lead před kontrolou webu.</p>
+      <p>Když název začíná <code>VET -</code>, sektor bude Veterina. <code>SALON -</code> → Beauty. Jinak nezařazeno. Prázdné <code>address</code> a vyplněné <code>description</code> se uloží jako adresa (jako ve tvém exportu z map).</p>
+      <pre>{{ json_napoveda }}</pre>
+    </details>
+  </section>
+  {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+  <script src="{% static 'partner_admin/potencialni.js' %}?v=3" defer></script>
+{% endblock %}
