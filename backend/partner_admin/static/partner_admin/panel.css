@@ -1019,6 +1019,21 @@ small { color: var(--muted); }
 .kpi-warn::before { background: var(--danger); }
 .dash { display: grid; grid-template-columns: 1.35fr .9fr; gap: 1rem; margin-bottom: 1rem; }
 .dash-bottom { grid-template-columns: 1.1fr .9fr; }
+.dash-video { margin-bottom: 0; }
+.dash-video-frame {
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--field);
+}
+.dash-video-frame video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  aspect-ratio: 16 / 9;
+  background: #05080e;
+}
 .stack { display: grid; gap: 1rem; }
 .chart {
   display: flex;
