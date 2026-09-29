@@ -4,14 +4,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Přihlášení · ULOV KLIENTY</title>
+  <title>{% if pa_je_staging %}STAGING · {% elif pa_je_lokal %}LOKÁL · {% endif %}Přihlášení · ULOV KLIENTY</title>
   <link rel="stylesheet" href="{% static 'partner_admin/panel.css' %}">
 </head>
 <body class="login-shell">
   <aside class="sidebar login-sidebar">
     <div class="sidebar-brand">
-      <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/New%20Project.webp" alt="ULOV KLIENTY" referrerpolicy="no-referrer">
-      <span>Partner-admin</span>
+      {% include 'partner_admin/_sidebar_brand.html' with brand_role='Partner-admin' %}
     </div>
     <p class="login-brand-copy">Správa partnerů ULOV KLIENTY. Tým i superadmin sem.</p>
   </aside>

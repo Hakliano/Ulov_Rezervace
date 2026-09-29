@@ -1,0 +1,8 @@
+{% if pa_je_staging %}
+  <span class="sidebar-env sidebar-env-staging">Staging</span>
+{% elif pa_je_lokal %}
+  <span class="sidebar-env sidebar-env-lokal">Lokál</span>
+{% else %}
+  <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/New%20Project.webp" alt="ULOV KLIENTY" referrerpolicy="no-referrer">
+{% endif %}
+<span class="sidebar-brand-role">{{ brand_role }}</span>

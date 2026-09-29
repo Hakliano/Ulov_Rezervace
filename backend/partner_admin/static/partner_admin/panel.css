@@ -69,7 +69,22 @@ button, input, select, textarea { font: inherit; }
   height: auto;
   display: block;
 }
-.sidebar-brand span {
+.sidebar-env {
+  display: block;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  text-align: center;
+}
+.sidebar-env-staging {
+  color: #ff3b3b;
+}
+.sidebar-env-lokal {
+  color: #3db4e6;
+}
+.sidebar-brand-role {
   color: var(--gold);
   font-size: .68rem;
   font-weight: 800;
