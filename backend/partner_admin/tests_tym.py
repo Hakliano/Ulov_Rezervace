@@ -179,12 +179,19 @@ class TymPristupyTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
 
 
+@override_settings(
+    DEBUG=False,
+    SENTRY_ENVIRONMENT='production',
+    API_PUBLIC_BASE_URL='https://api.ulovklienty.cz/api',
+)
 class PartnerAdminLoginTests(TestCase):
     def test_branded_login_page_vraci_200_a_ulov_branding(self):
         response = self.client.get('/partner-admin/login/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'ULOV KLIENTY')
         self.assertContains(response, 'New%20Project.webp')
+        self.assertNotContains(response, 'sidebar-env-staging')
+        self.assertNotContains(response, 'sidebar-env-lokal')
         self.assertContains(response, 'csrfmiddlewaretoken')
         self.assertContains(response, 'E-mail nebo uživatelské jméno')
         self.assertContains(response, 'Heslo')
@@ -235,4 +242,60 @@ class PartnerAdminLoginTests(TestCase):
         response = self.client.get('/admin/login/')
         self.assertEqual(response.status_code, 302)
         self.assertIn('/partner-admin/login/', response['Location'])
+
+
+LOGO_ULOV = 'New%20Project.webp'
+
+
+class PartnerAdminProstrediZnackaTests(TestCase):
+    def test_staging_login_misto_loga(self):
+        with override_settings(
+            DEBUG=False,
+            SENTRY_ENVIRONMENT='staging',
+            API_PUBLIC_BASE_URL='https://api-staging.ulovklienty.cz/api',
+        ):
+            response = self.client.get('/partner-admin/login/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sidebar-env-staging')
+        self.assertContains(response, 'Staging')
+        self.assertNotContains(response, LOGO_ULOV)
+
+    def test_live_login_ma_logo(self):
+        with override_settings(
+            DEBUG=False,
+            SENTRY_ENVIRONMENT='production',
+            API_PUBLIC_BASE_URL='https://api.ulovklienty.cz/api',
+        ):
+            response = self.client.get('/partner-admin/login/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, LOGO_ULOV)
+        self.assertNotContains(response, 'sidebar-env-staging')
+        self.assertNotContains(response, 'sidebar-env-lokal')
+
+    def test_lokal_login_misto_loga(self):
+        with override_settings(DEBUG=True, SENTRY_ENVIRONMENT='production'):
+            response = self.client.get('/partner-admin/login/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sidebar-env-lokal')
+        self.assertContains(response, 'Lokál')
+        self.assertNotContains(response, LOGO_ULOV)
+
+    def test_staging_panel_po_prihlaseni(self):
+        User = get_user_model()
+        user = User.objects.create_superuser(
+            username='superadmin',
+            email='admin@example.test',
+            password='bezpecne-test-heslo',
+        )
+        self.client.force_login(user)
+        with override_settings(
+            DEBUG=False,
+            SENTRY_ENVIRONMENT='staging',
+            API_PUBLIC_BASE_URL='https://api-staging.ulovklienty.cz/api',
+        ):
+            response = self.client.get('/partner-admin/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sidebar-env-staging')
+        self.assertContains(response, 'Staging')
+        self.assertNotContains(response, LOGO_ULOV)
 

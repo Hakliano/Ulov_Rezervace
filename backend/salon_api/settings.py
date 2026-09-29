@@ -255,6 +255,9 @@ API_PUBLIC_BASE_URL = (
     or 'https://api.ulovklienty.cz/api'
 ).rstrip('/')
 
+# staging / production / local — stejný kód, jiný nápis v partner-admin
+SENTRY_ENVIRONMENT = (os.environ.get('SENTRY_ENVIRONMENT', 'production') or 'production').strip()
+
 if REDIS_URL:
     CACHES = {
         'default': {
@@ -468,7 +471,7 @@ if SENTRY_DSN:
 
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        environment=os.environ.get('SENTRY_ENVIRONMENT', 'production'),
+        environment=SENTRY_ENVIRONMENT,
         traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0.1')),
         send_default_pii=False,
         before_send=_sentry_scrub_smtp,
