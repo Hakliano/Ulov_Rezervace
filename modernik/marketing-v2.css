@@ -1620,6 +1620,10 @@ a.promo-card-img:hover {
   background: #000;
 }
 
+.showcase-video-frame + .section-head {
+  margin-top: 2.75rem;
+}
+
 /* Doplňkové produkty */
 .extras {
   background: linear-gradient(180deg, rgba(11, 26, 46, 0.55) 0%, transparent 100%);
