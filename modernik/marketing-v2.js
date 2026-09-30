@@ -87,6 +87,88 @@
     if (event.target === lightbox) closeTileLightbox();
   });
 
+  const PROBLEMS = {
+    telefon: {
+      title: 'Zvoní vám telefon, když pracujete?',
+      problem: 'Zákaznice chce termín. Vy máte právě někoho na křesle. Telefon zvoní. Pokud ho nevezmete, možná zavolá jinam. Pokud ho vezmete, přerušíte svoji práci.',
+      solution: 'Zákaznice si na vašem webu sama vybere službu, pracovníka, datum a volný čas. Rezervaci může vytvořit klidně ve tři ráno. Vy ráno pouze vidíte: „Nová rezervace – pátek 14:30.“',
+      img: 'https://haklweb.b-cdn.net/ULOV_KLIENTA/ui_flow1.webp',
+      imgAlt: 'FLOW — přehled dne a nová rezervace',
+    },
+    web: {
+      title: 'Web máte. Ale opravdu pro vás pracuje?',
+      problem: 'Stránka existuje, ale zákazník na ní neudělá další krok. Volá, píše, nebo odejde jinam.',
+      solution: 'Web na míru ukazuje, kdo jste, a vede rovnou k rezervaci. Není to vizitka někde na internetu — je to začátek cesty zákazníka.',
+      img: 'https://haklweb.b-cdn.net/webs/salon-19/hero/5efa416ca0e04d0c94933cd4d18f533c.webp',
+      imgAlt: 'Ukázka webu partnera Moderníka',
+    },
+    hlava: {
+      title: 'Nosíte informace o zákaznících v hlavě?',
+      problem: 'Barva, alergie, poznámka z minula. Když nejste u křesla vy, kolega to neví. Když onemocníte, informace odejde s vámi.',
+      solution: 'Archivník drží zákazníka, jeho karty a historii na jednom místě. Bezpečně, přehledně, i když zrovna obsluhujete někoho jiného.',
+    },
+    recenze: {
+      title: 'Máte spokojené zákazníky, ale málo recenzí?',
+      problem: 'Návštěva dopadla dobře. Zákazník odejde. Výzva k recenzi se nestane, protože zrovna uklízíte nebo berete dalšího.',
+      solution: 'Po návštěvě může Moderník poslat poděkování a slušnou výzvu k recenzi za vás. Vy mezitím děláte svou práci.',
+    },
+    sklad: {
+      title: 'Nevíte přesně, co dochází?',
+      problem: 'Barva, šampon, díl. Kontrolujete očima, až když něco chybí uprostřed služby.',
+      solution: 'Materiálník hlídá spotřebu u služeb. Vidíte, co dochází, dřív než to dojde na polici.',
+    },
+    diar: {
+      title: 'Máte provoz rozdělený mezi diář, telefon a zprávy?',
+      problem: 'Termín je v sešitě, přesun v SMS, poznámka v hlavě. Kolega to nevidí. Vy to skládáte každé ráno znovu.',
+      solution: 'FLOW dá termíny, tým i stavy návštěv na jedno místo. Kalendář provozovny, ne tři různé evidenční systémy.',
+      img: 'https://haklweb.b-cdn.net/ULOV_KLIENTA/ui_flow1.webp',
+      imgAlt: 'FLOW — kalendář provozovny',
+    },
+    emaily: {
+      title: 'Píšete zákazníkům pořád stejné zprávy?',
+      problem: 'Potvrzení rezervace, připomínka, poděkování. Stejný text pořád dokola, nebo se nepošle vůbec.',
+      solution: 'Potvrzení, připomínky a další komunikace může odcházet automaticky. Texty jdou upravit, provoz běží i ve tři ráno.',
+    },
+    celky: {
+      title: 'Platíte několik služeb, které spolu nemluví?',
+      problem: 'Jeden nástroj na web, druhý na termíny, třetí na sklady. Data se přepisují. Když jeden spadne, držíte to ručně.',
+      solution: 'Části Moderníka jsou navržené tak, aby na sebe navazovaly. Zákazník, termín, karta i zpráva patří k sobě — ne k pěti přihlášením.',
+    },
+  };
+
+  const problemDialog = document.getElementById('problem-dialog');
+  const problemBody = document.getElementById('problem-dialog-body');
+  const problemClose = document.getElementById('problem-dialog-close');
+
+  function closeProblemDialog() {
+    if (problemDialog?.open) problemDialog.close();
+  }
+
+  function openProblemDialog(id) {
+    const item = PROBLEMS[id];
+    if (!item || !problemDialog || !problemBody) return;
+    const img = item.img
+      ? `<img class="problem-dialog-shot" src="${item.img}" alt="${item.imgAlt || ''}" width="1600" height="900">`
+      : '';
+    problemBody.innerHTML = `
+      <h2 id="problem-dialog-title">${item.title}</h2>
+      <h3>Problém</h3>
+      <p>${item.problem}</p>
+      <h3>Jak to řeší Moderník</h3>
+      <p>${item.solution}</p>
+      ${img}
+    `;
+    if (typeof problemDialog.showModal === 'function') problemDialog.showModal();
+  }
+
+  document.querySelectorAll('.problem-open').forEach((btn) => {
+    btn.addEventListener('click', () => openProblemDialog(btn.dataset.problem));
+  });
+  problemClose?.addEventListener('click', closeProblemDialog);
+  problemDialog?.addEventListener('click', (event) => {
+    if (event.target === problemDialog) closeProblemDialog();
+  });
+
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const cat = tab.dataset.category || 'all';

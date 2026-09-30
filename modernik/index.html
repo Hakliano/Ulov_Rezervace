@@ -3,40 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MODERNÍK — web, rezervace a digitální provoz provozovny</title>
-  <meta name="description" content="Moderník — web na míru, online rezervace, FLOW a Archivník. Produkt projektu ULOV KLIENTY. Vy se věnujte zákazníkům — o digitální chod se postaráme za Vás.">
+  <title>MODERNÍK — klid pro vaše podnikání</title>
+  <meta name="description" content="Web, rezervace, zákazníci i věci kolem provozovny mohou fungovat společně. Vy se můžete věnovat své práci.">
   <link rel="icon" type="image/webp" href="https://haklweb.b-cdn.net/modernik/modernik_favi.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=25">
+  <link rel="stylesheet" href="marketing-v2.css?v=26">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
+  <p class="experiment-banner">Zkušební návrh homepage — jen staging. Není to ostrý web.</p>
   <header class="site-header">
     <div class="wrap header-inner">
       <a href="./" class="brand brand-nav" aria-label="MODERNÍK">
         <img src="https://haklweb.b-cdn.net/modernik/modernik_favi.webp" alt="MODERNÍK" width="40" height="40">
       </a>
       <nav class="nav" aria-label="Hlavní navigace">
-        <a href="#sluzby">Jak to funguje</a>
-        <a href="#program-rustu">Program Růstu</a>
-        <a href="#ukazky">Ukázky</a>
-        <a href="#nfc">Recenze</a>
+        <a href="#problemy">Problémy</a>
+        <a href="#pribeh">Jak to pracuje</a>
+        <a href="#sluzby">Co je uvnitř</a>
         <a href="#ceny">Partnerství</a>
-        <a class="nav-doc" href="https://www.modernik.cz/dokumentace.html">Dokumentace</a>
+        <a href="#jiri">Jiří</a>
+        <a class="nav-doc" href="dokumentace.html">Dokumentace</a>
         <a href="#poptavka">Kontakt</a>
       </nav>
       <div class="header-actions">
         <a href="podklady-pro-vas-web.html" class="btn btn-outline">Podklady pro váš web</a>
-        <a href="#poptavka" class="btn btn-gold">Chci nezávazný návrh</a>
+        <a href="#poptavka" class="btn btn-gold">Chci osobní ukázku</a>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="wrap-wide hero-grid">
+    <section class="hero hero-calm">
+      <div class="wrap-wide hero-grid hero-grid-calm">
         <div class="hero-logo-wrap">
           <img
             class="hero-brand-logo"
@@ -47,52 +48,103 @@
             loading="eager"
             decoding="async"
           >
-          <p class="hero-product-note">
-            <span>Produkt projektu</span>
-            <a href="https://www.ulovklienty.cz/" target="_blank" rel="noopener" class="hero-ulov-logo-link" aria-label="ULOV KLIENTY">
-              <img
-                class="hero-ulov-logo"
-                src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp"
-                alt="ULOV KLIENTY"
-                width="360"
-                height="360"
-                loading="eager"
-                decoding="async"
-              >
-            </a>
-          </p>
         </div>
         <div class="hero-copy">
-          <h1>Vy se věnujte svým zákazníkům.<br><em>O digitální chod provozovny se postaráme za Vás.</em></h1>
+          <h1>Moderník.<br><em>Klid pro vaše podnikání.</em></h1>
           <p class="hero-lead">
-            Web na míru, online rezervace, FLOW pro váš tým, Archivník zákazníků a osobní podpora přímo od zakladatele.
+            Web, rezervace, zákazníci i věci kolem provozovny mohou fungovat společně. Vy se můžete věnovat své práci.
           </p>
-          <p class="hero-pillars">WEB · REZERVACE · FLOW · ARCHIVNÍK · PODPORA</p>
-          <a href="#poptavka" class="btn btn-gold">Chci nezávazný návrh →</a>
-        </div>
-        <div class="hero-photo-wrap">
-          <img
-            class="hero-photo"
-            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/upravena_foto_hakl.webp"
-            alt="Jiří Hakl — zakladatel projektu ULOV KLIENTY"
-            width="560"
-            height="700"
-            loading="eager"
-            decoding="async"
-          >
-          <div class="hero-badge">
-            <span class="name">Jiří Hakl</span>
-            <span class="role">Zakladatel a tvůrce MODERNÍKA</span>
-            <p>Již dlouhá léta se věnuje IT a programování. A hlavně tomu, jak může IT pomoci běžným podnikatelům.</p>
+          <div class="hero-actions">
+            <a href="#problemy" class="btn btn-gold">Ukázat, co mi Moderník vyřeší</a>
+            <a href="#poptavka" class="btn btn-outline">Chci osobní ukázku</a>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="section problems-section" id="problemy">
+      <div class="wrap-wide">
+        <div class="section-head">
+          <h2>Co vám v provozu bere klid?</h2>
+          <p>Osm krátkých otázek. Detail se otevře vedle — mřížka karet zůstane přehledná.</p>
+        </div>
+        <div class="problems-grid">
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">📞</p>
+            <h3>Zvoní vám telefon, když pracujete?</h3>
+            <p>Zákazníci se mohou objednat sami.</p>
+            <button type="button" class="problem-open" data-problem="telefon">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">🌐</p>
+            <h3>Web máte. Ale opravdu pro vás pracuje?</h3>
+            <p>Nestačí jen někde na internetu existovat.</p>
+            <button type="button" class="problem-open" data-problem="web">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">📖</p>
+            <h3>Nosíte informace o zákaznících v hlavě?</h3>
+            <p>Barvy, poznámky, alergie i historie mohou být bezpečně na jednom místě.</p>
+            <button type="button" class="problem-open" data-problem="hlava">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">⭐</p>
+            <h3>Máte spokojené zákazníky, ale málo recenzí?</h3>
+            <p>Moderník se po návštěvě může ozvat za vás.</p>
+            <button type="button" class="problem-open" data-problem="recenze">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">📦</p>
+            <h3>Nevíte přesně, co dochází?</h3>
+            <p>Materiál nemusíte kontrolovat jen podle toho, co zrovna vidíte na polici.</p>
+            <button type="button" class="problem-open" data-problem="sklad">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">📅</p>
+            <h3>Máte provoz rozdělený mezi diář, telefon a zprávy?</h3>
+            <p>Termíny a provoz mohou být na jednom místě.</p>
+            <button type="button" class="problem-open" data-problem="diar">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">✉️</p>
+            <h3>Píšete zákazníkům pořád stejné zprávy?</h3>
+            <p>Potvrzení, připomínky a další komunikace může odcházet automaticky.</p>
+            <button type="button" class="problem-open" data-problem="emaily">Jak to vyřešíme →</button>
+          </article>
+          <article class="problem-card">
+            <p class="problem-emoji" aria-hidden="true">🧩</p>
+            <h3>Platíte několik služeb, které spolu nemluví?</h3>
+            <p>Jednotlivé části Moderníka jsou vytvořené tak, aby spolupracovaly.</p>
+            <button type="button" class="problem-open" data-problem="celky">Jak to vyřešíme →</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section story-section" id="pribeh">
+      <div class="wrap-wide">
+        <div class="section-head">
+          <h2>Zatímco pracujete, Moderník pracuje taky.</h2>
+        </div>
+        <ol class="story-path">
+          <li>Najde vás</li>
+          <li>Rezervuje se</li>
+          <li>Přijde</li>
+          <li>Vy máte jeho informace</li>
+          <li>Proběhne služba</li>
+          <li>Odejde</li>
+          <li>Dostane e-mail</li>
+          <li>Napíše recenzi</li>
+        </ol>
+        <p class="story-after">A vy jste mezitím dělali svoji práci.</p>
       </div>
     </section>
 
     <section class="section" id="sluzby">
       <div class="wrap-wide">
         <div class="section-head section-head-wide">
-          <h2>MODERNÍK je všech 8 bodů pro digitální chod provozovny v jednom balíčku.</h2>
+          <h2>Co všechno pracuje v pozadí</h2>
+          <p>Až tady jsou názvy nástrojů. Nejdřív problém a výsledek — teprve potom technologie.</p>
         </div>
 
         <div class="tiles-grid" id="tiles">
@@ -995,8 +1047,8 @@
     <section class="section pricing" id="ceny">
       <div class="wrap-wide">
         <div class="section-head">
-          <h2>Partnerství MODERNÍK</h2>
-          <p>Jeden produkt — web, rezervace, FLOW, Archivník a podpora. Platíte měsíčně, na půl roku, nebo na rok. Program růstu a Materiálník se dají přikoupit.</p>
+          <h2>Jedno Partnerství. Jedna cena. Jeden systém.</h2>
+          <p>Neplatíte zvlášť web, rezervace a CRM. Partnerství je jeden celek. Pro mnoho provozoven je měsíční Partnerství přibližně cenou jedné služby zákazníkovi.</p>
         </div>
 
         <div class="price-plans" role="list">
@@ -1393,12 +1445,38 @@
       </div>
     </section>
 
+    <section class="section founder-section" id="jiri">
+      <div class="wrap-wide founder-grid">
+        <div class="founder-photo-wrap">
+          <img
+            class="founder-photo"
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/upravena_foto_hakl.webp"
+            alt="Jiří Hakl"
+            width="560"
+            height="700"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+        <div class="founder-copy">
+          <h2>Za Moderníkem není callcentrum.</h2>
+          <p>
+            Jmenuji se Jiří Hakl. Moderníka jsem navrhl a naprogramoval, protože jsem chtěl vytvořit systém, který provozovně skutečně ubere práci místo toho, aby jí přidal další software, o který se musí starat.
+          </p>
+          <p>
+            Když něco potřebujete, komunikujete s člověkem, který systém skutečně zná.
+          </p>
+          <p class="founder-sign">Jiří Hakl<br><span>zakladatel Moderníka</span></p>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="poptavka">
       <div class="wrap-wide contact-grid">
         <div>
-          <h2>Vy se starejte o své zákazníky.<br>My budeme partnerem pro zbytek.</h2>
+          <h2>Chci Moderníka vidět.</h2>
           <p class="hero-lead" style="margin-top:0.75rem;">
-            Řekněte nám něco o svém podnikání. Ukážeme možnosti a doporučíme řešení podle vašeho provozu.
+            Řekněte nám něco o svém podnikání. Ukážeme, jak by to mohlo vypadat u vás.
           </p>
           <ul class="contact-list">
             <li>
@@ -1539,11 +1617,15 @@
       privacyUrl: "gdpr.html"
     };
   </script>
+  <dialog class="problem-dialog" id="problem-dialog" aria-labelledby="problem-dialog-title">
+    <button type="button" class="problem-dialog-close" id="problem-dialog-close">Zavřít</button>
+    <div class="problem-dialog-body" id="problem-dialog-body"></div>
+  </dialog>
   <dialog class="tile-lightbox" id="tile-lightbox" aria-label="Zvětšený snímek">
     <button type="button" class="tile-lightbox-close" id="tile-lightbox-close">Zavřít</button>
     <img id="tile-lightbox-img" alt="">
   </dialog>
   <script src="cookie-consent.js?v=2" defer></script>
-  <script src="marketing-v2.js?v=9" defer></script>
+  <script src="marketing-v2.js?v=10" defer></script>
 </body>
 </html>
