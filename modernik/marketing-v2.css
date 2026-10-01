@@ -2073,10 +2073,13 @@ a.promo-card-img:hover {
   line-height: 1;
 }
 
-.story-note-icon-stars {
+.story-stars {
+  display: inline-block;
+  margin-right: 0.28rem;
   color: var(--gold);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  vertical-align: 0.08em;
 }
 
 .story-note h3 {
