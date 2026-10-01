@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=27">
+  <link rel="stylesheet" href="marketing-v2.css?v=28">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -123,42 +123,46 @@
 
     <section class="section story-section" id="pribeh">
       <div class="wrap-wide">
-        <div class="section-head">
+        <div class="section-head section-head-wide">
           <h2>Zatímco pracujete, Moderník pracuje taky.</h2>
         </div>
         <div class="story-feed" role="list">
-          <p class="story-feed-bar">Dnes · oznámení z provozu</p>
+          <p class="story-feed-bar"><span class="story-live-dot" aria-hidden="true"></span> Dnes · oznámení z provozu</p>
           <article class="story-note" role="listitem" style="--story-delay: 0s">
-            <time>14:32</time>
-            <div class="story-note-body">
-              <h3><span aria-hidden="true">📅</span> Nová rezervace</h3>
-              <p>Jana Nováková se objednala na pátek 10:30.</p>
-              <p class="story-note-aside">Nemusela vám volat.</p>
-            </div>
+            <header class="story-note-meta">
+              <time datetime="14:32">14:32</time>
+              <span class="story-note-icon" aria-hidden="true">📅</span>
+            </header>
+            <h3>Nová rezervace</h3>
+            <p>Jana Nováková se objednala na pátek 10:30.</p>
+            <p class="story-note-aside">Nemusela vám volat.</p>
           </article>
           <article class="story-note" role="listitem" style="--story-delay: 0.12s">
-            <time>14:33</time>
-            <div class="story-note-body">
-              <h3><span aria-hidden="true">✉️</span> Potvrzení odesláno</h3>
-              <p>Zákaznice dostala všechny informace.</p>
-              <p class="story-note-aside">Nemusela jste nic psát.</p>
-            </div>
+            <header class="story-note-meta">
+              <time datetime="14:33">14:33</time>
+              <span class="story-note-icon" aria-hidden="true">✉️</span>
+            </header>
+            <h3>Potvrzení odesláno</h3>
+            <p>Zákaznice dostala všechny informace.</p>
+            <p class="story-note-aside">Nemusela jste nic psát.</p>
           </article>
           <article class="story-note" role="listitem" style="--story-delay: 0.24s">
-            <time>16:48</time>
-            <div class="story-note-body">
-              <h3><span aria-hidden="true">⭐</span> Žádost o recenzi odeslána</h3>
-              <p>Po dokončené návštěvě se Moderník ozval sám.</p>
-              <p class="story-note-aside">Nemusela jste si na to vzpomenout.</p>
-            </div>
+            <header class="story-note-meta">
+              <time datetime="16:48">16:48</time>
+              <span class="story-note-icon" aria-hidden="true">⭐</span>
+            </header>
+            <h3>Žádost o recenzi odeslána</h3>
+            <p>Po dokončené návštěvě se Moderník ozval sám.</p>
+            <p class="story-note-aside">Nemusela jste si na to vzpomenout.</p>
           </article>
           <article class="story-note story-note-last" role="listitem" style="--story-delay: 0.36s">
-            <time>18:07</time>
-            <div class="story-note-body">
-              <h3><span aria-hidden="true">⭐⭐⭐⭐⭐</span> Nová Google recenze</h3>
-              <p>Další spokojená zákaznice se podělila o zkušenost.</p>
-              <p class="story-note-aside">Vy jste mezitím pracovala.</p>
-            </div>
+            <header class="story-note-meta">
+              <time datetime="18:07">18:07</time>
+              <span class="story-note-icon story-note-icon-stars" aria-hidden="true">★★★★★</span>
+            </header>
+            <h3>Nová Google recenze</h3>
+            <p>Další spokojená zákaznice se podělila o zkušenost.</p>
+            <p class="story-note-aside">Vy jste mezitím pracovala.</p>
           </article>
         </div>
       </div>
