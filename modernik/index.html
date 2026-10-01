@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=29">
+  <link rel="stylesheet" href="marketing-v2.css?v=30">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -21,7 +21,6 @@
       </a>
       <nav class="nav" aria-label="Hlavní navigace">
         <a href="#problemy">Problémy</a>
-        <a href="#pribeh">Jak to pracuje</a>
         <a href="#sluzby">Co je uvnitř</a>
         <a href="#ceny">Partnerství</a>
         <a href="#jiri">Jiří</a>
@@ -62,107 +61,223 @@
       </div>
     </section>
 
-    <section class="section problems-section" id="problemy">
-      <div class="wrap-wide">
-        <div class="section-head">
-          <h2>Co vám v provozu bere klid?</h2>
-          <p>Osm krátkých otázek. Detail se otevře vedle — mřížka karet zůstane přehledná.</p>
-        </div>
-        <div class="problems-grid">
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">📞</p>
-            <h3>Zvoní vám telefon, když pracujete?</h3>
-            <p>Zákazníci se mohou objednat sami.</p>
-            <button type="button" class="problem-open" data-problem="telefon">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">🌐</p>
-            <h3>Web máte. Ale opravdu pro vás pracuje?</h3>
-            <p>Nestačí jen někde na internetu existovat.</p>
-            <button type="button" class="problem-open" data-problem="web">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">📖</p>
-            <h3>Nosíte informace o zákaznících v hlavě?</h3>
-            <p>Barvy, poznámky, alergie i historie mohou být bezpečně na jednom místě.</p>
-            <button type="button" class="problem-open" data-problem="hlava">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">⭐</p>
-            <h3>Máte spokojené zákazníky, ale málo recenzí?</h3>
-            <p>Moderník se po návštěvě může ozvat za vás.</p>
-            <button type="button" class="problem-open" data-problem="recenze">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">📦</p>
-            <h3>Nevíte přesně, co dochází?</h3>
-            <p>Materiál nemusíte kontrolovat jen podle toho, co zrovna vidíte na polici.</p>
-            <button type="button" class="problem-open" data-problem="sklad">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">📅</p>
-            <h3>Máte provoz rozdělený mezi diář, telefon a zprávy?</h3>
-            <p>Termíny a provoz mohou být na jednom místě.</p>
-            <button type="button" class="problem-open" data-problem="diar">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">✉️</p>
-            <h3>Píšete zákazníkům pořád stejné zprávy?</h3>
-            <p>Potvrzení, připomínky a další komunikace může odcházet automaticky.</p>
-            <button type="button" class="problem-open" data-problem="emaily">Jak to vyřešíme →</button>
-          </article>
-          <article class="problem-card">
-            <p class="problem-emoji" aria-hidden="true">🧩</p>
-            <h3>Platíte několik služeb, které spolu nemluví?</h3>
-            <p>Jednotlivé části Moderníka jsou vytvořené tak, aby spolupracovaly.</p>
-            <button type="button" class="problem-open" data-problem="celky">Jak to vyřešíme →</button>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section story-section" id="pribeh">
+    <section class="section calm-section" id="problemy">
       <div class="wrap-wide">
         <div class="section-head section-head-wide">
-          <h2>Zatímco pracujete, Moderník pracuje taky.</h2>
+          <h2>Co vám v provozu bere klid?</h2>
+          <p>Moderník nevznikl proto, aby vám přidal další systém. Vznikl proto, aby vám vzal z rukou věci, které vás při práci zbytečně zdržují.</p>
         </div>
-        <div class="story-feed" role="list">
-          <p class="story-feed-bar"><span class="story-live-dot" aria-hidden="true"></span> Dnes · oznámení z provozu</p>
-          <article class="story-note" role="listitem" style="--story-delay: 0s">
-            <header class="story-note-meta">
-              <time datetime="14:32">14:32</time>
-              <span class="story-note-icon" aria-hidden="true">📅</span>
-            </header>
-            <h3>Nová rezervace</h3>
-            <p>Jana Nováková se objednala na pátek 10:30.</p>
-            <p class="story-note-aside">Nemusela vám volat.</p>
+
+        <div class="calm-list">
+          <article class="calm-block" id="problem-rezervace">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/Bez%20chaosu%2C%20s%20Modern%C3%ADkem%20%283%29.webp"
+                alt="Porovnání vyřizování rezervace během práce bez Moderníka a s Moderníkem"
+                width="1774"
+                height="887"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">01 / ONLINE REZERVACE</p>
+            <h3 class="calm-title">Pracujete. Telefon zvoní.</h3>
+            <div class="calm-copy">
+              <p>Zákaznice chce termín právě ve chvíli, kdy se věnujete někomu jinému. Musíte přestat pracovat, vzít telefon, najít volný termín a rezervaci zapsat.</p>
+              <p class="calm-solve">S Moderníkem se zákaznice objedná sama.</p>
+              <p>Vybere si službu, termín i čas. Rezervace se automaticky objeví v systému a zákaznice dostane potvrzení.</p>
+              <p class="calm-result">Vy jste mezitím nemuseli přestat pracovat.</p>
+              <ul class="calm-tags">
+                <li>ONLINE REZERVACE</li>
+                <li>24/7</li>
+                <li>AUTOMATICKÉ POTVRZENÍ</li>
+              </ul>
+            </div>
+            </div>
           </article>
-          <article class="story-note" role="listitem" style="--story-delay: 0.12s">
-            <header class="story-note-meta">
-              <time datetime="14:33">14:33</time>
-              <span class="story-note-icon" aria-hidden="true">✉️</span>
-            </header>
-            <h3>Potvrzení odesláno</h3>
-            <p>Zákaznice dostala všechny informace.</p>
-            <p class="story-note-aside">Nemusela jste nic psát.</p>
+
+          <article class="calm-block" id="problem-archivnik">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/Salon%20Chaos%20to%20Organized%20Archivn%C3%ADk.webp"
+                alt="Porovnání evidence zákazníků v diáři a telefonu bez Archivníka a s kartou klienta v Archivníkovi"
+                width="1774"
+                height="887"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">02 / ARCHIVNÍK</p>
+            <h3 class="calm-title">„Jakou barvu jsme minule použili?“</h3>
+            <div class="calm-copy">
+              <p>Poznámka někde v telefonu. Fotografie v galerii. Něco si pamatujete a něco už ne.</p>
+              <p class="calm-solve">Archivník si pamatuje za vás.</p>
+              <p>Každý zákazník má svoje místo. Historii návštěv, poznámky, fotografie, dokumenty i další informace, které při další návštěvě potřebujete.</p>
+              <p class="calm-result">Vy si pamatujete zákazníka. Archivník si pamatuje detaily.</p>
+              <ul class="calm-tags">
+                <li>HISTORIE</li>
+                <li>POZNÁMKY</li>
+                <li>FOTOGRAFIE</li>
+                <li>DOKUMENTY</li>
+              </ul>
+            </div>
+            </div>
           </article>
-          <article class="story-note" role="listitem" style="--story-delay: 0.24s">
-            <header class="story-note-meta">
-              <time datetime="16:48">16:48</time>
-              <span class="story-note-icon" aria-hidden="true">⭐</span>
-            </header>
-            <h3>Žádost o recenzi odeslána</h3>
-            <p>Po dokončené návštěvě se Moderník ozval sám.</p>
-            <p class="story-note-aside">Nemusela jste si na to vzpomenout.</p>
+
+          <article class="calm-block" id="problem-recenze">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/Bez%20vs.%20s%20Modern%C3%ADkem_%20Snadn%C3%A9%20recenze.webp"
+                alt="Porovnání složité cesty k Google recenzi bez Moderníka a e-mailu s přímým odkazem s Moderníkem"
+                width="1774"
+                height="887"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">03 / RECENZE</p>
+            <h3 class="calm-title">Spokojený zákazník ještě neznamená novou recenzi.</h3>
+            <div class="calm-copy">
+              <p>Spokojená zákaznice vám možná recenzi ráda napíše. Problém nastává ve chvíli, kdy musí váš salon hledat na Googlu, otevřít správný profil a zjistit, kam vlastně kliknout.</p>
+              <p>Čím složitější cesta, tím větší šance, že to odloží.</p>
+              <p class="calm-solve">Moderník po návštěvě poděkuje za vás.</p>
+              <p>Zákazník dostane příjemný e-mail s přímým odkazem na místo, kde může recenzi napsat.</p>
+              <p class="calm-result">Jeden odkaz. Jedno kliknutí. Žádné hledání.</p>
+              <ul class="calm-tags">
+                <li>PODĚKOVÁNÍ</li>
+                <li>PŘÍMÝ ODKAZ</li>
+                <li>GOOGLE RECENZE</li>
+              </ul>
+            </div>
+            </div>
           </article>
-          <article class="story-note story-note-last" role="listitem" style="--story-delay: 0.36s">
-            <header class="story-note-meta">
-              <time datetime="18:07">18:07</time>
-              <span class="story-note-icon" aria-hidden="true">⭐</span>
-            </header>
-            <h3><span class="story-stars" aria-hidden="true">★★★★★</span> Nová Google recenze</h3>
-            <p>Další spokojená zákaznice se podělila o zkušenost.</p>
-            <p class="story-note-aside">Vy jste mezitím pracovala.</p>
+
+          <article class="calm-block" id="problem-zalohy">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/BEZ%20vs.%20S%20MODERN%C3%8DKEM_%20Bezpe%C4%8Dn%C3%A9%20rezervace.webp"
+                alt="Porovnání ztraceného dlouhého termínu bez zálohy a rezervace chráněné zálohovou platbou s Moderníkem"
+                width="1774"
+                height="887"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">04 / ZÁLOHOVÉ PLATBY</p>
+            <h3 class="calm-title">Šest hodin v kalendáři. A nikdo nepřišel.</h3>
+            <div class="calm-copy">
+              <p>U dlouhé a drahé služby není nedostavení zákazníka jen prázdné místo v kalendáři.</p>
+              <p>Jsou to hodiny, které jste pro něj rezervovali a které už zpravidla nedokážete nabídnout někomu jinému.</p>
+              <p class="calm-solve">U vybraných služeb může Moderník požádat zákazníka o zálohovou platbu předem.</p>
+              <p class="calm-result">Žádost odejde automaticky a dlouhý termín tak můžete mít lépe chráněný bez ručního nahánění zákazníka.</p>
+              <ul class="calm-tags">
+                <li>ZÁLOHOVÁ PLATBA</li>
+                <li>AUTOMATICKÁ ŽÁDOST</li>
+                <li>OCHRANA TERMÍNU</li>
+              </ul>
+            </div>
+            </div>
+          </article>
+
+          <article class="calm-block" id="problem-ekosystem">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/P%C5%99ed%20a%20po_%20Salon%20bez%20chaosu.webp"
+                alt="Porovnání několika nesouvisejících aplikací bez Moderníka a propojeného ekosystému Moderník, Archivník a Materiálník"
+                width="1774"
+                height="887"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">05 / JEDEN EKOSYSTÉM</p>
+            <h3 class="calm-title">Co kdyby spolu vaše systémy konečně mluvily?</h3>
+            <div class="calm-copy">
+              <p>Rezervace v jednom systému. Zákazníci v druhém. Materiál někde jinde. Další přihlášení, další aplikace a další místo, které musíte hlídat.</p>
+              <p>Moderník, Archivník a Materiálník jsme nevytvořili jako tři cizí aplikace.</p>
+              <p class="calm-solve">Jsou dělaní jako nejlepší přátelé.</p>
+              <p>Každý umí fungovat samostatně. Jejich skutečná síla ale přichází ve chvíli, kdy pracují společně.</p>
+              <p>Informace se mohou předávat mezi jednotlivými částmi systému a provozovna tak nemusí být slepencem několika nesouvisejících služeb.</p>
+              <ul class="calm-tags">
+                <li>JEDEN EKOSYSTÉM</li>
+                <li>PROPOJENÉ NÁSTROJE</li>
+                <li>MÉNĚ PŘEPÍNÁNÍ</li>
+              </ul>
+            </div>
+            </div>
+          </article>
+
+          <article class="calm-block" id="problem-podpora">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/Osobn%C3%AD%20podpora%20bez%20%C4%8Dek%C3%A1n%C3%AD.webp"
+                alt="Porovnání chatbotů a ztracených požadavků bez Moderníka a osobní podpory Jiřího Hakla s Moderníkem"
+                width="1774"
+                height="887"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">06 / OSOBNÍ PODPORA</p>
+            <h3 class="calm-title">Když potřebujete pomoc, nechcete mluvit s robotem.</h3>
+            <div class="calm-copy">
+              <p class="calm-quotes">
+                <span>„Vyberte kategorii.“</span>
+                <span>„Zkuste svůj dotaz formulovat jinak.“</span>
+                <span>„Ozveme se během několika pracovních dnů.“</span>
+              </p>
+              <p>U Moderníka máte jedno místo pro podporu celého systému.</p>
+              <p>Žádné přehazování mezi několika dodavateli. Žádné hledání, komu vlastně zavolat.</p>
+              <p>A především: na druhé straně není anonymní chatbot.</p>
+              <p class="calm-solve">Je tam člověk, který systém vytvořil.</p>
+              <div class="calm-person">
+                <p class="calm-person-name">Jiří Hakl</p>
+                <p>Zakladatel a tvůrce Moderníka</p>
+                <a class="calm-phone" href="tel:+420797756746">+420 797 756 746</a>
+                <p>Podpora pro Moderníka, FLOW, Archivníka i Materiálník na jednom místě.</p>
+              </div>
+              <ul class="calm-tags">
+                <li>JEDEN KONTAKT</li>
+                <li>OSOBNÍ PODPORA</li>
+                <li>CELÝ SYSTÉM</li>
+              </ul>
+            </div>
+            </div>
+          </article>
+
+          <article class="calm-block calm-block-finale" id="problem-materialnik">
+            <div class="calm-media">
+              <img
+                src="https://haklweb.b-cdn.net/modernik/head%20web/Chaos%20to%20Clarity_%20Salon%20Inventory%20Simplified.webp"
+                alt="Porovnání docházející barvy uprostřed služby bez Materiálníka a nákupního seznamu se stavem zásob s Materiálníkem"
+                width="1774"
+                height="887"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
+            <div class="calm-text">
+            <p class="calm-kicker">07 / MATERIÁLNÍK</p>
+            <h3 class="calm-title">Některé věci zjistíte až ve chvíli, kdy dojdou.</h3>
+            <div class="calm-copy">
+              <p>Barva dojde uprostřed barvení. Poslední balení jste spotřebovali včera. Jen si na to nikdo nevzpomněl.</p>
+              <p class="calm-solve">Materiálník ano.</p>
+              <p>Sleduje stav zásob, pomáhá hlídat minimální množství a připravuje nákupní seznam.</p>
+              <p class="calm-result">Místo kontroly každé lahvičky jednoduše vidíte, co je potřeba doplnit.</p>
+              <ul class="calm-tags">
+                <li>STAV ZÁSOB</li>
+                <li>MINIMÁLNÍ MNOŽSTVÍ</li>
+                <li>NÁKUPNÍ SEZNAM</li>
+              </ul>
+            </div>
+            </div>
           </article>
         </div>
       </div>
@@ -172,7 +287,7 @@
       <div class="wrap-wide">
         <div class="section-head section-head-wide">
           <h2>Co všechno pracuje v pozadí</h2>
-          <p>Až tady jsou názvy nástrojů. Nejdřív problém a výsledek — teprve potom technologie.</p>
+          <p>Všechno, co potřebujete pro každodenní provoz, propojené v jednom Partnerství.</p>
         </div>
 
         <div class="tiles-grid" id="tiles">
@@ -1645,15 +1760,11 @@
       privacyUrl: "gdpr.html"
     };
   </script>
-  <dialog class="problem-dialog" id="problem-dialog" aria-labelledby="problem-dialog-title">
-    <button type="button" class="problem-dialog-close" id="problem-dialog-close">Zavřít</button>
-    <div class="problem-dialog-body" id="problem-dialog-body"></div>
-  </dialog>
   <dialog class="tile-lightbox" id="tile-lightbox" aria-label="Zvětšený snímek">
     <button type="button" class="tile-lightbox-close" id="tile-lightbox-close">Zavřít</button>
     <img id="tile-lightbox-img" alt="">
   </dialog>
   <script src="cookie-consent.js?v=2" defer></script>
-  <script src="marketing-v2.js?v=10" defer></script>
+  <script src="marketing-v2.js?v=11" defer></script>
 </body>
 </html>
