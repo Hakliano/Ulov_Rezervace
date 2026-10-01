@@ -2047,6 +2047,11 @@ a.promo-card-img:hover {
   font-weight: 800;
 }
 
+.partaci-list strong {
+  font-weight: 800;
+  color: var(--light-text);
+}
+
 .partaci-actions {
   display: flex;
   flex-wrap: wrap;
