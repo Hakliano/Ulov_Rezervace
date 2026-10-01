@@ -898,9 +898,10 @@ a { color: inherit; text-decoration: none; }
 
 .offer-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1.25rem 2.5rem;
+  gap: 1rem 1.75rem;
+  max-width: 740px;
   margin: 0 auto 3.25rem;
   padding: 1.35rem 0 1.5rem;
   border-top: 1px solid rgba(201, 166, 74, 0.2);
@@ -929,10 +930,6 @@ a { color: inherit; text-decoration: none; }
   line-height: 0.85;
   letter-spacing: -0.02em;
   color: var(--gold-light);
-  background-image: linear-gradient(100deg, transparent 0%, rgba(201, 166, 74, 0.22) 10%, rgba(201, 166, 74, 0.3) 90%, transparent 100%);
-  background-repeat: no-repeat;
-  background-size: 100% 0.38em;
-  background-position: 0 78%;
 }
 
 .offer-per {
@@ -967,34 +964,55 @@ a { color: inherit; text-decoration: none; }
 }
 
 .offer-areas {
-  margin: 0 0 2.5rem;
+  margin: 0 0 2.75rem;
 }
 
 .offer-areas .section-head {
-  max-width: 46rem;
-  margin-bottom: 1.75rem;
+  max-width: 52rem;
+  margin-bottom: 2.25rem;
 }
 
 .offer-areas .section-head h3 {
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.7rem;
   font-family: var(--font-display);
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-size: clamp(1.85rem, 3.5vw, 2.55rem);
   font-weight: 600;
   line-height: 1.2;
+}
+
+.offer-areas .section-head p {
+  font-size: 1.05rem;
+  line-height: 1.65;
 }
 
 .offer-area-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.5rem 1.35rem;
+  gap: 2rem 1.75rem;
+}
+
+.offer-area-head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(201, 166, 74, 0.22);
+}
+
+.offer-area-ico {
+  flex-shrink: 0;
+  width: 1.45rem;
+  height: 1.45rem;
+  color: var(--gold);
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .offer-area h4 {
-  margin: 0 0 0.7rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(201, 166, 74, 0.22);
+  margin: 0;
   font-family: var(--font-display);
-  font-size: 1.28rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -1006,10 +1024,10 @@ a { color: inherit; text-decoration: none; }
 }
 
 .offer-area li {
-  padding: 0.28rem 0;
-  color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.4;
+  padding: 0.42rem 0;
+  color: #d7e0ea;
+  font-size: 1.02rem;
+  line-height: 1.7;
 }
 
 .offer-claim {
@@ -1047,6 +1065,7 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 900px) {
   .offer-row {
     grid-template-columns: 1fr;
+    max-width: 28rem;
     text-align: center;
   }
 
@@ -1060,6 +1079,7 @@ a { color: inherit; text-decoration: none; }
 
   .offer-cta .btn {
     width: 100%;
+    max-width: 22rem;
   }
 }
 
