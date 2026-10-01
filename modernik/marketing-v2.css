@@ -155,10 +155,11 @@ a { color: inherit; text-decoration: none; }
 }
 
 .nav a {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--muted);
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .nav a:hover { color: var(--gold-light); }
@@ -2369,6 +2370,8 @@ a.promo-card-img:hover {
   .extras-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .docs-hero-grid { grid-template-columns: 1fr; }
   .docs-hero-media { max-width: 28rem; }
+  .header-actions .btn-outline { display: none; }
+  .nav a { font-size: 0.74rem; }
 }
 
 @media (max-width: 900px) {
@@ -2386,10 +2389,20 @@ a.promo-card-img:hover {
     justify-self: center;
   }
   .hero-brand-logo { width: min(100%, 220px); }
-  .nav a { display: none; }
-  .nav { display: flex; }
-  .nav a.nav-doc { display: inline; }
+  .header-inner { flex-wrap: wrap; }
+  .nav {
+    width: 100%;
+    order: 3;
+    justify-content: center;
+    gap: 0.45rem 0.85rem;
+    padding: 0.15rem 0 0.35rem;
+  }
+  .nav a {
+    display: inline;
+    font-size: 0.72rem;
+  }
   .header-actions { gap: 0.4rem; }
+  .header-actions .btn-outline { display: none; }
   .header-actions .btn { min-height: 40px; padding: 0.5rem 0.85rem; font-size: 0.72rem; }
   .tiles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .offer-row,
