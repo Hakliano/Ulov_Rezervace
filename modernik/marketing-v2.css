@@ -1991,39 +1991,104 @@ a.promo-card-img:hover {
   text-decoration: underline;
 }
 
-.story-path {
+.story-feed {
+  width: min(100%, 34rem);
+  margin: 0.35rem auto 0;
+  padding: 0.7rem 0.75rem 0.85rem;
+  border-radius: 22px;
+  border: 1px solid rgba(201, 166, 74, 0.22);
+  background:
+    linear-gradient(180deg, rgba(18, 32, 54, 0.96) 0%, rgba(8, 16, 30, 0.98) 100%);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.story-feed-bar {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 0.55rem 0.35rem;
-  list-style: none;
-  margin: 0.5rem 0 1.25rem;
+  margin: 0 0 0.75rem;
+  padding: 0.2rem 0 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(245, 240, 230, 0.55);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.story-path li {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--bg-card);
-  font-size: 0.88rem;
-  font-weight: 600;
+.story-note {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  gap: 0.7rem 0.85rem;
+  padding: 0.95rem 0.95rem 1rem;
+  margin-bottom: 0.65rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  animation: storyNoteIn 0.55s ease both;
+  animation-delay: var(--story-delay, 0s);
 }
 
-.story-path li:not(:last-child)::after {
-  content: "→";
-  color: var(--gold);
-  margin-left: 0.15rem;
+.story-note:last-child {
+  margin-bottom: 0;
 }
 
-.story-after {
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: clamp(1.35rem, 3vw, 1.9rem);
-  font-weight: 600;
+.story-note-last {
+  border-color: rgba(201, 166, 74, 0.38);
+  background:
+    linear-gradient(135deg, rgba(201, 166, 74, 0.12) 0%, rgba(255, 255, 255, 0.04) 55%);
+}
+
+.story-note time {
+  padding-top: 0.12rem;
   color: var(--gold-light);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.story-note-body h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font);
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.story-note-body h3 span {
+  margin-right: 0.28rem;
+}
+
+.story-note-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.story-note-aside {
+  margin-top: 0.4rem !important;
+  color: var(--gold-light) !important;
+  font-weight: 600;
+  font-style: italic;
+}
+
+@keyframes storyNoteIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-note { animation: none; }
 }
 
 .founder-grid {
