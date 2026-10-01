@@ -868,79 +868,118 @@ a { color: inherit; text-decoration: none; }
   color: var(--muted);
 }
 
-.price-plans {
+.offer-box {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  overflow: hidden;
+  border: 1px solid rgba(201, 166, 74, 0.3);
+  border-radius: calc(var(--radius) + 4px);
+  background:
+    linear-gradient(135deg, rgba(22, 38, 62, 0.98) 0%, rgba(8, 16, 30, 0.99) 100%);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
 }
 
-.price-plan {
-  position: relative;
+.offer-price {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  border: 1px solid var(--line-soft);
-  border-radius: calc(var(--radius) + 2px);
-  background: var(--bg-card);
-  padding: 1.5rem 1.1rem 1.35rem;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: clamp(1.6rem, 4vw, 2.7rem) clamp(1.3rem, 3vw, 2.3rem);
+  background: linear-gradient(180deg, rgba(201, 166, 74, 0.1) 0%, rgba(201, 166, 74, 0.02) 100%);
+  border-right: 1px solid rgba(201, 166, 74, 0.16);
 }
 
-.price-plan.is-featured {
-  border-color: var(--gold);
-  background: linear-gradient(180deg, rgba(201, 166, 74, 0.14) 0%, var(--bg-card) 42%);
-  box-shadow: 0 0 0 1px rgba(201, 166, 74, 0.35);
-}
-
-.price-plan-period {
-  margin: 0 0 0.55rem;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-  text-transform: none;
-  color: var(--gold-light);
-}
-
-.price-plan-month {
-  margin: 0;
-  font-size: clamp(2.4rem, 5vw, 3.4rem);
+.offer-kicker {
+  margin: 0 0 0.7rem;
+  color: var(--gold);
+  font-size: 0.72rem;
   font-weight: 800;
-  line-height: 0.95;
-  color: var(--gold-light);
-  letter-spacing: -0.03em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.price-plan-per {
-  margin: 0.35rem 0 0.9rem;
-  font-size: 1.05rem;
+.offer-amount {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3.1rem, 6.5vw, 4.7rem);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--gold-light);
+}
+
+.offer-per {
+  margin: 0.55rem 0 0;
+  font-size: 1.12rem;
   font-weight: 700;
   color: #fff;
 }
 
-.price-plan-pay {
-  margin: 0 0 0.45rem;
+.offer-term {
+  margin: 0.2rem 0 0;
   color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
-.price-plan-pay strong {
-  color: var(--text);
+.offer-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.95rem;
+  padding: clamp(1.6rem, 4vw, 2.7rem) clamp(1.3rem, 3vw, 2.4rem);
 }
 
-.price-plan-save {
-  margin: 0 0 1rem;
-  color: var(--gold-light);
-  font-size: 0.82rem;
-  line-height: 1.4;
+.offer-copy h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 2.6vw, 2.05rem);
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.price-plan .btn {
-  margin-top: auto;
+.offer-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.offer-copy .btn {
+  width: fit-content;
+  margin-top: 0.25rem;
+}
+
+.offer-return {
+  padding-top: 0.5rem;
+}
+
+.offer-return img {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 2172 / 724;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+@media (max-width: 900px) {
+  .offer-price {
+    align-items: center;
+    text-align: center;
+    border-right: 0;
+    border-bottom: 1px solid rgba(201, 166, 74, 0.16);
+  }
+
+  .offer-copy {
+    align-items: center;
+    text-align: center;
+  }
+
+  .offer-copy .btn {
+    width: 100%;
+  }
 }
 
 .price-included {
@@ -1018,16 +1057,16 @@ a { color: inherit; text-decoration: none; }
 
 .price-addon-month {
   margin: 0.4rem 0 0.2rem;
-  font-size: clamp(1.8rem, 3vw, 2.3rem);
-  font-weight: 800;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--gold-light);
-  line-height: 1.05;
+  line-height: 1.2;
 }
 
 .price-addon-month small {
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--muted);
 }
 
 .price-addon-pay {
@@ -2236,7 +2275,7 @@ a.promo-card-img:hover {
   .header-actions { gap: 0.4rem; }
   .header-actions .btn { min-height: 40px; padding: 0.5rem 0.85rem; font-size: 0.72rem; }
   .tiles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .price-plans,
+  .offer-box,
   .price-addon-grid { grid-template-columns: 1fr; }
   .price-included .price-list { grid-template-columns: 1fr; }
   .tile-expand { grid-template-columns: 1fr; }

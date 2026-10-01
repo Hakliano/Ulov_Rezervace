@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=30">
+  <link rel="stylesheet" href="marketing-v2.css?v=31">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
 </head>
 <body>
@@ -1189,46 +1189,32 @@
 
     <section class="section pricing" id="ceny">
       <div class="wrap-wide">
-        <div class="section-head">
+        <div class="section-head section-head-wide">
           <h2>Jedno Partnerství. Jedna cena. Jeden systém.</h2>
-          <p>Neplatíte zvlášť web, rezervace a CRM. Partnerství je jeden celek. Pro mnoho provozoven je měsíční Partnerství přibližně cenou jedné služby zákazníkovi.</p>
+          <p>Neplatíte zvlášť za web, rezervace, FLOW, Archivník a další části systému. Moderník je jedno Partnerství, jehož rozsah přizpůsobíme vašemu provozu.</p>
         </div>
 
-        <div class="price-plans" role="list">
-          <article class="price-plan" role="listitem">
-            <h3 class="price-plan-period">Partnerství na měsíc</h3>
-            <p class="price-plan-month">799&nbsp;Kč</p>
-            <p class="price-plan-per">za měsíc</p>
-            <p class="price-plan-pay">Platíte <strong>799&nbsp;Kč</strong> každý měsíc.</p>
-            <a href="#poptavka" class="btn btn-outline" data-package="Kompletní partnerství MODERNÍK — měsíčně 799 Kč">Chci měsíčně →</a>
-          </article>
-
-          <article class="price-plan" role="listitem">
-            <h3 class="price-plan-period">Partnerství na půl roku</h3>
-            <p class="price-plan-month">600&nbsp;Kč</p>
-            <p class="price-plan-per">za měsíc</p>
-            <p class="price-plan-pay">Platíte <strong>3&nbsp;600&nbsp;Kč</strong> jednou za 6 měsíců.</p>
-            <p class="price-plan-save">Oproti měsíční platbě ušetříte 1&nbsp;194&nbsp;Kč za půl roku.</p>
-            <a href="#poptavka" class="btn btn-outline" data-package="Kompletní partnerství MODERNÍK — 3 600 Kč / 6 měsíců">Chci na půl roku →</a>
-          </article>
-
-          <article class="price-plan is-featured" role="listitem">
-            <h3 class="price-plan-period">Partnerství na rok</h3>
-            <p class="price-plan-month">500&nbsp;Kč</p>
-            <p class="price-plan-per">za měsíc</p>
-            <p class="price-plan-pay">Platíte <strong>6&nbsp;000&nbsp;Kč</strong> jednou za rok.</p>
-            <p class="price-plan-save">Oproti měsíční platbě ušetříte 3&nbsp;588&nbsp;Kč za rok.</p>
-            <a href="#poptavka" class="btn btn-gold" data-package="Kompletní partnerství MODERNÍK — 6 000 Kč / rok">Chci na rok →</a>
-          </article>
+        <div class="offer-box">
+          <div class="offer-price">
+            <p class="offer-kicker">Cena podle vašich potřeb</p>
+            <p class="offer-amount">Od 499&nbsp;Kč</p>
+            <p class="offer-per">měsíčně</p>
+            <p class="offer-term">při roční platbě</p>
+          </div>
+          <div class="offer-copy">
+            <h3>Individuální řešení pro váš provoz</h3>
+            <p>Každá provozovna funguje trochu jinak. Proto konečnou cenu stanovíme podle vašich potřeb, rozsahu práce, nastavení systému a délky spolupráce.</p>
+            <a href="#poptavka" class="btn btn-gold" data-package="Nezávazně zjistit cenu Partnerství">Nezávazně zjistit moji cenu →</a>
+          </div>
         </div>
 
         <div class="price-included">
-          <h3>V partnerství je vždy</h3>
+          <h3>V Partnerství je vždy</h3>
           <ul class="price-list">
             <li>Web na míru + vlastní doména</li>
             <li>Online rezervace 24/7</li>
             <li>CRM FLOW pro majitele i personál</li>
-            <li>Automatické e-maily</li>
+            <li>Automatizované e-maily</li>
             <li>Recenze a NFC podpora</li>
             <li>Osobní podpora zakladatele</li>
             <li>Statistiky a reporty</li>
@@ -1243,8 +1229,7 @@
             bez dalšího příplatku.
           </p>
           <p class="price-archivnik-split">
-            <span>Samostatně 350&nbsp;Kč / měsíc</span>
-            <span>S Moderníkem 0&nbsp;Kč navíc</span>
+            <span>Samostatně 350&nbsp;Kč / měsíc • S Moderníkem 0&nbsp;Kč navíc</span>
           </p>
         </aside>
 
@@ -1265,6 +1250,19 @@
             </a>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="section offer-return" id="navratnost" aria-label="Příklad hodnoty Partnerství">
+      <div class="wrap-wide">
+        <img
+          src="https://haklweb.b-cdn.net/modernik/head%20web/30%20minut%20zp%C4%9Bt_%20Salonn%C3%AD%20efektivita.webp"
+          alt="Moderník – příklad návratnosti nákladů během přibližně 30 minut práce provozovny"
+          width="2172"
+          height="724"
+          loading="lazy"
+          decoding="async"
+        >
       </div>
     </section>
 
@@ -1656,13 +1654,12 @@
           <label>Balíček / zájem
             <select id="p-balicek">
               <option value="">Vyberte (volitelné)</option>
-              <option value="Web jednorázově">Web jednorázově (4 000 Kč)</option>
-              <option value="Partnerský web">Partnerský web (299 Kč / měsíc)</option>
-              <option value="Kompletní partnerství MODERNÍK — měsíčně 799 Kč">Kompletní partnerství MODERNÍK — 799 Kč / měsíc</option>
-              <option value="Kompletní partnerství MODERNÍK — 3 600 Kč / 6 měsíců">Kompletní partnerství MODERNÍK — 3 600 Kč / 6 měsíců (600 Kč/měs.)</option>
-              <option value="Kompletní partnerství MODERNÍK — 6 000 Kč / rok" selected>Kompletní partnerství MODERNÍK — 6 000 Kč / rok (500 Kč/měs.)</option>
-              <option value="Kompletní partnerství MODERNÍK + Program růstu">Kompletní partnerství MODERNÍK + Program růstu</option>
-              <option value="Materiálník k partnerství MODERNÍK">Materiálník k partnerství (+99 Kč / měsíc)</option>
+              <option value="Nezávazně zjistit cenu Partnerství" selected>Nezávazně zjistit cenu Partnerství</option>
+              <option value="Kompletní partnerství MODERNÍK">Partnerství Moderník</option>
+              <option value="Kompletní partnerství MODERNÍK + Program růstu">Partnerství + Program růstu</option>
+              <option value="Materiálník k partnerství MODERNÍK">Materiálník k Partnerství</option>
+              <option value="Web jednorázově">Web jednorázově</option>
+              <option value="Partnerský web">Partnerský web</option>
               <option value="Výroční servis">Výroční servis</option>
               <option value="Nejsem si jistý, poradíte mi">Nejsem si jistý, poradíte mi</option>
             </select>
