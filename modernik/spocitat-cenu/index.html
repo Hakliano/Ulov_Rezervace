@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../marketing-v2.css?v=35">
-  <link rel="stylesheet" href="kalkulace.css?v=1">
+  <link rel="stylesheet" href="kalkulace.css?v=2">
   <link rel="stylesheet" href="../cookie-consent.css?v=1">
 </head>
 <body>
@@ -84,6 +84,54 @@
             </div>
           </section>
 
+          <section class="calc-card" aria-labelledby="calc-period-title">
+            <div class="calc-step">
+              <svg class="calc-step-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+              <h2 id="calc-period-title">Jak chcete začít?</h2>
+            </div>
+            <div class="calc-periods" role="radiogroup" aria-labelledby="calc-period-title">
+              <article class="calc-period-card">
+                <label class="calc-choice calc-period">
+                  <input type="radio" name="period" value="6">
+                  <span class="calc-period-term">6 měsíců</span>
+                  <span class="calc-period-monthly">≈ 667 Kč / měsíc</span>
+                  <span class="calc-period-total">3 999 Kč za 6 měsíců</span>
+                  <p>Poté možnost pokračovat za 549 Kč/měs. nebo si znovu zvolit předplacené období.</p>
+                </label>
+                <div class="calc-growth-panel">
+                  <p class="calc-growth-kicker">Program růstu</p>
+                  <p class="calc-growth-lead">Pomáháme vám i po spuštění — s recenzemi, marketingem, prezentací provozovny a dalším rozvojem.</p>
+                  <label class="calc-growth-check">
+                    <input type="checkbox" id="calc-growth">
+                    <span>Chci Program růstu +999 Kč</span>
+                  </label>
+                  <button type="button" class="calc-info-btn" data-growth-open="6">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+                    Podívat se, co během roku získám
+                  </button>
+                </div>
+              </article>
+              <article class="calc-period-card">
+                <label class="calc-choice calc-period">
+                  <input type="radio" name="period" value="12">
+                  <span class="calc-period-term">12 měsíců</span>
+                  <span class="calc-period-monthly">≈ 500 Kč / měsíc</span>
+                  <span class="calc-period-total">5 999 Kč za 12 měsíců</span>
+                  <p>Poté možnost pokračovat za 499 Kč/měs. nebo si znovu zvolit předplacené období.</p>
+                </label>
+                <div class="calc-growth-panel calc-growth-panel-free">
+                  <p class="calc-growth-badge">Program růstu zdarma</p>
+                  <p class="calc-growth-lead">Celý rok vám postupně pomáháme s recenzemi, marketingem, prezentací provozovny a dalším rozvojem.</p>
+                  <p class="calc-growth-value">Běžná hodnota jednotlivých služeb přes 4 500 Kč</p>
+                  <button type="button" class="calc-info-btn" data-growth-open="12">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+                    Podívat se, co během roku získám
+                  </button>
+                </div>
+              </article>
+            </div>
+          </section>
+
           <section class="calc-card" aria-labelledby="calc-web-title">
             <div class="calc-step">
               <svg class="calc-step-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
@@ -128,96 +176,29 @@
             </label>
             <p class="calc-note">Speciální požadavky naceníme individuálně.</p>
           </section>
-
-          <section class="calc-card" aria-labelledby="calc-period-title">
-            <div class="calc-step">
-              <svg class="calc-step-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-              <h2 id="calc-period-title">Jak chcete začít?</h2>
-            </div>
-            <div class="calc-periods" role="radiogroup" aria-labelledby="calc-period-title">
-              <div class="calc-period-col">
-                <label class="calc-choice calc-period">
-                  <input type="radio" name="period" value="6">
-                  <span class="calc-period-term">6 měsíců</span>
-                  <span class="calc-period-price">3 999 Kč</span>
-                  <p>Poté možnost pokračovat za 549 Kč/měs. nebo si znovu zvolit předplacené období.</p>
-                </label>
-                <label class="calc-growth-check" id="calc-growth-wrap" hidden>
-                  <input type="checkbox" id="calc-growth">
-                  <span>Chci přidat Program růstu +999 Kč</span>
-                </label>
-                <button type="button" class="calc-info-btn" data-growth-toggle aria-expanded="false" aria-controls="calc-growth-box">Co je Program růstu?</button>
-              </div>
-              <div class="calc-period-col">
-                <label class="calc-choice calc-period">
-                  <input type="radio" name="period" value="12" checked>
-                  <span class="calc-period-term">12 měsíců</span>
-                  <span class="calc-period-price">5 999 Kč</span>
-                  <span class="calc-period-free">Program růstu ZDARMA</span>
-                  <p>Poté možnost pokračovat za 499 Kč/měs. nebo si znovu zvolit předplacené období.</p>
-                </label>
-                <button type="button" class="calc-info-btn" data-growth-toggle aria-expanded="false" aria-controls="calc-growth-box">Co je Program růstu?</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="calc-card calc-growth-box" id="calc-growth-box" hidden>
-            <h3>Program růstu — dlouhodobá podpora živnosti</h3>
-            <p>Program růstu je sada bonusů a služeb, které pomáhají živnosti dlouhodobě působit profesionálněji, získávat více recenzí a lépe pracovat se zákazníky.</p>
-            <div class="calc-milestones">
-              <article>
-                <h4>Po spuštění — Začínáme spolu</h4>
-                <p>Osobní návštěva nebo online meeting, kde nastavíme úplně vše: nahrajeme fotky, nastavíme otevírací doby a připravíme vše pro hladký start.</p>
-                <ul>
-                  <li>Osobní návštěva nebo online meeting</li>
-                  <li>Nahrání fotek a základní nastavení</li>
-                  <li>Otevírací doby a příprava na spuštění</li>
-                  <li>Nastavení sociálních sítí s odkazovostí</li>
-                  <li>Pomoc s přípravou e-mailových obsahů</li>
-                </ul>
-              </article>
-              <article>
-                <h4>Po 3 měsících — Sběr recenzí</h4>
-                <p>Připravíme QR stojánky nebo QR/NFC kartičky, které zákazníkům usnadní hodnocení vaší živnosti.</p>
-              </article>
-              <article>
-                <h4>Po 6 měsících — Marketingové materiály</h4>
-                <p>Připravíme marketingové materiály ve stylu vaší živnosti — vizitky, grafiku, bannery i e-poukazy pro zákazníky.</p>
-                <ul>
-                  <li>100 vizitek zdarma</li>
-                  <li>Grafika připravená na míru</li>
-                  <li>Možnost nastavení speciálních bannerů se slevami</li>
-                  <li>E-poukazy pro zákazníky</li>
-                </ul>
-              </article>
-              <article>
-                <h4>Po 9 měsících — Cesta k živnosti</h4>
-                <p>Připravíme grafické zpracování cesty k provozovně — podle videa, nebo z fotek / Google Street View. Partner to má hned na webu, aby se k němu žádný klient neztratil.</p>
-              </article>
-              <article>
-                <h4>Po 12 měsících — Výroční servis</h4>
-                <p>Společně projdeme, co se za rok změnilo. Připravíme úpravu webu, roční přehled rezervací, služeb a doporučení pro další růst.</p>
-              </article>
-            </div>
-          </section>
         </form>
 
         <aside class="calc-aside">
-          <section class="calc-card calc-summary" aria-live="polite">
+          <section class="calc-card calc-summary is-empty" aria-live="polite">
             <p class="calc-summary-kicker">Vaše orientační cena</p>
-            <p class="calc-total" id="calc-total">5 999 Kč</p>
-            <p class="calc-period-result" id="calc-period-result">za první rok Partnerství</p>
-            <p class="calc-monthly" id="calc-monthly">≈ 500 Kč měsíčně</p>
-            <p class="calc-monthly" id="calc-growth-hint">Program růstu máte zdarma.</p>
-            <p class="calc-picks" id="calc-picks"></p>
+            <div id="calc-summary-empty" class="calc-summary-empty">
+              <p class="calc-empty-title">Vyberte si délku Partnerství</p>
+              <p>Hned potom vám cenu spočítáme.</p>
+            </div>
+            <div id="calc-summary-price" hidden>
+              <p class="calc-monthly-main" id="calc-monthly">≈ 500 Kč / měsíc</p>
+              <p class="calc-total-sub" id="calc-total">5 999 Kč za první rok</p>
+              <p class="calc-growth-hint" id="calc-growth-hint" hidden></p>
+            </div>
+            <ul class="calc-picks" id="calc-picks" hidden></ul>
             <p class="calc-included">V ceně Partnerství máte celý Moderník — web, rezervace, FLOW, Archivník, automatizované e-maily, osobní podporu a další součásti systému.</p>
             <p class="calc-special" id="calc-special" hidden></p>
             <p class="calc-legal">Kalkulace je orientační. Případné speciální požadavky si před zahájením společně potvrdíme.</p>
           </section>
 
           <section class="calc-card calc-contact" aria-labelledby="calc-contact-title">
-            <h2 id="calc-contact-title">Chcete pokračovat?</h2>
-            <p class="calc-contact-lead">Nechte nám kontakt a ozveme se vám.</p>
+            <h2 id="calc-contact-title">Chcete zjistit, jestli je tato cena reálná i pro vás?</h2>
+            <p class="calc-contact-lead">Nechte nám telefon a e-mail. Podíváme se na vaši kalkulaci a ozveme se.</p>
             <label class="calc-field">E-mail *
               <input id="calc-email" type="email" required autocomplete="email" form="kalkulace-form">
             </label>
@@ -226,10 +207,7 @@
             </label>
 
             <div class="form-captcha" id="pCaptchaRow">
-              <label for="p-captcha">Zadejte číslo z obrázku</label>
-              <p class="form-captcha-note">
-                Bezpečnostní ochrana před roboty — ověříme, že nám píše reálná osoba. Děkujeme za pochopení.
-              </p>
+              <label for="p-captcha">Opište číslo z obrázku</label>
               <div class="form-captcha-wrap">
                 <div class="form-captcha-img-wrap">
                   <img
@@ -237,11 +215,11 @@
                     id="pCaptchaImg"
                     src="https://haklweb.b-cdn.net/ULOV_KLIENTA/3f668bd6-be25-4139-b6db-6f80e7d1eb47.webp"
                     alt="Číslo na obrázku"
-                    width="120"
-                    height="120"
+                    width="200"
+                    height="200"
                     loading="eager"
                   >
-                  <button type="button" class="form-captcha-refresh" id="pCaptchaRefresh" aria-label="Zobrazit jiný obrázek">
+                  <button type="button" class="form-captcha-refresh" id="pCaptchaRefresh">
                     Jiný obrázek
                   </button>
                 </div>
@@ -264,16 +242,113 @@
           </section>
 
           <section class="calc-card calc-thanks" id="calc-thanks" hidden>
-            <svg class="calc-thanks-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16.5 9"/></svg>
-            <h2>Děkujeme, máme to. ✓</h2>
+            <p class="calc-thanks-mark">✓</p>
+            <h2>Děkujeme, máme to.</h2>
             <p>Vaši kalkulaci jsme dostali a ozveme se vám.</p>
-            <p class="calc-thanks-price" id="calc-thanks-price"></p>
+            <p class="calc-thanks-monthly" id="calc-thanks-monthly"></p>
+            <p class="calc-thanks-total" id="calc-thanks-price"></p>
             <a href="../" class="btn btn-gold">Zpět na Moderník →</a>
           </section>
         </aside>
       </div>
     </div>
   </main>
+
+  <dialog class="calc-growth-modal" id="calc-growth-modal" aria-labelledby="calc-growth-modal-title">
+    <form method="dialog" class="calc-growth-modal-bar">
+      <button type="submit" class="calc-growth-modal-close" aria-label="Zavřít">Zavřít</button>
+    </form>
+    <div class="calc-growth-modal-inner">
+      <img class="calc-growth-logo" src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ikona_program_rustu.webp" alt="" width="96" height="96">
+      <h2 id="calc-growth-modal-title">Program růstu</h2>
+      <p class="calc-growth-modal-lead">Moderník nekončí spuštěním webu. Během celého roku vám postupně pomáháme s tím, aby vaše provozovna působila profesionálněji, získávala více recenzí a dál se rozvíjela.</p>
+      <ol class="calc-timeline-nav" aria-label="Časová osa Programu růstu">
+        <li>Start</li>
+        <li>3 měsíce</li>
+        <li>6 měsíců</li>
+        <li>9 měsíců</li>
+        <li>12 měsíců</li>
+      </ol>
+
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Start — všechno společně nastavíme</h3>
+          <p>Nezůstanete sami s novým systémem. Pomůžeme s fotografiemi, otevírací dobou, sociálními sítěmi, základním obsahem a připravíme vše pro hladký start.</p>
+          <ul>
+            <li>osobní návštěva nebo online meeting</li>
+            <li>fotografie a základní nastavení</li>
+            <li>otevírací doba a spuštění</li>
+            <li>sociální sítě a odkazy</li>
+            <li>pomoc s e-mailovým obsahem</li>
+          </ul>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po%20spusteni.webp" alt="Spuštění Programu růstu" width="720" height="480" loading="lazy">
+      </article>
+
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 3 měsících — pomůžeme vám získávat recenze</h3>
+          <p>Připravíme QR stojánek nebo QR/NFC kartičky, díky kterým mohou zákazníci jednoduše přejít k hodnocení vaší provozovny.</p>
+          <p class="calc-mile-value">Běžná hodnota: 500 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po3.webp" alt="QR a NFC podpora recenzí" width="720" height="480" loading="lazy">
+      </article>
+
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 6 měsících — marketing pro vaši provozovnu</h3>
+          <p>Připravíme materiály přímo ve stylu vaší provozovny.</p>
+          <ul>
+            <li>100 vizitek</li>
+            <li>grafika na míru</li>
+            <li>bannery pro akce a nabídky</li>
+            <li>elektronické dárkové poukazy</li>
+          </ul>
+          <p class="calc-mile-value">Běžná hodnota: 1 000 Kč</p>
+        </div>
+        <div class="calc-mile-photos">
+          <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po6.webp" alt="Marketingové materiály Programu růstu" width="720" height="480" loading="lazy">
+          <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/vizitky%20Ulov.webp" alt="Vizitky Ulov Klienty" width="720" height="480" loading="lazy">
+        </div>
+      </article>
+
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 9 měsících — ať vás každý najde</h3>
+          <p>Připravíme grafické zpracování cesty k provozovně z fotografií, videa nebo dostupných mapových podkladů a nasadíme ho přímo na web.</p>
+          <ul>
+            <li>jednoduchá cesta k provozovně</li>
+            <li>grafické zpracování na míru</li>
+            <li>nasazení přímo na web</li>
+          </ul>
+          <p class="calc-mile-value">Běžná hodnota: 1 000 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po9.webp" alt="Grafická cesta k provozovně" width="720" height="480" loading="lazy">
+      </article>
+
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 12 měsících — společně se podíváme, kam jste se posunuli</h3>
+          <p>Po roce spolupráce Moderník jen „neběží dál“. Projdeme, co se změnilo, upravíme web a připravíme doporučení pro další rozvoj.</p>
+          <ul>
+            <li>úprava webu</li>
+            <li>přehled a analýza podnikání</li>
+            <li>doporučení pro další období</li>
+            <li>možnost kompletního rebrandu</li>
+            <li>20% sleva na nové produkty a služby</li>
+          </ul>
+          <p class="calc-mile-value">Běžná hodnota: 2 000 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po12.webp" alt="Výroční servis Programu růstu" width="720" height="480" loading="lazy">
+      </article>
+
+      <div class="calc-growth-closeout">
+        <p class="calc-growth-closeout-lead">Nekončíme spuštěním.</p>
+        <p>Program růstu vám během prvního roku přináší další konkrétní služby v běžné hodnotě přes 4 500 Kč.</p>
+        <p class="calc-growth-closeout-badge" id="calc-growth-modal-cta">V ročním Partnerství zdarma</p>
+      </div>
+    </div>
+  </dialog>
 
   <footer class="site-footer">
     <div class="wrap footer-inner">
@@ -311,6 +386,6 @@
     };
   </script>
   <script src="../cookie-consent.js?v=2" defer></script>
-  <script src="kalkulace.js?v=1" defer></script>
+  <script src="kalkulace.js?v=2" defer></script>
 </body>
 </html>

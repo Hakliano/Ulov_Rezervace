@@ -23,9 +23,9 @@
   const msg = document.getElementById('form-msg');
   const pagesInput = document.getElementById('calc-pages');
   const noteInput = document.getElementById('calc-note');
-  const growthBox = document.getElementById('calc-growth-box');
   const growthCheck = document.getElementById('calc-growth');
-  const growthWrap = document.getElementById('calc-growth-wrap');
+  const growthModal = document.getElementById('calc-growth-modal');
+  const growthModalCta = document.getElementById('calc-growth-modal-cta');
 
   const STORAGE_PREFIX = 'poptavkaCaptcha_';
   const maxAttempts = 3;
@@ -115,7 +115,8 @@
   }
 
   function selectedPeriod() {
-    return Number(form?.querySelector('input[name="period"]:checked')?.value || 12);
+    const raw = form?.querySelector('input[name="period"]:checked')?.value;
+    return raw === '6' || raw === '12' ? Number(raw) : 0;
   }
 
   function pagesValue() {
@@ -141,9 +142,21 @@
     return { total, monthly: Math.round(total / months), wm, mat, gr };
   }
 
-  function growthLabel(months, growth) {
-    if (months === 12) return 'Zdarma';
-    return growth ? '+999 Kč' : 'Ne';
+  function pagesPhrase(pages) {
+    if (pages === 0) return 'Web: hlavní stránka';
+    if (pages === 1) return 'Web: hlavní + 1 podstránka';
+    if (pages >= 2 && pages <= 4) return `Web: hlavní + ${pages} podstránky`;
+    return `Web: hlavní + ${pages} podstránek`;
+  }
+
+  function periodPhrase(months) {
+    return months === 12 ? 'Partnerství: 12 měsíců' : 'Partnerství: 6 měsíců';
+  }
+
+  function growthPhrase(months, growth) {
+    if (months === 12) return 'Program růstu zdarma';
+    if (growth) return 'Program růstu: +999 Kč';
+    return '';
   }
 
   function render() {
@@ -152,39 +165,62 @@
     const months = selectedPeriod();
     const materialnik = materialnikYes();
     const growth = growthWanted();
-    const price = compute(pages, months, materialnik, growth);
-    const typ = TYPES[selectedType()] || 'zatím nevybráno';
+    const typ = TYPES[selectedType()] || '';
     const note = (noteInput?.value || '').trim();
+    const summary = document.querySelector('.calc-summary');
+    const emptyEl = document.getElementById('calc-summary-empty');
+    const priceWrap = document.getElementById('calc-summary-price');
+    const monthlyEl = document.getElementById('calc-monthly');
+    const totalEl = document.getElementById('calc-total');
+    const picksEl = document.getElementById('calc-picks');
+    const specialEl = document.getElementById('calc-special');
+    const growthHint = document.getElementById('calc-growth-hint');
 
-    if (growthWrap) growthWrap.hidden = months !== 6;
-    document.querySelectorAll('.calc-period').forEach((card) => {
+    document.querySelectorAll('.calc-period-card').forEach((card) => {
       const input = card.querySelector('input[name="period"]');
       card.classList.toggle('is-active', !!input?.checked);
     });
 
-    const totalEl = document.getElementById('calc-total');
-    const periodEl = document.getElementById('calc-period-result');
-    const monthlyEl = document.getElementById('calc-monthly');
-    const picksEl = document.getElementById('calc-picks');
-    const specialEl = document.getElementById('calc-special');
+    const ready = months === 6 || months === 12;
+    summary?.classList.toggle('is-empty', !ready);
+    if (emptyEl) emptyEl.hidden = ready;
+    if (priceWrap) priceWrap.hidden = !ready;
 
-    if (totalEl) totalEl.textContent = formatKc(price.total);
-    if (periodEl) {
-      periodEl.textContent = months === 12
-        ? 'za první rok Partnerství'
-        : 'za prvních 6 měsíců Partnerství';
+    if (ready) {
+      const price = compute(pages, months, materialnik, growth);
+      if (monthlyEl) monthlyEl.textContent = `≈ ${formatKc(price.monthly)} / měsíc`;
+      if (totalEl) {
+        totalEl.textContent = months === 12
+          ? `Celkem ${formatKc(price.total)} za prvních 12 měsíců`
+          : `${formatKc(price.total)} za prvních 6 měsíců`;
+      }
+      if (growthHint) {
+        growthHint.hidden = !(months === 12 || (months === 6 && growth));
+        growthHint.textContent = months === 12
+          ? 'Program růstu máte zdarma.'
+          : 'Program růstu je v této kalkulaci započítaný.';
+      }
     }
-    if (monthlyEl) monthlyEl.textContent = `≈ ${formatKc(price.monthly)} měsíčně`;
+
     if (picksEl) {
-      const bits = [
-        typ,
-        `hlavní + ${pages} podstránek`,
-        `Materiálník ${materialnik ? 'Ano' : 'Ne'}`,
-        months === 12 ? '12 měsíců' : '6 měsíců',
-        `Program růstu ${growthLabel(months, growth)}`,
-      ];
-      picksEl.textContent = `Vybrali jste: ${bits.join(', ')}`;
+      const items = [];
+      if (typ) items.push(typ);
+      items.push(pagesPhrase(pages));
+      if (materialnik) items.push('Materiálník');
+      if (ready) items.push(periodPhrase(months));
+      const g = ready ? growthPhrase(months, growth) : '';
+      if (g) items.push(g);
+      if (items.length) {
+        picksEl.hidden = false;
+        picksEl.innerHTML = `<li class="calc-picks-title">Vybrali jste</li>${
+          items.map((t) => `<li>${t}</li>`).join('')
+        }`;
+      } else {
+        picksEl.hidden = true;
+        picksEl.innerHTML = '';
+      }
     }
+
     if (specialEl) {
       if (note) {
         specialEl.hidden = false;
@@ -193,14 +229,6 @@
         specialEl.hidden = true;
         specialEl.textContent = '';
       }
-    }
-
-    const growthHint = document.getElementById('calc-growth-hint');
-    if (growthHint) {
-      growthHint.hidden = !(months === 12 || (months === 6 && growth));
-      growthHint.textContent = months === 12
-        ? 'Program růstu máte zdarma.'
-        : 'Program růstu je v této kalkulaci započítaný.';
     }
   }
 
@@ -217,15 +245,25 @@
     setPages(pagesValue() + 1);
   });
 
-  document.querySelectorAll('[data-growth-toggle]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (!growthBox) return;
-      const open = growthBox.hidden;
-      growthBox.hidden = !open;
-      document.querySelectorAll('[data-growth-toggle]').forEach((el) => {
-        el.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
+  document.querySelectorAll('[data-growth-open]').forEach((btn) => {
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const period = btn.getAttribute('data-growth-open');
+      if (growthModalCta) {
+        growthModalCta.textContent = period === '6'
+          ? 'Program růstu +999 Kč'
+          : 'V ročním Partnerství zdarma';
+      }
+      if (growthModal?.showModal) growthModal.showModal();
     });
+  });
+
+  growthCheck?.addEventListener('change', () => {
+    if (!growthCheck.checked) return;
+    const six = form?.querySelector('input[name="period"][value="6"]');
+    if (six) six.checked = true;
+    render();
   });
 
   form?.addEventListener('input', render);
@@ -255,6 +293,11 @@
 
     if (!typ) {
       msg.textContent = 'Vyberte typ provozovny.';
+      msg.className = 'form-msg error';
+      return;
+    }
+    if (months !== 6 && months !== 12) {
+      msg.textContent = 'Vyberte délku Partnerství.';
       msg.className = 'form-msg error';
       return;
     }
@@ -316,11 +359,16 @@
 
       const total = Number(data.total);
       const periodMonths = Number(data.period_months) || months;
+      const monthly = Number.isFinite(total) ? Math.round(total / periodMonths) : null;
+      const thanksMonthly = document.getElementById('calc-thanks-monthly');
       const thanksPrice = document.getElementById('calc-thanks-price');
+      if (thanksMonthly && monthly != null) {
+        thanksMonthly.textContent = `Vaše orientační cena: ≈ ${formatKc(monthly)} / měsíc`;
+      }
       if (thanksPrice && Number.isFinite(total)) {
-        thanksPrice.textContent = `Vaše orientační cena: ${formatKc(total)} / ${
-          periodMonths === 6 ? 'prvních 6 měsíců' : 'první rok'
-        }`;
+        thanksPrice.textContent = periodMonths === 6
+          ? `${formatKc(total)} za prvních 6 měsíců`
+          : `${formatKc(total)} za prvních 12 měsíců`;
       }
       form.classList.add('is-sent');
       document.querySelector('.calc-contact')?.classList.add('is-sent');
