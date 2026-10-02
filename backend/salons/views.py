@@ -1,22 +1,27 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
+from rest_framework.exceptions import Throttled
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.conf import settings
+import logging
 
 from rezervace.services.audit import audit_actor, log_audit
 
-from rezervace.throttles import PoptavkaRateThrottle, IPRateThrottle
+from rezervace.throttles import KalkulaceRateThrottle, PoptavkaRateThrottle, IPRateThrottle
 
 from .poptavka import odeslat_poptavku
+from .kalkulace import KalkulaceError, odeslat_kalkulaci, parse_and_compute
 from .kontakt import odeslat_kontakt_salonu
 from .bunny import BunnyUploadError, delete_image, is_bunny_configured, upload_image
 from .models import CenikPolozka, Novinka, Salon, SalonObrazek
 from .permissions import AdminPasswordPermission, MajitelPermission
 from .serializers import NovinkaSerializer, SalonObrazekSerializer, SalonSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class SalonKontaktRateThrottle(IPRateThrottle):
@@ -317,6 +322,54 @@ class PoptavkaView(APIView):
             'ok': True,
             'message': 'Děkujeme — ozveme se vám co nejdříve.',
             'prijemce': prijemce,
+        })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class KalkulaceView(APIView):
+    """Orientační kalkulačka Moderník — e-mail na nás, nic se neukládá."""
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [KalkulaceRateThrottle]
+
+    def throttled(self, request, wait):
+        logger.warning('kalkulace_throttled wait_s=%s', wait)
+        raise Throttled(
+            wait=None,
+            detail='Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.',
+        )
+
+    def post(self, request):
+        try:
+            data = parse_and_compute(request.data)
+        except KalkulaceError as exc:
+            return Response({'detail': str(exc)}, status=400)
+
+        if data.get('honeypot'):
+            return Response({
+                'ok': True,
+                'message': 'Děkujeme, máme to.',
+                'total': data['total'],
+                'monthly': data['monthly'],
+                'period_months': data['period_months'],
+            })
+
+        try:
+            odeslat_kalkulaci(data)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=503)
+        except Exception:
+            return Response(
+                {'detail': 'Odeslání se nepodařilo. Zkuste to později nebo napište na hakl@modernik.cz.'},
+                status=500,
+            )
+
+        return Response({
+            'ok': True,
+            'message': 'Děkujeme, máme to.',
+            'total': data['total'],
+            'monthly': data['monthly'],
+            'period_months': data['period_months'],
         })
 
 

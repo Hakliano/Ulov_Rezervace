@@ -5,6 +5,7 @@ from .views import (
     BunnyStatusView,
     ImageDeleteView,
     ImageUploadView,
+    KalkulaceView,
     PoptavkaView,
     SalonDetailView,
     SalonKontaktView,
@@ -13,6 +14,7 @@ from .views import (
 urlpatterns = [
     path('auth/login/', AuthLoginView.as_view(), name='auth-login'),
     path('poptavka/', PoptavkaView.as_view(), name='poptavka'),
+    path('kalkulace/', KalkulaceView.as_view(), name='kalkulace'),
     path('bunny/status/', BunnyStatusView.as_view(), name='bunny-status'),
     path('salon/<int:pk>/', SalonDetailView.as_view(), name='salon-detail'),
     path('salon/<int:pk>/kontakt/', SalonKontaktView.as_view(), name='salon-kontakt'),

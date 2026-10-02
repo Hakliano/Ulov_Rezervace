@@ -87,6 +87,24 @@
     if (event.target === lightbox) closeTileLightbox();
   });
 
+  const calmBlocks = document.querySelectorAll('.calm-block');
+  if (calmBlocks.length) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      calmBlocks.forEach((el) => el.classList.add('is-in'));
+    } else {
+      document.documentElement.classList.add('js-ready');
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          io.unobserve(entry.target);
+        });
+      }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+      calmBlocks.forEach((el) => io.observe(el));
+    }
+  }
+
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const cat = tab.dataset.category || 'all';
