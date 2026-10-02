@@ -12,6 +12,7 @@ from rezervace.services.audit import audit_actor, log_audit
 from rezervace.throttles import PoptavkaRateThrottle, IPRateThrottle
 
 from .poptavka import odeslat_poptavku
+from .kalkulace import KalkulaceError, odeslat_kalkulaci, parse_and_compute
 from .kontakt import odeslat_kontakt_salonu
 from .bunny import BunnyUploadError, delete_image, is_bunny_configured, upload_image
 from .models import CenikPolozka, Novinka, Salon, SalonObrazek
@@ -317,6 +318,47 @@ class PoptavkaView(APIView):
             'ok': True,
             'message': 'Děkujeme — ozveme se vám co nejdříve.',
             'prijemce': prijemce,
+        })
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class KalkulaceView(APIView):
+    """Orientační kalkulačka Moderník — e-mail na nás, nic se neukládá."""
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [PoptavkaRateThrottle]
+
+    def post(self, request):
+        try:
+            data = parse_and_compute(request.data)
+        except KalkulaceError as exc:
+            return Response({'detail': str(exc)}, status=400)
+
+        if data.get('honeypot'):
+            return Response({
+                'ok': True,
+                'message': 'Děkujeme, máme to.',
+                'total': data['total'],
+                'monthly': data['monthly'],
+                'period_months': data['period_months'],
+            })
+
+        try:
+            odeslat_kalkulaci(data)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=503)
+        except Exception:
+            return Response(
+                {'detail': 'Odeslání se nepodařilo. Zkuste to později nebo napište na hakl@modernik.cz.'},
+                status=500,
+            )
+
+        return Response({
+            'ok': True,
+            'message': 'Děkujeme, máme to.',
+            'total': data['total'],
+            'monthly': data['monthly'],
+            'period_months': data['period_months'],
         })
 
 
