@@ -709,10 +709,9 @@
 .calc-mile img,
 .calc-mile-photos img {
   display: block;
-  width: auto;
-  max-width: min(100%, 20rem);
+  width: 100%;
+  max-width: 100%;
   height: auto;
-  max-height: 11.5rem;
   margin-inline: auto;
   border-radius: 12px;
   object-fit: contain;
@@ -721,15 +720,15 @@
 
 .calc-mile-photos {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.45rem;
-  align-items: center;
+  align-items: start;
   justify-items: center;
 }
 
 .calc-mile-photos img {
-  max-width: 100%;
-  max-height: 8.5rem;
+  width: 100%;
+  height: auto;
 }
 
 .calc-mile h3 {
@@ -842,8 +841,7 @@
 
   .calc-mile img,
   .calc-mile-photos img {
-    max-width: min(100%, 18rem);
-    max-height: 10rem;
+    max-width: 100%;
   }
 }
 
