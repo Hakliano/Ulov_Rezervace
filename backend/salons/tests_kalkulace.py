@@ -36,7 +36,8 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
 
     def test_six_months_materialnik_growth(self):
         result = compute_price(pages=0, period_months=6, materialnik=True, growth=True)
-        self.assertEqual(result['total'], 3999 + 99 * 6 + 999)
+        self.assertEqual(result['total'], 3600 + 99 * 6 + 999)
+        self.assertEqual(result['monthly'], 866)
         self.assertEqual(result['growth_label'], 'ANO +999 Kč')
 
     def test_twelve_months_ignores_paid_growth(self):

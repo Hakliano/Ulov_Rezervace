@@ -148,7 +148,7 @@
   }
 
   function compute(pages, months, materialnik, growth) {
-    const base = months === 6 ? 3999 : 5999;
+    const base = months === 6 ? 3600 : 5999;
     const wm = webMonthly(pages);
     const mat = materialnik ? 99 : 0;
     const gr = months === 6 && growth ? 999 : 0;
@@ -224,7 +224,7 @@
       if (ready) items.push(periodPhrase(months));
       const g = ready ? growthPhrase(months, growth) : '';
       if (g) items.push(g);
-      if (items.length) {
+      if (ready && items.length) {
         picksEl.hidden = false;
         picksEl.innerHTML = `<li class="calc-picks-title">Vybrali jste</li>${
           items.map((t) => `<li>${t}</li>`).join('')
@@ -267,8 +267,10 @@
       if (growthModalCta) {
         growthModalCta.textContent = period === '6'
           ? 'Program růstu +999 Kč'
-          : 'V ročním Partnerství zdarma';
+          : 'Program růstu zdarma';
       }
+      const cont = document.getElementById('calc-growth-continue');
+      if (cont) cont.hidden = period !== '6';
       if (growthModal?.showModal) growthModal.showModal();
     });
   });

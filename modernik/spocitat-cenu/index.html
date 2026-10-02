@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../marketing-v2.css?v=35">
-  <link rel="stylesheet" href="kalkulace.css?v=4">
+  <link rel="stylesheet" href="kalkulace.css?v=5">
   <link rel="stylesheet" href="../cookie-consent.css?v=1">
 </head>
 <body>
@@ -94,13 +94,13 @@
                 <label class="calc-choice calc-period">
                   <input type="radio" name="period" value="6">
                   <span class="calc-period-term">6 měsíců</span>
-                  <span class="calc-period-monthly">≈ 667 Kč / měsíc</span>
-                  <span class="calc-period-total">3 999 Kč za 6 měsíců</span>
-                  <p>Poté možnost pokračovat za 549 Kč/měs. nebo si znovu zvolit předplacené období.</p>
+                  <span class="calc-period-monthly">≈ 600 Kč / měsíc</span>
+                  <span class="calc-period-total">3 600 Kč za 6 měsíců</span>
+                  <p>Poté možnost pokračovat za 550 Kč/měs. nebo si znovu zvolit předplacené období.</p>
                 </label>
                 <div class="calc-growth-panel">
                   <p class="calc-growth-kicker">Program růstu</p>
-                  <p class="calc-growth-lead">Pomáháme vám i po spuštění — s recenzemi, marketingem, prezentací provozovny a dalším rozvojem.</p>
+                  <p class="calc-growth-lead">Pomáháme vám i po spuštění — s recenzemi, marketingem, prezentací provozovny a dalším rozvojem. Program je roční: pokud po 6 měsících pokračujete, pokračují i milníky v 9. a 12. měsíci.</p>
                   <label class="calc-growth-check">
                     <input type="checkbox" id="calc-growth">
                     <span>Chci Program růstu +999 Kč</span>
@@ -264,10 +264,10 @@
       <p class="calc-growth-modal-lead"><strong>Moderník nekončí spuštěním.</strong> Během prvního roku vám postupně pomáháme s tím, aby vaše provozovna působila profesionálněji, získávala více recenzí a dál se rozvíjela.</p>
       <ol class="calc-timeline-nav" aria-label="Časová osa Programu růstu">
         <li>Start</li>
-        <li>3 měsíce</li>
-        <li>6 měsíců</li>
-        <li>9 měsíců</li>
-        <li>12 měsíců</li>
+        <li>3 měs.</li>
+        <li>6 měs.</li>
+        <li>9 měs.</li>
+        <li>12 měs.</li>
       </ol>
 
       <article class="calc-mile">
@@ -336,8 +336,9 @@
 
       <div class="calc-growth-closeout">
         <p class="calc-growth-closeout-lead">Moderník nekončí spuštěním.</p>
-        <p>Program růstu přináší během prvního roku služby v hodnotě 4 500 Kč + úvodní nastavení.</p>
-        <p class="calc-growth-closeout-badge" id="calc-growth-modal-cta">V ročním Partnerství zdarma</p>
+        <p>Během prvního roku od nás postupně získáte služby v hodnotě 4 500 Kč + kompletní úvodní nastavení.</p>
+        <p class="calc-growth-continue" id="calc-growth-continue" hidden>Program růstu je roční. Pokud po prvních 6 měsících v Partnerství pokračujete, pokračuje i on — včetně milníků v 9. a 12. měsíci.</p>
+        <p class="calc-growth-closeout-badge" id="calc-growth-modal-cta">Program růstu zdarma</p>
       </div>
     </div>
   </dialog>
@@ -378,6 +379,6 @@
     };
   </script>
   <script src="../cookie-consent.js?v=2" defer></script>
-  <script src="kalkulace.js?v=4" defer></script>
+  <script src="kalkulace.js?v=5" defer></script>
 </body>
 </html>
