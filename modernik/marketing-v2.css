@@ -2088,6 +2088,7 @@ a.promo-card-img:hover {
 }
 
 .experiment-banner {
+  display: none;
   margin: 0;
   padding: 0.45rem 1rem;
   background: #8b1e1e;
@@ -2096,6 +2097,10 @@ a.promo-card-img:hover {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+html.is-staging .experiment-banner {
+  display: block;
 }
 
 .calm-section {

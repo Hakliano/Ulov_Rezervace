@@ -9,11 +9,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=35">
+  <link rel="stylesheet" href="marketing-v2.css?v=36">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
+  <script>
+    if (location.hostname.indexOf('staging') !== -1) {
+      document.documentElement.classList.add('is-staging');
+    }
+  </script>
 </head>
 <body>
-  <p class="experiment-banner">Zkušební návrh homepage — jen staging. Není to ostrý web.</p>
+  <p class="experiment-banner" hidden>Zkušební návrh homepage — jen staging. Není to ostrý web.</p>
+  <script>
+    if (document.documentElement.classList.contains('is-staging')) {
+      var experimentBanner = document.querySelector('.experiment-banner');
+      if (experimentBanner) experimentBanner.hidden = false;
+    }
+  </script>
   <header class="site-header">
     <div class="wrap-wide header-inner">
       <a href="./" class="brand brand-nav" aria-label="MODERNÍK">
