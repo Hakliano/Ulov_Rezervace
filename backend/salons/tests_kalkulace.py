@@ -1,7 +1,11 @@
 from unittest.mock import patch
 
-from django.test import Client, SimpleTestCase, TestCase
+from django.core.cache import cache
+from django.test import Client, SimpleTestCase, TestCase, RequestFactory
 
+from rest_framework.exceptions import Throttled as DrfThrottled
+
+from rezervace.throttles import KalkulaceRateThrottle, PoptavkaRateThrottle
 from salons.kalkulace import compute_price, format_email_body, parse_and_compute, web_monthly
 from salons.views import KalkulaceView
 
@@ -123,6 +127,7 @@ class KalkulaceParseTests(SimpleTestCase):
 
 class KalkulaceViewTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = Client()
         self.url = '/api/kalkulace/'
         self.payload = {
@@ -161,7 +166,6 @@ class KalkulaceViewTests(TestCase):
         self.assertEqual(sent['total'], 7187)
 
     def test_throttled_hides_wait_seconds(self):
-        from rest_framework.exceptions import Throttled as DrfThrottled
         view = KalkulaceView()
         with self.assertRaises(DrfThrottled) as ctx:
             view.throttled(None, wait=1688)
@@ -169,3 +173,32 @@ class KalkulaceViewTests(TestCase):
         self.assertNotIn('1688', detail)
         self.assertNotIn('Expected available', detail)
         self.assertIn('později', detail)
+
+    def test_throttle_is_ten_per_ten_minutes_and_post_only(self):
+        throttle = KalkulaceRateThrottle()
+        self.assertEqual(throttle.scope, 'kalkulace')
+        self.assertEqual(throttle.parse_rate(throttle.rate), (10, 600))
+        poptavka = PoptavkaRateThrottle()
+        self.assertNotEqual(throttle.scope, poptavka.scope)
+        factory = RequestFactory()
+        view = KalkulaceView()
+        get = factory.get('/api/kalkulace/')
+        self.assertTrue(throttle.allow_request(get, view))
+
+    @patch('salons.views.odeslat_kalkulaci')
+    def test_eleventh_post_is_blocked_with_friendly_message(self, mock_send):
+        mock_send.return_value = 'hakl@modernik.cz'
+        cache.clear()
+        last = None
+        statuses = []
+        for i in range(11):
+            payload = {**self.payload, 'email': f'zakaznik{i}@example.com'}
+            last = self.client.post(self.url, data=payload, content_type='application/json')
+            statuses.append(last.status_code)
+        self.assertEqual(statuses[:10], [200] * 10)
+        self.assertEqual(statuses[10], 429)
+        self.assertEqual(mock_send.call_count, 10)
+        detail = last.json().get('detail', '')
+        self.assertNotIn('Expected available', str(detail))
+        self.assertNotIn('1688', str(detail))
+        self.assertIn('později', str(detail))

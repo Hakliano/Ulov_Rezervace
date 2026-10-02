@@ -11,7 +11,7 @@ import logging
 
 from rezervace.services.audit import audit_actor, log_audit
 
-from rezervace.throttles import PoptavkaRateThrottle, IPRateThrottle
+from rezervace.throttles import KalkulaceRateThrottle, PoptavkaRateThrottle, IPRateThrottle
 
 from .poptavka import odeslat_poptavku
 from .kalkulace import KalkulaceError, odeslat_kalkulaci, parse_and_compute
@@ -330,7 +330,7 @@ class KalkulaceView(APIView):
     """Orientační kalkulačka Moderník — e-mail na nás, nic se neukládá."""
     authentication_classes = []
     permission_classes = []
-    throttle_classes = [PoptavkaRateThrottle]
+    throttle_classes = [KalkulaceRateThrottle]
 
     def throttled(self, request, wait):
         logger.warning('kalkulace_throttled wait_s=%s', wait)

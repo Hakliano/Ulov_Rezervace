@@ -358,6 +358,7 @@ REST_FRAMEWORK = {
         'password_reset': '3/hour',
         'email_potvrzeni': '10/hour',
         'poptavka': '5/hour',
+        'kalkulace': '10/10min',
         'salon_kontakt': '5/hour',
     },
 }
