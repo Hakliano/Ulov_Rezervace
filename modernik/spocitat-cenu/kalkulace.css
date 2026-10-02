@@ -273,10 +273,12 @@
 }
 
 .calc-choice.calc-period .calc-period-monthly {
-  font-family: var(--font-price);
+  font-family: var(--font);
   font-size: clamp(2.1rem, 4vw, 2.55rem);
-  font-weight: 600;
-  line-height: 0.95;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   color: var(--gold-light);
 }
 
@@ -406,9 +408,12 @@
 
 .calc-monthly-main {
   margin: 0;
-  font-family: var(--font-price);
+  font-family: var(--font);
   font-size: clamp(2.8rem, 6vw, 3.6rem);
-  line-height: 0.95;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   color: var(--gold-light);
 }
 
@@ -498,6 +503,15 @@
   height: 180px;
 }
 
+.calc-contact .form-captcha-input {
+  width: 7.25rem !important;
+  min-height: 4.75rem;
+  padding: 0.85rem 0.6rem !important;
+  font-size: 2rem !important;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
 .calc-contact .form-captcha-note {
   display: none;
 }
@@ -544,9 +558,12 @@
 
 .calc-thanks-monthly {
   margin-top: 0.85rem !important;
-  font-family: var(--font-price);
+  font-family: var(--font) !important;
   font-size: 2.2rem;
-  line-height: 1;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   color: var(--gold-light) !important;
 }
 
@@ -557,8 +574,8 @@
 }
 
 .calc-growth-modal {
-  width: min(52rem, calc(100vw - 1.5rem));
-  max-height: calc(100vh - 2rem);
+  width: min(68rem, calc(100vw - 1.25rem));
+  max-height: calc(100vh - 1.25rem);
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -596,8 +613,8 @@
 }
 
 .calc-growth-logo {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 5.5rem;
+  height: 5.5rem;
   object-fit: contain;
   margin: 0 auto 0.6rem;
 }
@@ -616,6 +633,13 @@
   text-align: center;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.calc-growth-modal-lead strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+  font-size: 1.05rem;
 }
 
 .calc-timeline-nav {
@@ -647,16 +671,16 @@
 
 .calc-mile {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 1rem 1.25rem;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 1.15rem 1.4rem;
   align-items: center;
-  margin: 0 0 1.35rem;
-  padding-bottom: 1.25rem;
+  margin: 0 0 1.5rem;
+  padding-bottom: 1.4rem;
   border-bottom: 1px solid var(--line-soft);
 }
 
 .calc-mile:nth-of-type(even) {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
 }
 
 .calc-mile:nth-of-type(even) .calc-mile-copy {
@@ -666,8 +690,10 @@
 .calc-mile img,
 .calc-mile-photos img {
   width: 100%;
-  border-radius: 12px;
-  object-fit: contain;
+  min-height: 15rem;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  object-fit: cover;
   background: rgba(8, 20, 34, 0.5);
 }
 

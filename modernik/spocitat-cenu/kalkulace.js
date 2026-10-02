@@ -133,6 +133,20 @@
     return !!growthCheck?.checked;
   }
 
+  function isThrottleMessage(text) {
+    return /throttl|limitován|omezení počtu|Expected available|rate.?limit|429/i.test(text || '');
+  }
+
+  function userFacingSubmitError(res, data) {
+    const raw = data && data.detail;
+    const detail = typeof raw === 'string' ? raw : '';
+    if (res.status === 429 || isThrottleMessage(detail)) {
+      return 'Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.';
+    }
+    if (detail && !isThrottleMessage(detail)) return detail;
+    return 'Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.';
+  }
+
   function compute(pages, months, materialnik, growth) {
     const base = months === 6 ? 3999 : 5999;
     const wm = webMonthly(pages);
@@ -155,7 +169,7 @@
 
   function growthPhrase(months, growth) {
     if (months === 12) return 'Program růstu zdarma';
-    if (growth) return 'Program růstu: +999 Kč';
+    if (growth) return 'Program růstu';
     return '';
   }
 
@@ -355,7 +369,7 @@
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || 'Odeslání se nepodařilo.');
+      if (!res.ok) throw new Error(userFacingSubmitError(res, data));
 
       const total = Number(data.total);
       const periodMonths = Number(data.period_months) || months;
@@ -363,7 +377,7 @@
       const thanksMonthly = document.getElementById('calc-thanks-monthly');
       const thanksPrice = document.getElementById('calc-thanks-price');
       if (thanksMonthly && monthly != null) {
-        thanksMonthly.textContent = `Vaše orientační cena: ≈ ${formatKc(monthly)} / měsíc`;
+        thanksMonthly.textContent = `≈ ${formatKc(monthly)} / měsíc`;
       }
       if (thanksPrice && Number.isFinite(total)) {
         thanksPrice.textContent = periodMonths === 6
@@ -378,7 +392,10 @@
       }
       msg.textContent = '';
     } catch (err) {
-      msg.textContent = err.message;
+      const raw = err && err.message ? String(err.message) : '';
+      msg.textContent = isThrottleMessage(raw)
+        ? 'Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.'
+        : (raw || 'Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.');
       msg.className = 'form-msg error';
     }
   });

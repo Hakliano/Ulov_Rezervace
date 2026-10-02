@@ -1,11 +1,13 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
+from rest_framework.exceptions import Throttled
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.conf import settings
+import logging
 
 from rezervace.services.audit import audit_actor, log_audit
 
@@ -18,6 +20,8 @@ from .bunny import BunnyUploadError, delete_image, is_bunny_configured, upload_i
 from .models import CenikPolozka, Novinka, Salon, SalonObrazek
 from .permissions import AdminPasswordPermission, MajitelPermission
 from .serializers import NovinkaSerializer, SalonObrazekSerializer, SalonSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class SalonKontaktRateThrottle(IPRateThrottle):
@@ -327,6 +331,13 @@ class KalkulaceView(APIView):
     authentication_classes = []
     permission_classes = []
     throttle_classes = [PoptavkaRateThrottle]
+
+    def throttled(self, request, wait):
+        logger.warning('kalkulace_throttled wait_s=%s', wait)
+        raise Throttled(
+            wait=None,
+            detail='Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.',
+        )
 
     def post(self, request):
         try:

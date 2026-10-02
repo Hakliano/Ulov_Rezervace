@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.test import Client, SimpleTestCase, TestCase
 
 from salons.kalkulace import compute_price, format_email_body, parse_and_compute, web_monthly
+from salons.views import KalkulaceView
 
 
 class KalkulaceAlgorithmTests(SimpleTestCase):
@@ -158,3 +159,13 @@ class KalkulaceViewTests(TestCase):
         mock_send.assert_called_once()
         sent = mock_send.call_args[0][0]
         self.assertEqual(sent['total'], 7187)
+
+    def test_throttled_hides_wait_seconds(self):
+        from rest_framework.exceptions import Throttled as DrfThrottled
+        view = KalkulaceView()
+        with self.assertRaises(DrfThrottled) as ctx:
+            view.throttled(None, wait=1688)
+        detail = str(ctx.exception.detail)
+        self.assertNotIn('1688', detail)
+        self.assertNotIn('Expected available', detail)
+        self.assertIn('později', detail)
