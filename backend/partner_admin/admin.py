@@ -6,6 +6,7 @@ from .models import (
     KamProvize,
     KeyAccountManager,
     PartnerAdminProfil,
+    PartnerFeatureGrant,
     PartnerNastaveni,
     PartnerTarif,
     PlatbaPartnera,
@@ -32,6 +33,8 @@ class PartnerNastaveniAdmin(admin.ModelAdmin):
         'salon',
         'domena',
         'stav',
+        'plan',
+        'tarif',
         'povolit_technicke_nastaveni',
         'variabilni_symbol',
         'castka',
@@ -41,9 +44,18 @@ class PartnerNastaveniAdmin(admin.ModelAdmin):
         'kam_provize',
         'je_testovaci',
     ]
-    list_filter = ['stav', 'periodicita', 'povolit_technicke_nastaveni', 'je_testovaci', 'kam']
+    list_filter = ['stav', 'plan', 'periodicita', 'povolit_technicke_nastaveni', 'je_testovaci', 'kam']
     list_editable = ['povolit_technicke_nastaveni']
     search_fields = ['salon__name', 'domena', 'variabilni_symbol', 'fakturacni_email']
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.plan == obj.PLAN_START:
+            from .staff_limits import zajisti_manager_pracuje_pro_start
+            try:
+                zajisti_manager_pracuje_pro_start(obj.salon)
+            except ValueError:
+                pass
 
 
 @admin.register(PlatbaPartnera)
@@ -130,6 +142,22 @@ class PartnerAdminProfilAdmin(admin.ModelAdmin):
     list_filter = ['role']
     search_fields = ['jmeno', 'user__email', 'user__username']
     raw_id_fields = ['user']
+
+
+@admin.register(PartnerFeatureGrant)
+class PartnerFeatureGrantAdmin(admin.ModelAdmin):
+    list_display = [
+        'salon',
+        'feature',
+        'zakaz',
+        'aktivni',
+        'platnost_od',
+        'platnost_do',
+        'zdroj',
+    ]
+    list_filter = ['feature', 'zakaz', 'aktivni', 'zdroj']
+    search_fields = ['salon__name', 'feature', 'poznamka']
+    raw_id_fields = ['salon']
 
 
 @admin.register(PotencialniKontakt)

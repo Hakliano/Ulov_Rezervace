@@ -157,6 +157,9 @@ def deaktivovat_zamestnance(staff):
     """Účet ponechá v DB kvůli auditu a historii rezervací — jen zablokuje přístup."""
     if staff.role == Zamestnanec.ROLE_MAJITEL:
         raise ValueError('Účet majitelky nelze deaktivovat.')
+    from partner_admin.staff_limits import over_deaktivaci_zamestnance
+
+    over_deaktivaci_zamestnance(staff.salon, staff)
     staff.aktivni = False
     staff.zobrazit_na_webu = False
     staff.save(update_fields=['aktivni', 'zobrazit_na_webu'])

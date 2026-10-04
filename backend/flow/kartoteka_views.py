@@ -18,21 +18,17 @@ from flow.kartoteka_services import (
     serialize_customer_list_item,
 )
 from flow.permissions import FlowPermission
-from partner_admin.models import MODUL_ARCHIVNIK
-from partner_admin.services_moduly import modul_je_aktivni
+from partner_admin.entitlements import MSG_KARTOTEKA_NEDOSTUPNA, kartoteka_smí_fungovat
 
 
 def _user(request):
     return get_flow_user_from_request(request)
 
 
-def _require_archivnik(user):
-    if modul_je_aktivni(user.salon_id, MODUL_ARCHIVNIK):
+def _require_kartoteka(user):
+    if kartoteka_smí_fungovat(user.salon):
         return None
-    return Response(
-        {'detail': 'Archivník není pro tuto provozovnu aktivní.'},
-        status=403,
-    )
+    return Response({'detail': MSG_KARTOTEKA_NEDOSTUPNA}, status=403)
 
 
 def _page_params(request):
@@ -53,7 +49,7 @@ class KartotekaCustomerListView(APIView):
 
     def get(self, request):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         page, page_size = _page_params(request)
@@ -68,7 +64,7 @@ class KartotekaCustomerListView(APIView):
 
     def post(self, request):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         try:
@@ -84,7 +80,7 @@ class KartotekaCustomerLookupView(APIView):
 
     def get(self, request):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         email = request.query_params.get('email') or ''
@@ -100,7 +96,7 @@ class KartotekaCustomerDetailView(APIView):
 
     def get(self, request, customer_uuid):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         payload = customer_detail(user.salon_id, customer_uuid)
@@ -115,7 +111,7 @@ class KartotekaEntryCreateView(APIView):
 
     def post(self, request, customer_uuid):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         try:
@@ -131,7 +127,7 @@ class KartotekaObjectCreateView(APIView):
 
     def post(self, request, customer_uuid):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         try:
@@ -147,7 +143,7 @@ class KartotekaObjectTypeListView(APIView):
 
     def get(self, request):
         user = _user(request)
-        denied = _require_archivnik(user)
+        denied = _require_kartoteka(user)
         if denied:
             return denied
         return Response(list_assignable_object_types(user.salon))

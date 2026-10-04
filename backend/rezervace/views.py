@@ -95,6 +95,16 @@ def get_salon(pk):
     return get_object_or_404(Salon, pk=pk)
 
 
+def _feature_403(request, salon, feature):
+    """403 pokud partner nemá nárok. Ulov (partner-admin) smí spravovat START na pozadí."""
+    from partner_admin.entitlements import MSG_FUNKCE_NEDOSTUPNA, partner_ma
+    from salons.permissions import je_platform_operator
+
+    if je_platform_operator(request) or partner_ma(salon, feature):
+        return None
+    return Response({'detail': MSG_FUNKCE_NEDOSTUPNA}, status=status.HTTP_403_FORBIDDEN)
+
+
 def log_historie(rezervace, kdo, popis, pred=None, po=None, request=None):
     actor = audit_actor(request, rezervace.salon_id) if request else kdo
     RezervaceHistorie.objects.create(
@@ -711,7 +721,12 @@ class AdminEmailNastaveniView(APIView):
     permission_classes = [MajitelPermission]
 
     def get(self, request, pk):
+        from partner_admin.entitlements import FEATURE_IMAP, FEATURE_TECH_SETTINGS, partner_ma
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_TECH_SETTINGS)
+        if denied:
+            return denied
         nast, _ = RezervacniNastaveni.objects.get_or_create(salon=salon)
         if not nast.smtp_user and salon.email:
             nast.smtp_user = salon.email
@@ -721,12 +736,20 @@ class AdminEmailNastaveniView(APIView):
         data['smtp_aktivni'] = cfg['smtp_ready']
         data['smtp_stav'] = cfg['zdroj']
         data['imap_aktivni'] = bool(
-            nast.imap_enabled and cfg['smtp_ready'] and (nast.imap_host or '').strip()
+            partner_ma(salon, FEATURE_IMAP)
+            and nast.imap_enabled
+            and cfg['smtp_ready']
+            and (nast.imap_host or '').strip()
         )
         return Response(data)
 
     def put(self, request, pk):
+        from partner_admin.entitlements import FEATURE_TECH_SETTINGS
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_TECH_SETTINGS)
+        if denied:
+            return denied
         nast, _ = RezervacniNastaveni.objects.get_or_create(salon=salon)
         pred = EmailNastaveniSerializer(nast).data
         ser = EmailNastaveniSerializer(nast, data=request.data, partial=True)
@@ -742,8 +765,13 @@ class AdminEmailNastaveniView(APIView):
         data['email_odesilatel'] = cfg['from_email']
         data['smtp_aktivni'] = cfg['smtp_ready']
         data['smtp_stav'] = cfg['zdroj']
+        from partner_admin.entitlements import FEATURE_IMAP, partner_ma
+
         data['imap_aktivni'] = bool(
-            nast.imap_enabled and cfg['smtp_ready'] and (nast.imap_host or '').strip()
+            partner_ma(salon, FEATURE_IMAP)
+            and nast.imap_enabled
+            and cfg['smtp_ready']
+            and (nast.imap_host or '').strip()
         )
         _audit(request, salon, 'email', 'změna nastavení e-mailu', pred=pred, po=data)
         return Response(data)
@@ -753,7 +781,12 @@ class AdminEmailTestView(APIView):
     permission_classes = [MajitelPermission]
 
     def post(self, request, pk):
+        from partner_admin.entitlements import FEATURE_TECH_SETTINGS
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_TECH_SETTINGS)
+        if denied:
+            return denied
         prijemce = request.data.get('email', '').strip() or salon.email
         if not prijemce:
             return Response({'detail': 'Zadejte e-mail pro test.'}, status=400)
@@ -771,12 +804,22 @@ class AdminNastaveniView(APIView):
     permission_classes = [MajitelPermission]
 
     def get(self, request, pk):
+        from partner_admin.entitlements import FEATURE_TECH_SETTINGS
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_TECH_SETTINGS)
+        if denied:
+            return denied
         nastaveni, _ = RezervacniNastaveni.objects.get_or_create(salon=salon)
         return Response(RezervacniNastaveniSerializer(nastaveni).data)
 
     def put(self, request, pk):
+        from partner_admin.entitlements import FEATURE_TECH_SETTINGS
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_TECH_SETTINGS)
+        if denied:
+            return denied
         nastaveni, _ = RezervacniNastaveni.objects.get_or_create(salon=salon)
         pred = RezervacniNastaveniSerializer(nastaveni).data
         ser = RezervacniNastaveniSerializer(nastaveni, data=request.data, partial=True)
@@ -795,6 +838,7 @@ class AdminZamestnanciView(APIView):
         qs = Zamestnanec.objects.filter(salon=salon).prefetch_related('rozvrh', 'absence')
         from flow.models import FlowUser
         from flow.persona_service import majitelka_pracuje_payload
+        from partner_admin.staff_limits import staff_entitlements_payload
         from rezervace.services.oteviraci_doba import vypocti_oteviraci_dobu_tydne
         from salons.serializers import OteviraciDobaSerializer
 
@@ -809,6 +853,7 @@ class AdminZamestnanciView(APIView):
             'oteviraci_doba_salonu': OteviraciDobaSerializer(
                 vypocti_oteviraci_dobu_tydne(salon), many=True,
             ).data,
+            **staff_entitlements_payload(salon),
         })
 
     def post(self, request, pk):
@@ -1210,7 +1255,12 @@ class AdminNoShowBlokovatView(APIView):
     permission_classes = [MajitelPermission]
 
     def post(self, request, pk):
+        from partner_admin.entitlements import FEATURE_NOSHOW_ARCHIVE
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_NOSHOW_ARCHIVE)
+        if denied:
+            return denied
         email = (request.data.get('email') or '').strip()
         if not email:
             return Response({'detail': 'E-mail je povinný.'}, status=400)
@@ -1227,7 +1277,12 @@ class AdminNoShowOdblokovatView(APIView):
     permission_classes = [MajitelPermission]
 
     def post(self, request, pk):
+        from partner_admin.entitlements import FEATURE_NOSHOW_ARCHIVE
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_NOSHOW_ARCHIVE)
+        if denied:
+            return denied
         email = (request.data.get('email') or '').strip()
         if not email:
             return Response({'detail': 'E-mail je povinný.'}, status=400)
@@ -1244,7 +1299,12 @@ class AdminNoShowArchivView(APIView):
     permission_classes = [MajitelPermission]
 
     def get(self, request, pk):
+        from partner_admin.entitlements import FEATURE_NOSHOW_ARCHIVE
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_NOSHOW_ARCHIVE)
+        if denied:
+            return denied
         q = request.query_params.get('q', '').strip()
         try:
             page = max(1, int(request.query_params.get('page', 1)))
@@ -1285,7 +1345,12 @@ class AdminStatistikyView(APIView):
     permission_classes = [StaffPermission]
 
     def get(self, request, pk):
+        from partner_admin.entitlements import FEATURE_STATS
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_STATS)
+        if denied:
+            return denied
         staff = get_staff_from_request(request, pk)
         qs = Rezervace.objects.filter(salon=salon)
         if staff and not je_majitel(staff):
@@ -1324,7 +1389,12 @@ class AdminExportHodinView(APIView):
     permission_classes = [StaffPermission]
 
     def get(self, request, pk):
+        from partner_admin.entitlements import FEATURE_STATS
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_STATS)
+        if denied:
+            return denied
         staff = get_staff_from_request(request, pk)
         od = request.query_params.get('od')
         do = request.query_params.get('do')
@@ -1395,7 +1465,12 @@ class AdminAuditLogView(APIView):
     permission_classes = [MajitelPermission]
 
     def get(self, request, pk):
+        from partner_admin.entitlements import FEATURE_AUDIT
+
         salon = get_salon(pk)
+        denied = _feature_403(request, salon, FEATURE_AUDIT)
+        if denied:
+            return denied
         try:
             page = max(1, int(request.query_params.get('page', 1)))
         except (TypeError, ValueError):

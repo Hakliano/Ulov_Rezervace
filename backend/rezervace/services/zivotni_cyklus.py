@@ -50,6 +50,12 @@ def _je_dekujici_notifikace(notif):
         return False
 
 
+def _smí_post_visit(salon):
+    from partner_admin.entitlements import FEATURE_POST_VISIT_EMAIL, partner_ma
+
+    return partner_ma(salon, FEATURE_POST_VISIT_EMAIL)
+
+
 def _odeslat_planovane_emaily(now):
     """Připomínky (+24 h) i děkovný e-mail (−2 h po konci)."""
     odeslano = 0
@@ -85,6 +91,16 @@ def _odeslat_planovane_emaily(now):
 
             cilovy = cas_odeslani(rezervace, offset)
             if not je_v_okne(cilovy, now):
+                continue
+
+            if _je_dekujici_notifikace(notif) and not _smí_post_visit(rezervace.salon):
+                odeslane.append(nid)
+                rezervace.notifikace_odeslane = odeslane
+                update_fields = ['notifikace_odeslane']
+                if not rezervace.thank_you_sent_at:
+                    rezervace.thank_you_sent_at = now
+                    update_fields.append('thank_you_sent_at')
+                rezervace.save(update_fields=update_fields)
                 continue
 
             try:

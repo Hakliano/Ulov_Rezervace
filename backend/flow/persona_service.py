@@ -85,6 +85,9 @@ def set_majitelka_pracuje(
         raise ValueError('FLOW účet není napojený na majitelku.')
 
     if not ano:
+        from partner_admin.staff_limits import over_vypnuti_manager_pracuje
+
+        over_vypnuti_manager_pracuje(salon)
         pz = flow_user.pracovni_zamestnanec
         flow_user.pracovni_zamestnanec = None
         flow_user.save(update_fields=['pracovni_zamestnanec', 'upraveno'])

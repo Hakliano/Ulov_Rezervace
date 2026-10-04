@@ -1,3 +1,4 @@
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -18,11 +19,25 @@ def _user(request):
     return get_flow_user_from_request(request)
 
 
+def _require_imap(user):
+    from partner_admin.entitlements import FEATURE_IMAP, MSG_FUNKCE_NEDOSTUPNA, partner_ma
+
+    if partner_ma(user.salon, FEATURE_IMAP):
+        return None
+    return Response(
+        {'detail': MSG_FUNKCE_NEDOSTUPNA},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
 class FlowMailStavView(APIView):
     permission_classes = [FlowPermission]
 
     def get(self, request):
         user = _user(request)
+        denied = _require_imap(user)
+        if denied:
+            return denied
         cfg = get_imap_config(user.salon)
         return Response({
             'ready': cfg['ready'],
@@ -37,6 +52,9 @@ class FlowMailListView(APIView):
 
     def get(self, request):
         user = _user(request)
+        denied = _require_imap(user)
+        if denied:
+            return denied
         try:
             limit = int(request.query_params.get('limit') or 40)
             offset = int(request.query_params.get('offset') or 0)
@@ -53,6 +71,9 @@ class FlowMailDetailView(APIView):
 
     def get(self, request, uid):
         user = _user(request)
+        denied = _require_imap(user)
+        if denied:
+            return denied
         try:
             data = get_message(user.salon, uid, mark_seen=True)
             return Response(data)
@@ -67,6 +88,9 @@ class FlowMailOdeslaneListView(APIView):
 
     def get(self, request):
         user = _user(request)
+        denied = _require_imap(user)
+        if denied:
+            return denied
         limit = int(request.query_params.get('limit') or 40)
         offset = int(request.query_params.get('offset') or 0)
         return Response(list_odeslane(user.salon, limit=limit, offset=offset))
@@ -77,6 +101,9 @@ class FlowMailOdeslaneDetailView(APIView):
 
     def get(self, request, pk):
         user = _user(request)
+        denied = _require_imap(user)
+        if denied:
+            return denied
         try:
             return Response(get_odeslane(user.salon, pk))
         except MailError as exc:
@@ -88,6 +115,9 @@ class FlowMailOdeslatView(APIView):
 
     def post(self, request):
         user = _user(request)
+        denied = _require_imap(user)
+        if denied:
+            return denied
         data = request.data or {}
         try:
             result = send_mail_message(

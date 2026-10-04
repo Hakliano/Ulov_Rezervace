@@ -162,7 +162,10 @@ class NovyPartnerForm(forms.Form):
         label='Hned aktivovat Materiálník (sklad, i bez FLOW)',
         required=False,
         initial=False,
-        help_text='Personál se přihlásí stejným e-mailem a heslem. Web ani FLOW k tomu nejsou potřeba.',
+        help_text=(
+            'U PRO se Archivník i Materiálník zapínají automaticky. '
+            'START na ně nemá nárok — běžnou cestou je nelze zapnout.'
+        ),
     )
 
     domena = forms.CharField(
@@ -175,6 +178,13 @@ class NovyPartnerForm(forms.Form):
         label='Tarif',
         max_length=100,
         required=False,
+    )
+    plan = forms.ChoiceField(
+        label='Produktový plán',
+        choices=PartnerNastaveni.PLANY,
+        initial=PartnerNastaveni.PLAN_PRO,
+        required=False,
+        help_text='Funkční oprávnění (START / PRO). Billingový tarif a cenu nemění.',
     )
     fakturacni_email = forms.EmailField(label='Fakturační e-mail', required=False)
     variabilni_symbol = forms.CharField(
@@ -282,8 +292,32 @@ class NovyPartnerForm(forms.Form):
             raise forms.ValidationError('Tento e-mail už používá jiný FLOW účet.')
         return email
 
+    def clean_plan(self):
+        plan = (self.cleaned_data.get('plan') or '').strip()
+        if plan not in {PartnerNastaveni.PLAN_START, PartnerNastaveni.PLAN_PRO}:
+            return PartnerNastaveni.PLAN_PRO
+        return plan
+
+    def clean(self):
+        data = super().clean()
+        if (
+            data.get('plan') == PartnerNastaveni.PLAN_START
+            and data.get('aktivovat_materialnik')
+        ):
+            self.add_error(
+                'aktivovat_materialnik',
+                'START nemá nárok na Materiálník.',
+            )
+        return data
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.is_bound:
+            plan = (self.data.get('plan') or '').strip()
+            if plan not in {PartnerNastaveni.PLAN_START, PartnerNastaveni.PLAN_PRO}:
+                data = self.data.copy()
+                data['plan'] = PartnerNastaveni.PLAN_PRO
+                self.data = data
         nastav_tarif_pole(
             self.fields['tarif'],
             (self.data.get('tarif') if self.is_bound else '') or '',
@@ -300,6 +334,7 @@ class PartnerNastaveniForm(forms.ModelForm):
         fields = [
             'domena',
             'tarif',
+            'plan',
             'kam',
             'prvni_platba',
             'kam_provize',
@@ -328,6 +363,12 @@ class PartnerNastaveniForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.is_bound and self.add_prefix('plan') not in self.data:
+            data = self.data.copy()
+            data[self.add_prefix('plan')] = (
+                getattr(self.instance, 'plan', None) or PartnerNastaveni.PLAN_PRO
+            )
+            self.data = data
         self.fields['dalsi_splatnost'].input_formats = ['%Y-%m-%d', '%d.%m.%Y']
         self.fields['dalsi_splatnost'].required = False
         nastav_tarif_pole(
@@ -359,6 +400,16 @@ class PartnerNastaveniForm(forms.ModelForm):
         nastav_castku(self, 'prvni_platba')
         nastav_castku(self, 'kam_provize')
         nastav_castku(self, 'kam_procento')
+        self.fields['plan'].required = False
+        self.fields['plan'].help_text = (
+            'START / PRO určuje funkční oprávnění. Billingový tarif a cenu nemění.'
+        )
+
+    def clean_plan(self):
+        plan = (self.cleaned_data.get('plan') or '').strip()
+        if plan in {PartnerNastaveni.PLAN_START, PartnerNastaveni.PLAN_PRO}:
+            return plan
+        return getattr(self.instance, 'plan', None) or PartnerNastaveni.PLAN_PRO
 
     def clean_domena(self):
         domena = (self.cleaned_data.get('domena') or '').strip().lower()

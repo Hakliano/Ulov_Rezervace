@@ -55,11 +55,14 @@ def service_completed_event_id(rezervace):
 
 
 def enqueue_service_completed(rezervace):
-    from partner_admin.models import MODUL_MATERIALNIK, IntegrationOutbox, PartnerModul
+    from partner_admin.entitlements import materialnik_smí_fungovat
+    from partner_admin.models import IntegrationOutbox, PartnerModul, MODUL_MATERIALNIK
     from partner_admin.services_moduly import partner_modul
 
     row = partner_modul(rezervace.salon, MODUL_MATERIALNIK)
     if not row or row.status != PartnerModul.STAV_ACTIVE:
+        return None
+    if not materialnik_smí_fungovat(rezervace.salon):
         return None
 
     partner = rezervace.salon.partner_nastaveni

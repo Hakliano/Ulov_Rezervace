@@ -24,7 +24,7 @@ from .models import (
 from .services import oznac_platbu, posun_splatnost
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend', MATERIALNIK_STUB=True)
 class PartnerAdminTests(TestCase):
     def setUp(self):
         self.salon = Salon.objects.create(

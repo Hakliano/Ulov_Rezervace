@@ -31,7 +31,10 @@ def get_imap_config(salon):
     host = ((nast.imap_host if nast else '') or '').strip() or 'imap.forpsi.com'
     port = int((nast.imap_port if nast else None) or 993)
     use_ssl = True if nast is None else bool(nast.imap_use_ssl)
-    enabled = bool(nast and nast.imap_enabled)
+    from partner_admin.entitlements import FEATURE_IMAP, partner_ma
+
+    entitled = partner_ma(salon, FEATURE_IMAP)
+    enabled = bool(nast and nast.imap_enabled and entitled)
     ready = bool(enabled and smtp['smtp_ready'] and host and smtp['user'] and smtp['password'])
     return {
         'host': host,

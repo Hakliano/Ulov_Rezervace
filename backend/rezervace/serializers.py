@@ -202,10 +202,16 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         import uuid
 
+        from partner_admin.staff_limits import ExtraStaffNeniVNaroku, over_vytvoreni_extra_staff
+
         rozvrh_data = validated_data.pop('rozvrh', [])
         heslo = validated_data.pop('heslo', '')
         validated_data.pop('role', None)
         salon = self.context['salon']
+        try:
+            over_vytvoreni_extra_staff(salon)
+        except ExtraStaffNeniVNaroku as exc:
+            raise serializers.ValidationError({'detail': str(exc)}) from exc
         # unique_together (salon, prihlasovaci_jmeno) — prázdný login nelze u více lidí.
         # Nevymýšlíme e-mail: jen technický interní klíč, dokud majitelka nezadá skutečný e-mail (FLOW).
         login = (validated_data.get('prihlasovaci_jmeno') or '').strip()
@@ -234,6 +240,24 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
         else:
             validated_data.pop('role', None)
         byl_aktivni = instance.aktivni
+        if 'aktivni' in validated_data:
+            from partner_admin.staff_limits import (
+                ExtraStaffNeniVNaroku,
+                StartManagerPracujePovinny,
+                over_deaktivaci_zamestnance,
+                over_reaktivaci_extra_staff,
+            )
+            salon = instance.salon
+            if byl_aktivni and validated_data.get('aktivni') is False:
+                try:
+                    over_deaktivaci_zamestnance(salon, instance)
+                except StartManagerPracujePovinny as exc:
+                    raise serializers.ValidationError({'aktivni': str(exc)}) from exc
+            if (not byl_aktivni) and validated_data.get('aktivni') is True:
+                try:
+                    over_reaktivaci_extra_staff(salon, instance)
+                except ExtraStaffNeniVNaroku as exc:
+                    raise serializers.ValidationError({'aktivni': str(exc)}) from exc
         rozvrh_data = validated_data.pop('rozvrh', None)
         heslo = validated_data.pop('heslo', None)
         for attr, val in validated_data.items():

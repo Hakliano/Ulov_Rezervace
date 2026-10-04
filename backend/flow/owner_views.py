@@ -47,10 +47,50 @@ def require_flow_overview(request):
     return user, None
 
 
+def deny_feature(salon, feature):
+    from partner_admin.entitlements import MSG_FUNKCE_NEDOSTUPNA, partner_ma
+
+    if partner_ma(salon, feature):
+        return None
+    return Response(
+        {'detail': MSG_FUNKCE_NEDOSTUPNA},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
 def require_technicke_nastaveni(user):
-    """Technická zóna FLOW jen když ji Ulov povolí v partner-adminu."""
+    """Partner-facing tech UI: nárok tech_settings + přepínač Ulov v partner-adminu."""
+    from partner_admin.entitlements import FEATURE_TECH_SETTINGS
     from partner_admin.models import PartnerNastaveni
 
+    feat_err = deny_feature(user.salon, FEATURE_TECH_SETTINGS)
+    if feat_err:
+        return feat_err
+    ok = PartnerNastaveni.objects.filter(
+        salon_id=user.salon_id,
+        povolit_technicke_nastaveni=True,
+    ).exists()
+    if not ok:
+        return Response(
+            {
+                'detail': (
+                    'Technické nastavení není pro tento salon povoleno. '
+                    'Zapíná se v partner-adminu.'
+                ),
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
+
+def require_flow_audit(user):
+    """Uživatelský audit log. Zápis interních záznamů se nevypíná."""
+    from partner_admin.entitlements import FEATURE_AUDIT
+    from partner_admin.models import PartnerNastaveni
+
+    feat_err = deny_feature(user.salon, FEATURE_AUDIT)
+    if feat_err:
+        return feat_err
     ok = PartnerNastaveni.objects.filter(
         salon_id=user.salon_id,
         povolit_technicke_nastaveni=True,
@@ -192,6 +232,7 @@ class FlowOwnerPersonalListCreateView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        from partner_admin.staff_limits import staff_entitlements_payload
         qs = (
             Zamestnanec.objects.filter(salon=user.salon)
             .prefetch_related('rozvrh', 'absence', 'prirazene_sluzby')
@@ -200,6 +241,7 @@ class FlowOwnerPersonalListCreateView(APIView):
         return Response({
             'zamestnanci': [_personal_payload(z) for z in qs],
             'sluzby': _salon_sluzby_katalog(user.salon),
+            **staff_entitlements_payload(user.salon),
         })
 
     def post(self, request):
@@ -763,7 +805,7 @@ class FlowOwnerAuditLogView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
-        tech_err = require_technicke_nastaveni(user)
+        tech_err = require_flow_audit(user)
         if tech_err:
             return tech_err
         try:
@@ -793,6 +835,11 @@ class FlowOwnerNoShowArchivView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        from partner_admin.entitlements import FEATURE_NOSHOW_ARCHIVE
+
+        feat_err = deny_feature(user.salon, FEATURE_NOSHOW_ARCHIVE)
+        if feat_err:
+            return feat_err
         q = (request.query_params.get('q') or '').strip()
         try:
             page = max(1, int(request.query_params.get('page', 1)))
@@ -811,6 +858,11 @@ class FlowOwnerNoShowBlokovatView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        from partner_admin.entitlements import FEATURE_NOSHOW_ARCHIVE
+
+        feat_err = deny_feature(user.salon, FEATURE_NOSHOW_ARCHIVE)
+        if feat_err:
+            return feat_err
         email = (request.data.get('email') or '').strip()
         if not email:
             return Response({'detail': 'E-mail je povinný.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -837,6 +889,11 @@ class FlowOwnerNoShowOdblokovatView(APIView):
         user, err = require_flow_owner(request)
         if err:
             return err
+        from partner_admin.entitlements import FEATURE_NOSHOW_ARCHIVE
+
+        feat_err = deny_feature(user.salon, FEATURE_NOSHOW_ARCHIVE)
+        if feat_err:
+            return feat_err
         email = (request.data.get('email') or '').strip()
         if not email:
             return Response({'detail': 'E-mail je povinný.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -881,6 +938,11 @@ class FlowOwnerStatistikyView(APIView):
         user, err = require_flow_overview(request)
         if err:
             return err
+        from partner_admin.entitlements import FEATURE_STATS
+
+        feat_err = deny_feature(user.salon, FEATURE_STATS)
+        if feat_err:
+            return feat_err
         salon_scope = flow_je_owner(user) or bool(user.visible_overview)
         qs = Rezervace.objects.filter(salon=user.salon)
         if not salon_scope:
@@ -1094,8 +1156,11 @@ class FlowOwnerPracovniPersonaView(APIView):
         if err:
             return err
         from flow.persona_service import majitelka_pracuje_payload
+        from partner_admin.staff_limits import staff_entitlements_payload
 
-        return Response(majitelka_pracuje_payload(user))
+        data = majitelka_pracuje_payload(user)
+        data.update(staff_entitlements_payload(user.salon))
+        return Response(data)
 
     def post(self, request):
         user, err = require_flow_owner(request)
@@ -1145,7 +1210,10 @@ class FlowOwnerPracovniPersonaView(APIView):
         from flow.auth import flow_user_do_dict, prepnout_personu
         from flow.persona_service import set_majitelka_pracuje
 
-        payload = set_majitelka_pracuje(user.salon, ano=False)
+        try:
+            payload = set_majitelka_pracuje(user.salon, ano=False)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=400)
         user.refresh_from_db()
         try:
             prepnout_personu(user, 'majitel')

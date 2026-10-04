@@ -221,14 +221,22 @@
       .replace(/"/g, '&quot;');
   }
 
+  let lastOwnerWorks = null;
+
   function applyOwnerWorksUi(payload) {
+    lastOwnerWorks = payload || lastOwnerWorks;
     const check = document.getElementById('owner-works-check');
     const detail = document.getElementById('owner-works-detail');
     if (!check) return;
-    const ano = !!payload?.ano;
+    const povinny = !!payload?.manager_pracuje_povinny;
+    const ano = povinny ? true : !!payload?.ano;
     check.checked = ano;
+    check.disabled = povinny;
     if (detail) {
-      if (ano && payload.pracovni) {
+      if (povinny) {
+        detail.textContent =
+          'U tarifu START Manager vždy obsluhuje. Pracovní personu nelze vypnout.';
+      } else if (ano && payload.pracovni) {
         detail.innerHTML =
           `Pracovní profil: <strong>${escHtml(payload.pracovni.jmeno)}</strong> ` +
           `<span class="role-pill" title="Manager">Manager</span>. ` +
@@ -257,6 +265,14 @@
     const sid = salonId();
     if (!check || !sid || !token() || !isMajitel()) return;
     const ano = !!check.checked;
+    if (lastOwnerWorks?.manager_pracuje_povinny && !ano) {
+      check.checked = true;
+      if (msg) {
+        msg.textContent = 'U tarifu START Manager vždy obsluhuje.';
+        msg.className = 'status-msg';
+      }
+      return;
+    }
     if (msg) {
       msg.textContent = ano ? 'Zapínám…' : 'Vypínám…';
       msg.className = 'status-msg';
@@ -282,7 +298,7 @@
         msg.className = 'status-msg error';
       }
     } finally {
-      check.disabled = false;
+      check.disabled = !!lastOwnerWorks?.manager_pracuje_povinny;
     }
   }
 

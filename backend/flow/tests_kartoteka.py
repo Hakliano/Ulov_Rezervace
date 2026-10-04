@@ -181,7 +181,7 @@ class KartotekaFlowProxyTests(TestCase):
         token = self._login('owner-a@test.local', 'HesloA123')
         r = self._get('/api/flow/kartoteka/zakaznici/', token)
         self.assertEqual(r.status_code, 403)
-        self.assertIn('Archivník', r.json()['detail'])
+        self.assertIn('Kartotéka', r.json()['detail'])
 
     def test_list_jen_vlastni_tenant(self):
         token = self._login('owner-a@test.local', 'HesloA123')

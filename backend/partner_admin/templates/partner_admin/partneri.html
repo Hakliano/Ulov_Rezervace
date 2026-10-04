@@ -101,6 +101,7 @@
           <div class="ledger-cell">
             <small>Tarif</small>
             <strong>{{ partner.tarif|default:"—" }}</strong>
+            <span class="muted">{{ partner.get_plan_display }}</span>
           </div>
           <div class="ledger-cell">
             <small>Materiálník</small>

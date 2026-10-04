@@ -221,7 +221,13 @@ def flow_user_do_dict(user):
                 po_splatnosti_dni = nast.dni_po_splatnosti
             povolit_technicke_nastaveni = bool(nast.povolit_technicke_nastaveni)
     aktivni_kod = 'majitel' if active.id == primary.id else 'pracovnik'
+    from partner_admin.entitlements import (
+        flow_pro_features_payload,
+        kartoteka_smí_fungovat,
+    )
     from partner_admin.services_moduly import archivnik_je_aktivni
+    from partner_admin.staff_limits import staff_entitlements_payload
+    staff_limity = staff_entitlements_payload(user.salon)
     return {
         'id': user.id,
         'email': user.email,
@@ -232,6 +238,11 @@ def flow_user_do_dict(user):
         'povolit_technicke_nastaveni': povolit_technicke_nastaveni,
         'moduly': _flow_moduly(user),
         'archivnik_active': archivnik_je_aktivni(user.salon),
+        'kartoteka': kartoteka_smí_fungovat(user.salon),
+        'extra_staff': staff_limity['extra_staff'],
+        'plan': staff_limity['plan'],
+        'manager_pracuje_povinny': staff_limity['manager_pracuje_povinny'],
+        **flow_pro_features_payload(user.salon),
         'salon': {
             'id': user.salon_id,
             'name': user.salon.name,

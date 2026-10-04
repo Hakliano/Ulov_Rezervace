@@ -479,6 +479,66 @@ function applyPersonaUi(user = currentUser) {
   renderPersonaSwitch(user);
 }
 
+function applyStartStaffUi(user = currentUser) {
+  const povinny = !!user?.manager_pracuje_povinny;
+  const btn = $('#btn-own-add-staff');
+  if (btn) btn.classList.toggle('hidden', user?.extra_staff === false);
+  const form = $('#form-own-add-staff');
+  if (form && user?.extra_staff === false) form.classList.add('hidden');
+  const check = $('#own-persona-check');
+  const hint = $('#own-persona-start-hint');
+  hint?.classList.toggle('hidden', !povinny);
+  if (check) {
+    check.disabled = povinny;
+    if (povinny) {
+      check.checked = true;
+      const lab = $('#own-persona-switch-label');
+      if (lab) lab.textContent = 'Ano';
+    }
+  }
+}
+
+function kartotekaSmiFungovat(user = currentUser) {
+  if (user && typeof user.kartoteka === 'boolean') return user.kartoteka;
+  return Boolean(user && user.archivnik_active);
+}
+
+function maProFeature(kod, user = currentUser) {
+  return !!user?.[kod];
+}
+
+function applyProFeaturesUi(user = currentUser) {
+  const imap = maProFeature('imap', user);
+  const stats = maProFeature('stats', user);
+  const noshowArchiv = maProFeature('noshow_archive', user) && isOwnerUser(user);
+  $('#tab-mail')?.classList.toggle('hidden', !imap);
+  $('#tab-overview')?.classList.toggle('hidden', !stats);
+  $('#nav-prehledy')?.classList.toggle('hidden', !stats);
+  $('#tab-hrisnici')?.classList.toggle('hidden', !noshowArchiv);
+  const locked = (
+    (!imap && flowNavCurrent === 'mail')
+    || (!stats && flowNavCurrent === 'overview')
+    || (!noshowArchiv && flowNavCurrent === 'hrisnici')
+  );
+  if (locked) {
+    flowNavSilent = true;
+    setTab('mujden');
+    flowNavSilent = false;
+    flowNavCurrent = 'mujden';
+  }
+}
+
+function applyKartotekaUi(user = currentUser) {
+  const allowed = kartotekaSmiFungovat(user);
+  $('#tab-karty')?.classList.toggle('hidden', !allowed);
+  if (!allowed && flowNavCurrent === 'karty') {
+    flowNavSilent = true;
+    setTab('mujden');
+    flowNavSilent = false;
+    flowNavCurrent = 'mujden';
+  }
+}
+
 function updateFlowBackBtn() {
   const btn = $('#btn-flow-back');
   if (!btn) return;
@@ -520,6 +580,16 @@ function goFlowBack() {
 
 function setTab(name) {
   if (name === 'sprava') name = isOwnerUser() ? 'personal' : 'mujden';
+  if (name === 'karty' && !kartotekaSmiFungovat()) name = 'mujden';
+  if (name === 'mail' && !maProFeature('imap')) name = 'mujden';
+  if (name === 'overview' && !maProFeature('stats')) name = 'mujden';
+  if (name === 'hrisnici' && !maProFeature('noshow_archive')) name = 'mujden';
+  if ((name === 'pravidla' || name === 'sablony') && (
+    !maProFeature('tech_settings') || !currentUser?.povolit_technicke_nastaveni
+  )) name = 'mujden';
+  if (name === 'audit' && (
+    !maProFeature('audit') || !currentUser?.povolit_technicke_nastaveni
+  )) name = 'mujden';
   if (OWNER_MENU_TABS.includes(name) && !isOwnerUser()) {
     name = 'mujden';
   }
@@ -616,7 +686,7 @@ function showLoggedIn(user) {
   applyFlowBanner(user.salon);
   startFlowClock();
   const ovTab = $('#tab-overview');
-  if (ovTab) ovTab.classList.remove('hidden');
+  if (ovTab) ovTab.classList.toggle('hidden', !maProFeature('stats', user));
   $('#pwd-box-staff')?.classList.toggle('hidden', owner);
   $('#pwd-box-owner')?.classList.toggle('hidden', !owner);
   $$('.tab-owner').forEach((t) => {
@@ -645,8 +715,11 @@ function showLoggedIn(user) {
   if (roleEl) roleEl.textContent = owner ? 'Manager' : 'Staff';
   applyPersonaUi(user);
   applyTechnickeNastaveniUi(user);
+  applyProFeaturesUi(user);
   applyMaterialnikUi(user);
   applyWebProvozovnyUi(user);
+  applyStartStaffUi(user);
+  applyKartotekaUi(user);
   // Staff: pracovní doba jen view; majitel ji mění ve Staff
   const rozHint = $('#rozvrh-hint');
   const rozSave = $('#btn-rozvrh-save');
@@ -663,7 +736,7 @@ function showLoggedIn(user) {
   }
   resetFlowNav(null);
   flowNavSilent = true;
-  const startTab = 'overview';
+  const startTab = maProFeature('stats', user) ? 'overview' : 'mujden';
   setTab(startTab);
   flowNavSilent = false;
   flowNavCurrent = startTab;
@@ -1420,10 +1493,12 @@ async function refreshTopAlerts() {
     riskyAlertItems = risky;
   }
   try {
-    const mail = await api('/flow/mail/?limit=40');
-    mailOk = true;
-    unseen = (mail.items || []).filter((m) => m.unseen).length;
-    mailUnseenCount = unseen;
+    if (maProFeature('imap')) {
+      const mail = await api('/flow/mail/?limit=40');
+      mailOk = true;
+      unseen = (mail.items || []).filter((m) => m.unseen).length;
+      mailUnseenCount = unseen;
+    }
   } catch {
     mailOk = false;
     mailUnseenCount = 0;
@@ -2360,13 +2435,21 @@ function showOwnerAdminHome() {
 }
 
 function applyTechnickeNastaveniUi(user = currentUser) {
-  const allowed = !!user?.povolit_technicke_nastaveni && isOwnerUser(user);
-  $$('.tab-tech').forEach((t) => t.classList.toggle('hidden', !allowed));
+  const allowed = !!user?.povolit_technicke_nastaveni
+    && maProFeature('tech_settings', user)
+    && isOwnerUser(user);
+  $$('.tab-tech').forEach((t) => {
+    if (t.id === 'tab-audit') {
+      t.classList.toggle('hidden', !allowed || !maProFeature('audit', user));
+      return;
+    }
+    t.classList.toggle('hidden', !allowed);
+  });
   $('#owner-zone-tech')?.classList.toggle('hidden', !allowed);
 }
 
 function archivnikJeAktivni(user = currentUser) {
-  return Boolean(user && user.archivnik_active);
+  return kartotekaSmiFungovat(user);
 }
 
 function materialnikInfo(user = currentUser) {
@@ -2528,6 +2611,12 @@ async function loadOwnerPersona() {
       if (inp && !inp.value) inp.value = '';
       inp?.setAttribute('placeholder', 'Jméno na webu a v rezervacích');
     }
+    if (p?.extra_staff !== undefined && currentUser) {
+      currentUser.extra_staff = p.extra_staff;
+      currentUser.plan = p.plan;
+      currentUser.manager_pracuje_povinny = p.manager_pracuje_povinny;
+    }
+    applyStartStaffUi(currentUser);
   } catch (err) {
     showMsg(msg, err.message, false);
   }
@@ -2709,10 +2798,19 @@ async function openOwnerSection(section) {
   if (!isOwnerUser() && section !== 'persona') return;
   // persona setup jen jako Manager (aktivní persona owner)
   if (section === 'persona' && !isOwnerUser()) return;
-  const techSections = ['pravidla', 'sablony', 'audit'];
-  if (techSections.includes(section) && !currentUser?.povolit_technicke_nastaveni) {
+  const techSections = ['pravidla', 'sablony'];
+  if (techSections.includes(section) && (
+    !currentUser?.povolit_technicke_nastaveni || !maProFeature('tech_settings')
+  )) {
     return;
   }
+  if (section === 'audit' && (
+    !maProFeature('audit') || !currentUser?.povolit_technicke_nastaveni
+  )) {
+    return;
+  }
+  if (section === 'hrisnici' && !maProFeature('noshow_archive')) return;
+  if (section === 'statistiky' && !maProFeature('stats')) return;
   const ok = ['persona', 'pravidla', 'sablony', 'personal', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
   if (!ok.includes(section)) return;
   $('#owner-admin-home')?.classList.add('hidden');
@@ -3490,6 +3588,7 @@ async function resetOwnerStaffFlow(id) {
 }
 
 $('#btn-own-add-staff')?.addEventListener('click', () => {
+  if (currentUser?.extra_staff === false) return;
   const form = $('#form-own-add-staff');
   form?.classList.remove('hidden');
   $('#own-add-jmeno')?.focus();
@@ -3741,6 +3840,11 @@ $('#own-persona-check')?.addEventListener('change', async () => {
   const save = $('#own-persona-save');
   const lab = $('#own-persona-switch-label');
   const ano = !!check?.checked;
+  if (currentUser?.manager_pracuje_povinny && !ano) {
+    if (check) check.checked = true;
+    if (lab) lab.textContent = 'Ano';
+    return;
+  }
   if (lab) lab.textContent = ano ? 'Ano' : 'Ne';
   if (!ano) {
     wrap?.classList.add('hidden');

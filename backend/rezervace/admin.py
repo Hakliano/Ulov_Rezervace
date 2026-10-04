@@ -51,6 +51,20 @@ class ZamestnanecAdmin(admin.ModelAdmin):
     list_display = ['jmeno', 'salon', 'specializace', 'aktivni']
     inlines = [ZamestnanecRozvrhInline, ZamestnanecSluzbaInline]
 
+    def save_model(self, request, obj, form, change):
+        from partner_admin.staff_limits import ExtraStaffNeniVNaroku, over_reaktivaci_extra_staff, over_vytvoreni_extra_staff
+
+        if obj.role == Zamestnanec.ROLE_ZAMESTNANEC and obj.aktivni:
+            try:
+                if not change:
+                    over_vytvoreni_extra_staff(obj.salon)
+                elif 'aktivni' in form.changed_data:
+                    over_reaktivaci_extra_staff(obj.salon, obj)
+            except ExtraStaffNeniVNaroku as exc:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(str(exc)) from exc
+        super().save_model(request, obj, form, change)
+
 
 admin.site.register(Zakaznik)
 admin.site.register(ZamestnanecAbsence)

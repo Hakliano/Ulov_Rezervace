@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from archivnik.models import ArchivnikSession
+from partner_admin.entitlements import FEATURE_ARCHIVNIK, partner_ma
 from partner_admin.models import MODUL_ARCHIVNIK
 from partner_admin.services_moduly import modul_je_aktivni
 from rezervace.models import Zamestnanec
@@ -26,7 +27,7 @@ def authenticate_zamestnanec(email: str, password: str) -> tuple[Zamestnanec | N
     if not login or not password:
         return None, 'invalid'
     candidates = list(
-        Zamestnanec.objects.select_related('salon').filter(
+        Zamestnanec.objects.select_related('salon', 'salon__partner_nastaveni').filter(
             aktivni=True,
             prihlasovaci_jmeno__iexact=login,
         ).exclude(prihlasovaci_jmeno='')
@@ -34,7 +35,11 @@ def authenticate_zamestnanec(email: str, password: str) -> tuple[Zamestnanec | N
     matched = [z for z in candidates if z.check_password(password)]
     if not matched:
         return None, 'invalid'
-    enabled = [z for z in matched if modul_je_aktivni(z.salon_id, MODUL_ARCHIVNIK)]
+    enabled = [
+        z for z in matched
+        if partner_ma(z.salon, FEATURE_ARCHIVNIK)
+        and modul_je_aktivni(z.salon_id, MODUL_ARCHIVNIK)
+    ]
     if not enabled:
         return None, 'module_off'
     return enabled[0], None
@@ -60,6 +65,8 @@ def get_session_from_request(request) -> ArchivnikSession | None:
     except (ArchivnikSession.DoesNotExist, ValueError):
         return None
     if not session.je_platna():
+        return None
+    if not partner_ma(session.zamestnanec.salon, FEATURE_ARCHIVNIK):
         return None
     if not modul_je_aktivni(session.zamestnanec.salon_id, MODUL_ARCHIVNIK):
         return None

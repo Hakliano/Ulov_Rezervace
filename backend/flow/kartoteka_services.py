@@ -37,11 +37,16 @@ def customer_for_email(salon_id: int, email: str) -> Customer | None:
 
 
 def attach_archivnik_customer_links(salon_id: int, rezervace_items: list[dict]) -> list[dict]:
-    """Doplní archivnik_customer_uuid do serializovaných rezervací (runtime, bez FK)."""
-    from partner_admin.models import MODUL_ARCHIVNIK
-    from partner_admin.services_moduly import modul_je_aktivni
+    """Doplní archivnik_customer_uuid do serializovaných rezervací (runtime, bez FK).
 
-    if not modul_je_aktivni(salon_id, MODUL_ARCHIVNIK):
+    Vazba se neukládá a nemaže se. Bez kartoteka_smí_fungovat() se do UI
+    neposílá, aby START nemohl přejít do Kartotéky.
+    """
+    from partner_admin.entitlements import kartoteka_smí_fungovat
+    from salons.models import Salon
+
+    salon = Salon.objects.filter(pk=salon_id).first()
+    if not salon or not kartoteka_smí_fungovat(salon):
         for item in rezervace_items:
             item['archivnik_customer_uuid'] = None
         return rezervace_items

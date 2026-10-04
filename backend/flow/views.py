@@ -89,6 +89,7 @@ class MajitelkaPracujeView(APIView):
 
     def get(self, request, pk):
         from flow.persona_service import majitelka_pracuje_payload
+        from partner_admin.staff_limits import staff_entitlements_payload
 
         salon = get_object_or_404(Salon, pk=pk)
         fu = (
@@ -96,7 +97,9 @@ class MajitelkaPracujeView(APIView):
             .select_related('pracovni_zamestnanec')
             .first()
         )
-        return Response(majitelka_pracuje_payload(fu))
+        data = majitelka_pracuje_payload(fu)
+        data.update(staff_entitlements_payload(salon))
+        return Response(data)
 
     def put(self, request, pk):
         from flow.persona_service import set_majitelka_pracuje
@@ -115,6 +118,8 @@ class MajitelkaPracujeView(APIView):
             )
         except ValueError as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        from partner_admin.staff_limits import staff_entitlements_payload
+        payload.update(staff_entitlements_payload(salon))
         actor = audit_actor(request, salon.pk)
         log_audit(
             salon,

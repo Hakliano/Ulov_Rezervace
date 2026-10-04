@@ -9,9 +9,6 @@ from rezervace.services.booking_urls import (
     _to_staging_booking_url,
 )
 
-from .models import MODUL_MATERIALNIK, PartnerModul
-from .services_moduly import partner_modul
-
 DEMO_CESTY = {
     1: 'salon1',
     2: 'salon2',
@@ -118,8 +115,8 @@ def karty_testovacich_pristupu(nove_heslo_salon_id=None, nove_heslo=''):
                     email = majitel.flow_ucet.email or email
                 except Exception:
                     pass
-        modul = partner_modul(salon, MODUL_MATERIALNIK)
-        materialnik = bool(modul and modul.status == PartnerModul.STAV_ACTIVE)
+        from partner_admin.entitlements import materialnik_smí_fungovat
+        materialnik = materialnik_smí_fungovat(salon)
         karty.append({
             'salon': salon,
             'partner': salon.partner_nastaveni,

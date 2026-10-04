@@ -13,12 +13,15 @@ from partner_admin.materialnik_client import (
     consume_preview,
     stock_summary,
 )
+from partner_admin.entitlements import materialnik_smí_fungovat
 from partner_admin.models import MODUL_MATERIALNIK, PartnerModul
 from partner_admin.services_moduly import partner_modul
 from rezervace.models import Rezervace
 
 
 def _aktivni_modul_nebo_404(salon):
+    if not materialnik_smí_fungovat(salon):
+        return None, Response({'detail': 'Nenalezeno.'}, status=404)
     row = partner_modul(salon, MODUL_MATERIALNIK)
     if not row or row.status != PartnerModul.STAV_ACTIVE:
         return None, Response({'detail': 'Nenalezeno.'}, status=404)

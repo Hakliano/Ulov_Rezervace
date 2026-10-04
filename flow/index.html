@@ -34,8 +34,8 @@
           <p class="nav-label">Rezervace</p>
           <button type="button" class="tab active" data-tab="mujden"><span class="tab-label">Můj den</span></button>
           <button type="button" class="tab" data-tab="mesic"><span class="tab-label">Kalendář</span></button>
-          <button type="button" class="tab" data-tab="karty" id="tab-karty"><span class="tab-label">Zákazníci</span></button>
-          <button type="button" class="tab" data-tab="mail" id="tab-mail"><span class="tab-label">Mail</span></button>
+          <button type="button" class="tab hidden" data-tab="karty" id="tab-karty"><span class="tab-label">Zákazníci</span></button>
+          <button type="button" class="tab hidden" data-tab="mail" id="tab-mail"><span class="tab-label">Mail</span></button>
           <button type="button" class="tab tab-owner hidden" data-tab="hrisnici" id="tab-hrisnici"><span class="tab-label">Hříšníci</span></button>
         </div>
         <div class="nav-group" id="nav-personal">
@@ -334,6 +334,7 @@
             <div id="owner-section-persona" class="owner-section hidden">
               <h2 class="owner-section-title">Manager obsluhuje</h2>
               <p class="hint">Ne = účet zůstane jen ke správě, bez vlastních termínů u zákazníků.</p>
+              <p id="own-persona-start-hint" class="hint tiny hidden">U tarifu START Manager vždy obsluhuje — pracovní personu nelze vypnout.</p>
               <label class="flow-switch">
                 <input type="checkbox" id="own-persona-check">
                 <span class="flow-switch-ui" aria-hidden="true"></span>
@@ -767,8 +768,8 @@
 
   <script src="svatky.js?v=1"></script>
   <script src="../shared/cenik-cena.js?v=1"></script>
-  <script src="app.js?v=82"></script>
-  <script src="customer-card.js?v=7"></script>
+  <script src="app.js?v=84"></script>
+  <script src="customer-card.js?v=8"></script>
 
 </body>
 </html>
