@@ -80,6 +80,7 @@ from rezervace.throttles import (
     RezervaceRateThrottle,
 )
 from rezervace.services.staff_auth import (
+    aktivovat_zamestnance,
     deaktivovat_zamestnance,
     get_staff_from_request,
     je_majitel,
@@ -935,6 +936,24 @@ class AdminZamestnanecDeaktivovatView(APIView):
             request, salon, 'deaktivace účtu', z.jmeno,
             objekt_typ='zamestnanec', objekt_id=z.id, pred=pred, po=po,
         )
+        return Response({'ok': True, 'zamestnanec': po})
+
+
+class AdminZamestnanecAktivovatView(APIView):
+    permission_classes = [MajitelPermission]
+
+    def post(self, request, pk, zamestnanec_id):
+        salon = get_salon(pk)
+        z = get_object_or_404(Zamestnanec, pk=zamestnanec_id, salon=salon)
+        pred = ZamestnanecDetailSerializer(z).data
+        try:
+            aktivovat_zamestnance(z)
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=400)
+        z.refresh_from_db()
+        po = ZamestnanecDetailSerializer(z).data
+        _audit(request, salon, 'zamestnanec', f'aktivace účtu ({z.jmeno})',
+               objekt_typ='zamestnanec', objekt_id=z.id, pred=pred, po=po)
         return Response({'ok': True, 'zamestnanec': po})
 
 

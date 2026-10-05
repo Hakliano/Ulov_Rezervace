@@ -149,7 +149,7 @@ def _summary_from_bytes(raw_bytes, uid, flags=b''):
 @contextmanager
 def _imap_connection(cfg):
     if not cfg['ready']:
-        raise MailError('Schránka ve FLOW není zapnutá. Manager ji nastaví v administraci webu (E-mail).')
+        raise MailError('E-mailová schránka zatím není nastavena.')
     try:
         if cfg['use_ssl']:
             client = imaplib.IMAP4_SSL(cfg['host'], cfg['port'], timeout=IMAP_TIMEOUT)

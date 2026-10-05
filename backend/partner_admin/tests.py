@@ -282,6 +282,26 @@ class PartnerAdminTests(TestCase):
         self.assertEqual(self.partner.castka, Decimal('1.00'))
         self.assertEqual(self.partner.dalsi_splatnost, date(2026, 1, 31))
 
+    def test_get_nastaveni_presmeruje_na_detail_se_zalozkou(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse('partner_admin:ulozit_nastaveni', args=[self.salon.id]),
+            {'tab': 'cenik'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse('partner_admin:detail', args=[self.salon.id]) + '?tab=cenik',
+        )
+
+    def test_detail_zalozky_vedou_na_absolutni_url(self):
+        self.client.force_login(self.superuser)
+        html = self.client.get(reverse('partner_admin:detail', args=[self.salon.id])).content.decode()
+        prefix = f'/partner-admin/salon/{self.salon.id}/?tab='
+        self.assertIn(prefix + 'cenik', html)
+        self.assertIn(prefix + 'personal', html)
+        self.assertNotIn('href="?tab=cenik"', html)
+
     def test_ulozeni_nastaveni_vrati_hodnoty_do_formulare(self):
         self.client.force_login(self.superuser)
         response = self.client.post(

@@ -251,8 +251,11 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
             if byl_aktivni and validated_data.get('aktivni') is False:
                 try:
                     over_deaktivaci_zamestnance(salon, instance)
-                except StartManagerPracujePovinny as exc:
+                    from rezervace.services.staff_auth import over_zadne_budouci_rezervace
+                    over_zadne_budouci_rezervace(instance)
+                except (StartManagerPracujePovinny, ValueError) as exc:
                     raise serializers.ValidationError({'aktivni': str(exc)}) from exc
+                validated_data['zobrazit_na_webu'] = False
             if (not byl_aktivni) and validated_data.get('aktivni') is True:
                 try:
                     over_reaktivaci_extra_staff(salon, instance)
@@ -264,8 +267,12 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
             setattr(instance, attr, val)
         instance.save()
         if byl_aktivni and not instance.aktivni and instance.role != Zamestnanec.ROLE_MAJITEL:
-            from rezervace.services.staff_auth import zrusit_vsechny_sessiony
+            from rezervace.services.staff_auth import (
+                _zneplatnit_flow_pristup,
+                zrusit_vsechny_sessiony,
+            )
             zrusit_vsechny_sessiony(instance)
+            _zneplatnit_flow_pristup(instance)
         if heslo:
             from rezervace.services.staff_auth import nastav_heslo_staff
             nastav_heslo_staff(instance, heslo)

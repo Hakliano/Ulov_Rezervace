@@ -28,6 +28,7 @@ urlpatterns = [
     path('salon/<int:pk>/rezervace/admin/nastaveni/', views.AdminNastaveniView.as_view(), name='admin-nastaveni'),
     path('salon/<int:pk>/rezervace/admin/zamestnanci/', views.AdminZamestnanciView.as_view(), name='admin-zamestnanci'),
     path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/deaktivovat/', views.AdminZamestnanecDeaktivovatView.as_view(), name='admin-zamestnanec-deaktivovat'),
+    path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/aktivovat/', views.AdminZamestnanecAktivovatView.as_view(), name='admin-zamestnanec-aktivovat'),
     path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/', views.AdminZamestnanecDetailView.as_view(), name='admin-zamestnanec-detail'),
     path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/absence/', views.AdminZamestnanecAbsenceView.as_view(), name='admin-zamestnanec-absence'),
     path('salon/<int:pk>/rezervace/admin/zamestnanci/<int:zamestnanec_id>/absence/<int:absence_id>/', views.AdminZamestnanecAbsenceDetailView.as_view(), name='admin-zamestnanec-absence-detail'),

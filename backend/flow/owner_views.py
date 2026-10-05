@@ -311,6 +311,37 @@ class FlowOwnerPersonalDetailView(APIView):
         return Response(po)
 
 
+class FlowOwnerPersonalAktivovatView(APIView):
+    """Vrátí extra pracovníka do provozu. START extra_staff backendově brání."""
+
+    authentication_classes = []
+    permission_classes = [FlowPermission]
+
+    def post(self, request, zamestnanec_id):
+        user, err = require_flow_owner(request)
+        if err:
+            return err
+        z = get_object_or_404(Zamestnanec, pk=zamestnanec_id, salon=user.salon)
+        from rezervace.services.staff_auth import aktivovat_zamestnance
+
+        try:
+            aktivovat_zamestnance(z)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=400)
+        z.refresh_from_db()
+        po = _personal_payload(z)
+        log_audit(
+            user.salon,
+            _actor(user),
+            'zamestnanec',
+            f'FLOW: aktivace zaměstnance ({z.jmeno})',
+            objekt_typ='zamestnanec',
+            objekt_id=z.id,
+            po=po,
+        )
+        return Response(po)
+
+
 class FlowOwnerPersonalFlowCreateView(APIView):
     """Vytvoření FLOW přístupu pro staff."""
 
@@ -325,6 +356,16 @@ class FlowOwnerPersonalFlowCreateView(APIView):
         if zam.role == Zamestnanec.ROLE_MAJITEL:
             return Response(
                 {'detail': 'Manager už má FLOW přístup přes svůj účet.'},
+                status=400,
+            )
+        if not zam.aktivni:
+            return Response(
+                {
+                    'detail': (
+                        'Zablokovaného pracovníka nelze připojit k FLOW. '
+                        'Nejprve ho aktivujte.'
+                    ),
+                },
                 status=400,
             )
         try:
@@ -390,7 +431,18 @@ class FlowOwnerPersonalFlowPatchView(APIView):
         if 'visible_overview' in request.data:
             flow_user.visible_overview = bool(request.data.get('visible_overview'))
         if 'aktivni' in request.data:
-            flow_user.aktivni = bool(request.data.get('aktivni'))
+            zapnout = bool(request.data.get('aktivni'))
+            if zapnout and not zam.aktivni:
+                return Response(
+                    {
+                        'detail': (
+                            'Zablokovaného pracovníka nelze přihlásit do FLOW. '
+                            'Nejprve ho aktivujte.'
+                        ),
+                    },
+                    status=400,
+                )
+            flow_user.aktivni = zapnout
             if not flow_user.aktivni:
                 zrusit_vsechny_sessiony(flow_user)
         flow_user.save()

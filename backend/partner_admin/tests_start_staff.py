@@ -1,17 +1,21 @@
 """Etapa 2 — personální pravidla START (extra_staff, Manager pracuje)."""
 from datetime import datetime, time, timedelta
+from pathlib import Path
+from unittest import skipUnless
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase, override_settings
 from django.utils import timezone
 
-from flow.models import FlowUser
+from flow.models import FlowSession, FlowUser
 from flow.persona_service import set_majitelka_pracuje
 from partner_admin.models import PartnerNastaveni
 from partner_admin.services import vytvor_noveho_partnera
 from partner_admin.staff_limits import (
     MSG_PLAN_START,
+    extra_staff_brani_startu,
     aktivni_extra_staff_qs,
     je_pracovni_persona_managera,
     pracovni_persona_managera,
@@ -32,6 +36,7 @@ from salons.models import CenikPolozka, OteviraciDoba, Salon
 @override_settings(MATERIALNIK_STUB=True)
 class StartPersonalTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.actor = get_user_model().objects.create_superuser(
             username='e2-admin',
             email='e2-admin@example.test',
@@ -357,3 +362,210 @@ class StartPersonalTests(TestCase):
         me_p = self.client.get('/api/flow/me/', HTTP_X_FLOW_TOKEN=tok_p)
         self.assertTrue(me_p.json()['extra_staff'])
         self.assertFalse(me_p.json()['manager_pracuje_povinny'])
+
+    def test_deaktivace_extra_s_budouci_rezervaci_se_odmitne(self):
+        salon, _p, _m, _f = self._novy(
+            'E2 Fut', 'e2-fut@example.test', plan=PartnerNastaveni.PLAN_PRO,
+        )
+        extra = Zamestnanec.objects.create(
+            salon=salon,
+            jmeno='Test PRO',
+            role=Zamestnanec.ROLE_ZAMESTNANEC,
+            aktivni=True,
+            prihlasovaci_jmeno='test-pro-fut@example.test',
+        )
+        rez = Rezervace.objects.create(
+            salon=salon,
+            zamestnanec=extra,
+            zacatek=timezone.now() + timedelta(days=2),
+            konec=timezone.now() + timedelta(days=2, minutes=30),
+            stav='potvrzeno',
+            jmeno_host='Budoucí',
+        )
+        staff_tok = self._staff_token(salon, 'e2-fut@example.test')
+        r = self.client.post(
+            f'/api/salon/{salon.id}/rezervace/admin/zamestnanci/{extra.id}/deaktivovat/',
+            HTTP_X_STAFF_TOKEN=staff_tok,
+        )
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertIn('budoucí rezervace', r.json()['detail'])
+        extra.refresh_from_db()
+        rez.refresh_from_db()
+        self.assertTrue(extra.aktivni)
+        self.assertEqual(rez.zamestnanec_id, extra.id)
+        self.assertEqual(rez.stav, 'potvrzeno')
+
+    def test_deaktivace_extra_vypne_profil_flow_a_odblokuje_start(self):
+        salon, partner, _m, _f = self._novy(
+            'E2 Off2', 'e2-off2@example.test', plan=PartnerNastaveni.PLAN_PRO,
+        )
+        extra = Zamestnanec.objects.create(
+            salon=salon,
+            jmeno='Test PRO',
+            role=Zamestnanec.ROLE_ZAMESTNANEC,
+            aktivni=True,
+            zobrazit_na_webu=True,
+            prihlasovaci_jmeno='test-pro-off@example.test',
+        )
+        fu = FlowUser.objects.create(
+            salon=salon,
+            zamestnanec=extra,
+            email='test-pro-off-flow@example.test',
+            password_hash='x',
+            aktivni=True,
+        )
+        FlowSession.objects.create(
+            user=fu,
+            expirace=timezone.now() + timedelta(days=1),
+        )
+        hist = Rezervace.objects.create(
+            salon=salon,
+            zamestnanec=extra,
+            zacatek=timezone.now() - timedelta(days=10),
+            konec=timezone.now() - timedelta(days=10, minutes=-30),
+            stav='dokonceno',
+            jmeno_host='Historie',
+        )
+        self.assertTrue(extra_staff_brani_startu(salon))
+        staff_tok = self._staff_token(salon, 'e2-off2@example.test')
+        r = self.client.post(
+            f'/api/salon/{salon.id}/rezervace/admin/zamestnanci/{extra.id}/deaktivovat/',
+            HTTP_X_STAFF_TOKEN=staff_tok,
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        extra.refresh_from_db()
+        fu.refresh_from_db()
+        hist.refresh_from_db()
+        self.assertFalse(extra.aktivni)
+        self.assertFalse(extra.zobrazit_na_webu)
+        self.assertFalse(fu.aktivni)
+        self.assertEqual(FlowSession.objects.filter(user=fu).count(), 0)
+        self.assertEqual(hist.zamestnanec_id, extra.id)
+        self.assertEqual(hist.stav, 'dokonceno')
+        self.assertFalse(extra_staff_brani_startu(salon))
+        partner.plan = PartnerNastaveni.PLAN_START
+        partner.save()
+        partner.refresh_from_db()
+        self.assertEqual(partner.plan, PartnerNastaveni.PLAN_START)
+
+        act = self.client.post(
+            f'/api/salon/{salon.id}/rezervace/admin/zamestnanci/{extra.id}/aktivovat/',
+            HTTP_X_STAFF_TOKEN=staff_tok,
+        )
+        self.assertEqual(act.status_code, 400, act.content)
+        extra.refresh_from_db()
+        self.assertFalse(extra.aktivni)
+
+    def test_aktivace_extra_na_pro_je_reverzibilni(self):
+        salon, _p, _m, _f = self._novy(
+            'E2 On', 'e2-on@example.test', plan=PartnerNastaveni.PLAN_PRO,
+        )
+        extra = Zamestnanec.objects.create(
+            salon=salon,
+            jmeno='Test PRO',
+            role=Zamestnanec.ROLE_ZAMESTNANEC,
+            aktivni=True,
+            prihlasovaci_jmeno='test-pro-on@example.test',
+        )
+        staff_tok = self._staff_token(salon, 'e2-on@example.test')
+        off = self.client.post(
+            f'/api/salon/{salon.id}/rezervace/admin/zamestnanci/{extra.id}/deaktivovat/',
+            HTTP_X_STAFF_TOKEN=staff_tok,
+        )
+        self.assertEqual(off.status_code, 200, off.content)
+        on = self.client.post(
+            f'/api/salon/{salon.id}/rezervace/admin/zamestnanci/{extra.id}/aktivovat/',
+            HTTP_X_STAFF_TOKEN=staff_tok,
+        )
+        self.assertEqual(on.status_code, 200, on.content)
+        extra.refresh_from_db()
+        self.assertTrue(extra.aktivni)
+        self.assertTrue(extra_staff_brani_startu(salon))
+
+    def test_flow_start_nesmi_aktivovat_extra_ani_obnovit_flow(self):
+        salon, partner, _m, _f = self._novy(
+            'E2 FlowOff', 'e2-flowoff@example.test', plan=PartnerNastaveni.PLAN_PRO,
+        )
+        extra = Zamestnanec.objects.create(
+            salon=salon,
+            jmeno='Test PRO',
+            role=Zamestnanec.ROLE_ZAMESTNANEC,
+            aktivni=True,
+            prihlasovaci_jmeno='test-pro-flowoff@example.test',
+        )
+        fu = FlowUser.objects.create(
+            salon=salon,
+            zamestnanec=extra,
+            email='test-pro-flowoff@example.test',
+            password_hash='x',
+            aktivni=False,
+        )
+        staff_tok = self._staff_token(salon, 'e2-flowoff@example.test')
+        self.client.post(
+            f'/api/salon/{salon.id}/rezervace/admin/zamestnanci/{extra.id}/deaktivovat/',
+            HTTP_X_STAFF_TOKEN=staff_tok,
+        )
+        extra.refresh_from_db()
+        self.assertFalse(extra.aktivni)
+        partner.plan = PartnerNastaveni.PLAN_START
+        partner.save()
+        token = self._flow_token('e2-flowoff@example.test')
+        act = self.client.post(
+            f'/api/flow/owner/personal/{extra.id}/aktivovat/',
+            HTTP_X_FLOW_TOKEN=token,
+        )
+        self.assertEqual(act.status_code, 400, act.content)
+        extra.refresh_from_db()
+        self.assertFalse(extra.aktivni)
+        flow = self.client.post(
+            f'/api/flow/owner/personal/{extra.id}/flow/',
+            data={'email': 'test-pro-flowoff2@example.test'},
+            content_type='application/json',
+            HTTP_X_FLOW_TOKEN=token,
+        )
+        self.assertEqual(flow.status_code, 400, flow.content)
+        patch = self.client.patch(
+            f'/api/flow/owner/personal/{extra.id}/flow/patch/',
+            data={'aktivni': True},
+            content_type='application/json',
+            HTTP_X_FLOW_TOKEN=token,
+        )
+        self.assertEqual(patch.status_code, 400, patch.content)
+        fu.refresh_from_db()
+        self.assertFalse(fu.aktivni)
+
+
+FLOW_INDEX = Path(__file__).resolve().parents[2] / 'flow' / 'index.html'
+FLOW_JS = Path(__file__).resolve().parents[2] / 'flow' / 'app.js'
+
+
+@skipUnless(FLOW_INDEX.is_file() and FLOW_JS.is_file(), 'flow/ není v API image')
+class FlowStartUxContractTests(TestCase):
+    def test_flow_ui_ma_personal_a_blokovany_stav(self):
+        html = FLOW_INDEX.read_text(encoding='utf-8')
+        js = FLOW_JS.read_text(encoding='utf-8')
+        self.assertIn('tab-label">Personál</span>', html)
+        self.assertNotIn('tab-label">Staff</span>', html)
+        self.assertIn('Přejít na Moderník PRO', html)
+        self.assertIn('Moderník START', html)
+        self.assertIn('Uživatel byl zablokován.', js)
+        self.assertIn('Profil a jeho historie zůstávají zachovány.', js)
+        self.assertIn('Váš pracovní profil pro správu provozovny a obsluhu zákazníků.', js)
+        self.assertIn('customerVisibleStaff', js)
+        self.assertIn('customerOverviewPeople', js)
+        self.assertIn('function flowTabAvailable', js)
+        self.assertIn('resolvePostLoginTab', js)
+        self.assertIn('preserveTab', js)
+        self.assertIn('Určuje, zda Manager také přijímá rezervace a obsluhuje zákazníky.', html)
+        self.assertIn('Spravujte dovolené a další absence personálu.', html)
+        self.assertIn('Heslo můžete změnit v administraci svého webu', html)
+        self.assertIn('E-mailová schránka zatím není nastavena.', js)
+        self.assertIn('own-volno-zam-wrap', html)
+        self.assertNotIn('Historický personál z PRO', js)
+        self.assertNotIn('Staff · Manager', js)
+        self.assertNotIn('správa + obsluha', js)
+        self.assertNotIn('Ne = účet zůstane jen ke správě', html)
+        self.assertNotIn('Overview:', html)
+        self.assertNotIn('Heslo Manager se mění v administraci webu', html)
+        self.assertIn('isStartPlan', js)
+        self.assertIn('/flow/owner/personal/${id}/aktivovat/', js)

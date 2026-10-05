@@ -823,8 +823,9 @@ def detail_partnera(request, salon_id):
 
 
 @partner_admin_perm('partneri')
-@require_POST
 def ulozit_nastaveni(request, salon_id):
+    if request.method != 'POST':
+        return _detail_redirect(salon_id, _tab_z_request(request, 'partner'))
     salon = get_object_or_404(Salon, pk=salon_id)
     partner = _partner(salon)
     pred = {

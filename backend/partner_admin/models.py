@@ -306,7 +306,10 @@ class PartnerFeatureGrant(models.Model):
         verbose_name_plural = 'granty / zákazy features'
         ordering = ['-vytvoreno']
         indexes = [
-            models.Index(fields=['salon', 'feature', 'aktivni']),
+            models.Index(
+                fields=['salon', 'feature', 'aktivni'],
+                name='partner_adm_salon_i_feat_idx',
+            ),
         ]
 
     def __str__(self):

@@ -153,6 +153,41 @@ def zrusit_vsechny_sessiony(staff):
     ZamestnanecSession.objects.filter(zamestnanec=staff).delete()
 
 
+_STAVY_BUDOUCI_REZERVACE = ('ceka', 'potvrzeno')
+
+
+def over_zadne_budouci_rezervace(staff):
+    """Deaktivace nesmí tiše smazat ani ztratit budoucí termíny."""
+    from rezervace.models import Rezervace
+
+    n = Rezervace.objects.filter(
+        zamestnanec=staff,
+        zacatek__gte=timezone.now(),
+        stav__in=_STAVY_BUDOUCI_REZERVACE,
+    ).count()
+    if n:
+        raise ValueError(
+            f'Tento pracovník má {n} budoucí rezervace. '
+            'Nejdříve je převeďte na jiného pracovníka nebo stornujte. '
+            'Deaktivace rezervace nesmaže ani nezmění — bez vyřešení termínů ji nelze provést.'
+        )
+
+
+def _zneplatnit_flow_pristup(staff):
+    """Vypne FLOW účet pracovníka a zruší jeho FLOW sessiony. Historie zůstane."""
+    from flow.auth import zrusit_vsechny_sessiony as zrusit_flow_sessiony
+    from flow.models import FlowUser
+
+    try:
+        fu = staff.flow_ucet
+    except FlowUser.DoesNotExist:
+        return
+    if fu.aktivni:
+        fu.aktivni = False
+        fu.save(update_fields=['aktivni', 'upraveno'])
+    zrusit_flow_sessiony(fu)
+
+
 def deaktivovat_zamestnance(staff):
     """Účet ponechá v DB kvůli auditu a historii rezervací — jen zablokuje přístup."""
     if staff.role == Zamestnanec.ROLE_MAJITEL:
@@ -160,10 +195,29 @@ def deaktivovat_zamestnance(staff):
     from partner_admin.staff_limits import over_deaktivaci_zamestnance
 
     over_deaktivaci_zamestnance(staff.salon, staff)
+    over_zadne_budouci_rezervace(staff)
     staff.aktivni = False
     staff.zobrazit_na_webu = False
     staff.save(update_fields=['aktivni', 'zobrazit_na_webu'])
     zrusit_vsechny_sessiony(staff)
+    _zneplatnit_flow_pristup(staff)
+    return staff
+
+
+def aktivovat_zamestnance(staff):
+    """Vrátí pracovní profil do provozu. FLOW se znovu zapíná zvlášť v Personál + FLOW."""
+    if staff.role == Zamestnanec.ROLE_MAJITEL:
+        raise ValueError('Účet majitelky je vždy aktivní.')
+    if staff.aktivni:
+        return staff
+    from partner_admin.staff_limits import ExtraStaffNeniVNaroku, over_reaktivaci_extra_staff
+
+    try:
+        over_reaktivaci_extra_staff(staff.salon, staff)
+    except ExtraStaffNeniVNaroku as exc:
+        raise ValueError(str(exc)) from exc
+    staff.aktivni = True
+    staff.save(update_fields=['aktivni'])
     return staff
 
 

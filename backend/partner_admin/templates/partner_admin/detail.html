@@ -43,32 +43,33 @@
   {% if partner.je_po_splatnosti %}
     <div class="alert-banner">
       <span>Platba je {{ partner.dni_po_splatnosti }} dní po splatnosti.</span>
-      <a class="btn btn-danger" href="?tab=parovani">Vyřešit platbu</a>
+      <a class="btn btn-danger" href="{% url 'partner_admin:detail' salon.id %}?tab=parovani">Vyřešit platbu</a>
     </div>
   {% endif %}
 
+  {% url 'partner_admin:detail' salon.id as pa_detail %}
   <div class="detail-layout">
   <nav class="detail-side" aria-label="Sekce partnera">
     <p class="nav-label">ULOV</p>
-    <a class="tab{% if active_tab == 'partner' %} is-active{% endif %}" href="?tab=partner">Partner</a>
-    <a class="tab{% if active_tab == 'parovani' %} is-active{% endif %}" href="?tab=parovani">Párování plateb</a>
-    <a class="tab{% if active_tab == 'extra' %} is-active{% endif %}" href="?tab=extra">Extra faktura</a>
-    <a class="tab{% if active_tab == 'platby' %} is-active{% endif %}" href="?tab=platby">Historie plateb</a>
-    <a class="tab{% if active_tab == 'upozorneni' %} is-active{% endif %}" href="?tab=upozorneni">Upozornění</a>
-    <a class="tab{% if active_tab == 'pristupy' %} is-active{% endif %}" href="?tab=pristupy">Přístupy</a>
-    <a class="tab{% if active_tab == 'stav' %} is-active{% endif %}" href="?tab=stav">ACTIVE / BLOCKED</a>
-    <a class="tab{% if active_tab == 'audit' %} is-active{% endif %}" href="?tab=audit">Audit</a>
-    <a class="tab{% if active_tab == 'chyby' %} is-active{% endif %}" href="?tab=chyby">Chyby</a>
+    <a class="tab{% if active_tab == 'partner' %} is-active{% endif %}" href="{{ pa_detail }}?tab=partner">Partner</a>
+    <a class="tab{% if active_tab == 'parovani' %} is-active{% endif %}" href="{{ pa_detail }}?tab=parovani">Párování plateb</a>
+    <a class="tab{% if active_tab == 'extra' %} is-active{% endif %}" href="{{ pa_detail }}?tab=extra">Extra faktura</a>
+    <a class="tab{% if active_tab == 'platby' %} is-active{% endif %}" href="{{ pa_detail }}?tab=platby">Historie plateb</a>
+    <a class="tab{% if active_tab == 'upozorneni' %} is-active{% endif %}" href="{{ pa_detail }}?tab=upozorneni">Upozornění</a>
+    <a class="tab{% if active_tab == 'pristupy' %} is-active{% endif %}" href="{{ pa_detail }}?tab=pristupy">Přístupy</a>
+    <a class="tab{% if active_tab == 'stav' %} is-active{% endif %}" href="{{ pa_detail }}?tab=stav">ACTIVE / BLOCKED</a>
+    <a class="tab{% if active_tab == 'audit' %} is-active{% endif %}" href="{{ pa_detail }}?tab=audit">Audit</a>
+    <a class="tab{% if active_tab == 'chyby' %} is-active{% endif %}" href="{{ pa_detail }}?tab=chyby">Chyby</a>
     <p class="nav-label">Za majitelku</p>
-    <a class="tab{% if active_tab == 'web' %} is-active{% endif %}" href="?tab=web">Web</a>
-    <a class="tab{% if active_tab == 'banner' %} is-active{% endif %}" href="?tab=banner">Banner</a>
-    <a class="tab{% if active_tab == 'cenik' %} is-active{% endif %}" href="?tab=cenik">Ceník</a>
-    <a class="tab{% if active_tab == 'novinky' %} is-active{% endif %}" href="?tab=novinky">Novinky</a>
-    <a class="tab{% if active_tab == 'personal' %} is-active{% endif %}" href="?tab=personal">Personál + FLOW</a>
-    <a class="tab{% if active_tab == 'rezervace' %} is-active{% endif %}" href="?tab=rezervace">Rezervace</a>
-    <a class="tab{% if active_tab == 'emaily' %} is-active{% endif %}" href="?tab=emaily">E-maily</a>
-    <a class="tab{% if active_tab == 'smtp' %} is-active{% endif %}" href="?tab=smtp">SMTP / IMAP</a>
-    <a class="tab{% if active_tab == 'odkazy' %} is-active{% endif %}" href="?tab=odkazy">Odkazy</a>
+    <a class="tab{% if active_tab == 'web' %} is-active{% endif %}" href="{{ pa_detail }}?tab=web">Web</a>
+    <a class="tab{% if active_tab == 'banner' %} is-active{% endif %}" href="{{ pa_detail }}?tab=banner">Banner</a>
+    <a class="tab{% if active_tab == 'cenik' %} is-active{% endif %}" href="{{ pa_detail }}?tab=cenik">Ceník</a>
+    <a class="tab{% if active_tab == 'novinky' %} is-active{% endif %}" href="{{ pa_detail }}?tab=novinky">Novinky</a>
+    <a class="tab{% if active_tab == 'personal' %} is-active{% endif %}" href="{{ pa_detail }}?tab=personal">Personál + FLOW</a>
+    <a class="tab{% if active_tab == 'rezervace' %} is-active{% endif %}" href="{{ pa_detail }}?tab=rezervace">Rezervace</a>
+    <a class="tab{% if active_tab == 'emaily' %} is-active{% endif %}" href="{{ pa_detail }}?tab=emaily">E-maily</a>
+    <a class="tab{% if active_tab == 'smtp' %} is-active{% endif %}" href="{{ pa_detail }}?tab=smtp">SMTP / IMAP</a>
+    <a class="tab{% if active_tab == 'odkazy' %} is-active{% endif %}" href="{{ pa_detail }}?tab=odkazy">Odkazy</a>
   </nav>
   <div class="detail-main">
 
@@ -133,7 +134,7 @@
         {% endif %}
       {% endfor %}
       <div class="form-actions form-actions-sticky">
-        <a class="btn btn-quiet" href="?tab=partner">Zrušit změny</a>
+        <a class="btn btn-quiet" href="{{ pa_detail }}?tab=partner">Zrušit změny</a>
         <button class="btn btn-primary" type="submit">Uložit změny</button>
       </div>
     </form>
@@ -773,7 +774,7 @@
   {% if active_tab == 'personal' %}
   <section class="panel ops-pane" data-ops="personal">
     <div class="panel-head"><div><p class="eyebrow">Za majitelku</p><h2>Personál + FLOW</h2></div></div>
-    <p class="muted">Číslo účtu pro QR, vytvoření FLOW přístupu, přehled všech rezervací, reset FLOW hesla.</p>
+    <p class="muted">Číslo účtu pro QR, FLOW přístup, deaktivace extra pracovníka (profil zůstane v historii). Vypnutý FLOW přístup není totéž jako neaktivní pracovník.</p>
     <div id="staff-list" class="ops-blocks"></div>
   </section>
   {% endif %}

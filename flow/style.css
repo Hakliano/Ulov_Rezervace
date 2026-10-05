@@ -1315,6 +1315,43 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 .staff-status.is-on { color: #8dffb8; }
 .staff-status.is-off { color: #d4b84a; }
 .staff-status.is-blocked { color: #ff8d82; }
+.own-blocked-card {
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid rgba(255, 141, 130, .35);
+  border-radius: 16px;
+  background: rgba(255, 80, 70, .06);
+}
+.own-blocked-card h3 {
+  margin: 0 0 .35rem;
+  color: #fff;
+  font-size: 1.15rem;
+}
+.pro-upsell-card {
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid rgba(201, 162, 39, .45);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(201, 162, 39, .14), rgba(11, 26, 44, .35));
+}
+.pro-upsell-card .eyebrow {
+  margin: 0 0 .25rem;
+  color: var(--gold-soft);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.pro-upsell-card h3 {
+  margin: 0 0 .45rem;
+  color: #fff;
+  font-size: 1.15rem;
+}
+.pro-upsell-card ul {
+  margin: .55rem 0 .7rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+.pro-upsell-card li { margin: .2rem 0; }
 .own-block {
   margin-top: .85rem;
   padding: .9rem 1rem 1rem;
