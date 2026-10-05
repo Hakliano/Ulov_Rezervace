@@ -806,8 +806,155 @@
   display: none;
 }
 
-.nav a[aria-current="page"] {
+.calc-plan-lead {
+  margin: 0 0 0.95rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.calc-plans {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.calc-plan-card {
+  min-height: 100%;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: rgba(8, 20, 34, 0.55);
+  overflow: hidden;
+}
+
+.calc-plan-card:has(input[name="plan"]:checked) {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(201, 166, 74, 0.28);
+}
+
+.calc-plan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  min-height: 100%;
+  padding: 1.15rem 1.1rem 1.15rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.calc-plan:hover,
+.calc-plan:has(input:focus-visible),
+.calc-plan:has(input:checked) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.calc-choice.calc-plan .calc-plan-kicker,
+.calc-choice.calc-plan .calc-plan-claim,
+.calc-choice.calc-plan .calc-plan-cta {
+  font-weight: 800;
+}
+
+.calc-choice.calc-plan .calc-plan-kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.calc-choice.calc-plan .calc-plan-claim {
+  font-size: 1.22rem;
+  font-weight: 800;
+  line-height: 1.25;
   color: var(--gold-light);
+}
+
+.calc-choice.calc-plan .calc-plan-cta {
+  font-size: 0.78rem;
+  color: var(--gold-light);
+}
+
+.calc-plan-desc,
+.calc-plan-foot {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.calc-plan-points {
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+}
+
+.calc-plan-points li {
+  position: relative;
+  padding: 0.18rem 0 0.18rem 1.25rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.calc-plan-points li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.calc-plan-foot {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.calc-plan-cta {
+  display: inline-flex;
+  margin-top: auto;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(201, 166, 74, 0.12);
+  color: var(--gold-light);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.calc-plan-card:has(input:checked) .calc-plan-cta {
+  border-color: var(--gold);
+  background: rgba(201, 166, 74, 0.22);
+}
+
+.calc-product-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.calc-product-blurb {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.calc-included[hidden] {
+  display: none;
 }
 
 @media (max-width: 900px) {
@@ -817,6 +964,7 @@
 
   .calc-layout,
   .calc-periods,
+  .calc-plans,
   .calc-pair,
   .calc-mile,
   .calc-mile:nth-of-type(even) {
