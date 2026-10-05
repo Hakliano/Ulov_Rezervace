@@ -6,8 +6,8 @@ from rest_framework import status
 
 from django.conf import settings
 
-from partner_admin.models import MODUL_MATERIALNIK, PartnerModul
-from partner_admin.services_moduly import partner_modul
+from partner_admin.entitlements import materialnik_smí_fungovat
+from partner_admin.services_moduly import znepristupni_materialnik_pokud_neni_narok
 from rezervace.models import Zamestnanec
 from rezervace.services.staff_auth import normalizuj_prihlasovaci_jmeno
 from salons.models import CenikPolozka
@@ -69,8 +69,11 @@ class MaterialnikSessionView(APIView):
         if staff.role != 'majitel' and not staff.aktivni:
             return Response({'detail': 'Účet je deaktivován.'}, status=status.HTTP_403_FORBIDDEN)
 
-        row = partner_modul(staff.salon, MODUL_MATERIALNIK)
-        if not row or row.status != PartnerModul.STAV_ACTIVE:
+        class _Actor:
+            username = 'materialnik-session'
+
+        znepristupni_materialnik_pokud_neni_narok(staff.salon, _Actor())
+        if not materialnik_smí_fungovat(staff.salon):
             return Response(
                 {'detail': 'Nesprávný e-mail nebo heslo.'},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -106,8 +109,11 @@ class MaterialnikCatalogView(APIView):
             partner = PartnerNastaveni.objects.select_related('salon').get(tenant_uuid=tenant_uuid)
         except PartnerNastaveni.DoesNotExist:
             return Response({'detail': 'Nenalezeno.'}, status=status.HTTP_404_NOT_FOUND)
-        row = partner_modul(partner.salon, MODUL_MATERIALNIK)
-        if not row or row.status != PartnerModul.STAV_ACTIVE:
+        class _Actor:
+            username = 'materialnik-catalog'
+
+        znepristupni_materialnik_pokud_neni_narok(partner.salon, _Actor())
+        if not materialnik_smí_fungovat(partner.salon):
             return Response({'detail': 'Nenalezeno.'}, status=status.HTTP_404_NOT_FOUND)
 
         sluzby = CenikPolozka.objects.filter(salon=partner.salon).order_by('poradi', 'id')

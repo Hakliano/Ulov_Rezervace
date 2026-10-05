@@ -55,6 +55,10 @@ def vytvor_noveho_partnera(*, data: dict, actor):
 
     partner = salon.partner_nastaveni
     partner.domena = data.get('domena') or ''
+    plan = (data.get('plan') or PartnerNastaveni.PLAN_PRO or '').strip()
+    if plan not in {PartnerNastaveni.PLAN_START, PartnerNastaveni.PLAN_PRO}:
+        plan = PartnerNastaveni.PLAN_PRO
+    partner.plan = plan
     partner.tarif = (data.get('tarif') or '').strip()
     partner.fakturacni_email = (
         (data.get('fakturacni_email') or '').strip()
@@ -101,9 +105,19 @@ def vytvor_noveho_partnera(*, data: dict, actor):
         from .services_moduly import zajisti_archivnik_pro_modernik
         zajisti_archivnik_pro_modernik(salon, actor)
 
+    from .services_moduly import aplikuj_vychozi_moduly_planu, nastav_modul
+    from .entitlements import ModulNeniVNaroku
+    aplikuj_vychozi_moduly_planu(salon, actor)
+
     if data.get('aktivovat_materialnik'):
-        from .services_moduly import nastav_modul
-        nastav_modul(salon, 'materialnik', True, actor)
+        try:
+            nastav_modul(salon, 'materialnik', True, actor)
+        except ModulNeniVNaroku as exc:
+            raise ValueError(str(exc)) from exc
+
+    if partner.plan == PartnerNastaveni.PLAN_START:
+        from .staff_limits import zajisti_manager_pracuje_pro_start
+        zajisti_manager_pracuje_pro_start(salon)
 
     log_superadmin(
         salon,
@@ -114,6 +128,7 @@ def vytvor_noveho_partnera(*, data: dict, actor):
             'name': salon.name,
             'majitel_email': data['majitel_email'],
             'vs': partner.variabilni_symbol,
+            'plan': partner.plan,
             'flow': bool(flow_user),
         },
     )

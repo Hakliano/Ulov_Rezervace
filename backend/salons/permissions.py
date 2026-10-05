@@ -27,6 +27,11 @@ def _django_superuser(request):
     return bool(user and user.is_authenticated and user.is_active and user.is_superuser)
 
 
+def je_platform_operator(request):
+    """Ulov (partner-admin token / Django superuser) — může spravovat START na pozadí."""
+    return _django_superuser(request) or _partner_ok(request)
+
+
 class StaffPermission(BasePermission):
     """Vyžaduje přihlášeného zaměstnance (token), partner hub, nebo legacy heslo salonu."""
 

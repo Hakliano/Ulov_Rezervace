@@ -78,6 +78,13 @@ class PartnerNastaveni(models.Model):
         (PERIODA_ROK, 'Ročně'),
     ]
 
+    PLAN_START = 'start'
+    PLAN_PRO = 'pro'
+    PLANY = [
+        (PLAN_START, 'START'),
+        (PLAN_PRO, 'PRO'),
+    ]
+
     salon = models.OneToOneField(
         Salon,
         related_name='partner_nastaveni',
@@ -85,6 +92,17 @@ class PartnerNastaveni(models.Model):
     )
     domena = models.CharField('vlastní doména', max_length=253, blank=True)
     stav = models.CharField('stav služby', max_length=20, choices=STAVY, default=STAV_ACTIVE, db_index=True)
+    plan = models.CharField(
+        'produktový plán',
+        max_length=16,
+        choices=PLANY,
+        default=PLAN_PRO,
+        db_index=True,
+        help_text=(
+            'Funkční oprávnění partnera (START / PRO). '
+            'Nesouvisí s billingovým tarifem, cenou ani fakturací.'
+        ),
+    )
     tarif = models.CharField('tarif', max_length=100, blank=True)
     fakturacni_email = models.EmailField('fakturační e-mail', blank=True)
     variabilni_symbol = models.CharField(
@@ -187,8 +205,16 @@ class PartnerNastaveni(models.Model):
         self.domena = self.domena.strip().lower().removeprefix('https://').removeprefix('http://').rstrip('/')
         if '/' in self.domena:
             raise ValidationError({'domena': 'Zadejte pouze doménu bez cesty.'})
+        if self.plan == self.PLAN_START and self.salon_id:
+            from .staff_limits import over_plan_start
+            over_plan_start(self.salon, self.plan)
 
     def save(self, *args, **kwargs):
+        stary_plan = None
+        if self.pk:
+            stary_plan = (
+                type(self).objects.filter(pk=self.pk).values_list('plan', flat=True).first()
+            )
         self.full_clean()
         if self.stav == self.STAV_BLOCKED and not self.blokovan_od:
             self.blokovan_od = timezone.now()
@@ -196,6 +222,30 @@ class PartnerNastaveni(models.Model):
             self.blokovan_od = None
             self.duvod_blokace = ''
         super().save(*args, **kwargs)
+        if self.plan == self.PLAN_PRO and stary_plan == self.PLAN_START:
+            from .services_moduly import aplikuj_vychozi_moduly_planu
+
+            class _ActorPro:
+                username = 'plan-pro'
+
+            aplikuj_vychozi_moduly_planu(self.salon, _ActorPro())
+        if self.plan == self.PLAN_START:
+            from .staff_limits import zajisti_manager_pracuje_pro_start
+            from .services_moduly import (
+                znepristupni_archivnik_bez_mazani,
+                znepristupni_materialnik_pokud_neni_narok,
+            )
+
+            class _Actor:
+                username = 'plan-start'
+
+            if stary_plan != self.PLAN_START:
+                try:
+                    zajisti_manager_pracuje_pro_start(self.salon)
+                except ValueError:
+                    pass
+            znepristupni_archivnik_bez_mazani(self.salon, _Actor())
+            znepristupni_materialnik_pokud_neni_narok(self.salon, _Actor())
 
     @property
     def je_po_splatnosti(self):
@@ -214,6 +264,67 @@ class PartnerNastaveni(models.Model):
         if self.je_po_splatnosti:
             return 'po_splatnosti'
         return 'v_poradku'
+
+
+class PartnerFeatureGrant(models.Model):
+    """Individuální grant / zákaz feature mimo výchozí sadu plánu.
+
+    partner_ma() = práva plánu ∪ platný grant − platný zákaz.
+    Data modulů se při grantu ani zákazu nemažou.
+    """
+
+    ZDROJ_TRIAL = 'trial'
+    ZDROJ_VYJIMKA = 'vyjimka'
+    ZDROJ_TEST = 'test'
+    ZDROJE = [
+        (ZDROJ_TRIAL, 'Trial'),
+        (ZDROJ_VYJIMKA, 'Výjimka'),
+        (ZDROJ_TEST, 'Test'),
+    ]
+
+    salon = models.ForeignKey(
+        Salon,
+        related_name='feature_grants',
+        on_delete=models.CASCADE,
+    )
+    feature = models.CharField('feature kód', max_length=64, db_index=True)
+    zakaz = models.BooleanField(
+        'zákaz',
+        default=False,
+        help_text='Zapnuto = tuto funkci partner nesmí používat, i když ji má v plánu.',
+    )
+    platnost_od = models.DateTimeField('platnost od', null=True, blank=True)
+    platnost_do = models.DateTimeField('platnost do', null=True, blank=True)
+    zdroj = models.CharField('zdroj', max_length=32, choices=ZDROJE, default=ZDROJ_VYJIMKA)
+    poznamka = models.CharField('poznámka', max_length=300, blank=True)
+    aktivni = models.BooleanField('aktivní', default=True, db_index=True)
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+    aktualizovano = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'grant / zákaz feature'
+        verbose_name_plural = 'granty / zákazy features'
+        ordering = ['-vytvoreno']
+        indexes = [
+            models.Index(
+                fields=['salon', 'feature', 'aktivni'],
+                name='partner_adm_salon_i_feat_idx',
+            ),
+        ]
+
+    def __str__(self):
+        smer = 'zákaz' if self.zakaz else 'grant'
+        return f'{self.salon_id}:{self.feature} {smer}'
+
+    def je_platny(self, ted=None):
+        if not self.aktivni:
+            return False
+        ted = ted or timezone.now()
+        if self.platnost_od and self.platnost_od > ted:
+            return False
+        if self.platnost_do and self.platnost_do < ted:
+            return False
+        return True
 
 
 class PartnerTarif(models.Model):

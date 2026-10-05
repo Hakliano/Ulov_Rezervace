@@ -68,7 +68,14 @@ from .services import (
     vygeneruj_demo_heslo,
     vytvor_noveho_partnera,
 )
-from .services_moduly import nastav_modul, partner_modul
+from .entitlements import FEATURE_ARCHIVNIK, ModulNeniVNaroku, partner_ma
+from .services_moduly import (
+    materialnik_admin_ctx,
+    nastav_modul,
+    odeber_materialnik_grant,
+    partner_modul,
+    povol_materialnik_individulne,
+)
 from .services_archivnik import (
     ArchivnikSpravaError,
     archivnik_sprava_data,
@@ -791,7 +798,9 @@ def _render_detail_partnera(request, salon, nastaveni_form=None):
             'owner_flow': owner_flow_stav(salon),
             'materialnik_modul': partner_modul(salon, MODUL_MATERIALNIK),
             'materialnik_public_url': (getattr(settings, 'MATERIALNIK_PUBLIC_URL', '') or '').rstrip('/'),
+            'materialnik_admin': materialnik_admin_ctx(salon),
             'archivnik_modul': partner_modul(salon, MODUL_ARCHIVNIK),
+            'archivnik_narok': partner_ma(salon, FEATURE_ARCHIVNIK),
             'archivnik_public_url': (
                 (getattr(settings, 'ARCHIVNIK_PUBLIC_URL', '') or '/archivnik/').rstrip('/') + '/'
             ),
@@ -814,13 +823,15 @@ def detail_partnera(request, salon_id):
 
 
 @partner_admin_perm('partneri')
-@require_POST
 def ulozit_nastaveni(request, salon_id):
+    if request.method != 'POST':
+        return _detail_redirect(salon_id, _tab_z_request(request, 'partner'))
     salon = get_object_or_404(Salon, pk=salon_id)
     partner = _partner(salon)
     pred = {
         'domena': partner.domena,
         'tarif': partner.tarif,
+        'plan': partner.plan,
         'fakturacni_email': partner.fakturacni_email,
         'variabilni_symbol': partner.variabilni_symbol,
         'periodicita': partner.periodicita,
@@ -844,9 +855,16 @@ def ulozit_nastaveni(request, salon_id):
         messages.error(request, 'Nastavení se nepodařilo uložit: ' + _chyby_formulare(form))
         return _render_detail_partnera(request, salon, nastaveni_form=form)
     ulozeno.refresh_from_db()
+    if ulozeno.plan == PartnerNastaveni.PLAN_START:
+        from .staff_limits import zajisti_manager_pracuje_pro_start
+        try:
+            zajisti_manager_pracuje_pro_start(salon)
+        except ValueError as exc:
+            messages.warning(request, str(exc))
     po = {
         'domena': ulozeno.domena,
         'tarif': ulozeno.tarif,
+        'plan': ulozeno.plan,
         'fakturacni_email': ulozeno.fakturacni_email,
         'variabilni_symbol': ulozeno.variabilni_symbol,
         'periodicita': ulozeno.periodicita,
@@ -866,6 +884,7 @@ def ulozit_nastaveni(request, salon_id):
             'Nastavení partnera bylo uloženo. '
             f'Doména: {_zobraz_ulozenou_hodnotu(ulozeno.domena)}; '
             f'tarif: {_zobraz_ulozenou_hodnotu(ulozeno.tarif)}; '
+            f'plán: {_zobraz_ulozenou_hodnotu(ulozeno.get_plan_display())}; '
             f'e-mail: {_zobraz_ulozenou_hodnotu(ulozeno.fakturacni_email)}; '
             f'VS: {_zobraz_ulozenou_hodnotu(ulozeno.variabilni_symbol)}.'
         ),
@@ -873,17 +892,59 @@ def ulozit_nastaveni(request, salon_id):
     return _detail_redirect(salon.id, _tab_z_request(request, 'partner'))
 
 
+def _parse_platnost_do(raw):
+    """HTML date → konec daného dne. Prázdné = trvalý grant."""
+    from datetime import datetime, time as dt_time
+
+    raw = (raw or '').strip()
+    if not raw:
+        return None
+    try:
+        den = datetime.strptime(raw, '%Y-%m-%d').date()
+    except ValueError as exc:
+        raise ValueError('Neplatné datum platnosti Materiálníku.') from exc
+    return timezone.make_aware(datetime.combine(den, dt_time(23, 59, 59)))
+
+
 @partner_admin_perm('partneri')
 @require_POST
 def nastavit_materialnik(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
-    zapnout = request.POST.get('zapnout') == '1'
-    row = nastav_modul(salon, MODUL_MATERIALNIK, zapnout, request.user)
-    if zapnout and row.status == row.STAV_ACTIVE:
+    akce = (request.POST.get('akce') or '').strip()
+    if not akce:
+        akce = 'zapnout' if request.POST.get('zapnout') == '1' else 'vypnout'
+    try:
+        if akce == 'povolit':
+            platnost_do = _parse_platnost_do(request.POST.get('platnost_do'))
+            row = povol_materialnik_individulne(
+                salon, request.user, platnost_do=platnost_do,
+            )
+        elif akce == 'odebrat':
+            row = odeber_materialnik_grant(salon, request.user)
+        else:
+            zapnout = akce == 'zapnout'
+            row = nastav_modul(salon, MODUL_MATERIALNIK, zapnout, request.user)
+    except ModulNeniVNaroku as exc:
+        messages.error(request, str(exc))
+        return _detail_redirect(salon.id, 'partner')
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return _detail_redirect(salon.id, 'partner')
+    if akce == 'povolit' and row.status == row.STAV_ACTIVE:
+        messages.success(
+            request,
+            'Materiálník je individuálně povolený a zapnutý. Plán partnera se nemění.',
+        )
+    elif akce == 'odebrat':
+        messages.success(
+            request,
+            'Individuální nárok na Materiálník byl odebrán. Data skladu zůstávají.',
+        )
+    elif akce == 'zapnout' and row.status == row.STAV_ACTIVE:
         messages.success(request, 'Materiálník je zapnutý. Partner se přihlásí stejným účtem.')
-    elif zapnout and row.status == row.STAV_ERROR:
+    elif akce == 'zapnout' and row.status == row.STAV_ERROR:
         messages.error(request, f'Materiálník se nepodařilo zapnout: {row.provisioning_error}')
-    elif not zapnout:
+    elif akce == 'vypnout':
         messages.success(request, 'Materiálník je vypnutý. Data skladu zůstávají, ve FLOW o něm není zmínka.')
     else:
         messages.info(request, f'Stav Materiálníku: {row.get_status_display()}.')
@@ -895,7 +956,11 @@ def nastavit_materialnik(request, salon_id):
 def nastavit_archivnik(request, salon_id):
     salon = get_object_or_404(Salon, pk=salon_id)
     zapnout = request.POST.get('zapnout') == '1'
-    row = nastav_modul(salon, MODUL_ARCHIVNIK, zapnout, request.user)
+    try:
+        row = nastav_modul(salon, MODUL_ARCHIVNIK, zapnout, request.user)
+    except ModulNeniVNaroku as exc:
+        messages.error(request, str(exc))
+        return _detail_redirect(salon.id, 'partner')
     if zapnout and row.status == row.STAV_ACTIVE:
         messages.success(
             request,

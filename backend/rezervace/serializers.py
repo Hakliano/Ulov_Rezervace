@@ -202,10 +202,16 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         import uuid
 
+        from partner_admin.staff_limits import ExtraStaffNeniVNaroku, over_vytvoreni_extra_staff
+
         rozvrh_data = validated_data.pop('rozvrh', [])
         heslo = validated_data.pop('heslo', '')
         validated_data.pop('role', None)
         salon = self.context['salon']
+        try:
+            over_vytvoreni_extra_staff(salon)
+        except ExtraStaffNeniVNaroku as exc:
+            raise serializers.ValidationError({'detail': str(exc)}) from exc
         # unique_together (salon, prihlasovaci_jmeno) — prázdný login nelze u více lidí.
         # Nevymýšlíme e-mail: jen technický interní klíč, dokud majitelka nezadá skutečný e-mail (FLOW).
         login = (validated_data.get('prihlasovaci_jmeno') or '').strip()
@@ -234,14 +240,39 @@ class ZamestnanecWriteSerializer(serializers.ModelSerializer):
         else:
             validated_data.pop('role', None)
         byl_aktivni = instance.aktivni
+        if 'aktivni' in validated_data:
+            from partner_admin.staff_limits import (
+                ExtraStaffNeniVNaroku,
+                StartManagerPracujePovinny,
+                over_deaktivaci_zamestnance,
+                over_reaktivaci_extra_staff,
+            )
+            salon = instance.salon
+            if byl_aktivni and validated_data.get('aktivni') is False:
+                try:
+                    over_deaktivaci_zamestnance(salon, instance)
+                    from rezervace.services.staff_auth import over_zadne_budouci_rezervace
+                    over_zadne_budouci_rezervace(instance)
+                except (StartManagerPracujePovinny, ValueError) as exc:
+                    raise serializers.ValidationError({'aktivni': str(exc)}) from exc
+                validated_data['zobrazit_na_webu'] = False
+            if (not byl_aktivni) and validated_data.get('aktivni') is True:
+                try:
+                    over_reaktivaci_extra_staff(salon, instance)
+                except ExtraStaffNeniVNaroku as exc:
+                    raise serializers.ValidationError({'aktivni': str(exc)}) from exc
         rozvrh_data = validated_data.pop('rozvrh', None)
         heslo = validated_data.pop('heslo', None)
         for attr, val in validated_data.items():
             setattr(instance, attr, val)
         instance.save()
         if byl_aktivni and not instance.aktivni and instance.role != Zamestnanec.ROLE_MAJITEL:
-            from rezervace.services.staff_auth import zrusit_vsechny_sessiony
+            from rezervace.services.staff_auth import (
+                _zneplatnit_flow_pristup,
+                zrusit_vsechny_sessiony,
+            )
             zrusit_vsechny_sessiony(instance)
+            _zneplatnit_flow_pristup(instance)
         if heslo:
             from rezervace.services.staff_auth import nastav_heslo_staff
             nastav_heslo_staff(instance, heslo)

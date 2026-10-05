@@ -48,8 +48,12 @@ def dekujici_notifikace(rezervace):
 
 
 def dekujici_notifikace_aktivni(rezervace):
-    """True pokud je děkovný e-mail zapnutý (thank_you_enabled)."""
-    return dekujici_notifikace(rezervace) is not None
+    """True pokud je děkovný e-mail zapnutý a partner má nárok ho posílat."""
+    if dekujici_notifikace(rezervace) is None:
+        return False
+    from partner_admin.entitlements import FEATURE_POST_VISIT_EMAIL, partner_ma
+
+    return partner_ma(rezervace.salon, FEATURE_POST_VISIT_EMAIL)
 
 
 def _scrub_historie(rezervace):

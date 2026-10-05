@@ -419,6 +419,10 @@ function hasManagerWorkPersona(user = currentUser) {
   return !!user?.persona?.pracovnik?.id;
 }
 
+function isStartPlan(user = currentUser) {
+  return user?.extra_staff === false;
+}
+
 function applyAbsenceFormUi(user = currentUser) {
   const form = $('#form-absence');
   const hint = $('#abs-manager-hint');
@@ -428,7 +432,9 @@ function applyAbsenceFormUi(user = currentUser) {
     form.classList.add('hidden');
     if (hint) {
       hint.classList.remove('hidden');
-      hint.textContent = 'Účet Manager nepracuje — dovolená sem nepatří. Zapněte „Manager obsluhuje“, nebo zadejte absenci ve Volno.';
+      hint.textContent = isStartPlan(user)
+        ? 'Volno zapište v menu Personál → Volno a absence.'
+        : 'Účet Manager teď neobsluhuje — dovolená sem nepatří. Zapněte „Manager obsluhuje“, nebo zadejte absenci ve Volno.';
     }
     return;
   }
@@ -436,8 +442,9 @@ function applyAbsenceFormUi(user = currentUser) {
   if (isManagerAccount(user) && hasManagerWorkPersona(user)) {
     if (hint) {
       hint.classList.remove('hidden');
-      const jmeno = user.persona.pracovnik.jmeno || 'pracovní profil';
-      hint.textContent = `Dovolená platí pro váš pracovní profil (${jmeno}) — jeden člověk, jeden kalendář obsluhy. Uloží se hned bez schvalování.`;
+      hint.textContent = isStartPlan(user)
+        ? 'Volno platí pro Managera. Uloží se hned a projeví se v dostupnosti.'
+        : 'Dovolená platí pro vás jako obsluhu. Uloží se hned.';
     }
     if (absBtn) absBtn.textContent = 'Uložit absenci';
   } else {
@@ -468,15 +475,115 @@ function renderPersonaSwitch(user = currentUser) {
 }
 
 async function switchPersona(persona) {
+  const preserveTab = flowNavCurrent;
   const data = await api('/flow/prepnout-personu/', {
     method: 'POST',
     body: JSON.stringify({ persona }),
   });
-  showLoggedIn(data);
+  showLoggedIn(data, { preserveTab });
 }
 
 function applyPersonaUi(user = currentUser) {
   renderPersonaSwitch(user);
+}
+
+function applyStartStaffUi(user = currentUser) {
+  const start = isStartPlan(user);
+  const povinny = !!user?.manager_pracuje_povinny;
+  const btn = $('#btn-own-add-staff');
+  if (btn) btn.classList.toggle('hidden', start);
+  const form = $('#form-own-add-staff');
+  if (form && start) form.classList.add('hidden');
+  const personaTab = $('#tab-persona');
+  if (personaTab && isOwnerUser(user)) {
+    personaTab.classList.toggle('hidden', start);
+  }
+  const check = $('#own-persona-check');
+  const hint = $('#own-persona-start-hint');
+  hint?.classList.toggle('hidden', !povinny);
+  if (check) {
+    check.disabled = povinny;
+    if (povinny) {
+      check.checked = true;
+      const lab = $('#own-persona-switch-label');
+      if (lab) lab.textContent = 'Ano';
+    }
+  }
+  const intro = $('#own-personal-intro');
+  if (intro) {
+    intro.textContent = start
+      ? 'Váš pracovní profil pro správu provozovny a obsluhu zákazníků.'
+      : 'Vlevo vyberte pracovníka. Vpravo u něj upravíte jméno, služby, směny i přístup do FLOW.';
+  }
+  $('#own-pro-upsell')?.classList.toggle('hidden', !start || !isOwnerUser(user));
+  applyStartVolnoUi(user);
+}
+
+function applyStartVolnoUi(user = currentUser) {
+  const start = isStartPlan(user);
+  const volnoLabel = $('#tab-volno-label');
+  if (volnoLabel) volnoLabel.textContent = 'Volno a absence';
+  const title = $('#own-volno-title');
+  if (title) title.textContent = 'Volno a absence';
+  const intro = $('#own-volno-intro');
+  if (intro) {
+    intro.textContent = start
+      ? 'Zapsané volno se hned projeví v dostupnosti. Schvalování týmu tu není potřeba.'
+      : 'Spravujte dovolené a další absence personálu.';
+  }
+  const formTitle = $('#own-volno-form-title');
+  if (formTitle) formTitle.textContent = start ? 'Zapsat volno' : 'Zapsat absenci pracovníkovi';
+  const wrap = $('#own-volno-zam-wrap');
+  const sel = $('#own-volno-zam');
+  wrap?.classList.toggle('hidden', start);
+  if (sel) {
+    sel.required = !start;
+    if (start) {
+      const workId = managerWorkId(user);
+      if (workId) sel.value = String(workId);
+    }
+  }
+}
+
+function kartotekaSmiFungovat(user = currentUser) {
+  if (user && typeof user.kartoteka === 'boolean') return user.kartoteka;
+  return Boolean(user && user.archivnik_active);
+}
+
+function maProFeature(kod, user = currentUser) {
+  return !!user?.[kod];
+}
+
+function applyProFeaturesUi(user = currentUser) {
+  const imap = maProFeature('imap', user);
+  const stats = maProFeature('stats', user);
+  const noshowArchiv = maProFeature('noshow_archive', user) && isOwnerUser(user);
+  $('#tab-mail')?.classList.toggle('hidden', !imap);
+  $('#tab-overview')?.classList.toggle('hidden', !stats);
+  $('#nav-prehledy')?.classList.toggle('hidden', !stats);
+  $('#tab-hrisnici')?.classList.toggle('hidden', !noshowArchiv);
+  const locked = (
+    (!imap && flowNavCurrent === 'mail')
+    || (!stats && flowNavCurrent === 'overview')
+    || (!noshowArchiv && flowNavCurrent === 'hrisnici')
+  );
+  if (locked) {
+    flowNavSilent = true;
+    setTab('mujden');
+    flowNavSilent = false;
+    flowNavCurrent = 'mujden';
+  }
+}
+
+function applyKartotekaUi(user = currentUser) {
+  const allowed = kartotekaSmiFungovat(user);
+  $('#tab-karty')?.classList.toggle('hidden', !allowed);
+  if (!allowed && flowNavCurrent === 'karty') {
+    flowNavSilent = true;
+    setTab('mujden');
+    flowNavSilent = false;
+    flowNavCurrent = 'mujden';
+  }
 }
 
 function updateFlowBackBtn() {
@@ -492,6 +599,19 @@ function resetFlowNav(tab = 'mujden') {
   flowNavCurrent = tab;
   flowNavSilent = false;
   updateFlowBackBtn();
+}
+
+function flowTabAvailable(name) {
+  if (!name) return false;
+  const btn = document.querySelector(`.tab[data-tab="${name}"]`);
+  return !!(btn && !btn.classList.contains('hidden'));
+}
+
+function resolvePostLoginTab(user, preserveTab) {
+  if (preserveTab) {
+    return flowTabAvailable(preserveTab) ? preserveTab : 'mujden';
+  }
+  return maProFeature('stats', user) ? 'overview' : 'mujden';
 }
 
 function pushFlowNav(tab) {
@@ -520,6 +640,17 @@ function goFlowBack() {
 
 function setTab(name) {
   if (name === 'sprava') name = isOwnerUser() ? 'personal' : 'mujden';
+  if (name === 'persona' && isStartPlan()) name = 'personal';
+  if (name === 'karty' && !kartotekaSmiFungovat()) name = 'mujden';
+  if (name === 'mail' && !maProFeature('imap')) name = 'mujden';
+  if (name === 'overview' && !maProFeature('stats')) name = 'mujden';
+  if (name === 'hrisnici' && !maProFeature('noshow_archive')) name = 'mujden';
+  if ((name === 'pravidla' || name === 'sablony') && (
+    !maProFeature('tech_settings') || !currentUser?.povolit_technicke_nastaveni
+  )) name = 'mujden';
+  if (name === 'audit' && (
+    !maProFeature('audit') || !currentUser?.povolit_technicke_nastaveni
+  )) name = 'mujden';
   if (OWNER_MENU_TABS.includes(name) && !isOwnerUser()) {
     name = 'mujden';
   }
@@ -588,7 +719,7 @@ function stopFlowClock() {
   }
 }
 
-function showLoggedIn(user) {
+function showLoggedIn(user, opts = {}) {
   currentUser = user;
   $('#view-login').classList.add('hidden');
   $('#view-home').classList.remove('hidden');
@@ -599,7 +730,7 @@ function showLoggedIn(user) {
   // UI: Manager účet vždy jako „Manager“ (ne DB jméno typu Majitelka); Staff = jméno.
   $('#home-name').textContent = owner
     ? 'Manager'
-    : (user.zamestnanec?.jmeno || 'Staff');
+    : (user.zamestnanec?.jmeno || 'Pracovník');
   $('#home-salon').textContent = user.salon?.name || '—';
   const displayName = $('#home-name').textContent;
   const salonName = $('#home-salon').textContent;
@@ -612,11 +743,10 @@ function showLoggedIn(user) {
       : displayName.slice(0, 2).toUpperCase();
   }
   $('#home-email').textContent = user.email || '—';
-  $('#home-overview').textContent = user.visible_overview ? 'zapnuto' : 'vypnuto';
   applyFlowBanner(user.salon);
   startFlowClock();
   const ovTab = $('#tab-overview');
-  if (ovTab) ovTab.classList.remove('hidden');
+  if (ovTab) ovTab.classList.toggle('hidden', !maProFeature('stats', user));
   $('#pwd-box-staff')?.classList.toggle('hidden', owner);
   $('#pwd-box-owner')?.classList.toggle('hidden', !owner);
   $$('.tab-owner').forEach((t) => {
@@ -632,38 +762,36 @@ function showLoggedIn(user) {
   const absTab = $('#tab-absence');
   if (absTab) {
     absTab.classList.toggle('hidden', owner);
-    if (owner && flowNavCurrent === 'absence') {
-      flowNavSilent = true;
-      setTab('mujden');
-      flowNavSilent = false;
-      flowNavCurrent = 'mujden';
-    }
   }
   applyAbsenceFormUi(user);
   refreshOwnerVolnoBadge(user);
   const roleEl = $('#home-role');
-  if (roleEl) roleEl.textContent = owner ? 'Manager' : 'Staff';
+  if (roleEl) roleEl.textContent = owner ? 'Manager' : 'Personál';
   applyPersonaUi(user);
   applyTechnickeNastaveniUi(user);
+  applyProFeaturesUi(user);
   applyMaterialnikUi(user);
   applyWebProvozovnyUi(user);
+  applyStartStaffUi(user);
+  applyKartotekaUi(user);
+  applyOwnerPasswordHint(user);
   // Staff: pracovní doba jen view; majitel ji mění ve Staff
   const rozHint = $('#rozvrh-hint');
   const rozSave = $('#btn-rozvrh-save');
   if (!owner) {
     if (rozHint) {
-      rozHint.textContent = 'Vaše pracovní doba (jen náhled). Změnu může udělat jen Manager ve Staff.';
+      rozHint.textContent = 'Vaše pracovní doba (jen náhled). Změnu může udělat jen Manager v Personálu.';
     }
     rozSave?.classList.add('hidden');
   } else {
     if (rozHint) {
-      rozHint.textContent = 'Účet Manager nemá vlastní rozvrh služeb. Rozvrh Staff upravíte v Personál → Staff.';
+      rozHint.textContent = 'Účet Manager nemá vlastní rozvrh služeb. Pracovní dobu upravíte v Personálu.';
     }
     rozSave?.classList.add('hidden');
   }
   resetFlowNav(null);
   flowNavSilent = true;
-  const startTab = 'overview';
+  const startTab = resolvePostLoginTab(user, opts.preserveTab);
   setTab(startTab);
   flowNavSilent = false;
   flowNavCurrent = startTab;
@@ -823,7 +951,7 @@ function renderOverviewStats(data) {
     if (!people.length) {
       staffEl.innerHTML = '<p class="empty">Žádný personál.</p>';
     } else {
-      staffEl.innerHTML = people.map((p) => {
+      staffEl.innerHTML = customerOverviewPeople(people).map((p) => {
         const name = p.jmeno || '—';
         const parts = String(name).split(/\s+/).filter(Boolean);
         const ini = parts.length >= 2
@@ -1357,11 +1485,11 @@ function renderTopAlerts(riskyN, mailN, mailOk, volnoN = 0, platbyDni = 0) {
       <button type="button" class="btn primary sm" id="alert-goto-platby">Otevřít</button>
     </div>`);
   }
-  if (volnoN > 0 && isOwnerUser()) {
+  if (volnoN > 0 && isOwnerUser() && !isStartPlan()) {
     parts.push(`<div class="flow-alert volno">
       <div class="flow-alert-text">
         <strong>Žádosti o volno: ${volnoN}</strong>
-        <span>Ke schválení — dovolená / nemoc Staff</span>
+        <span>Ke schválení — dovolená / nemoc personálu</span>
       </div>
       <button type="button" class="btn primary sm" id="alert-goto-volno">Otevřít</button>
     </div>`);
@@ -1420,10 +1548,12 @@ async function refreshTopAlerts() {
     riskyAlertItems = risky;
   }
   try {
-    const mail = await api('/flow/mail/?limit=40');
-    mailOk = true;
-    unseen = (mail.items || []).filter((m) => m.unseen).length;
-    mailUnseenCount = unseen;
+    if (maProFeature('imap')) {
+      const mail = await api('/flow/mail/?limit=40');
+      mailOk = true;
+      unseen = (mail.items || []).filter((m) => m.unseen).length;
+      mailUnseenCount = unseen;
+    }
   } catch {
     mailOk = false;
     mailUnseenCount = 0;
@@ -1586,7 +1716,7 @@ async function openNova(prefillDate = '', contact = null) {
       if (sel) {
         sel.innerHTML = staff.length
           ? staff.map((z) => `<option value="${z.id}">${esc(z.jmeno)}</option>`).join('')
-          : '<option value="">— žádný Staff —</option>';
+          : '<option value="">— žádný pracovník —</option>';
       }
       refreshNovaStaffSelect();
     } catch (err) {
@@ -1772,6 +1902,14 @@ function formatMailDate(iso) {
   }
 }
 
+function customerMailError(text) {
+  const raw = String(text || '');
+  if (raw.includes('Schránka ve FLOW není zapnutá')) {
+    return 'E-mailová schránka zatím není nastavena.';
+  }
+  return raw;
+}
+
 function setMailFolder(folder) {
   mailFolder = folder === 'odeslane' ? 'odeslane' : 'inbox';
   $$('.mail-folder').forEach((b) => b.classList.toggle('active', b.dataset.folder === mailFolder));
@@ -1851,7 +1989,7 @@ async function loadMailList() {
     msg.hidden = true;
   } catch (err) {
     list.innerHTML = '';
-    showMsg(msg, err.message, false);
+    showMsg(msg, customerMailError(err.message), false);
   }
 }
 
@@ -1870,7 +2008,7 @@ async function openMail(uid) {
     if (item) item.unseen = false;
     msg.hidden = true;
   } catch (err) {
-    showMsg(msg, err.message, false);
+    showMsg(msg, customerMailError(err.message), false);
   }
 }
 
@@ -2360,13 +2498,21 @@ function showOwnerAdminHome() {
 }
 
 function applyTechnickeNastaveniUi(user = currentUser) {
-  const allowed = !!user?.povolit_technicke_nastaveni && isOwnerUser(user);
-  $$('.tab-tech').forEach((t) => t.classList.toggle('hidden', !allowed));
+  const allowed = !!user?.povolit_technicke_nastaveni
+    && maProFeature('tech_settings', user)
+    && isOwnerUser(user);
+  $$('.tab-tech').forEach((t) => {
+    if (t.id === 'tab-audit') {
+      t.classList.toggle('hidden', !allowed || !maProFeature('audit', user));
+      return;
+    }
+    t.classList.toggle('hidden', !allowed);
+  });
   $('#owner-zone-tech')?.classList.toggle('hidden', !allowed);
 }
 
 function archivnikJeAktivni(user = currentUser) {
-  return Boolean(user && user.archivnik_active);
+  return kartotekaSmiFungovat(user);
 }
 
 function materialnikInfo(user = currentUser) {
@@ -2403,6 +2549,19 @@ function applyWebProvozovnyUi(user = currentUser) {
     btn.classList.remove('hidden');
     btn.href = url;
   });
+}
+
+function applyOwnerPasswordHint(user = currentUser) {
+  const el = $('#pwd-owner-hint');
+  if (!el) return;
+  const url = webProvozovnyUrl(user);
+  if (url) {
+    el.innerHTML = 'Heslo můžete změnit v <a href="'
+      + esc(url)
+      + '" target="_blank" rel="noopener">administraci svého webu</a> v záložce Heslo.';
+  } else {
+    el.textContent = 'Heslo můžete změnit v administraci svého webu v záložce Heslo.';
+  }
 }
 
 function closeMaterialnikModal() {
@@ -2528,6 +2687,12 @@ async function loadOwnerPersona() {
       if (inp && !inp.value) inp.value = '';
       inp?.setAttribute('placeholder', 'Jméno na webu a v rezervacích');
     }
+    if (p?.extra_staff !== undefined && currentUser) {
+      currentUser.extra_staff = p.extra_staff;
+      currentUser.plan = p.plan;
+      currentUser.manager_pracuje_povinny = p.manager_pracuje_povinny;
+    }
+    applyStartStaffUi(currentUser);
   } catch (err) {
     showMsg(msg, err.message, false);
   }
@@ -2554,6 +2719,17 @@ async function loadOwnerVolno() {
       sel.innerHTML = '<option value="">— vyberte —</option>'
         + staff.map((z) => `<option value="${z.id}">${esc(z.jmeno)}</option>`).join('');
       if (cur) sel.value = cur;
+      const wrap = $('#own-volno-zam-wrap');
+      if (isStartPlan()) {
+        const workId = managerWorkId();
+        if (workId) sel.value = String(workId);
+        else if (staff[0]) sel.value = String(staff[0].id);
+        wrap?.classList.add('hidden');
+        sel.required = false;
+      } else {
+        wrap?.classList.remove('hidden');
+        sel.required = true;
+      }
     }
   } catch (_) { /* select zůstane */ }
   renderOwnerVolno(data.zadosti || []);
@@ -2564,14 +2740,23 @@ function renderOwnerVolno(list) {
   if (!box) return;
   box.replaceChildren();
   if (!list.length) {
-    box.innerHTML = '<p class="empty">Žádné žádosti ani nedávné absence.</p>';
+    box.innerHTML = isStartPlan()
+      ? '<p class="empty">Žádné zapsané volno ani absence.</p>'
+      : '<p class="empty">Žádné žádosti ani nedávné absence.</p>';
     return;
   }
+  const start = isStartPlan();
   list.forEach((a) => {
     const card = document.createElement('article');
     card.className = `own-volno-card stav-${esc(a.stav || '')}`;
     const stavLabel = a.stav_label || a.stav || '';
-    const actions = a.stav === 'ceka'
+    const actions = start
+      ? (a.stav === 'schvaleno'
+        ? `<div class="actions" data-volno-actions>
+            <button type="button" class="btn ghost sm op-volno-del">Smazat volno</button>
+          </div>`
+        : '')
+      : (a.stav === 'ceka'
       ? `<div class="actions" data-volno-actions>
           <button type="button" class="btn primary sm op-volno-ok">Schválit</button>
           <button type="button" class="btn ghost sm op-volno-no">Zamítnout</button>
@@ -2580,7 +2765,7 @@ function renderOwnerVolno(list) {
         ? `<div class="actions" data-volno-actions>
             <button type="button" class="btn ghost sm op-volno-del">Smazat absenci</button>
           </div>`
-        : '');
+        : ''));
     card.innerHTML = `
       <div class="item-top">
         <strong>${esc(a.zamestnanec_jmeno || '—')}</strong>
@@ -2675,7 +2860,9 @@ async function ownerZamitnoutVolno(id) {
 $('#form-own-add-volno')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#owner-admin-msg');
-  const zamId = Number($('#own-volno-zam')?.value || 0);
+  const zamId = isStartPlan()
+    ? Number(managerWorkId() || $('#own-volno-zam')?.value || 0)
+    : Number($('#own-volno-zam')?.value || 0);
   if (!zamId) {
     showMsg(msg, 'Vyberte pracovníka.', false);
     return;
@@ -2709,10 +2896,19 @@ async function openOwnerSection(section) {
   if (!isOwnerUser() && section !== 'persona') return;
   // persona setup jen jako Manager (aktivní persona owner)
   if (section === 'persona' && !isOwnerUser()) return;
-  const techSections = ['pravidla', 'sablony', 'audit'];
-  if (techSections.includes(section) && !currentUser?.povolit_technicke_nastaveni) {
+  const techSections = ['pravidla', 'sablony'];
+  if (techSections.includes(section) && (
+    !currentUser?.povolit_technicke_nastaveni || !maProFeature('tech_settings')
+  )) {
     return;
   }
+  if (section === 'audit' && (
+    !maProFeature('audit') || !currentUser?.povolit_technicke_nastaveni
+  )) {
+    return;
+  }
+  if (section === 'hrisnici' && !maProFeature('noshow_archive')) return;
+  if (section === 'statistiky' && !maProFeature('stats')) return;
   const ok = ['persona', 'pravidla', 'sablony', 'personal', 'volno', 'platby', 'hrisnici', 'audit', 'statistiky'];
   if (!ok.includes(section)) return;
   $('#owner-admin-home')?.classList.add('hidden');
@@ -3025,7 +3221,7 @@ async function loadOwnerStatistiky() {
     <dt>Storno</dt><dd>${esc(data.storno)} (${esc(data.storno_procent)} %)</dd>
     <dt>Hříšníci</dt><dd>${esc(data.no_show)}</dd>
     <dt>Top služby</dt><dd>${sluzby}</dd>
-    <dt>Top Staff</dt><dd>${staff}</dd>
+    <dt>Nejvytíženější personál</dt><dd>${staff}</dd>
   </dl>`;
 }
 
@@ -3038,14 +3234,58 @@ async function loadOwnerPersonal() {
   renderOwnerPersonal(data.zamestnanci || []);
 }
 
+function jeManagerPracovniPersona(z) {
+  const workId = currentUser?.persona?.pracovnik?.id;
+  return !!(z && z.role !== 'majitel' && workId && Number(z.id) === Number(workId));
+}
+
+function managerOwnerId(user = currentUser) {
+  return user?.zamestnanec?.id || null;
+}
+
+function managerWorkId(user = currentUser) {
+  return user?.persona?.pracovnik?.id || null;
+}
+
+function customerVisibleStaff(list) {
+  const workId = managerWorkId();
+  const ownerId = managerOwnerId();
+  const hideOwner = workId && (list || []).some((z) => Number(z.id) === Number(workId));
+  return (list || []).filter((z) => {
+    if (hideOwner && (z.role === 'majitel' || Number(z.id) === Number(ownerId))) return false;
+    return true;
+  });
+}
+
+function customerOverviewPeople(people) {
+  const workId = managerWorkId();
+  const ownerId = managerOwnerId();
+  const hideOwner = workId && (people || []).some((p) => Number(p.id) === Number(workId));
+  return (people || []).filter((p) => {
+    if (hideOwner && Number(p.id) === Number(ownerId)) return false;
+    return true;
+  }).map((p) => {
+    if (Number(p.id) === Number(workId) || Number(p.id) === Number(ownerId)) {
+      return Object.assign({}, p, { jmeno: 'Manager' });
+    }
+    return p;
+  });
+}
+
 function personalNavLabel(z) {
   if (!z) return '—';
-  if (z.role === 'majitel') return 'Manager';
-  const workId = currentUser?.persona?.pracovnik?.id;
-  if (workId && Number(z.id) === Number(workId)) {
-    return `${z.jmeno} (Staff · Manager)`;
-  }
+  if (z.role === 'majitel' || jeManagerPracovniPersona(z)) return 'Manager';
   return z.jmeno;
+}
+
+function staffListStatus(z) {
+  if (z.aktivni === false && z.role !== 'majitel' && !jeManagerPracovniPersona(z)) {
+    return { cls: 'is-blocked', text: 'ZABLOKOVÁNO' };
+  }
+  if (z.role === 'majitel' || jeManagerPracovniPersona(z)) {
+    return null;
+  }
+  return staffFlowStatus(z);
 }
 
 function staffAvatarHtml(z, name) {
@@ -3073,31 +3313,32 @@ function renderOwnerPersonal(list) {
   const detail = $('#own-staff-detail');
   if (!nav || !detail) return;
   ownerPersonalCache = list || [];
-  if (!ownerPersonalCache.length) {
+  const visible = customerVisibleStaff(ownerPersonalCache);
+  if (!visible.length) {
     nav.innerHTML = '';
-    detail.innerHTML = '<p class="empty">Zatím žádný Staff. Přidejte prvního pracovníka tlačítkem nahoře.</p>';
+    detail.innerHTML = '<p class="empty">Zatím tu není žádný personál.</p>';
     return;
   }
   if (
     ownerPersonalSelectedId == null
-    || !ownerPersonalCache.some((z) => z.id === ownerPersonalSelectedId)
+    || !visible.some((z) => z.id === ownerPersonalSelectedId)
   ) {
-    const firstStaff = ownerPersonalCache.find((z) => z.role !== 'majitel');
-    ownerPersonalSelectedId = (firstStaff || ownerPersonalCache[0]).id;
+    const managerRow = visible.find((z) => jeManagerPracovniPersona(z) || z.role === 'majitel');
+    ownerPersonalSelectedId = (managerRow || visible[0]).id;
   }
   nav.replaceChildren();
-  ownerPersonalCache.forEach((z) => {
-    const isOwner = z.role === 'majitel';
-    const name = isOwner ? 'Manager' : z.jmeno;
-    const st = isOwner
-      ? { cls: 'is-muted', text: 'správa' }
-      : staffFlowStatus(z);
+  visible.forEach((z) => {
+    const name = personalNavLabel(z);
+    const st = staffListStatus(z);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `staff-person${z.id === ownerPersonalSelectedId ? ' is-active' : ''}`;
+    const statusHtml = st
+      ? `<span class="staff-status ${st.cls}">${esc(st.text)}</span>`
+      : '';
     btn.innerHTML = `${staffAvatarHtml(z, name)}<span class="staff-person-copy">
-      <strong>${esc(personalNavLabel(z))}</strong>
-      <span class="staff-status ${st.cls}">${esc(st.text)}</span>
+      <strong>${esc(name)}</strong>
+      ${statusHtml}
     </span>`;
     btn.addEventListener('click', () => {
       ownerPersonalSelectedId = z.id;
@@ -3105,7 +3346,7 @@ function renderOwnerPersonal(list) {
     });
     nav.appendChild(btn);
   });
-  const z = ownerPersonalCache.find((x) => x.id === ownerPersonalSelectedId);
+  const z = visible.find((x) => x.id === ownerPersonalSelectedId);
   detail.replaceChildren();
   if (z) detail.appendChild(buildOwnerPersonalCard(z));
 }
@@ -3155,18 +3396,28 @@ function staffFlowBlockHtml(z, ucet) {
 
 function buildOwnerPersonalCard(z) {
   const isOwner = z.role === 'majitel';
-  const workId = currentUser?.persona?.pracovnik?.id;
-  const isManagerStaff = !isOwner && workId && Number(z.id) === Number(workId);
+  const isManagerStaff = jeManagerPracovniPersona(z);
+  const blocked = !isOwner && z.aktivni === false;
   const flow = z.flow || {};
   const ucet = flow.ucet || null;
   const card = document.createElement('article');
   card.className = 'own-personal-card';
   card.dataset.id = String(z.id);
 
-  const displayName = isOwner ? 'Manager' : z.jmeno;
-  const roleBadge = isOwner
-    ? ''
-    : (isManagerStaff ? ' <span class="role-badge">Staff · Manager</span>' : '');
+  const displayName = (isOwner || isManagerStaff) ? 'Manager' : z.jmeno;
+
+  if (blocked) {
+    const canActivate = !isStartPlan() && !isManagerStaff;
+    card.innerHTML = `
+      <div class="own-blocked-card">
+        <h3>Uživatel byl zablokován.</h3>
+        <p class="hint tiny">${esc(z.jmeno || displayName)}</p>
+        <p class="hint tiny">Profil a jeho historie zůstávají zachovány.</p>
+        ${canActivate ? '<button type="button" class="btn primary sm op-aktivovat">Aktivovat pracovníka</button>' : ''}
+      </div>`;
+    card.querySelector('.op-aktivovat')?.addEventListener('click', () => aktivovatZablokovanehoPracovnika(z.id));
+    return card;
+  }
 
   const rozvrhRows = (z.rozvrh || []).map((r) => {
     const volno = !!r.volno;
@@ -3180,18 +3431,25 @@ function buildOwnerPersonalCard(z) {
     </tr>`;
   }).join('');
 
+  const ownerHint = isOwner
+    ? (isStartPlan()
+      ? ''
+      : '<p class="hint tiny">Pokud zároveň obsluhujete zákazníky, zapněte to v menu Personál → Manager obsluhuje.</p>')
+    : '';
+  const workHint = '';
+
   card.innerHTML = `
     <div class="own-personal-head">
       ${staffAvatarHtml(z, displayName)}
       <div>
-        <h3>${esc(displayName)}${roleBadge}</h3>
-        <p class="hint tiny">${esc(z.specializace || (isOwner ? 'Účet pro správu salonu' : ''))}</p>
+        <h3>${esc(displayName)}</h3>
+        <p class="hint tiny">${esc(z.specializace || (isOwner ? 'Správa provozovny' : ''))}</p>
       </div>
     </div>
-    ${isOwner ? '<p class="hint tiny">Účet pro správu. Obsluhu zákazníků zapnete v menu Personál → Manager obsluhuje.</p>' : ''}
-    ${isManagerStaff ? '<p class="hint tiny">Pracovní profil Managera — stejný login, nahoře přepínač Manager / Staff.</p>' : ''}
+    ${ownerHint}
+    ${workHint}
     ${isOwner ? '' : `
-    ${staffFlowBlockHtml(z, ucet)}
+    ${isManagerStaff ? '' : staffFlowBlockHtml(z, ucet)}
     <section class="own-block">
       <h4>Údaje</h4>
       <label>Jméno
@@ -3489,10 +3747,27 @@ async function resetOwnerStaffFlow(id) {
   }
 }
 
+async function aktivovatZablokovanehoPracovnika(id) {
+  const msg = $('#owner-admin-msg');
+  try {
+    await api(`/flow/owner/personal/${id}/aktivovat/`, { method: 'POST', body: '{}' });
+    showMsg(msg, 'Pracovník je znovu aktivní.', true);
+    await loadOwnerPersonal();
+  } catch (err) {
+    showMsg(msg, err.message, false);
+  }
+}
+
 $('#btn-own-add-staff')?.addEventListener('click', () => {
+  if (currentUser?.extra_staff === false) return;
   const form = $('#form-own-add-staff');
   form?.classList.remove('hidden');
   $('#own-add-jmeno')?.focus();
+});
+
+$('#btn-pro-upsell-more')?.addEventListener('click', () => {
+  const note = $('#own-pro-upsell-note');
+  note?.classList.remove('hidden');
 });
 
 $('#btn-own-add-cancel')?.addEventListener('click', () => {
@@ -3503,6 +3778,10 @@ $('#btn-own-add-cancel')?.addEventListener('click', () => {
 
 $('#form-own-add-staff')?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (currentUser?.extra_staff === false) {
+    showMsg($('#owner-admin-msg'), 'Moderník START neumožňuje další pracovníky.', false);
+    return;
+  }
   const msg = $('#owner-admin-msg');
   const jmeno = $('#own-add-jmeno')?.value.trim();
   const specializace = $('#own-add-spec')?.value.trim() || '';
@@ -3741,6 +4020,11 @@ $('#own-persona-check')?.addEventListener('change', async () => {
   const save = $('#own-persona-save');
   const lab = $('#own-persona-switch-label');
   const ano = !!check?.checked;
+  if (currentUser?.manager_pracuje_povinny && !ano) {
+    if (check) check.checked = true;
+    if (lab) lab.textContent = 'Ano';
+    return;
+  }
   if (lab) lab.textContent = ano ? 'Ano' : 'Ne';
   if (!ano) {
     wrap?.classList.add('hidden');

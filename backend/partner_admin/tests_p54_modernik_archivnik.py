@@ -1,7 +1,7 @@
 """P5.4 — Moderník automaticky obsahuje plný Archivník (PartnerModul)."""
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from archivnik.models import Customer
@@ -18,6 +18,7 @@ class Actor:
     username = 'p54-test'
 
 
+@override_settings(MATERIALNIK_STUB=True)
 class P54ModernikObsahujeArchivnikTests(TestCase):
     def setUp(self):
         self.superuser = get_user_model().objects.create_superuser(
@@ -51,12 +52,13 @@ class P54ModernikObsahujeArchivnikTests(TestCase):
             1,
         )
 
-    def test_novy_partner_bez_flow_nema_auto_archivnik(self):
-        salon, _p, _m, flow_user = self._novy(
+    def test_novy_pro_partner_ma_archivnik_i_bez_flow(self):
+        salon, partner, _m, flow_user = self._novy(
             'P54 Bez FLOW', 'p54-solo-off@example.test', flow=False,
         )
         self.assertIsNone(flow_user)
-        self.assertFalse(
+        self.assertEqual(partner.plan, PartnerNastaveni.PLAN_PRO)
+        self.assertTrue(
             PartnerModul.objects.filter(
                 salon=salon, modul__kod=MODUL_ARCHIVNIK, status=PartnerModul.STAV_ACTIVE,
             ).exists()
@@ -154,7 +156,7 @@ class P54ModernikObsahujeArchivnikTests(TestCase):
         row.refresh_from_db()
         self.assertEqual(row.status, PartnerModul.STAV_INACTIVE)
 
-    def test_sync_command_zapne_jen_flow_partnery(self):
+    def test_sync_command_nemaže_vypnuty_modul_ani_standalone(self):
         flow_salon, *_ = self._novy('P54 Sync FLOW', 'p54-sync-flow@example.test')
         PartnerModul.objects.filter(
             salon=flow_salon, modul__kod=MODUL_ARCHIVNIK,
@@ -163,7 +165,7 @@ class P54ModernikObsahujeArchivnikTests(TestCase):
         call_command('sync_archivnik_pro_modernik')
         self.assertTrue(
             PartnerModul.objects.filter(
-                salon=flow_salon, modul__kod=MODUL_ARCHIVNIK, status=PartnerModul.STAV_ACTIVE,
+                salon=flow_salon, modul__kod=MODUL_ARCHIVNIK, status=PartnerModul.STAV_INACTIVE,
             ).exists()
         )
         self.assertFalse(

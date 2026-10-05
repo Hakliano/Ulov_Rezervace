@@ -8,6 +8,7 @@ from partner_admin.materialnik_client import (
     MaterialnikUnavailable,
     post_event,
 )
+from partner_admin.entitlements import materialnik_smí_fungovat
 from partner_admin.models import IntegrationOutbox, PartnerModul, MODUL_MATERIALNIK
 from partner_admin.services_moduly import partner_modul
 
@@ -26,7 +27,7 @@ class Command(BaseCommand):
         sent = failed = skipped = 0
         for row in qs:
             modul = partner_modul(row.salon, MODUL_MATERIALNIK)
-            if not modul or modul.status != PartnerModul.STAV_ACTIVE:
+            if not modul or modul.status != PartnerModul.STAV_ACTIVE or not materialnik_smí_fungovat(row.salon):
                 row.status = IntegrationOutbox.STAV_SKIPPED
                 row.last_error = 'tenant_inactive'
                 row.save(update_fields=['status', 'last_error'])

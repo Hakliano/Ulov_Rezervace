@@ -51,6 +51,11 @@ urlpatterns = [
     ),
     path('flow/owner/personal/', owner_views.FlowOwnerPersonalListCreateView.as_view(), name='flow-owner-personal'),
     path(
+        'flow/owner/personal/<int:zamestnanec_id>/aktivovat/',
+        owner_views.FlowOwnerPersonalAktivovatView.as_view(),
+        name='flow-owner-personal-aktivovat',
+    ),
+    path(
         'flow/owner/personal/<int:zamestnanec_id>/',
         owner_views.FlowOwnerPersonalDetailView.as_view(),
         name='flow-owner-personal-detail',

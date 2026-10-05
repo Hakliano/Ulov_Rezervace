@@ -339,6 +339,30 @@
     }
   }
 
+  function staffProfilHtml(z, data) {
+    const pzId = data?.majitelka_pracuje?.pracovni?.id;
+    const jePersona = pzId && Number(pzId) === Number(z.id);
+    const jeMajitel = z.role === 'majitel';
+    const stav = z.aktivni === false ? 'neaktivní' : 'aktivní';
+    if (jeMajitel) {
+      return `<p class="muted">Pracovní profil: účet majitele (nelze deaktivovat)</p>`;
+    }
+    if (jePersona) {
+      return `<p class="muted">Pracovní profil: ${stav} · pracovní persona Managera
+        ${data.manager_pracuje_povinny
+          ? '— na START musí zůstat aktivní, zde ji nelze deaktivovat.'
+          : '— spravuje se v „Manager také pracuje“, ne deaktivací extra personálu.'}</p>`;
+    }
+    if (z.aktivni === false) {
+      return `
+        <p class="muted">Pracovní profil: neaktivní (nenabízí se na nové rezervace, neblokuje PRO → START)</p>
+        <button type="button" class="btn btn-secondary" data-aktivovat-staff="${z.id}">Aktivovat pracovníka</button>`;
+    }
+    return `
+      <p class="muted">Pracovní profil: aktivní</p>
+      <button type="button" class="btn btn-danger" data-deaktivovat-staff="${z.id}" data-jmeno="${escapeAttr(z.jmeno || '')}">Deaktivovat pracovníka</button>`;
+  }
+
   async function renderStaff() {
     const box = $('#staff-list');
     if (!box) return;
@@ -370,6 +394,8 @@
         </label>
         <button type="button" class="btn btn-secondary" data-save-staff="${z.id}">Uložit účet</button>
         <hr class="ops-hr">
+        ${staffProfilHtml(z, data)}
+        <hr class="ops-hr">
         ${flowHtml}`;
       box.appendChild(row);
     }
@@ -384,6 +410,44 @@
             body: JSON.stringify({ cislo_uctu: ucet }),
           });
           setMsg('Účet pracovníka uložen.', true);
+        } catch (err) {
+          setMsg(err.message, false);
+        }
+      });
+    });
+
+    box.querySelectorAll('[data-deaktivovat-staff]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-deaktivovat-staff');
+        const jmeno = btn.getAttribute('data-jmeno') || 'tohoto pracovníka';
+        if (!window.confirm(
+          `Deaktivovat pracovníka „${jmeno}“?\n\n`
+          + 'Profil a historie rezervací zůstanou. Pracovník se přestane nabízet na nové rezervace a přestane blokovat PRO → START.\n'
+          + 'Pokud má budoucí termíny, deaktivace se zablokuje — nejprve je musíte převést nebo stornovat.',
+        )) return;
+        try {
+          await api(`/salon/${salonId}/rezervace/admin/zamestnanci/${id}/deaktivovat/`, {
+            method: 'POST',
+            body: '{}',
+          });
+          setMsg(`Pracovník ${jmeno} je deaktivovaný.`, true);
+          await renderStaff();
+        } catch (err) {
+          setMsg(err.message, false);
+        }
+      });
+    });
+
+    box.querySelectorAll('[data-aktivovat-staff]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-aktivovat-staff');
+        try {
+          await api(`/salon/${salonId}/rezervace/admin/zamestnanci/${id}/aktivovat/`, {
+            method: 'POST',
+            body: '{}',
+          });
+          setMsg('Pracovník je znovu aktivní.', true);
+          await renderStaff();
         } catch (err) {
           setMsg(err.message, false);
         }

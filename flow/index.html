@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://haklweb.b-cdn.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=66">
+  <link rel="stylesheet" href="style.css?v=67">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -34,18 +34,18 @@
           <p class="nav-label">Rezervace</p>
           <button type="button" class="tab active" data-tab="mujden"><span class="tab-label">Můj den</span></button>
           <button type="button" class="tab" data-tab="mesic"><span class="tab-label">Kalendář</span></button>
-          <button type="button" class="tab" data-tab="karty" id="tab-karty"><span class="tab-label">Zákazníci</span></button>
-          <button type="button" class="tab" data-tab="mail" id="tab-mail"><span class="tab-label">Mail</span></button>
+          <button type="button" class="tab hidden" data-tab="karty" id="tab-karty"><span class="tab-label">Zákazníci</span></button>
+          <button type="button" class="tab hidden" data-tab="mail" id="tab-mail"><span class="tab-label">Mail</span></button>
           <button type="button" class="tab tab-owner hidden" data-tab="hrisnici" id="tab-hrisnici"><span class="tab-label">Hříšníci</span></button>
         </div>
         <div class="nav-group" id="nav-personal">
           <p class="nav-label">Personál</p>
-          <button type="button" class="tab tab-owner hidden" data-tab="personal" id="tab-personal"><span class="tab-label">Staff</span></button>
+          <button type="button" class="tab tab-owner hidden" data-tab="personal" id="tab-personal"><span class="tab-label">Personál</span></button>
           <button type="button" class="tab tab-owner hidden" data-tab="persona" id="tab-persona"><span class="tab-label">Manager obsluhuje</span></button>
           <button type="button" class="tab" data-tab="rozvrh" id="tab-rozvrh"><span class="tab-label">Pracovní doba</span></button>
           <button type="button" class="tab" data-tab="absence" id="tab-absence"><span class="tab-label">Dovolená</span></button>
           <button type="button" class="tab tab-owner hidden" data-tab="volno" id="tab-volno">
-            <span class="tab-label">Volno</span>
+            <span class="tab-label" id="tab-volno-label">Volno a absence</span>
             <span id="owner-volno-badge" class="tab-badge hidden">0</span>
           </button>
         </div>
@@ -119,7 +119,7 @@
             </p>
             <div id="persona-switch" class="persona-switch hidden" role="group" aria-label="Přepínač role">
               <button type="button" class="persona-btn" data-persona="majitel" id="persona-btn-majitel">Manager</button>
-              <button type="button" class="persona-btn" data-persona="pracovnik" id="persona-btn-pracovnik">Staff</button>
+              <button type="button" class="persona-btn" data-persona="pracovnik" id="persona-btn-pracovnik">Obsluha</button>
             </div>
           </div>
           <button type="button" id="btn-flow-back" class="btn primary sm flow-back" disabled title="Zpět na předchozí obrazovku ve FLOW">
@@ -333,7 +333,8 @@
 
             <div id="owner-section-persona" class="owner-section hidden">
               <h2 class="owner-section-title">Manager obsluhuje</h2>
-              <p class="hint">Ne = účet zůstane jen ke správě, bez vlastních termínů u zákazníků.</p>
+              <p class="hint">Určuje, zda Manager také přijímá rezervace a obsluhuje zákazníky.</p>
+              <p id="own-persona-start-hint" class="hint tiny hidden">U Moderníku START Manager vždy obsluhuje — pracovní personu nelze vypnout.</p>
               <label class="flow-switch">
                 <input type="checkbox" id="own-persona-check">
                 <span class="flow-switch-ui" aria-hidden="true"></span>
@@ -386,7 +387,7 @@
                 </label>
                 <label class="check-row">
                   <input type="checkbox" id="own-auto-potvrzeni">
-                  <span>Potvrzovat automaticky rezervace zadané Staff<br>
+                  <span>Potvrzovat automaticky rezervace zadané personálem<br>
                     <small>Platí jen pro rezervace ze systému. Online rezervace od zákazníka vždy vyžadují potvrzení e-mailem.</small>
                   </span>
                 </label>
@@ -414,8 +415,8 @@
             <div id="owner-section-personal" class="owner-section hidden">
               <div class="staff-head">
                 <div>
-                  <h2 class="owner-section-title">Staff</h2>
-                  <p class="hint tiny">Vlevo vyberte pracovníka. Vpravo u něj upravíte všechno — jméno, služby, směny i přístup do FLOW. Každý blok uložte jeho tlačítkem.</p>
+                  <h2 class="owner-section-title">Personál</h2>
+                  <p class="hint tiny" id="own-personal-intro">Vlevo vyberte pracovníka. Vpravo u něj upravíte jméno, služby, směny i přístup do FLOW. Každý blok uložte jeho tlačítkem.</p>
                 </div>
                 <button type="button" class="btn primary sm" id="btn-own-add-staff">+ Přidat pracovníka</button>
               </div>
@@ -449,14 +450,32 @@
                 <div id="own-staff-nav" class="staff-people"></div>
                 <div id="own-staff-detail"></div>
               </div>
+              <aside id="own-pro-upsell" class="pro-upsell-card hidden">
+                <p class="eyebrow">Moderník START</p>
+                <h3>Přejít na Moderník PRO</h3>
+                <p>START je pro jednoho obsluhujícího Managera. PRO přidá tým a provozní nástroje navíc.</p>
+                <ul>
+                  <li>více pracovníků a správa týmu</li>
+                  <li>Kartotéka zákazníků</li>
+                  <li>Archivník</li>
+                  <li>pokročilá práce s e-maily</li>
+                  <li>automatický e-mail po návštěvě / žádost o recenzi</li>
+                  <li>pokročilé statistiky a přehledy</li>
+                  <li>pokročilá práce s NO-show</li>
+                  <li>rozšířené možnosti správy provozovny</li>
+                </ul>
+                <p class="hint tiny">Materiálník je v PRO součástí plánu. Na START ho můžeme povolit individuálně, není to výhradně PRO funkce.</p>
+                <button type="button" class="btn ghost sm" id="btn-pro-upsell-more">Zjistit více o PRO</button>
+                <p id="own-pro-upsell-note" class="hint tiny hidden">Přechod na Moderník PRO zatím nastavujeme v Partner Adminu. Tlačítko plán samo nepřepíná.</p>
+              </aside>
             </div>
 
             <div id="owner-section-volno" class="owner-section hidden">
-              <h2 class="owner-section-title">Žádosti o volno</h2>
-              <p class="hint tiny">Schvalte nebo zamítněte žádosti Staff. Po schválení vyřešte kolize rezervací.</p>
+              <h2 class="owner-section-title" id="own-volno-title">Volno a absence</h2>
+              <p class="hint tiny" id="own-volno-intro">Spravujte dovolené a další absence personálu.</p>
               <form id="form-own-add-volno" class="form own-add-staff-form">
-                <h3 class="own-subh">Zapsat absenci pracovníkovi</h3>
-                <label>Pracovník
+                <h3 class="own-subh" id="own-volno-form-title">Zapsat absenci pracovníkovi</h3>
+                <label id="own-volno-zam-wrap">Pracovník
                   <select id="own-volno-zam" required>
                     <option value="">— vyberte —</option>
                   </select>
@@ -547,7 +566,6 @@
           <div class="panel">
             <p><strong>E-mail:</strong> <span id="home-email">—</span></p>
             <p><strong>Role:</strong> <span id="home-role">—</span></p>
-            <p><strong>Overview:</strong> <span id="home-overview">—</span></p>
           </div>
           <details class="pwd-box openable" id="pwd-box-staff">
             <summary>Změnit heslo</summary>
@@ -563,9 +581,8 @@
             </form>
           </details>
           <div class="panel hidden" id="pwd-box-owner">
-            <p class="hint">
-              Heslo Manager se mění v administraci webu (záložka Heslo).
-              Ve FLOW se nemění.
+            <p class="hint" id="pwd-owner-hint">
+              Heslo můžete změnit v administraci svého webu v záložce Heslo.
             </p>
           </div>
           <button type="button" id="btn-logout-ucet" class="btn-logout hidden">Odhlásit se</button>
@@ -767,8 +784,8 @@
 
   <script src="svatky.js?v=1"></script>
   <script src="../shared/cenik-cena.js?v=1"></script>
-  <script src="app.js?v=82"></script>
-  <script src="customer-card.js?v=7"></script>
+  <script src="app.js?v=87"></script>
+  <script src="customer-card.js?v=8"></script>
 
 </body>
 </html>
