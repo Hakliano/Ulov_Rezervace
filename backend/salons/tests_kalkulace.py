@@ -6,7 +6,7 @@ from django.test import Client, SimpleTestCase, TestCase, RequestFactory
 from rest_framework.exceptions import Throttled as DrfThrottled
 
 from rezervace.throttles import KalkulaceRateThrottle, PoptavkaRateThrottle
-from salons.kalkulace import compute_price, format_email_body, parse_and_compute, web_monthly
+from salons.kalkulace import compute_price, format_email_body, growth_is_free, parse_and_compute, web_monthly
 from salons.views import KalkulaceView
 
 
@@ -40,12 +40,42 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
         self.assertEqual(result['monthly'], 866)
         self.assertEqual(result['growth_label'], 'ANO +999 Kč')
 
-    def test_twelve_months_ignores_paid_growth(self):
+    def test_twelve_months_ignores_paid_growth_only_for_pro(self):
         with_flag = compute_price(pages=0, period_months=12, materialnik=False, growth=True, plan='pro')
         without_flag = compute_price(pages=0, period_months=12, materialnik=False, growth=False, plan='pro')
         self.assertEqual(with_flag['total'], without_flag['total'])
+        self.assertEqual(with_flag['total'], 5999)
         self.assertEqual(with_flag['growth_fee'], 0)
         self.assertEqual(with_flag['growth_label'], 'ZDARMA')
+        self.assertTrue(with_flag['growth'])
+        self.assertTrue(without_flag['growth'])
+
+    def test_growth_is_free_only_for_pro_12(self):
+        self.assertTrue(growth_is_free('pro', 12))
+        self.assertFalse(growth_is_free('start', 12))
+        self.assertFalse(growth_is_free('pro', 6))
+        self.assertFalse(growth_is_free('start', 6))
+
+    def test_growth_fee_matrix(self):
+        """Program Růstu zdarma ⇔ PRO + 12 měsíců."""
+        cases = [
+            ('start', 6, False, 1800, 300, 0, 'NE', False),
+            ('start', 6, True, 2799, 467, 999, 'ANO +999 Kč', True),
+            ('start', 12, False, 3000, 250, 0, 'NE', False),
+            ('start', 12, True, 3999, 333, 999, 'ANO +999 Kč', True),
+            ('pro', 6, False, 3600, 600, 0, 'NE', False),
+            ('pro', 6, True, 4599, 767, 999, 'ANO +999 Kč', True),
+            ('pro', 12, False, 5999, 500, 0, 'ZDARMA', True),
+            ('pro', 12, True, 5999, 500, 0, 'ZDARMA', True),
+        ]
+        for plan, months, growth, total, monthly, fee, label, included in cases:
+            with self.subTest(plan=plan, months=months, growth=growth):
+                result = compute_price(0, months, False, growth, plan)
+                self.assertEqual(result['total'], total)
+                self.assertEqual(result['monthly'], monthly)
+                self.assertEqual(result['growth_fee'], fee)
+                self.assertEqual(result['growth_label'], label)
+                self.assertEqual(result['growth'], included)
 
     def test_start_and_pro_base_prices(self):
         cases = [
@@ -59,7 +89,7 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
             ('pro', 12, True, False, 5999 + 99 * 12, 599),
             ('start', 6, False, True, 1800 + 999, 467),
             ('pro', 6, False, True, 3600 + 999, 767),
-            ('start', 12, False, True, 3000, 250),
+            ('start', 12, False, True, 3000 + 999, 333),
             ('pro', 12, False, True, 5999, 500),
         ]
         for plan, months, materialnik, growth, total, monthly in cases:
@@ -195,6 +225,48 @@ class KalkulaceParseTests(SimpleTestCase):
         self.assertIn('2799 Kč / prvních 6 měsíců', body)
         self.assertIn('Chci začít s webem.', body)
         self.assertNotIn('Produkt: Moderník PRO', body)
+
+    def test_start_12_growth_email_is_paid(self):
+        data = parse_and_compute({
+            'email': 'zakaznik@example.com',
+            'telefon': '777111222',
+            'typ': 'kaderictvi',
+            'pages': 0,
+            'materialnik': False,
+            'period': 12,
+            'growth': True,
+            'plan': 'start',
+            'poznamka': '',
+        })
+        self.assertEqual(data['total'], 3999)
+        self.assertEqual(data['monthly'], 333)
+        self.assertEqual(data['growth_label'], 'ANO +999 Kč')
+        self.assertEqual(data['growth_fee'], 999)
+        body = format_email_body(data)
+        self.assertIn('Produkt: Moderník START', body)
+        self.assertIn('Partnerství: 12 měsíců', body)
+        self.assertIn('Program růstu: ANO +999 Kč', body)
+        self.assertIn('3999 Kč / první rok', body)
+        self.assertNotIn('Program růstu: ZDARMA', body)
+
+    def test_pro_12_email_growth_is_free(self):
+        data = parse_and_compute({
+            'email': 'zakaznik@example.com',
+            'telefon': '777111222',
+            'typ': 'kaderictvi',
+            'pages': 0,
+            'materialnik': False,
+            'period': 12,
+            'growth': False,
+            'plan': 'pro',
+            'poznamka': '',
+        })
+        self.assertEqual(data['total'], 5999)
+        self.assertEqual(data['growth_label'], 'ZDARMA')
+        body = format_email_body(data)
+        self.assertIn('Produkt: Moderník PRO', body)
+        self.assertIn('Program růstu: ZDARMA', body)
+        self.assertIn('5999 Kč / první rok', body)
 
 
 class KalkulaceViewTests(TestCase):

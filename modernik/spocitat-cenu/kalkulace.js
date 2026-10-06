@@ -46,6 +46,7 @@
   const pagesInput = document.getElementById('calc-pages');
   const noteInput = document.getElementById('calc-note');
   const growthCheck = document.getElementById('calc-growth');
+  const growthCheck12 = document.getElementById('calc-growth-12');
   const growthModal = document.getElementById('calc-growth-modal');
   const growthModalCta = document.getElementById('calc-growth-modal-cta');
 
@@ -156,7 +157,15 @@
     return form?.querySelector('input[name="materialnik"]:checked')?.value === 'ano';
   }
 
+  function growthIsFree(plan, months) {
+    return plan === 'pro' && months === 12;
+  }
+
   function growthWanted() {
+    const plan = selectedPlan();
+    const months = selectedPeriod();
+    if (growthIsFree(plan, months)) return true;
+    if (months === 12) return !!growthCheck12?.checked;
     return !!growthCheck?.checked;
   }
 
@@ -179,7 +188,7 @@
     if (!base) return null;
     const wm = webMonthly(pages);
     const mat = materialnik ? 99 : 0;
-    const gr = months === 6 && growth ? 999 : 0;
+    const gr = growthIsFree(plan, months) ? 0 : (growth ? 999 : 0);
     const total = base + wm * months + mat * months + gr;
     return { total, monthly: Math.round(total / months), wm, mat, gr, base };
   }
@@ -224,6 +233,11 @@
       if (yearTotal) yearTotal.textContent = '';
       if (yearNote) yearNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
     }
+    const paid12 = document.getElementById('calc-growth-panel-12-paid');
+    const free12 = document.getElementById('calc-growth-panel-12-free');
+    const yearIsFree = plan === 'pro';
+    if (paid12) paid12.hidden = yearIsFree;
+    if (free12) free12.hidden = !yearIsFree;
   }
 
   function updatePlanCtas(plan) {
@@ -245,8 +259,8 @@
     return months === 12 ? 'Partnerství: 12 měsíců' : 'Partnerství: 6 měsíců';
   }
 
-  function growthPhrase(months, growth) {
-    if (months === 12) return 'Program růstu zdarma';
+  function growthPhrase(plan, months, growth) {
+    if (growthIsFree(plan, months)) return 'Program růstu zdarma';
     if (growth) return 'Program růstu';
     return '';
   }
@@ -311,10 +325,16 @@
           : `${formatKc(price.total)} za prvních 6 měsíců`;
       }
       if (growthHint) {
-        growthHint.hidden = !(months === 12 || (months === 6 && growth));
-        growthHint.textContent = months === 12
-          ? 'Program růstu máte zdarma.'
-          : 'Program růstu je v této kalkulaci započítaný.';
+        if (growthIsFree(plan, months)) {
+          growthHint.hidden = false;
+          growthHint.textContent = 'Program růstu máte zdarma.';
+        } else if (growth) {
+          growthHint.hidden = false;
+          growthHint.textContent = 'Program růstu je v této kalkulaci započítaný.';
+        } else {
+          growthHint.hidden = true;
+          growthHint.textContent = '';
+        }
       }
       if (includedEl) {
         includedEl.hidden = false;
@@ -332,7 +352,7 @@
       items.push(pagesPhrase(pages));
       if (materialnik) items.push('Materiálník');
       if (months === 6 || months === 12) items.push(periodPhrase(months));
-      const g = (months === 6 || months === 12) ? growthPhrase(months, growth) : '';
+      const g = (months === 6 || months === 12) ? growthPhrase(plan, months, growth) : '';
       if (g) items.push(g);
       if (ready && items.length) {
         picksEl.hidden = false;
@@ -374,13 +394,16 @@
       ev.preventDefault();
       ev.stopPropagation();
       const period = btn.getAttribute('data-growth-open');
+      const months = period === '6' ? 6 : 12;
+      const plan = selectedPlan();
+      const free = growthIsFree(plan, months);
       if (growthModalCta) {
-        growthModalCta.textContent = period === '6'
-          ? 'Program růstu +999 Kč'
-          : 'Program růstu zdarma';
+        growthModalCta.textContent = free
+          ? 'Program růstu zdarma'
+          : 'Program růstu +999 Kč';
       }
       const cont = document.getElementById('calc-growth-continue');
-      if (cont) cont.hidden = period !== '6';
+      if (cont) cont.hidden = months !== 6;
       if (growthModal?.showModal) growthModal.showModal();
     });
   });
@@ -389,6 +412,13 @@
     if (!growthCheck.checked) return;
     const six = form?.querySelector('input[name="period"][value="6"]');
     if (six) six.checked = true;
+    render();
+  });
+
+  growthCheck12?.addEventListener('change', () => {
+    if (!growthCheck12.checked) return;
+    const year = form?.querySelector('input[name="period"][value="12"]');
+    if (year) year.checked = true;
     render();
   });
 

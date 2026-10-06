@@ -32,7 +32,8 @@ INCLUDED_EXTRA_PAGES = 4
 WEB_BLOCK_SIZE = 3
 WEB_BLOCK_MONTHLY = 30
 MATERIALNIK_MONTHLY = 99
-GROWTH_6M = 999
+GROWTH_FEE = 999
+GROWTH_6M = GROWTH_FEE
 MAX_PAGES = 1000
 MAX_NOTE = 2000
 MAX_EMAIL = 254
@@ -43,6 +44,11 @@ _EMAIL_RE = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 
 class KalkulaceError(ValueError):
     """Neplatná vstupní data kalkulačky."""
+
+
+def growth_is_free(plan: str, period_months: int) -> bool:
+    """Program Růstu zdarma ⇔ Moderník PRO AND 12 měsíců."""
+    return str(plan or '').strip().lower() == 'pro' and int(period_months) == 12
 
 
 def web_monthly(pages: int) -> int:
@@ -61,15 +67,19 @@ def compute_price(pages: int, period_months: int, materialnik: bool, growth: boo
     base = BASE_PRICE[plan_key][period_months]
     wm = web_monthly(pages)
     mat = MATERIALNIK_MONTHLY if materialnik else 0
-    growth_fee = GROWTH_6M if period_months == 6 and growth else 0
+    growth_free = growth_is_free(plan_key, period_months)
+    growth_included = True if growth_free else bool(growth)
+    growth_fee = 0 if growth_free else (GROWTH_FEE if growth else 0)
     total = base + wm * period_months + mat * period_months + growth_fee
     monthly = int(math.floor(total / period_months + 0.5))
-    if period_months == 12:
+    if growth_free:
         growth_label = 'ZDARMA'
+    else:
+        growth_label = 'ANO +999 Kč' if growth else 'NE'
+    if period_months == 12:
         period_phrase = 'první rok'
         period_line = '12 měsíců'
     else:
-        growth_label = 'ANO +999 Kč' if growth else 'NE'
         period_phrase = 'prvních 6 měsíců'
         period_line = '6 měsíců'
     return {
@@ -78,7 +88,7 @@ def compute_price(pages: int, period_months: int, materialnik: bool, growth: boo
         'pages': pages,
         'period_months': period_months,
         'materialnik': bool(materialnik),
-        'growth': bool(growth) if period_months == 6 else True,
+        'growth': growth_included,
         'web_monthly': wm,
         'materialnik_monthly': mat,
         'growth_fee': growth_fee,
