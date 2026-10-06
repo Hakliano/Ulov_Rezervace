@@ -2141,7 +2141,7 @@ html.is-staging .experiment-banner {
   order: 1;
   margin: 0;
   color: var(--gold);
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -2191,7 +2191,7 @@ html.is-staging .experiment-banner {
 .calm-solve {
   color: var(--gold-light) !important;
   font-family: var(--font-display);
-  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+  font-size: clamp(1.6rem, 2.6vw, 2rem);
   font-weight: 600;
   line-height: 1.3;
 }
