@@ -22,30 +22,58 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
         self.assertEqual(web_monthly(110), 1080)
 
     def test_example_7187(self):
-        result = compute_price(pages=3, period_months=12, materialnik=True, growth=False)
+        result = compute_price(pages=3, period_months=12, materialnik=True, growth=False, plan='pro')
         self.assertEqual(result['total'], 7187)
         self.assertEqual(result['monthly'], 599)
         self.assertEqual(result['growth_label'], 'ZDARMA')
         self.assertEqual(result['period_phrase'], 'první rok')
 
     def test_five_pages_yearly_adds_360(self):
-        base = compute_price(pages=3, period_months=12, materialnik=True, growth=False)
-        extra = compute_price(pages=5, period_months=12, materialnik=True, growth=False)
+        base = compute_price(pages=3, period_months=12, materialnik=True, growth=False, plan='pro')
+        extra = compute_price(pages=5, period_months=12, materialnik=True, growth=False, plan='pro')
         self.assertEqual(extra['web_monthly'], 30)
         self.assertEqual(extra['total'] - base['total'], 360)
 
     def test_six_months_materialnik_growth(self):
-        result = compute_price(pages=0, period_months=6, materialnik=True, growth=True)
+        result = compute_price(pages=0, period_months=6, materialnik=True, growth=True, plan='pro')
         self.assertEqual(result['total'], 3600 + 99 * 6 + 999)
         self.assertEqual(result['monthly'], 866)
         self.assertEqual(result['growth_label'], 'ANO +999 Kč')
 
     def test_twelve_months_ignores_paid_growth(self):
-        with_flag = compute_price(pages=0, period_months=12, materialnik=False, growth=True)
-        without_flag = compute_price(pages=0, period_months=12, materialnik=False, growth=False)
+        with_flag = compute_price(pages=0, period_months=12, materialnik=False, growth=True, plan='pro')
+        without_flag = compute_price(pages=0, period_months=12, materialnik=False, growth=False, plan='pro')
         self.assertEqual(with_flag['total'], without_flag['total'])
         self.assertEqual(with_flag['growth_fee'], 0)
         self.assertEqual(with_flag['growth_label'], 'ZDARMA')
+
+    def test_start_and_pro_base_prices(self):
+        cases = [
+            ('start', 6, False, False, 1800, 300),
+            ('start', 12, False, False, 3000, 250),
+            ('pro', 6, False, False, 3600, 600),
+            ('pro', 12, False, False, 5999, 500),
+            ('start', 6, True, False, 1800 + 99 * 6, 399),
+            ('start', 12, True, False, 3000 + 99 * 12, 349),
+            ('pro', 6, True, False, 3600 + 99 * 6, 699),
+            ('pro', 12, True, False, 5999 + 99 * 12, 599),
+            ('start', 6, False, True, 1800 + 999, 467),
+            ('pro', 6, False, True, 3600 + 999, 767),
+            ('start', 12, False, True, 3000, 250),
+            ('pro', 12, False, True, 5999, 500),
+        ]
+        for plan, months, materialnik, growth, total, monthly in cases:
+            with self.subTest(plan=plan, months=months, materialnik=materialnik, growth=growth):
+                result = compute_price(0, months, materialnik, growth, plan)
+                self.assertEqual(result['total'], total)
+                self.assertEqual(result['monthly'], monthly)
+                self.assertEqual(result['plan_label'], 'Moderník START' if plan == 'start' else 'Moderník PRO')
+
+    def test_unknown_plan_is_rejected(self):
+        with self.assertRaises(ValueError):
+            compute_price(0, 12, False, False, plan='enterprise')
+        with self.assertRaises(ValueError):
+            compute_price(0, 12, False, False, plan='')
 
 
 class KalkulaceParseTests(SimpleTestCase):
@@ -58,11 +86,30 @@ class KalkulaceParseTests(SimpleTestCase):
             'materialnik': True,
             'period': 12,
             'growth': False,
+            'plan': 'pro',
             'poznamka': '',
         })
         self.assertEqual(data['total'], 7187)
+        self.assertEqual(data['plan'], 'pro')
+        self.assertEqual(data['plan_label'], 'Moderník PRO')
         self.assertEqual(data['typ_label'], 'Kadeřnictví / beauty')
         self.assertFalse(data['honeypot'])
+
+    def test_missing_or_unknown_plan_is_rejected(self):
+        base = {
+            'email': 'zakaznik@example.com',
+            'telefon': '+420 777 123 456',
+            'typ': 'kaderictvi',
+            'pages': 0,
+            'period': 12,
+        }
+        with self.assertRaises(ValueError):
+            parse_and_compute(base)
+        with self.assertRaises(ValueError):
+            parse_and_compute({**base, 'plan': 'enterprise'})
+        start = parse_and_compute({**base, 'plan': 'start'})
+        self.assertEqual(start['total'], 3000)
+        self.assertEqual(start['plan_label'], 'Moderník START')
 
     def test_rejects_bad_email_and_empty_phone(self):
         with self.assertRaises(ValueError):
@@ -110,6 +157,7 @@ class KalkulaceParseTests(SimpleTestCase):
             'materialnik': True,
             'period': 12,
             'growth': False,
+            'plan': 'pro',
             'poznamka': '',
         })
         body = format_email_body(data)
@@ -117,6 +165,7 @@ class KalkulaceParseTests(SimpleTestCase):
         self.assertIn('E-mail: zakaznik@example.com', body)
         self.assertIn('Telefon: 777111222', body)
         self.assertIn('Typ provozovny: Kadeřnictví / beauty', body)
+        self.assertIn('Produkt: Moderník PRO', body)
         self.assertIn('Web: hlavní + 3 podstránek', body)
         self.assertIn('Materiálník: ANO', body)
         self.assertIn('Partnerství: 12 měsíců', body)
@@ -124,6 +173,28 @@ class KalkulaceParseTests(SimpleTestCase):
         self.assertIn('Bez speciálních požadavků.', body)
         self.assertIn('7187 Kč / první rok', body)
         self.assertIn('cca 599 Kč / měsíc', body)
+
+    def test_start_email_body_and_price(self):
+        data = parse_and_compute({
+            'email': 'zakaznik@example.com',
+            'telefon': '777111222',
+            'typ': 'kaderictvi',
+            'pages': 0,
+            'materialnik': False,
+            'period': 6,
+            'growth': True,
+            'plan': 'start',
+            'poznamka': 'Chci začít s webem.',
+            'total': 1,
+        })
+        self.assertEqual(data['total'], 1800 + 999)
+        body = format_email_body(data)
+        self.assertIn('Produkt: Moderník START', body)
+        self.assertIn('Partnerství: 6 měsíců', body)
+        self.assertIn('Program růstu: ANO +999 Kč', body)
+        self.assertIn('2799 Kč / prvních 6 měsíců', body)
+        self.assertIn('Chci začít s webem.', body)
+        self.assertNotIn('Produkt: Moderník PRO', body)
 
 
 class KalkulaceViewTests(TestCase):
@@ -139,6 +210,7 @@ class KalkulaceViewTests(TestCase):
             'materialnik': True,
             'period': 12,
             'growth': False,
+            'plan': 'pro',
             'poznamka': '',
         }
 
@@ -165,6 +237,40 @@ class KalkulaceViewTests(TestCase):
         mock_send.assert_called_once()
         sent = mock_send.call_args[0][0]
         self.assertEqual(sent['total'], 7187)
+        self.assertEqual(sent['plan'], 'pro')
+        self.assertEqual(sent['plan_label'], 'Moderník PRO')
+
+    @patch('salons.views.odeslat_kalkulaci')
+    def test_start_plan_ignores_client_total(self, mock_send):
+        mock_send.return_value = 'hakl@modernik.cz'
+        res = self.client.post(
+            self.url,
+            data={**self.payload, 'plan': 'start', 'pages': 0, 'materialnik': False, 'total': 1},
+            content_type='application/json',
+        )
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body['total'], 3000)
+        self.assertEqual(body['monthly'], 250)
+        self.assertEqual(body['plan'], 'start')
+        sent = mock_send.call_args[0][0]
+        self.assertEqual(sent['total'], 3000)
+        self.assertEqual(sent['plan_label'], 'Moderník START')
+        self.assertIn('Produkt: Moderník START', format_email_body(sent))
+
+    def test_unknown_plan_is_400(self):
+        res = self.client.post(
+            self.url,
+            data={**self.payload, 'plan': 'enterprise'},
+            content_type='application/json',
+        )
+        self.assertEqual(res.status_code, 400)
+        res = self.client.post(
+            self.url,
+            data={k: v for k, v in self.payload.items() if k != 'plan'},
+            content_type='application/json',
+        )
+        self.assertEqual(res.status_code, 400)
 
     def test_throttled_hides_wait_seconds(self):
         view = KalkulaceView()

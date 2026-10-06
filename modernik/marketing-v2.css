@@ -874,14 +874,25 @@ a { color: inherit; text-decoration: none; }
   margin: 0 0 clamp(2.75rem, 6vw, 4.5rem);
 }
 
+.offer-return picture {
+  display: block;
+  width: 100%;
+}
+
 .offer-return img {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
-  aspect-ratio: 2172 / 724;
+  aspect-ratio: 1024 / 1536;
   object-fit: contain;
   border-radius: var(--radius);
+}
+
+@media (min-width: 1101px) {
+  .offer-return img {
+    aspect-ratio: 2172 / 724;
+  }
 }
 
 .offer-intro {

@@ -370,6 +370,7 @@ class KalkulaceView(APIView):
             'total': data['total'],
             'monthly': data['monthly'],
             'period_months': data['period_months'],
+            'plan': data.get('plan'),
         })
 
 

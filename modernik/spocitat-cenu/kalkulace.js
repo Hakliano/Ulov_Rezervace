@@ -18,6 +18,28 @@
     jina: 'Jiná',
   };
 
+  const PLANS = {
+    start: {
+      label: 'Moderník START',
+      pick: 'Moderník START',
+      kicker: 'MODERNÍK START',
+      blurb: 'Základ pro vlastní prezentaci a online objednávání. Váš web, rezervace a každodenní provoz na jednom místě.',
+      included: 'START řeší základ — najít vás a nechat zákazníky objednat se sami.',
+    },
+    pro: {
+      label: 'Moderník PRO',
+      pick: 'Moderník PRO',
+      kicker: 'MODERNÍK PRO',
+      blurb: 'Moderník, který vám kromě webu a rezervací pomáhá šetřit čas, pracovat se zákazníky, získávat recenze a mít větší přehled o provozu.',
+      included: 'PRO pracuje i ve chvíli, kdy vy pracujete se zákazníkem.',
+    },
+  };
+
+  const BASE_PRICE = {
+    start: { 6: 1800, 12: 3000 },
+    pro: { 6: 3600, 12: 5999 },
+  };
+
   const form = document.getElementById('kalkulace-form');
   const thanks = document.getElementById('calc-thanks');
   const msg = document.getElementById('form-msg');
@@ -119,6 +141,11 @@
     return raw === '6' || raw === '12' ? Number(raw) : 0;
   }
 
+  function selectedPlan() {
+    const raw = form?.querySelector('input[name="plan"]:checked')?.value;
+    return raw === 'start' || raw === 'pro' ? raw : '';
+  }
+
   function pagesValue() {
     const n = Number.parseInt(pagesInput?.value, 10);
     if (Number.isNaN(n) || n < 0) return 0;
@@ -147,13 +174,64 @@
     return 'Kalkulaci se nyní nepodařilo odeslat. Zkuste to prosím později.';
   }
 
-  function compute(pages, months, materialnik, growth) {
-    const base = months === 6 ? 3600 : 5999;
+  function compute(plan, pages, months, materialnik, growth) {
+    const base = BASE_PRICE[plan]?.[months];
+    if (!base) return null;
     const wm = webMonthly(pages);
     const mat = materialnik ? 99 : 0;
     const gr = months === 6 && growth ? 999 : 0;
     const total = base + wm * months + mat * months + gr;
-    return { total, monthly: Math.round(total / months), wm, mat, gr };
+    return { total, monthly: Math.round(total / months), wm, mat, gr, base };
+  }
+
+  function updatePeriodCards(plan) {
+    const sixMonthly = document.getElementById('calc-period-6-monthly');
+    const sixTotal = document.getElementById('calc-period-6-total');
+    const sixNote = document.getElementById('calc-period-6-note');
+    const yearMonthly = document.getElementById('calc-period-12-monthly');
+    const yearTotal = document.getElementById('calc-period-12-total');
+    const yearNote = document.getElementById('calc-period-12-note');
+    const waitingCopy = 'Cena se zobrazí po výběru START / PRO';
+    const setWaiting = (monthlyEl, totalEl, waiting) => {
+      monthlyEl?.classList.toggle('is-waiting', waiting);
+      totalEl?.classList.toggle('is-waiting', waiting);
+    };
+    if (plan === 'start') {
+      setWaiting(sixMonthly, sixTotal, false);
+      setWaiting(yearMonthly, yearTotal, false);
+      if (sixMonthly) sixMonthly.textContent = `≈ ${formatKc(300)} / měsíc`;
+      if (sixTotal) sixTotal.textContent = `${formatKc(1800)} za 6 měsíců`;
+      if (sixNote) sixNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
+      if (yearMonthly) yearMonthly.textContent = `≈ ${formatKc(250)} / měsíc`;
+      if (yearTotal) yearTotal.textContent = `${formatKc(3000)} za 12 měsíců`;
+      if (yearNote) yearNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
+    } else if (plan === 'pro') {
+      setWaiting(sixMonthly, sixTotal, false);
+      setWaiting(yearMonthly, yearTotal, false);
+      if (sixMonthly) sixMonthly.textContent = `≈ ${formatKc(600)} / měsíc`;
+      if (sixTotal) sixTotal.textContent = `${formatKc(3600)} za 6 měsíců`;
+      if (sixNote) sixNote.textContent = 'Poté možnost pokračovat za 550 Kč/měs. nebo si znovu zvolit předplacené období.';
+      if (yearMonthly) yearMonthly.textContent = `≈ ${formatKc(500)} / měsíc`;
+      if (yearTotal) yearTotal.textContent = `${formatKc(5999)} za 12 měsíců`;
+      if (yearNote) yearNote.textContent = 'Poté možnost pokračovat za 499 Kč/měs. nebo si znovu zvolit předplacené období.';
+    } else {
+      setWaiting(sixMonthly, sixTotal, true);
+      setWaiting(yearMonthly, yearTotal, true);
+      if (sixMonthly) sixMonthly.textContent = waitingCopy;
+      if (sixTotal) sixTotal.textContent = '';
+      if (sixNote) sixNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
+      if (yearMonthly) yearMonthly.textContent = waitingCopy;
+      if (yearTotal) yearTotal.textContent = '';
+      if (yearNote) yearNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
+    }
+  }
+
+  function updatePlanCtas(plan) {
+    document.querySelectorAll('.calc-plan-cta').forEach((el) => {
+      const kind = el.getAttribute('data-cta');
+      if (kind === 'start') el.textContent = plan === 'start' ? 'START ✓' : 'Chci START';
+      if (kind === 'pro') el.textContent = plan === 'pro' ? 'PRO ✓' : 'Chci PRO';
+    });
   }
 
   function pagesPhrase(pages) {
@@ -179,29 +257,53 @@
     const months = selectedPeriod();
     const materialnik = materialnikYes();
     const growth = growthWanted();
+    const plan = selectedPlan();
     const typ = TYPES[selectedType()] || '';
     const note = (noteInput?.value || '').trim();
     const summary = document.querySelector('.calc-summary');
     const emptyEl = document.getElementById('calc-summary-empty');
+    const emptyTitle = document.getElementById('calc-empty-title');
+    const emptyText = document.getElementById('calc-empty-text');
     const priceWrap = document.getElementById('calc-summary-price');
     const monthlyEl = document.getElementById('calc-monthly');
     const totalEl = document.getElementById('calc-total');
     const picksEl = document.getElementById('calc-picks');
     const specialEl = document.getElementById('calc-special');
     const growthHint = document.getElementById('calc-growth-hint');
+    const includedEl = document.getElementById('calc-included');
+    const productKicker = document.getElementById('calc-product-kicker');
+    const productBlurb = document.getElementById('calc-product-blurb');
 
     document.querySelectorAll('.calc-period-card').forEach((card) => {
       const input = card.querySelector('input[name="period"]');
       card.classList.toggle('is-active', !!input?.checked);
     });
+    document.querySelectorAll('.calc-plan-card').forEach((card) => {
+      const input = card.querySelector('input[name="plan"]');
+      card.classList.toggle('is-active', !!input?.checked);
+    });
+    updatePeriodCards(plan);
+    updatePlanCtas(plan);
 
-    const ready = months === 6 || months === 12;
+    const ready = !!plan && (months === 6 || months === 12);
     summary?.classList.toggle('is-empty', !ready);
     if (emptyEl) emptyEl.hidden = ready;
     if (priceWrap) priceWrap.hidden = !ready;
+    if (!ready && emptyTitle && emptyText) {
+      if (!plan) {
+        emptyTitle.textContent = 'Cena se zobrazí po výběru START / PRO';
+        emptyText.textContent = 'Nejdřív zvolte, co má Moderník řešit. Cenu uvidíte hned potom.';
+      } else {
+        emptyTitle.textContent = 'Vyberte si délku Partnerství';
+        emptyText.textContent = 'Hned potom vám cenu spočítáme.';
+      }
+    }
 
     if (ready) {
-      const price = compute(pages, months, materialnik, growth);
+      const price = compute(plan, pages, months, materialnik, growth);
+      const meta = PLANS[plan];
+      if (productKicker) productKicker.textContent = meta.kicker;
+      if (productBlurb) productBlurb.textContent = meta.blurb;
       if (monthlyEl) monthlyEl.textContent = `≈ ${formatKc(price.monthly)} / měsíc`;
       if (totalEl) {
         totalEl.textContent = months === 12
@@ -214,15 +316,23 @@
           ? 'Program růstu máte zdarma.'
           : 'Program růstu je v této kalkulaci započítaný.';
       }
+      if (includedEl) {
+        includedEl.hidden = false;
+        includedEl.textContent = meta.included;
+      }
+    } else if (includedEl) {
+      includedEl.hidden = true;
+      includedEl.textContent = '';
     }
 
     if (picksEl) {
       const items = [];
       if (typ) items.push(typ);
+      if (plan) items.push(PLANS[plan].pick);
       items.push(pagesPhrase(pages));
       if (materialnik) items.push('Materiálník');
-      if (ready) items.push(periodPhrase(months));
-      const g = ready ? growthPhrase(months, growth) : '';
+      if (months === 6 || months === 12) items.push(periodPhrase(months));
+      const g = (months === 6 || months === 12) ? growthPhrase(months, growth) : '';
       if (g) items.push(g);
       if (ready && items.length) {
         picksEl.hidden = false;
@@ -299,6 +409,7 @@
     msg.className = 'form-msg';
 
     const typ = selectedType();
+    const plan = selectedPlan();
     const email = document.getElementById('calc-email')?.value.trim() || '';
     const telefon = document.getElementById('calc-phone')?.value.trim() || '';
     const pages = pagesValue();
@@ -309,6 +420,11 @@
 
     if (!typ) {
       msg.textContent = 'Vyberte typ provozovny.';
+      msg.className = 'form-msg error';
+      return;
+    }
+    if (!plan) {
+      msg.textContent = 'Vyberte variantu Moderníku START nebo PRO.';
       msg.className = 'form-msg error';
       return;
     }
@@ -368,12 +484,17 @@
           period: months,
           growth,
           poznamka,
+          plan,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(userFacingSubmitError(res, data));
 
-      const total = Number(data.total);
+      const localPrice = compute(plan, pages, months, materialnik, growth);
+      const backendTotal = Number(data.total);
+      const total = Number.isFinite(backendTotal)
+        ? backendTotal
+        : (localPrice ? localPrice.total : NaN);
       const periodMonths = Number(data.period_months) || months;
       const monthly = Number.isFinite(total) ? Math.round(total / periodMonths) : null;
       const thanksMonthly = document.getElementById('calc-thanks-monthly');
