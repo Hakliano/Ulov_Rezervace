@@ -19,7 +19,15 @@ TYP_PROVOZOVNY = {
     'jina': 'Jiná',
 }
 
-BASE_PRICE = {6: 3600, 12: 5999}
+PLAN_LABEL = {
+    'start': 'Moderník START',
+    'pro': 'Moderník PRO',
+}
+
+BASE_PRICE = {
+    'start': {6: 1800, 12: 3000},
+    'pro': {6: 3600, 12: 5999},
+}
 INCLUDED_EXTRA_PAGES = 4
 WEB_BLOCK_SIZE = 3
 WEB_BLOCK_MONTHLY = 30
@@ -44,15 +52,18 @@ def web_monthly(pages: int) -> int:
     return math.ceil(extra_pages / WEB_BLOCK_SIZE) * WEB_BLOCK_MONTHLY
 
 
-def compute_price(pages: int, period_months: int, materialnik: bool, growth: bool) -> dict:
-    if period_months not in BASE_PRICE:
+def compute_price(pages: int, period_months: int, materialnik: bool, growth: bool, plan: str = 'pro') -> dict:
+    plan_key = str(plan or '').strip().lower()
+    if plan_key not in BASE_PRICE:
+        raise KalkulaceError('Vyberte variantu Moderníku START nebo PRO.')
+    if period_months not in BASE_PRICE[plan_key]:
         raise KalkulaceError('Zvolte délku partnerství.')
-    base = BASE_PRICE[period_months]
+    base = BASE_PRICE[plan_key][period_months]
     wm = web_monthly(pages)
     mat = MATERIALNIK_MONTHLY if materialnik else 0
     growth_fee = GROWTH_6M if period_months == 6 and growth else 0
     total = base + wm * period_months + mat * period_months + growth_fee
-    monthly = round(total / period_months)
+    monthly = int(math.floor(total / period_months + 0.5))
     if period_months == 12:
         growth_label = 'ZDARMA'
         period_phrase = 'první rok'
@@ -62,6 +73,8 @@ def compute_price(pages: int, period_months: int, materialnik: bool, growth: boo
         period_phrase = 'prvních 6 měsíců'
         period_line = '6 měsíců'
     return {
+        'plan': plan_key,
+        'plan_label': PLAN_LABEL[plan_key],
         'pages': pages,
         'period_months': period_months,
         'materialnik': bool(materialnik),
@@ -90,7 +103,7 @@ def parse_and_compute(data) -> dict:
         raise KalkulaceError('Neplatná data.')
 
     if str(data.get('_gotcha') or '').strip():
-        dummy = compute_price(0, 12, False, False)
+        dummy = compute_price(0, 12, False, False, 'pro')
         dummy['honeypot'] = True
         dummy['email'] = ''
         dummy['telefon'] = ''
@@ -127,9 +140,13 @@ def parse_and_compute(data) -> dict:
     except (TypeError, ValueError):
         raise KalkulaceError('Zvolte délku partnerství.') from None
 
+    plan = str(data.get('plan') or '').strip().lower()
+    if plan not in PLAN_LABEL:
+        raise KalkulaceError('Vyberte variantu Moderníku START nebo PRO.')
+
     materialnik = _as_bool(data.get('materialnik'))
     growth = _as_bool(data.get('growth'))
-    result = compute_price(pages, period_months, materialnik, growth)
+    result = compute_price(pages, period_months, materialnik, growth, plan)
     result.update({
         'honeypot': False,
         'email': email,
@@ -151,6 +168,7 @@ def format_email_body(data: dict) -> str:
         f'Telefon: {data["telefon"]}\n'
         '\n'
         f'Typ provozovny: {data["typ_label"]}\n'
+        f'Produkt: {data["plan_label"]}\n'
         f'Web: hlavní + {data["pages"]} podstránek\n'
         f'Materiálník: {mat_label}\n'
         f'Partnerství: {data["period_line"]}\n'

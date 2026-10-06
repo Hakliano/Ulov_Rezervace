@@ -417,8 +417,6 @@
     const materialnik = materialnikYes();
     const growth = growthWanted();
     const poznamka = (noteInput?.value || '').trim();
-    const planLine = plan === 'start' ? 'Produkt: Moderník START' : 'Produkt: Moderník PRO';
-    const poznamkaPayload = planLine + (poznamka ? `\n\n${poznamka}` : '');
 
     if (!typ) {
       msg.textContent = 'Vyberte typ provozovny.';
@@ -485,7 +483,7 @@
           materialnik,
           period: months,
           growth,
-          poznamka: poznamkaPayload,
+          poznamka,
           plan,
         }),
       });
@@ -493,7 +491,10 @@
       if (!res.ok) throw new Error(userFacingSubmitError(res, data));
 
       const localPrice = compute(plan, pages, months, materialnik, growth);
-      const total = localPrice ? localPrice.total : Number(data.total);
+      const backendTotal = Number(data.total);
+      const total = Number.isFinite(backendTotal)
+        ? backendTotal
+        : (localPrice ? localPrice.total : NaN);
       const periodMonths = Number(data.period_months) || months;
       const monthly = Number.isFinite(total) ? Math.round(total / periodMonths) : null;
       const thanksMonthly = document.getElementById('calc-thanks-monthly');
