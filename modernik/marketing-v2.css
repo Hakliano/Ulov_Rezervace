@@ -366,6 +366,7 @@ a { color: inherit; text-decoration: none; }
   margin: 0 auto 2rem;
 }
 
+.section-head h1,
 .section-head h2 {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   margin-bottom: 0.55rem;
@@ -375,6 +376,7 @@ a { color: inherit; text-decoration: none; }
   max-width: 52rem;
 }
 
+.section-head-wide h1,
 .section-head-wide h2 {
   margin-bottom: 0;
   line-height: 1.25;
@@ -2455,3 +2457,57 @@ html.is-staging .experiment-banner {
   .tile-shots-pair { grid-template-columns: 1fr; }
   .extras-items { grid-template-columns: 1fr; }
 }
+
+.compare-banner-section {
+  padding-top: 0.5rem;
+}
+
+.compare-banner {
+  display: block;
+  width: 100%;
+}
+
+.compare-banner img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+.hub-return-section {
+  padding-top: 0;
+}
+
+.hub-return {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem 1.75rem;
+  padding: 1.5rem 1.35rem;
+  border: 1px solid var(--line-soft);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--bg-card);
+}
+
+.hub-return .extras-hub-logo {
+  width: 8.5rem;
+}
+
+.hub-return-copy {
+  flex: 1 1 16rem;
+}
+
+.hub-return-copy h2 {
+  margin: 0 0 0.4rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+}
+
+.hub-return-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+

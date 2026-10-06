@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doplňkové služby — MODERNÍK</title>
+  <meta name="description" content="Doplňkové služby Moderníka a další řešení z rodiny ULOV KLIENTY.">
+  <link rel="icon" type="image/webp" href="https://haklweb.b-cdn.net/modernik/modernik_favi.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="marketing-v2.css?v=41">
+  <link rel="stylesheet" href="cookie-consent.css?v=1">
+  <script>
+    if (location.hostname.indexOf('staging') !== -1) {
+      document.documentElement.classList.add('is-staging');
+    }
+  </script>
+</head>
+<body>
+  <p class="experiment-banner" hidden>Zkušební návrh homepage — jen staging. Není to ostrý web.</p>
+  <script>
+    if (document.documentElement.classList.contains('is-staging')) {
+      var experimentBanner = document.querySelector('.experiment-banner');
+      if (experimentBanner) experimentBanner.hidden = false;
+    }
+  </script>
+  <header class="site-header">
+    <div class="wrap-wide header-inner">
+      <a href="./" class="brand brand-nav" aria-label="MODERNÍK">
+        <img src="https://haklweb.b-cdn.net/modernik/modernik_favi.webp" alt="MODERNÍK" width="40" height="40">
+      </a>
+      <nav class="nav" aria-label="Hlavní navigace">
+        <a href="./#problemy">O Moderníkovi</a>
+        <a href="./#nfc">Recenze</a>
+        <a href="./#ceny">Ceny</a>
+        <a href="doplnkove-sluzby.html" aria-current="page">Doplňkové služby</a>
+        <a href="co-pracuje-v-pozadi.html">Co pracuje v pozadí</a>
+        <a href="./#ukazky">Ukázky webů</a>
+        <a href="./#videa">Videa</a>
+        <a href="./#kontakt">Kontakt</a>
+        <a href="dokumentace.html" class="nav-doc">Dokumentace</a>
+      </nav>
+      <div class="header-actions">
+        <a href="podklady-pro-vas-web.html" class="btn btn-outline">Podklady pro váš web</a>
+        <a href="./#poptavka" class="btn btn-gold">Chci nabídku</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section extras" id="doplnky">
+      <div class="wrap-wide">
+        <div class="section-head">
+          <h1>Doplňkové služby</h1>
+          <p>Web samostatně, nebo další projekty z rodiny ULOV KLIENTY.</p>
+        </div>
+
+        <div class="extras-web-grid extras-web-grid-3">
+          <article class="extras-card extras-card-web">
+            <h3>Web jednorázově</h3>
+            <p class="extras-price">4&nbsp;000&nbsp;Kč <small>jednorázově</small></p>
+            <ul>
+              <li>Moderní web na míru</li>
+              <li>Základní nastavení obsahu</li>
+              <li>Webová adresa na 1 rok</li>
+              <li>Web následně předáme zákazníkovi</li>
+            </ul>
+            <a href="./#poptavka" class="btn btn-outline" data-package="Web jednorázově">Chci vlastní web</a>
+          </article>
+
+          <article class="extras-card extras-card-web">
+            <h3>Partnerský web</h3>
+            <p class="extras-price">299&nbsp;Kč <small>/ měsíc</small></p>
+            <ul>
+              <li>Moderní web na míru</li>
+              <li>Vlastní správa obsahu</li>
+              <li>Webová adresa po dobu spolupráce</li>
+              <li>Technická podpora</li>
+            </ul>
+            <a href="./#poptavka" class="btn btn-gold" data-package="Partnerský web">Chci partnerský web</a>
+          </article>
+
+          <a class="extras-card extras-card-web extras-card-hub" href="https://www.ulovklienty.cz/" target="_blank" rel="noopener">
+            <img
+              class="extras-hub-logo"
+              src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp"
+              alt=""
+              width="88"
+              height="88"
+              loading="lazy"
+              decoding="async"
+            >
+            <h3>Hlavní hub ULOV KLIENTY</h3>
+            <p>Mateřský projekt — FLOW CRM, Web pro salony, Custom Digital Services a další produkty v rodině.</p>
+            <span class="btn btn-outline">ulovklienty.cz →</span>
+          </a>
+        </div>
+
+        <div class="extras-cta">
+          <a href="./#poptavka" class="btn btn-gold" data-package="Nejsem si jistý, poradíte mi">Nezávazně se zeptat →</a>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="section hub-return-section" id="ulov-hub">
+      <div class="wrap-wide">
+        <div class="hub-return">
+          <img
+            class="extras-hub-logo"
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp"
+            alt=""
+            width="88"
+            height="88"
+            loading="lazy"
+            decoding="async"
+          >
+          <div class="hub-return-copy">
+            <h2>Další služby v ULOV KLIENTY</h2>
+            <p>Moderník je produkt z rodiny ULOV KLIENTY. FLOW CRM, weby a další řešení najdete na hlavním hubu.</p>
+          </div>
+          <a class="btn btn-outline" href="https://www.ulovklienty.cz/" target="_blank" rel="noopener">ulovklienty.cz →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <a href="./" class="brand" aria-label="MODERNÍK">
+        <img src="https://haklweb.b-cdn.net/modernik/modernik_favi.webp" alt="MODERNÍK" width="36" height="36">
+      </a>
+      <p class="footer-legal">
+        <span>Produkt projektu</span>
+        <a href="https://www.ulovklienty.cz/" target="_blank" rel="noopener" class="footer-ulov-logo-link" aria-label="ULOV KLIENTY">
+          <img
+            class="footer-ulov-logo"
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp"
+            alt="ULOV KLIENTY"
+            width="120"
+            height="120"
+            loading="lazy"
+            decoding="async"
+          >
+        </a>
+        <span class="footer-legal-sep">·</span>
+        <span>služby poskytuje Jiří Hakl</span>
+      </p>
+      <p class="footer-links">
+        © 2026 MODERNÍK ·
+        <a href="dokumentace.html">Dokumentace</a>
+        <a href="smlouva.html">Smlouva</a>
+        <a href="vop.html">VOP</a>
+        <a href="gdpr.html">GDPR</a>
+        <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
+      </p>
+      <div class="footer-social" aria-label="Sociální sítě">
+        <a href="#" aria-label="Facebook">FB</a>
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="LinkedIn">IN</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    window.ULOV_COOKIE_CONSENT = {
+      gaMeasurementId: "",
+      privacyUrl: "gdpr.html"
+    };
+  </script>
+  <script src="cookie-consent.js?v=2" defer></script>
+  <script src="marketing-v2.js?v=11" defer></script>
+</body>
+</html>
