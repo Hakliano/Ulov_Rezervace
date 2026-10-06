@@ -1907,8 +1907,8 @@ a.promo-card-img:hover {
 }
 
 .extras-card-logo-icon {
-  width: clamp(4.75rem, 14vw, 5.5rem);
-  height: clamp(4.75rem, 14vw, 5.5rem);
+  width: min(100%, 7.5rem);
+  height: auto;
 }
 
 .extras-card-logo-wordmark {
