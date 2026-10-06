@@ -1907,14 +1907,14 @@ a.promo-card-img:hover {
 }
 
 .extras-card-logo-icon {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: clamp(4.75rem, 14vw, 5.5rem);
+  height: clamp(4.75rem, 14vw, 5.5rem);
 }
 
 .extras-card-logo-wordmark {
-  width: min(100%, 11.5rem);
+  width: min(100%, 8.125rem);
   height: auto;
-  max-height: 3.4rem;
+  max-height: none;
 }
 
 .extras-card-product h3 {
