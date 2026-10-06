@@ -2191,9 +2191,12 @@ html.is-staging .experiment-banner {
 .calm-solve {
   color: var(--gold-light) !important;
   font-family: var(--font-display);
+}
+
+.calm-copy .calm-solve {
   font-size: clamp(1.6rem, 2.6vw, 2rem);
-  font-weight: 600;
   line-height: 1.3;
+  font-weight: 600;
 }
 
 .calm-result {
