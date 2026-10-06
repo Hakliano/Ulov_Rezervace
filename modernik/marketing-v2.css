@@ -1878,6 +1878,62 @@ a.promo-card-img:hover {
   color: var(--gold);
 }
 
+.extras-card-logo {
+  display: block;
+  object-fit: contain;
+  margin: 0 0 0.85rem;
+}
+
+.extras-card-logo-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.extras-card-logo-wordmark {
+  width: min(100%, 11.5rem);
+  height: auto;
+  max-height: 3.4rem;
+}
+
+.extras-card-product h3 {
+  font-size: clamp(1.28rem, 2.4vw, 1.7rem);
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.extras-card-product .extras-price {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.45rem;
+}
+
+.extras-matrix {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.38rem;
+  flex: 1;
+}
+
+.extras-card .extras-matrix li {
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.extras-card .extras-matrix li::before {
+  content: none;
+  display: none;
+}
+
+.extras-matrix strong {
+  color: var(--gold-light);
+  font-weight: 800;
+}
+
 .extras-price {
   margin: 0 0 0.85rem;
   font-size: clamp(1.6rem, 3vw, 2.1rem);

@@ -442,7 +442,8 @@
 .calc-picks[hidden],
 #calc-summary-price[hidden],
 #calc-summary-empty[hidden],
-.calc-growth-panel[hidden] {
+.calc-growth-panel[hidden],
+.calc-pair[hidden] {
   display: none;
 }
 
