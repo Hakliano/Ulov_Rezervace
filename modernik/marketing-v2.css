@@ -1907,12 +1907,12 @@ a.promo-card-img:hover {
 }
 
 .extras-card-logo-icon {
-  width: min(100%, 7.5rem);
+  width: min(100%, 11.25rem);
   height: auto;
 }
 
 .extras-card-logo-wordmark {
-  width: min(100%, 8.125rem);
+  width: min(100%, 12.1875rem);
   height: auto;
   max-height: none;
 }
