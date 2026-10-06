@@ -308,10 +308,10 @@
 
 .calc-growth-panel {
   margin-top: auto;
-  padding: 0 1.1rem 1.15rem;
+  padding: 0 1.1rem 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.35rem;
 }
 
 .calc-growth-kicker,
@@ -337,9 +337,9 @@
 .calc-growth-value {
   margin: 0;
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .calc-growth-value {
@@ -402,9 +402,10 @@
 
 .calc-empty-title {
   margin-bottom: 0.35rem !important;
-  color: var(--text) !important;
-  font-size: 1.2rem;
-  font-weight: 800;
+  color: var(--muted) !important;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .calc-monthly-main {
@@ -806,8 +807,21 @@
   display: none;
 }
 
+.calc-choice.calc-period .calc-period-monthly.is-waiting {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.calc-choice.calc-period .calc-period-total.is-waiting,
+.calc-choice.calc-period .calc-period-total:empty {
+  display: none;
+}
+
 .calc-plan-lead {
-  margin: 0 0 0.95rem;
+  margin: 0 0 0.85rem;
   color: var(--muted);
   font-size: 0.95rem;
   font-weight: 500;
@@ -838,12 +852,34 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.45rem;
+  gap: 0.32rem;
   min-height: 100%;
-  padding: 1.15rem 1.1rem 1.15rem;
+  padding: 0.95rem 1rem 1rem;
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+
+.calc-plan-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.calc-plan-badge {
+  display: inline-flex;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(201, 166, 74, 0.18);
+  border: 1px solid rgba(201, 166, 74, 0.38);
+  color: var(--gold-light);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .calc-plan:hover,
@@ -868,7 +904,7 @@
 }
 
 .calc-choice.calc-plan .calc-plan-claim {
-  font-size: 1.22rem;
+  font-size: 1.12rem;
   font-weight: 800;
   line-height: 1.25;
   color: var(--gold-light);
@@ -897,11 +933,11 @@
 
 .calc-plan-points li {
   position: relative;
-  padding: 0.18rem 0 0.18rem 1.25rem;
+  padding: 0.1rem 0 0.1rem 1.25rem;
   color: var(--text);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .calc-plan-points li::before {
@@ -913,8 +949,8 @@
 }
 
 .calc-plan-foot {
-  margin-top: 0.15rem;
-  font-size: 0.8rem;
+  margin-top: 0.1rem;
+  font-size: 0.78rem;
 }
 
 .calc-plan-cta {

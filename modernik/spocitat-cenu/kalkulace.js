@@ -23,15 +23,15 @@
       label: 'Moderník START',
       pick: 'Moderník START',
       kicker: 'MODERNÍK START',
-      blurb: 'Pro jednoho člověka, který chce vlastní web, online rezervace a jednoduchou správu každodenního provozu.',
-      included: 'V ceně je web, online rezervace, kalendář, Můj den, provozní e-maily a osobní podpora pro jednoho obsluhujícího Managera.',
+      blurb: 'Základ pro vlastní prezentaci a online objednávání. Váš web, rezervace a každodenní provoz na jednom místě.',
+      included: 'START řeší základ — najít vás a nechat zákazníky objednat se sami.',
     },
     pro: {
       label: 'Moderník PRO',
       pick: 'Moderník PRO',
       kicker: 'MODERNÍK PRO',
-      blurb: 'Kompletní Moderník pro provozovnu – web, rezervace, FLOW a pokročilé nástroje pro zákazníky, tým a řízení provozu.',
-      included: 'V ceně Partnerství máte kompletní Moderník — web, rezervace, FLOW, Archivník, Kartotéku, automatizované e-maily, osobní podporu a další součásti systému.',
+      blurb: 'Moderník, který vám kromě webu a rezervací pomáhá šetřit čas, pracovat se zákazníky, získávat recenze a mít větší přehled o provozu.',
+      included: 'PRO pracuje i ve chvíli, kdy vy pracujete se zákazníkem.',
     },
   };
 
@@ -191,7 +191,14 @@
     const yearMonthly = document.getElementById('calc-period-12-monthly');
     const yearTotal = document.getElementById('calc-period-12-total');
     const yearNote = document.getElementById('calc-period-12-note');
+    const waitingCopy = 'Cena se zobrazí po výběru START / PRO';
+    const setWaiting = (monthlyEl, totalEl, waiting) => {
+      monthlyEl?.classList.toggle('is-waiting', waiting);
+      totalEl?.classList.toggle('is-waiting', waiting);
+    };
     if (plan === 'start') {
+      setWaiting(sixMonthly, sixTotal, false);
+      setWaiting(yearMonthly, yearTotal, false);
       if (sixMonthly) sixMonthly.textContent = `≈ ${formatKc(300)} / měsíc`;
       if (sixTotal) sixTotal.textContent = `${formatKc(1800)} za 6 měsíců`;
       if (sixNote) sixNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
@@ -199,6 +206,8 @@
       if (yearTotal) yearTotal.textContent = `${formatKc(3000)} za 12 měsíců`;
       if (yearNote) yearNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
     } else if (plan === 'pro') {
+      setWaiting(sixMonthly, sixTotal, false);
+      setWaiting(yearMonthly, yearTotal, false);
       if (sixMonthly) sixMonthly.textContent = `≈ ${formatKc(600)} / měsíc`;
       if (sixTotal) sixTotal.textContent = `${formatKc(3600)} za 6 měsíců`;
       if (sixNote) sixNote.textContent = 'Poté možnost pokračovat za 550 Kč/měs. nebo si znovu zvolit předplacené období.';
@@ -206,11 +215,13 @@
       if (yearTotal) yearTotal.textContent = `${formatKc(5999)} za 12 měsíců`;
       if (yearNote) yearNote.textContent = 'Poté možnost pokračovat za 499 Kč/měs. nebo si znovu zvolit předplacené období.';
     } else {
-      if (sixMonthly) sixMonthly.textContent = 'Nejdříve vyberte variantu';
-      if (sixTotal) sixTotal.textContent = 'Cena START / PRO';
+      setWaiting(sixMonthly, sixTotal, true);
+      setWaiting(yearMonthly, yearTotal, true);
+      if (sixMonthly) sixMonthly.textContent = waitingCopy;
+      if (sixTotal) sixTotal.textContent = '';
       if (sixNote) sixNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
-      if (yearMonthly) yearMonthly.textContent = 'Nejdříve vyberte variantu';
-      if (yearTotal) yearTotal.textContent = 'Cena START / PRO';
+      if (yearMonthly) yearMonthly.textContent = waitingCopy;
+      if (yearTotal) yearTotal.textContent = '';
       if (yearNote) yearNote.textContent = 'Poté možnost pokračovat, nebo si znovu zvolit předplacené období.';
     }
   }
@@ -280,8 +291,8 @@
     if (priceWrap) priceWrap.hidden = !ready;
     if (!ready && emptyTitle && emptyText) {
       if (!plan) {
-        emptyTitle.textContent = 'Nejdříve vyberte variantu Moderníku.';
-        emptyText.textContent = 'Po výběru START nebo PRO vám hned spočítáme orientační cenu.';
+        emptyTitle.textContent = 'Cena se zobrazí po výběru START / PRO';
+        emptyText.textContent = 'Nejdřív zvolte, co má Moderník řešit. Cenu uvidíte hned potom.';
       } else {
         emptyTitle.textContent = 'Vyberte si délku Partnerství';
         emptyText.textContent = 'Hned potom vám cenu spočítáme.';

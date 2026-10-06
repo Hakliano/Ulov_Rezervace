@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../marketing-v2.css?v=36">
-  <link rel="stylesheet" href="kalkulace.css?v=8">
+  <link rel="stylesheet" href="kalkulace.css?v=9">
   <link rel="stylesheet" href="../cookie-consent.css?v=1">
 </head>
 <body>
@@ -87,42 +87,46 @@
           <section class="calc-card" aria-labelledby="calc-plan-title">
             <div class="calc-step">
               <svg class="calc-step-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.2 6.6H21l-5.4 4 2.1 6.4L12 16.8 6.3 20l2.1-6.4L3 9.6h6.8z"/></svg>
-              <h2 id="calc-plan-title">Jaký Moderník potřebujete?</h2>
+              <h2 id="calc-plan-title">Co má Moderník dělat za vás?</h2>
             </div>
-            <p class="calc-plan-lead">Vyberte si podle toho, jak dnes funguje váš provoz. Pokud podnikáte sami, stačí vám START. Pokud máte tým nebo chcete kompletní možnosti Moderníku, zvolte PRO.</p>
+            <p class="calc-plan-lead">Vyberte si, jestli chcete hlavně vyřešit web a rezervace, nebo chcete, aby vám Moderník pomáhal i se zákazníky, recenzemi a každodenním provozem.</p>
             <div class="calc-plans" role="radiogroup" aria-labelledby="calc-plan-title">
               <article class="calc-plan-card">
                 <label class="calc-choice calc-plan">
                   <input type="radio" name="plan" value="start">
-                  <span class="calc-plan-kicker">Moderník START</span>
-                  <span class="calc-plan-claim">Podnikám sám / sama</span>
-                  <p class="calc-plan-desc">Vlastní web, online rezervace a vše důležité pro každodenní provoz jednoho člověka.</p>
+                  <span class="calc-plan-topline">
+                    <span class="calc-plan-kicker">Moderník START</span>
+                  </span>
+                  <span class="calc-plan-claim">Chci hlavně web a rezervace</span>
+                  <p class="calc-plan-desc">Chci, aby mě zákazníci našli a mohli se sami objednat.</p>
                   <ul class="calc-plan-points">
-                    <li>Web na míru</li>
+                    <li>Profesionální web na míru</li>
                     <li>Online rezervace 24/7</li>
-                    <li>Kalendář a Můj den</li>
-                    <li>Pracovní doba, blokace a dovolená</li>
-                    <li>Automatické provozní e-maily</li>
-                    <li>Osobní podpora</li>
+                    <li>Kalendář a správa provozu</li>
+                    <li>Potvrzení, připomínky a storna automaticky</li>
                   </ul>
-                  <p class="calc-plan-foot">Pro jednoho obsluhujícího Managera.</p>
+                  <p class="calc-plan-foot">START vyřeší základ. Méně telefonování, vlastní web a rezervace dostupné kdykoliv.</p>
                   <span class="calc-plan-cta" data-cta="start">Chci START</span>
                 </label>
               </article>
-              <article class="calc-plan-card">
+              <article class="calc-plan-card calc-plan-card-pro">
                 <label class="calc-choice calc-plan">
                   <input type="radio" name="plan" value="pro">
-                  <span class="calc-plan-kicker">Moderník PRO</span>
-                  <span class="calc-plan-claim">Chci kompletní Moderník</span>
-                  <p class="calc-plan-desc">Všechno ze STARTu a navíc nástroje pro tým, zákazníky a pokročilou správu provozu.</p>
+                  <span class="calc-plan-topline">
+                    <span class="calc-plan-kicker">Moderník PRO</span>
+                    <span class="calc-plan-badge">Doporučujeme</span>
+                  </span>
+                  <span class="calc-plan-claim">Chci šetřit čas a růst</span>
+                  <p class="calc-plan-desc">Nechci jen přijímat rezervace. Chci, aby mi Moderník pomáhal s provozem i zákazníky.</p>
                   <ul class="calc-plan-points">
                     <li>Vše ze STARTu</li>
-                    <li>Více pracovníků a správa týmu</li>
-                    <li>Kartotéka zákazníků</li>
-                    <li>Archivník</li>
-                    <li>Pokročilá práce s e-maily</li>
-                    <li>Pokročilé statistiky a provozní nástroje</li>
+                    <li>Pomáhá získávat další recenze</li>
+                    <li>Automaticky komunikuje se zákazníky</li>
+                    <li>Udržuje historii a Kartotéku zákazníků</li>
+                    <li>Dává přehled o provozu a výsledcích</li>
+                    <li>Umožňuje spravovat další pracovníky</li>
                   </ul>
+                  <p class="calc-plan-foot">PRO pracuje i ve chvíli, kdy vy pracujete se zákazníkem.</p>
                   <span class="calc-plan-cta" data-cta="pro">Chci PRO</span>
                 </label>
               </article>
@@ -139,8 +143,8 @@
                 <label class="calc-choice calc-period">
                   <input type="radio" name="period" value="6">
                   <span class="calc-period-term">6 měsíců</span>
-                  <span class="calc-period-monthly" id="calc-period-6-monthly">≈ 600 Kč / měsíc</span>
-                  <span class="calc-period-total" id="calc-period-6-total">3 600 Kč za 6 měsíců</span>
+                  <span class="calc-period-monthly is-waiting" id="calc-period-6-monthly">Cena se zobrazí po výběru START / PRO</span>
+                  <span class="calc-period-total is-waiting" id="calc-period-6-total"></span>
                   <p id="calc-period-6-note">Poté možnost pokračovat za 550 Kč/měs. nebo si znovu zvolit předplacené období.</p>
                 </label>
                 <div class="calc-growth-panel">
@@ -160,8 +164,8 @@
                 <label class="calc-choice calc-period">
                   <input type="radio" name="period" value="12">
                   <span class="calc-period-term">12 měsíců</span>
-                  <span class="calc-period-monthly" id="calc-period-12-monthly">≈ 500 Kč / měsíc</span>
-                  <span class="calc-period-total" id="calc-period-12-total">5 999 Kč za 12 měsíců</span>
+                  <span class="calc-period-monthly is-waiting" id="calc-period-12-monthly">Cena se zobrazí po výběru START / PRO</span>
+                  <span class="calc-period-total is-waiting" id="calc-period-12-total"></span>
                   <p id="calc-period-12-note">Poté možnost pokračovat za 499 Kč/měs. nebo si znovu zvolit předplacené období.</p>
                 </label>
                 <div class="calc-growth-panel calc-growth-panel-free">
@@ -227,8 +231,8 @@
           <section class="calc-card calc-summary is-empty" aria-live="polite">
             <p class="calc-summary-kicker">Vaše orientační cena</p>
             <div id="calc-summary-empty" class="calc-summary-empty">
-              <p class="calc-empty-title" id="calc-empty-title">Nejdříve vyberte variantu Moderníku.</p>
-              <p id="calc-empty-text">Po výběru START nebo PRO vám hned spočítáme orientační cenu.</p>
+              <p class="calc-empty-title" id="calc-empty-title">Cena se zobrazí po výběru START / PRO</p>
+              <p id="calc-empty-text">Nejdřív zvolte, co má Moderník řešit. Cenu uvidíte hned potom.</p>
             </div>
             <div id="calc-summary-price" hidden>
               <p class="calc-product-kicker" id="calc-product-kicker"></p>
@@ -423,6 +427,6 @@
     };
   </script>
   <script src="../cookie-consent.js?v=2" defer></script>
-  <script src="kalkulace.js?v=8" defer></script>
+  <script src="kalkulace.js?v=9" defer></script>
 </body>
 </html>
