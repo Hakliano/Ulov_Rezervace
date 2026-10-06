@@ -166,7 +166,19 @@
                   <span class="calc-period-total is-waiting" id="calc-period-12-total"></span>
                   <p id="calc-period-12-note">Poté možnost pokračovat za 499 Kč/měs. nebo si znovu zvolit předplacené období.</p>
                 </label>
-                <div class="calc-growth-panel calc-growth-panel-free">
+                <div class="calc-growth-panel" id="calc-growth-panel-12-paid">
+                  <p class="calc-growth-kicker">Program růstu</p>
+                  <p class="calc-growth-lead">Celý rok vám postupně pomáháme s recenzemi, marketingem, prezentací provozovny a dalším rozvojem.</p>
+                  <label class="calc-growth-check">
+                    <input type="checkbox" id="calc-growth-12">
+                    <span>Chci Program růstu +999 Kč</span>
+                  </label>
+                  <button type="button" class="calc-info-btn" data-growth-open="12">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+                    Podívat se, co během roku získám
+                  </button>
+                </div>
+                <div class="calc-growth-panel calc-growth-panel-free" id="calc-growth-panel-12-free" hidden>
                   <p class="calc-growth-badge">Program růstu zdarma</p>
                   <p class="calc-growth-lead">Celý rok vám postupně pomáháme s recenzemi, marketingem, prezentací provozovny a dalším rozvojem.</p>
                   <p class="calc-growth-value">Hodnota služeb 4 500 Kč + úvodní nastavení</p>
@@ -425,6 +437,6 @@
     };
   </script>
   <script src="../cookie-consent.js?v=2" defer></script>
-  <script src="kalkulace.js?v=10" defer></script>
+  <script src="kalkulace.js?v=11" defer></script>
 </body>
 </html>
