@@ -194,6 +194,16 @@
 
   initPoptavkaCaptcha();
 
+  const growthModal = document.getElementById('calc-growth-modal');
+  document.querySelectorAll('[data-open-growth]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (growthModal && typeof growthModal.showModal === 'function') {
+        growthModal.showModal();
+      }
+    });
+  });
+
   document.querySelectorAll('a[data-package]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const select = document.getElementById('p-balicek');

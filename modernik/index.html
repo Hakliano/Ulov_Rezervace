@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="marketing-v2.css?v=46">
+  <link rel="stylesheet" href="marketing-v2.css?v=65">
   <link rel="stylesheet" href="cookie-consent.css?v=1">
   <script>
     if (location.hostname.indexOf('staging') !== -1) {
@@ -32,13 +32,13 @@
       </a>
       <nav class="nav" aria-label="Hlavní navigace">
         <a href="#problemy">O Moderníkovi</a>
-        <a href="#nfc">Recenze</a>
-        <a href="#ceny">Ceny</a>
+        <a href="#obsah">Co obsahuje</a>
+        <a href="#ceny">Cena</a>
+        <a href="tarify/">Tarify</a>
         <a href="doplnkove-sluzby.html">Doplňkové služby</a>
-        <a href="co-pracuje-v-pozadi.html">Co pracuje v pozadí</a>
         <a href="#ukazky">Ukázky webů</a>
         <a href="#videa">Videa</a>
-        <a href="#kontakt">Kontakt</a>
+        <a href="#poptavka">Kontakt</a>
         <a class="nav-doc" href="dokumentace.html">Dokumentace</a>
       </nav>
       <div class="header-actions">
@@ -68,7 +68,7 @@
             Web, rezervace, zákazníci i věci kolem provozovny mohou fungovat společně. Vy se můžete věnovat své práci.
           </p>
           <div class="hero-actions">
-            <a href="./spocitat-cenu/" class="btn btn-gold">Spočítat orientační cenu →</a>
+            <a href="#ceny" class="btn btn-gold">Chci Moderníka</a>
             <a href="#videa" class="btn btn-outline">Videa jak služba funguje</a>
             <a href="#poptavka" class="btn btn-outline">Chci nabídku</a>
           </div>
@@ -302,235 +302,247 @@
       </div>
     </section>
 
-    <section class="section compare-banner-section" id="start-pro">
+    <section class="section pro-includes" id="obsah">
       <div class="wrap-wide">
         <h2 class="chapter-divider">
           <span class="chapter-divider-line" aria-hidden="true"></span>
-          <span class="chapter-divider-text">TEĎ SI VYBERTE, CO MÁ MODERNÍK DĚLAT <span class="chapter-divider-accent">ZA VÁS</span></span>
+          <span class="chapter-divider-text">Moderník obsahuje</span>
           <span class="chapter-divider-line" aria-hidden="true"></span>
         </h2>
-        <a class="compare-banner" href="./spocitat-cenu/">
-          <img
-            src="https://haklweb.b-cdn.net/modernik/head%20web/START%20nebo%20PRO_%20Feature%20Comparison.webp"
-            alt="Porovnání Moderník START a PRO — spočítat cenu přesně pro vás"
-            width="1312"
-            height="1199"
-            loading="lazy"
-            decoding="async"
-          >
-        </a>
+        <p class="chapter-lead">Všechno, co jste právě viděli. V jednom partnerství.</p>
+        <p class="pro-includes-lead">Moderník není jen web nebo rezervační systém. Dostáváte propojené digitální zázemí pro každodenní provoz, péči o zákazníky i další růst.</p>
+        <div class="pro-include-grid">
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_web.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>Web na míru</h3>
+            <p>Vlastní web, který přiláká nové zákazníky a který si můžete snadno upravovat.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_rezervace.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>Online rezervace</h3>
+            <p>Objednávky 24/7, možnost záloh, QR kódy, směny, blokace a dovolené.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_flow.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>FLOW</h3>
+            <p>Každodenní řízení provozu na jednom místě. Kalendář, zákazníci, personál, statistiky a všechny důležité nástroje.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img class="is-wordmark" src="https://haklweb.b-cdn.net/modernik/logo_archivnik.webp" alt="Archivník" width="280" height="120" loading="lazy">
+            </figure>
+            <h3>Archivník</h3>
+            <p>Klienti, historie návštěv, poznámky, fotografie a dokumenty. Vše přehledně na jednom místě.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img class="is-wordmark" src="https://haklweb.b-cdn.net/modernik/materialnik_logo.webp" alt="Materiálník" width="280" height="120" loading="lazy">
+            </figure>
+            <h3>Materiálník</h3>
+            <p>Sklad, spotřeba materiálu, minima, nákupní seznam a přehled. Vždy víte, co potřebujete dokoupit.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_email.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>Automatizace</h3>
+            <p>Potvrzení rezervací, připomínky, e-maily po návštěvě, žádosti o recenze a další komunikace automaticky.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_recenze.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>Recenze</h3>
+            <p>Automatické žádosti o Google recenzi, NFC stojánky a kartičky. Více spokojených zákazníků.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_stats.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>Přehledy</h3>
+            <p>Statistiky, grafy a informace o fungování provozu. Vidíte, co roste a kde máte největší potenciál.</p>
+          </article>
+          <article class="pro-include-card">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/modernik_ikona_podpora.webp" alt="" width="136" height="136" loading="lazy">
+            </figure>
+            <h3>Osobní podpora</h3>
+            <p>Přímý kontakt, žádný chatbot. Pomůžeme s nastavením, úpravami i dalším rozvojem vaší provozovny.</p>
+          </article>
+        </div>
+        <div class="pro-include-bar">
+          <strong>∞ Žádné skládání několika aplikací. Žádné samostatné licence.</strong>
+          <span>Všechno je součástí Moderníka a jednotlivé části spolupracují.</span>
+        </div>
       </div>
     </section>
 
-    <section class="section nfc-section" id="nfc">
-      <div class="wrap-wide nfc-grid">
-        <div class="nfc-visual nfc-visual-dog">
-          <img
-            src="https://haklweb.b-cdn.net/modernik/modernik_ikona_recenze.webp"
-            alt="Sběr recenzí"
-            width="480"
-            height="480"
-            loading="lazy"
-            decoding="async"
-          >
+    <section class="section" id="cas">
+      <div class="wrap-wide">
+        <div class="offer-return offer-return-pro">
+          <picture>
+            <source
+              media="(orientation: landscape) and (min-width: 700px)"
+              srcset="https://haklweb.b-cdn.net/modernik/head%20web/Salonov%C3%BD%20asistent%20%C5%A1et%C5%99%C3%AD%20%C4%8Das.webp"
+              width="1920"
+              height="720"
+            >
+            <img
+              src="https://haklweb.b-cdn.net/modernik/head%20web/30%20minut%2C%20v%C3%ADce%20%C4%8Dasu%20pro%20v%C3%A1s.webp"
+              alt="Moderník šetří čas v provozu"
+              width="1080"
+              height="1920"
+              loading="lazy"
+              decoding="async"
+            >
+          </picture>
         </div>
+      </div>
+    </section>
 
-        <div class="nfc-copy">
-          <h2>Sbírejte recenze, aniž byste o ně museli zákazníky prosit.</h2>
-          <div class="nfc-feature">
-            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
-            <div>
-              <h3>Automatická výzva e-mailem – ZDARMA k Moderníkovi PRO</h3>
-              <p>Po každé návštěvě posíláme děkovný email a žádáme velmi slušně o recenzi. V emailu pomocí kliknutí na jedno jediné tlačítko může okamžitě zadávat hvězdičky na Vašem Google, nebo jakémkoliv jiném účtu.</p>
-            </div>
+    <section class="section" id="program-rustu">
+      <div class="wrap-wide">
+        <h2 class="chapter-divider">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">Program růstu</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
+        <div class="growth-teaser">
+          <div class="growth-teaser-copy">
+            <p class="growth-teaser-free"><strong>V prvním roce při roční spolupráci ZDARMA!</strong><br>Jinak 999&nbsp;Kč.</p>
+            <p>Během prvního roku vám postupně pomáháme s tím, aby vaše provozovna působila profesionálněji, získávala více recenzí a dál se rozvíjela.</p>
+            <p class="growth-teaser-value">Hodnota služeb samostatně až 4 500 Kč.</p>
+            <button type="button" class="btn btn-gold" data-open-growth>Zjistit více</button>
           </div>
-          <div class="nfc-feature">
-            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
-            <div>
-              <h3>NFC kartička u pokladny – ZDARMA k Moderníkovi PRO při roční platbě.</h3>
-              <p>Spokojený zákazník přiloží telefon — otevře se stránka s recenzí. Rychlé, elegantní, bez vysvětlování.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="nfc-visual nfc-visual-nfc">
           <img
-            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/nfc.webp"
-            alt="NFC kartička pro recenze"
-            width="640"
-            height="480"
+            class="growth-teaser-logo"
+            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ikona_program_rustu.webp"
+            alt="Program růstu"
+            width="360"
+            height="240"
             loading="lazy"
-            decoding="async"
           >
+          <div class="growth-teaser-contains">
+            <h3>Co obsahuje</h3>
+            <ul class="growth-teaser-list">
+              <li>Návrhy webového obsahu</li>
+              <li>QR stojánek nebo QR/NFC kartičky</li>
+              <li>Vizitky od návrhu po tisk</li>
+              <li>Elektronické dárkové poukazy</li>
+              <li>Grafické zpracování cesty k provozovně</li>
+              <li>Úpravy webu</li>
+              <li>20% sleva na další služby</li>
+              <li>Analýzy a reporty</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="section pricing" id="ceny">
       <div class="wrap-wide">
-        <div class="offer-return" id="navratnost">
-          <picture>
-            <source
-              media="(min-width: 1101px)"
-              srcset="https://haklweb.b-cdn.net/modernik/head%20web/Modern%C3%ADk_%20Time-Saving%20Plans%20and%20Cheerful%20Mascot.webp"
-              width="2172"
-              height="724"
+        <h2 class="chapter-divider">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">Kolik stojí mít Moderníka po ruce?</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
+        <div class="pro-price-wrap">
+          <article class="pro-price-card">
+            <p class="pro-price-kicker">Moderník</p>
+            <h2>Celé digitální zázemí vaší provozovny.</h2>
+            <p class="pro-price-sum">500&nbsp;Kč&nbsp;<small>/ měsíc</small></p>
+            <p class="pro-price-lead">při roční spolupráci</p>
+            <p class="pro-price-year">6 000 Kč / rok</p>
+            <p class="pro-price-gift">🎁 Program růstu v prvním roce v ceně</p>
+            <p class="pro-price-alt">Nechcete se zavázat na celý rok?<br><span>6 měsíců za 3 600 Kč</span></p>
+            <a href="#poptavka" class="btn btn-gold" data-package="Kompletní partnerství MODERNÍK">Chci Moderníka</a>
+            <p class="pro-price-note">Jedno partnerství · žádné samostatné licence · osobní podpora</p>
+          </article>
+        </div>
+        <div class="pro-price-video">
+          <p class="pro-price-video-lead">Podívejte se, jak Moderník funguje</p>
+          <div class="showcase-video-frame">
+            <video
+              controls
+              preload="metadata"
+              playsinline
+              src="https://haklweb.b-cdn.net/modernik/modernik_salony.mp4"
+              title="Moderník pro salony"
             >
-            <img
-              src="https://haklweb.b-cdn.net/modernik/head%20web/Modern%C3%ADk%20%C5%A1et%C5%99%C3%AD%20pr%C3%A1ci%20cel%C3%BD%20m%C4%9Bs%C3%ADc.webp"
-              alt="Moderník šetří práci v provozu – Partnerství začíná už od 250 Kč měsíčně při roční platbě"
-              width="1024"
-              height="1536"
-              loading="lazy"
-              decoding="async"
-            >
-          </picture>
-        </div>
-
-        <div class="section-head section-head-wide offer-intro">
-          <p class="offer-kicker">Jedno Partnerství. Jeden systém.</p>
-          <h2>Partnerství, které se přizpůsobí vašemu provozu.</h2>
-          <p>Každá provozovna funguje trochu jinak. Proto nemáme tabulku tarifů. Nejdříve zjistíme, co vašemu provozu skutečně pomůže, a podle rozsahu práce a délky spolupráce připravíme konkrétní cenu.</p>
-        </div>
-
-        <div class="offer-row">
-          <div class="offer-price">
-            <p class="offer-lead">Partnerství Moderník začíná už od</p>
-            <p class="offer-sum">
-              <span class="offer-sum-num">250&nbsp;Kč</span>
-              <span class="offer-per">měsíčně*</span>
-            </p>
-            <p class="offer-term">* při roční platbě</p>
-          </div>
-          <div class="offer-cta">
-            <a href="./spocitat-cenu/" class="btn btn-gold">Spočítat orientační cenu →</a>
-            <p class="offer-cta-note">Zabere přibližně 1 minutu.</p>
-          </div>
-        </div>
-
-        <div class="offer-areas">
-          <div class="section-head">
-            <h3>Moderník roste spolu s vaším provozem</h3>
-            <p>Začněte s webem a online rezervacemi, nebo využijte Moderník naplno pro zákazníky, recenze a každodenní provoz. Vyberte si podle toho, co má Moderník dělat za vás.</p>
-          </div>
-          <div class="offer-area-grid">
-            <article class="offer-area">
-              <div class="offer-area-head">
-                <svg class="offer-area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <h4>Zákazníci</h4>
-              </div>
-              <ul>
-                <li>Online rezervace 24/7</li>
-                <li>Archivník</li>
-                <li>Automatizované e-maily</li>
-                <li>Recenze a NFC podpora</li>
-              </ul>
-            </article>
-            <article class="offer-area">
-              <div class="offer-area-head">
-                <svg class="offer-area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <h4>Váš provoz</h4>
-              </div>
-              <ul>
-                <li>CRM FLOW</li>
-                <li>Kalendář a personál</li>
-                <li>Statistiky a reporty</li>
-                <li>Automatizace</li>
-              </ul>
-            </article>
-            <article class="offer-area">
-              <div class="offer-area-head">
-                <svg class="offer-area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
-                <h4>Vaše prezentace</h4>
-              </div>
-              <ul>
-                <li>Web na míru</li>
-                <li>Vlastní doména</li>
-                <li>Správa webu</li>
-                <li>Profesionální prezentace</li>
-              </ul>
-            </article>
-            <article class="offer-area">
-              <div class="offer-area-head">
-                <svg class="offer-area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.86.3 1.7.54 2.5a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.58-1.06a2 2 0 0 1 2.11-.45c.8.24 1.64.42 2.5.54A2 2 0 0 1 22 16.92z"/></svg>
-                <h4>Osobní podpora</h4>
-              </div>
-              <ul>
-                <li>Přímo se zakladatelem</li>
-                <li>Jedno telefonní číslo</li>
-                <li>Pomoc s celým systémem</li>
-              </ul>
-            </article>
-          </div>
-        </div>
-
-        <p class="offer-claim">Neplatíte osm aplikací. Máte jednoho partnera.</p>
-        <p class="offer-claim-sub">Jeden systém. Všechno propojené. Jedno místo, kam se obrátit.</p>
-        <p class="offer-archivnik">Archivník a další pokročilé nástroje patří k plnému rozsahu Moderníku. Konkrétní variantu a cenu si zvolíte v kalkulačce.</p>
-
-        <div class="price-addons">
-          <h3>A když budete chtít ještě víc</h3>
-          <p class="price-addons-lead">Partnerství můžete rozšířit o další služby podle potřeb vašeho provozu.</p>
-          <div class="price-addon-grid">
-            <a class="price-addon" href="#program-rustu">
-              <img class="price-addon-icon" src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ikona_program_rustu.webp" alt="" width="96" height="96">
-              <span class="price-addon-name">Program růstu</span>
-              <span class="price-addon-month">83&nbsp;Kč <small>/ měsíc</small></span>
-              <span class="price-addon-pay">999&nbsp;Kč jednou za rok</span>
-            </a>
-            <a class="price-addon" href="#materialnik">
-              <img class="price-addon-icon price-addon-icon-wordmark" src="https://haklweb.b-cdn.net/modernik/materialnik_logo.webp" alt="" width="240" height="110">
-              <span class="price-addon-name">Materiálník</span>
-              <ul class="price-addon-matrix">
-                <li><strong>299&nbsp;Kč / měsíc</strong> samostatně</li>
-                <li><strong>+99&nbsp;Kč / měsíc</strong> k Moderníkovi START</li>
-                <li><strong>ZDARMA</strong> k Moderníkovi PRO — v ceně PRO</li>
-              </ul>
-            </a>
+              Váš prohlížeč video nepodporuje. <a href="https://haklweb.b-cdn.net/modernik/modernik_salony.mp4">Otevřít video</a>
+            </video>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="section partaci-section" id="partaci">
-      <div class="wrap-wide partaci-grid">
-        <div class="partaci-copy">
-          <p class="partaci-kicker">Společně v jedné provozovně</p>
-          <h2>Moderník a Materiálník jako společní parťáci Vaší provozovny.</h2>
-          <p>
-            Web, rezervace a FLOW hlídají zákazníky. Materiálník hlídá, co u toho spotřebujete.
-            Jeden tým, jedno přihlášení, jeden provoz — bez přehazování mezi dvěma světy.
-          </p>
-          <ul class="partaci-list">
-            <li>Po službě ve FLOW nabídne odečet spotřeby. Kalendář se kvůli skladu nezastaví.</li>
-            <li>Stejný e-mail a heslo jako do FLOW. Personál se neučí druhý systém.</li>
-            <li><strong>K Moderníkovi PRO – ZDARMA</strong></li>
-            <li>Vidíte termíny, tržby i materiál na jednom místě. Méně dohadů, méně nákupů naslepo.</li>
-          </ul>
-          <div class="partaci-actions">
-            <a href="#poptavka" class="btn btn-gold" data-package="Materiálník k partnerství MODERNÍK">Chci oba parťáky →</a>
-            <a href="https://www.materialnik.cz/" class="btn btn-outline" target="_blank" rel="noopener">Více o Materiálníku</a>
-          </div>
+    <section class="section" id="spoluprace">
+      <div class="wrap-wide">
+        <h2 class="chapter-divider">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">Jak spolupráce probíhá</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
+        <p class="chapter-lead">Od první domluvy až po spuštění. Bez složitého nastavování z vaší strany.</p>
+        <div class="howto-path">
+          <article class="howto-step">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/head%20web/step1.webp" alt="Poznáme váš provoz" width="640" height="400" loading="lazy">
+            </figure>
+            <p class="howto-step-num">01</p>
+            <h3>Poznáme váš provoz</h3>
+            <p>Krátce si řekneme, jak fungujete, jaké služby nabízíte, kdo u vás pracuje a co od Moderníka potřebujete.</p>
+            <p class="howto-chip">Úvodní konzultace</p>
+          </article>
+          <article class="howto-step">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/head%20web/step2.webp" alt="Dodáte nám podklady" width="640" height="400" loading="lazy">
+            </figure>
+            <p class="howto-step-num">02</p>
+            <h3>Dodáte nám podklady</h3>
+            <p>Logo, fotografie, služby, ceny, otevírací dobu a další informace. Dostanete od nás jednoduchý seznam toho, co potřebujeme.</p>
+            <p class="howto-chip">Jednoduchý seznam</p>
+          </article>
+          <article class="howto-step">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/head%20web/step3.webp" alt="Moderníka připravíme za vás" width="640" height="400" loading="lazy">
+            </figure>
+            <p class="howto-step-num">03</p>
+            <h3>Moderníka připravíme za vás</h3>
+            <p>Připravíme web, rezervace, FLOW, Archivníka, Materiálník a ostatní části podle vašeho provozu. Vy nemusíte jednotlivé systémy nastavovat.</p>
+            <p class="howto-chip">Nastavení na míru</p>
+          </article>
+          <article class="howto-step">
+            <figure class="media-slot">
+              <img src="https://haklweb.b-cdn.net/modernik/head%20web/step4.webp" alt="Společně spustíme" width="640" height="400" loading="lazy">
+            </figure>
+            <p class="howto-step-num">04</p>
+            <h3>Společně spustíme</h3>
+            <p>Všechno vám ukážeme, případně doladíme a Moderníka spustíme pro vaše zákazníky. A tím naše spolupráce nekončí — když budete něco potřebovat, máte přímou podporu.</p>
+            <p class="howto-chip">A jste online</p>
+          </article>
         </div>
-        <div class="partaci-visual">
-          <img
-            src="https://haklweb.b-cdn.net/ULOV_KLIENTA/spojeni3v1.webp"
-            alt="Moderník a Materiálník — společní parťáci vaší provozovny"
-            width="720"
-            height="720"
-            loading="lazy"
-            decoding="async"
-          >
+        <div class="howto-cta">
+          <p><strong>Začněte s Moderníkem i vy.</strong> Ozvěte se nám a společně nastavíme Moderníka pro váš provoz.</p>
+          <a href="#poptavka" class="btn btn-gold" data-package="Kompletní partnerství MODERNÍK">Chci Moderníka</a>
         </div>
       </div>
     </section>
 
     <section class="section" id="ukazky">
       <div class="wrap-wide">
-        <div class="section-head">
-          <h2>DEMO partnery</h2>
-          <p>Finální demo weby — každý jiný vzhled, stejný systém pod kapotou.</p>
-        </div>
+        <h2 class="chapter-divider">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">DEMO Webové stránky</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
+        <p class="chapter-lead">Finální demo weby — každý jiný vzhled, stejný systém pod kapotou.</p>
 
         <div class="portfolio-tabs" role="tablist" aria-label="Kategorie ukázek">
           <button type="button" class="tab is-active" data-category="all">Vše</button>
@@ -683,9 +695,11 @@
 
     <section class="section showcase-video" id="videa">
       <div class="wrap-wide">
-        <div class="section-head">
-          <h2>Moderník pro salony</h2>
-        </div>
+        <h2 class="chapter-divider">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">Moderník pro salony</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
         <div class="showcase-video-frame">
           <video
             controls
@@ -697,9 +711,11 @@
             Váš prohlížeč video nepodporuje.
           </video>
         </div>
-        <div class="section-head" id="video-veterina">
-          <h2>Moderník pro Veterinární ordinace</h2>
-        </div>
+        <h2 class="chapter-divider" id="video-veterina">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">Moderník pro Veterinární ordinace</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
         <div class="showcase-video-frame">
           <video
             controls
@@ -715,7 +731,13 @@
     </section>
 
     <section class="section founder-section" id="kontakt">
-      <div class="wrap-wide founder-grid">
+      <div class="wrap-wide">
+        <h2 class="chapter-divider">
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+          <span class="chapter-divider-text">Kontakty a o Nás</span>
+          <span class="chapter-divider-line" aria-hidden="true"></span>
+        </h2>
+        <div class="founder-grid">
         <div class="founder-photo-wrap">
           <img
             class="founder-photo"
@@ -736,6 +758,7 @@
             Když něco potřebujete, komunikujete s člověkem, který systém skutečně zná.
           </p>
           <p class="founder-sign">Jiří Hakl<br><span>zakladatel Moderníka</span></p>
+        </div>
         </div>
       </div>
     </section>
@@ -782,8 +805,8 @@
           <label>Balíček / zájem
             <select id="p-balicek">
               <option value="">Vyberte (volitelné)</option>
-              <option value="Spočítat orientační cenu Partnerství" selected>Spočítat orientační cenu Partnerství</option>
-              <option value="Kompletní partnerství MODERNÍK">Partnerství Moderník</option>
+              <option value="Kompletní partnerství MODERNÍK" selected>Partnerství Moderník</option>
+              <option value="Spočítat orientační cenu Partnerství">Spočítat orientační cenu Partnerství</option>
               <option value="Kompletní partnerství MODERNÍK + Program růstu">Partnerství + Program růstu</option>
               <option value="Materiálník k partnerství MODERNÍK">Materiálník k Partnerství</option>
               <option value="Web jednorázově">Web jednorázově</option>
@@ -865,6 +888,7 @@
       </p>
       <p class="footer-links">
         © 2026 MODERNÍK ·
+        <a href="tarify/">Tarify</a>
         <a href="https://www.modernik.cz/dokumentace.html">Dokumentace</a>
         <a href="smlouva.html">Smlouva</a>
         <a href="vop.html">VOP</a>
@@ -885,11 +909,89 @@
       privacyUrl: "gdpr.html"
     };
   </script>
+  <dialog class="calc-growth-modal" id="calc-growth-modal" aria-labelledby="calc-growth-modal-title">
+    <form method="dialog" class="calc-growth-modal-bar">
+      <button type="submit" class="calc-growth-modal-close" aria-label="Zavřít">Zavřít</button>
+    </form>
+    <div class="calc-growth-modal-inner">
+      <img class="calc-growth-logo" src="https://haklweb.b-cdn.net/ULOV_KLIENTA/ikona_program_rustu.webp" alt="" width="96" height="96">
+      <h2 id="calc-growth-modal-title">Program růstu</h2>
+      <p class="calc-growth-modal-lead"><strong>Moderník nekončí spuštěním.</strong> Během prvního roku vám postupně pomáháme s tím, aby vaše provozovna působila profesionálněji, získávala více recenzí a dál se rozvíjela.</p>
+      <ol class="calc-timeline-nav" aria-label="Časová osa Programu růstu">
+        <li>Start</li>
+        <li>3 měs.</li>
+        <li>6 měs.</li>
+        <li>9 měs.</li>
+        <li>12 měs.</li>
+      </ol>
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po spuštění — Všechno společně nastavíme</h3>
+          <p>Osobní návštěva nebo online meeting, kde společně připravíme vše pro hladký start.</p>
+          <ul>
+            <li>fotografie a základní nastavení</li>
+            <li>otevírací doba</li>
+            <li>sociální sítě a odkazy</li>
+            <li>pomoc s e-mailovým obsahem</li>
+          </ul>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po%20spusteni.webp" alt="Spuštění Programu růstu" width="720" height="480" loading="lazy">
+      </article>
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 3 měsících — Pomůžeme vám získávat recenze</h3>
+          <p>Připravíme QR stojánek nebo QR/NFC kartičky, díky kterým mohou zákazníci jednoduše přejít k hodnocení provozovny.</p>
+          <p class="calc-mile-value">Hodnota: 500 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po3.webp" alt="QR a NFC podpora recenzí" width="720" height="480" loading="lazy">
+      </article>
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 6 měsících — Marketing pro vaši provozovnu</h3>
+          <ul>
+            <li>100 vizitek</li>
+            <li>grafika na míru</li>
+            <li>bannery pro akce a nabídky</li>
+            <li>elektronické dárkové poukazy</li>
+          </ul>
+          <p class="calc-mile-value">Hodnota: 1 000 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po6.webp" alt="Marketingové materiály Programu růstu" width="720" height="480" loading="lazy">
+      </article>
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 9 měsících — Ať vás každý najde</h3>
+          <p>Připravíme grafické zpracování cesty k provozovně z fotografií, videa nebo dostupných mapových podkladů a nasadíme jej přímo na web.</p>
+          <p class="calc-mile-value">Hodnota: 1 000 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po9.webp" alt="Grafická cesta k provozovně" width="720" height="480" loading="lazy">
+      </article>
+      <article class="calc-mile">
+        <div class="calc-mile-copy">
+          <h3>Po 12 měsících — Výroční servis</h3>
+          <ul>
+            <li>úprava webu</li>
+            <li>analýza podnikání</li>
+            <li>doporučení pro další období</li>
+            <li>možnost kompletního rebrandu</li>
+            <li>20% sleva na nové produkty a služby</li>
+          </ul>
+          <p class="calc-mile-value">Hodnota: 2 000 Kč</p>
+        </div>
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/po12.webp" alt="Výroční servis Programu růstu" width="720" height="480" loading="lazy">
+      </article>
+      <div class="calc-growth-closeout">
+        <p class="calc-growth-closeout-lead">Moderník nekončí spuštěním.</p>
+        <p>Během prvního roku od nás postupně získáte služby v hodnotě 4 500 Kč + kompletní úvodní nastavení.</p>
+        <p class="calc-growth-closeout-badge">Program růstu v prvním roce v ceně</p>
+      </div>
+    </div>
+  </dialog>
   <dialog class="tile-lightbox" id="tile-lightbox" aria-label="Zvětšený snímek">
     <button type="button" class="tile-lightbox-close" id="tile-lightbox-close">Zavřít</button>
     <img id="tile-lightbox-img" alt="">
   </dialog>
   <script src="cookie-consent.js?v=2" defer></script>
-  <script src="marketing-v2.js?v=11" defer></script>
+  <script src="marketing-v2.js?v=12" defer></script>
 </body>
 </html>
