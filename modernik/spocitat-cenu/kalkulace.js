@@ -157,6 +157,10 @@
     return form?.querySelector('input[name="materialnik"]:checked')?.value === 'ano';
   }
 
+  function materialnikIsIncluded(plan) {
+    return plan === 'pro';
+  }
+
   function growthIsFree(plan, months) {
     return plan === 'pro' && months === 12;
   }
@@ -187,7 +191,7 @@
     const base = BASE_PRICE[plan]?.[months];
     if (!base) return null;
     const wm = webMonthly(pages);
-    const mat = materialnik ? 99 : 0;
+    const mat = materialnikIsIncluded(plan) ? 0 : (materialnik ? 99 : 0);
     const gr = growthIsFree(plan, months) ? 0 : (growth ? 999 : 0);
     const total = base + wm * months + mat * months + gr;
     return { total, monthly: Math.round(total / months), wm, mat, gr, base };
@@ -298,6 +302,11 @@
     });
     updatePeriodCards(plan);
     updatePlanCtas(plan);
+    const matChoice = document.getElementById('calc-mat-choice');
+    const matIncluded = document.getElementById('calc-mat-included');
+    const matInPro = materialnikIsIncluded(plan);
+    if (matChoice) matChoice.hidden = matInPro;
+    if (matIncluded) matIncluded.hidden = !matInPro;
 
     const ready = !!plan && (months === 6 || months === 12);
     summary?.classList.toggle('is-empty', !ready);
@@ -350,7 +359,8 @@
       if (typ) items.push(typ);
       if (plan) items.push(PLANS[plan].pick);
       items.push(pagesPhrase(pages));
-      if (materialnik) items.push('Materiálník');
+      if (materialnikIsIncluded(plan)) items.push('Materiálník – v ceně PRO');
+      else if (materialnik) items.push('Materiálník +99 Kč/měs.');
       if (months === 6 || months === 12) items.push(periodPhrase(months));
       const g = (months === 6 || months === 12) ? growthPhrase(plan, months, growth) : '';
       if (g) items.push(g);
@@ -510,7 +520,7 @@
           telefon,
           typ,
           pages,
-          materialnik,
+          materialnik: materialnikIsIncluded(plan) ? true : materialnik,
           period: months,
           growth,
           poznamka,

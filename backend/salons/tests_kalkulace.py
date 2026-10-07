@@ -6,7 +6,7 @@ from django.test import Client, SimpleTestCase, TestCase, RequestFactory
 from rest_framework.exceptions import Throttled as DrfThrottled
 
 from rezervace.throttles import KalkulaceRateThrottle, PoptavkaRateThrottle
-from salons.kalkulace import compute_price, format_email_body, growth_is_free, parse_and_compute, web_monthly
+from salons.kalkulace import compute_price, format_email_body, growth_is_free, materialnik_is_included, parse_and_compute, web_monthly
 from salons.views import KalkulaceView
 
 
@@ -21,10 +21,12 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
         self.assertEqual(web_monthly(11), 90)
         self.assertEqual(web_monthly(110), 1080)
 
-    def test_example_7187(self):
+    def test_example_pro_includes_materialnik(self):
         result = compute_price(pages=3, period_months=12, materialnik=True, growth=False, plan='pro')
-        self.assertEqual(result['total'], 7187)
-        self.assertEqual(result['monthly'], 599)
+        self.assertEqual(result['total'], 5999)
+        self.assertEqual(result['monthly'], 500)
+        self.assertEqual(result['materialnik_monthly'], 0)
+        self.assertEqual(result['materialnik_label'], 'v ceně PRO')
         self.assertEqual(result['growth_label'], 'ZDARMA')
         self.assertEqual(result['period_phrase'], 'první rok')
 
@@ -36,8 +38,9 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
 
     def test_six_months_materialnik_growth(self):
         result = compute_price(pages=0, period_months=6, materialnik=True, growth=True, plan='pro')
-        self.assertEqual(result['total'], 3600 + 99 * 6 + 999)
-        self.assertEqual(result['monthly'], 866)
+        self.assertEqual(result['total'], 3600 + 999)
+        self.assertEqual(result['monthly'], 767)
+        self.assertEqual(result['materialnik_monthly'], 0)
         self.assertEqual(result['growth_label'], 'ANO +999 Kč')
 
     def test_twelve_months_ignores_paid_growth_only_for_pro(self):
@@ -55,6 +58,40 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
         self.assertFalse(growth_is_free('start', 12))
         self.assertFalse(growth_is_free('pro', 6))
         self.assertFalse(growth_is_free('start', 6))
+
+    def test_materialnik_is_included_only_for_pro(self):
+        self.assertTrue(materialnik_is_included('pro'))
+        self.assertFalse(materialnik_is_included('start'))
+        self.assertFalse(materialnik_is_included(''))
+
+    def test_start_without_materialnik(self):
+        result = compute_price(0, 12, False, False, 'start')
+        self.assertEqual(result['total'], 3000)
+        self.assertEqual(result['monthly'], 250)
+        self.assertEqual(result['materialnik_monthly'], 0)
+        self.assertFalse(result['materialnik'])
+        self.assertEqual(result['materialnik_label'], 'NE')
+
+    def test_start_with_materialnik(self):
+        result = compute_price(0, 12, True, False, 'start')
+        self.assertEqual(result['total'], 3000 + 99 * 12)
+        self.assertEqual(result['monthly'], 349)
+        self.assertEqual(result['materialnik_monthly'], 99)
+        self.assertTrue(result['materialnik'])
+        self.assertEqual(result['materialnik_label'], 'ANO +99 Kč/měs.')
+
+    def test_pro_includes_materialnik_even_if_requested(self):
+        yes = compute_price(0, 12, True, False, 'pro')
+        no = compute_price(0, 12, False, False, 'pro')
+        self.assertEqual(yes['total'], no['total'])
+        self.assertEqual(yes['total'], 5999)
+        self.assertEqual(yes['monthly'], 500)
+        self.assertEqual(yes['materialnik_monthly'], 0)
+        self.assertEqual(no['materialnik_monthly'], 0)
+        self.assertTrue(yes['materialnik'])
+        self.assertTrue(no['materialnik'])
+        self.assertEqual(yes['materialnik_label'], 'v ceně PRO')
+        self.assertEqual(no['materialnik_label'], 'v ceně PRO')
 
     def test_growth_fee_matrix(self):
         """Program Růstu zdarma ⇔ PRO + 12 měsíců."""
@@ -85,8 +122,8 @@ class KalkulaceAlgorithmTests(SimpleTestCase):
             ('pro', 12, False, False, 5999, 500),
             ('start', 6, True, False, 1800 + 99 * 6, 399),
             ('start', 12, True, False, 3000 + 99 * 12, 349),
-            ('pro', 6, True, False, 3600 + 99 * 6, 699),
-            ('pro', 12, True, False, 5999 + 99 * 12, 599),
+            ('pro', 6, True, False, 3600, 600),
+            ('pro', 12, True, False, 5999, 500),
             ('start', 6, False, True, 1800 + 999, 467),
             ('pro', 6, False, True, 3600 + 999, 767),
             ('start', 12, False, True, 3000 + 999, 333),
@@ -119,10 +156,12 @@ class KalkulaceParseTests(SimpleTestCase):
             'plan': 'pro',
             'poznamka': '',
         })
-        self.assertEqual(data['total'], 7187)
+        self.assertEqual(data['total'], 5999)
         self.assertEqual(data['plan'], 'pro')
         self.assertEqual(data['plan_label'], 'Moderník PRO')
         self.assertEqual(data['typ_label'], 'Kadeřnictví / beauty')
+        self.assertEqual(data['materialnik_monthly'], 0)
+        self.assertEqual(data['materialnik_label'], 'v ceně PRO')
         self.assertFalse(data['honeypot'])
 
     def test_missing_or_unknown_plan_is_rejected(self):
@@ -197,12 +236,12 @@ class KalkulaceParseTests(SimpleTestCase):
         self.assertIn('Typ provozovny: Kadeřnictví / beauty', body)
         self.assertIn('Produkt: Moderník PRO', body)
         self.assertIn('Web: hlavní + 3 podstránek', body)
-        self.assertIn('Materiálník: ANO', body)
+        self.assertIn('Materiálník: v ceně PRO', body)
         self.assertIn('Partnerství: 12 měsíců', body)
         self.assertIn('Program růstu: ZDARMA', body)
         self.assertIn('Bez speciálních požadavků.', body)
-        self.assertIn('7187 Kč / první rok', body)
-        self.assertIn('cca 599 Kč / měsíc', body)
+        self.assertIn('5999 Kč / první rok', body)
+        self.assertIn('cca 500 Kč / měsíc', body)
 
     def test_start_email_body_and_price(self):
         data = parse_and_compute({
@@ -304,11 +343,12 @@ class KalkulaceViewTests(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         body = res.json()
-        self.assertEqual(body['total'], 7187)
-        self.assertEqual(body['monthly'], 599)
+        self.assertEqual(body['total'], 5999)
+        self.assertEqual(body['monthly'], 500)
         mock_send.assert_called_once()
         sent = mock_send.call_args[0][0]
-        self.assertEqual(sent['total'], 7187)
+        self.assertEqual(sent['total'], 5999)
+        self.assertEqual(sent['materialnik_monthly'], 0)
         self.assertEqual(sent['plan'], 'pro')
         self.assertEqual(sent['plan_label'], 'Moderník PRO')
 

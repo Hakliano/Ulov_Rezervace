@@ -51,6 +51,11 @@ def growth_is_free(plan: str, period_months: int) -> bool:
     return str(plan or '').strip().lower() == 'pro' and int(period_months) == 12
 
 
+def materialnik_is_included(plan: str) -> bool:
+    """Materiálník je součástí Moderníka PRO — příplatek +99 Kč se nepřičítá."""
+    return str(plan or '').strip().lower() == 'pro'
+
+
 def web_monthly(pages: int) -> int:
     extra_pages = max(0, pages - INCLUDED_EXTRA_PAGES)
     if extra_pages == 0:
@@ -66,7 +71,13 @@ def compute_price(pages: int, period_months: int, materialnik: bool, growth: boo
         raise KalkulaceError('Zvolte délku partnerství.')
     base = BASE_PRICE[plan_key][period_months]
     wm = web_monthly(pages)
-    mat = MATERIALNIK_MONTHLY if materialnik else 0
+    mat_included = materialnik_is_included(plan_key)
+    mat_selected = True if mat_included else bool(materialnik)
+    mat = 0 if mat_included else (MATERIALNIK_MONTHLY if materialnik else 0)
+    if mat_included:
+        mat_label = 'v ceně PRO'
+    else:
+        mat_label = 'ANO +99 Kč/měs.' if materialnik else 'NE'
     growth_free = growth_is_free(plan_key, period_months)
     growth_included = True if growth_free else bool(growth)
     growth_fee = 0 if growth_free else (GROWTH_FEE if growth else 0)
@@ -87,10 +98,11 @@ def compute_price(pages: int, period_months: int, materialnik: bool, growth: boo
         'plan_label': PLAN_LABEL[plan_key],
         'pages': pages,
         'period_months': period_months,
-        'materialnik': bool(materialnik),
+        'materialnik': mat_selected,
         'growth': growth_included,
         'web_monthly': wm,
         'materialnik_monthly': mat,
+        'materialnik_label': mat_label,
         'growth_fee': growth_fee,
         'total': total,
         'monthly': monthly,
@@ -170,7 +182,7 @@ def parse_and_compute(data) -> dict:
 
 def format_email_body(data: dict) -> str:
     note = data['poznamka'] or 'Bez speciálních požadavků.'
-    mat_label = 'ANO' if data['materialnik'] else 'NE'
+    mat_label = data.get('materialnik_label') or ('ANO' if data['materialnik'] else 'NE')
     return (
         'Potenciální zákazník si spočítal Moderníka.\n'
         '\n'

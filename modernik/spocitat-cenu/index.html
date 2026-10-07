@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../marketing-v2.css?v=36">
-  <link rel="stylesheet" href="kalkulace.css?v=9">
+  <link rel="stylesheet" href="kalkulace.css?v=10">
   <link rel="stylesheet" href="../cookie-consent.css?v=1">
 </head>
 <body>
@@ -213,7 +213,7 @@
               <svg class="calc-step-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h18v12H3z"/><path d="M3 11h18M8 7V5h8v2"/></svg>
               <h2 id="calc-mat-title">Chcete Materiálník?</h2>
             </div>
-            <div class="calc-pair" role="radiogroup" aria-labelledby="calc-mat-title">
+            <div class="calc-pair" id="calc-mat-choice" role="radiogroup" aria-labelledby="calc-mat-title">
               <label class="calc-choice calc-choice-plain">
                 <input type="radio" name="materialnik" value="ano">
                 <span>Ano +99 Kč/měs.</span>
@@ -222,6 +222,10 @@
                 <input type="radio" name="materialnik" value="ne" checked>
                 <span>Ne</span>
               </label>
+            </div>
+            <div class="calc-growth-panel calc-growth-panel-free" id="calc-mat-included" hidden>
+              <p class="calc-growth-badge">Materiálník v ceně PRO</p>
+              <p class="calc-growth-lead">Sklad, receptury a spotřeba jsou součástí Moderníka PRO. Příplatek +99&nbsp;Kč se nepřičítá.</p>
             </div>
           </section>
 
@@ -437,6 +441,6 @@
     };
   </script>
   <script src="../cookie-consent.js?v=2" defer></script>
-  <script src="kalkulace.js?v=11" defer></script>
+  <script src="kalkulace.js?v=12" defer></script>
 </body>
 </html>
