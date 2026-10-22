@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../marketing-v2.css?v=65">
+  <link rel="stylesheet" href="../marketing-v2.css?v=67">
   <link rel="stylesheet" href="../cookie-consent.css?v=1">
   <script>
     if (location.hostname.indexOf('staging') !== -1) {
@@ -35,12 +35,10 @@
         <a href="./" aria-current="page">Tarify</a>
         <a href="../#ceny">Ceny</a>
         <a href="../doplnkove-sluzby.html">Doplňkové služby</a>
-        <a href="../spocitat-cenu/">Kalkulačka</a>
         <a href="../#ukazky">Ukázky webů</a>
         <a href="../#poptavka">Kontakt</a>
       </nav>
       <div class="header-actions">
-        <a href="../spocitat-cenu/" class="btn btn-outline">Spočítat cenu</a>
         <a href="#poptavka" class="btn btn-gold">Chci nabídku</a>
       </div>
     </div>
@@ -161,7 +159,7 @@
           <span class="chapter-divider-text">Porovnání Tarifů</span>
           <span class="chapter-divider-line" aria-hidden="true"></span>
         </h2>
-        <a class="compare-banner" href="../spocitat-cenu/">
+        <div class="compare-banner">
           <img
             src="https://haklweb.b-cdn.net/modernik/head%20web/START%20nebo%20PRO_%20Feature%20Comparison.webp"
             alt="Porovnání Moderník START a PRO"
@@ -170,7 +168,7 @@
             loading="eager"
             decoding="async"
           >
-        </a>
+        </div>
       </div>
     </section>
 
@@ -210,33 +208,18 @@
             <p class="pro-price-kicker">Moderník START</p>
             <h3>Web a rezervace</h3>
             <p class="pro-price-lead">Jednostránkový web a online objednávky.</p>
-            <p class="pro-price-sum">250&nbsp;Kč&nbsp;<small>/ měsíc</small></p>
-            <p class="pro-price-year">3 000 Kč / rok</p>
+            <p class="pro-price-sum">299&nbsp;Kč&nbsp;<small>/ měsíc</small></p>
+            <p class="pro-price-fee">+Aktivační poplatek 1&nbsp;999&nbsp;Kč</p>
             <a href="#poptavka" class="btn btn-outline" data-package="Moderník START">Chci START</a>
           </article>
           <article class="pro-price-card is-featured">
             <p class="pro-price-kicker">Moderník PRO</p>
             <h3>Celé digitální zázemí</h3>
             <p class="pro-price-lead">Web, rezervace, FLOW, Archivník, Materiálník i podpora.</p>
-            <p class="pro-price-sum">500&nbsp;Kč&nbsp;<small>/ měsíc</small></p>
-            <p class="pro-price-year">6 000 Kč / rok</p>
-            <p class="pro-price-gift">🎁 Program růstu v prvním roce v ceně</p>
+            <p class="pro-price-sum">499&nbsp;Kč&nbsp;<small>/ měsíc</small></p>
+            <p class="pro-price-fee">+Aktivační poplatek 1&nbsp;999&nbsp;Kč</p>
             <a href="#poptavka" class="btn btn-gold" data-package="Kompletní partnerství MODERNÍK">Chci Moderníka PRO</a>
           </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap-wide">
-        <div class="tarify-calc-cta">
-          <h2 class="chapter-divider">
-            <span class="chapter-divider-line" aria-hidden="true"></span>
-            <span class="chapter-divider-text">Spočítat cenu přesně pro vás</span>
-            <span class="chapter-divider-line" aria-hidden="true"></span>
-          </h2>
-          <p>Nastavíte START nebo PRO, délku spolupráce a případné doplňky. Orientační cenu uvidíte hned.</p>
-          <a href="../spocitat-cenu/" class="btn btn-gold">Otevřít kalkulačku →</a>
         </div>
       </div>
     </section>
@@ -250,7 +233,7 @@
         </h2>
         <div class="growth-teaser">
           <div class="growth-teaser-copy">
-            <p class="growth-teaser-free"><strong>V prvním roce při roční spolupráci ZDARMA!</strong><br>Jinak 999&nbsp;Kč.</p>
+            <p class="growth-teaser-free"><strong>999&nbsp;Kč</strong></p>
             <p>Během prvního roku vám postupně pomáháme s tím, aby vaše provozovna působila profesionálněji, získávala více recenzí a dál se rozvíjela.</p>
             <p class="growth-teaser-value">Hodnota služeb samostatně až 4 500 Kč.</p>
             <button type="button" class="btn btn-gold" data-open-growth>Zjistit více</button>
@@ -336,8 +319,8 @@
             <p>Jednotlivé části webu jsou sekce na hlavní stránce a menu na ně návštěvníka posouvá kotvami. Samostatné podstránky patří k PRO.</p>
           </details>
           <details>
-            <summary>Kdy je Program růstu zdarma?</summary>
-            <p>Jen u ročního Moderníka PRO, v prvním roce. Jinak jej lze dokoupit za 999 Kč.</p>
+            <summary>Kolik stojí Program růstu?</summary>
+            <p>Program růstu stojí 999 Kč. Pomáhá s recenzemi, marketingem a dalším rozvojem provozovny během prvního roku.</p>
           </details>
           <details>
             <summary>Jak je to s Materiálníkem?</summary>
@@ -413,7 +396,6 @@
               <option value="Moderník START">Moderník START</option>
               <option value="Kompletní partnerství MODERNÍK">Moderník PRO</option>
               <option value="Kompletní partnerství MODERNÍK + Program růstu">PRO + Program růstu</option>
-              <option value="Spočítat orientační cenu Partnerství">Spočítat orientační cenu</option>
               <option value="Nejsem si jistý, poradíte mi">Nejsem si jistý, poradíte mi</option>
             </select>
           </label>
@@ -499,7 +481,7 @@
       <div class="calc-growth-closeout">
         <p class="calc-growth-closeout-lead">Moderník nekončí spuštěním.</p>
         <p>Během prvního roku od nás postupně získáte služby v hodnotě 4 500 Kč + kompletní úvodní nastavení.</p>
-        <p class="calc-growth-closeout-badge">Program růstu</p>
+        <p class="calc-growth-closeout-badge">Program růstu · 999 Kč</p>
       </div>
     </div>
   </dialog>
