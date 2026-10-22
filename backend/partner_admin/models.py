@@ -745,8 +745,13 @@ class PotencialniKontakt(models.Model):
     STAV_SMS = 'kontakt_sms'
     STAV_TELEFON = 'kontakt_telefon'
     STAV_OSOBNE = 'kontakt_osobne'
+    STAV_NEFUNKCNI_TELEFON = 'nefunkcni_telefon'
+    STAV_ZAVOLAT_ZNOVU = 'zavolat_znovu'
+    STAV_OZVAT_SE_POZDEJI = 'ozvat_se_pozdeji'
+    STAV_DOMLUVENA_SCHUZKA = 'domluvena_schuzka'
     STAV_NEMA_ZAJEM = 'nema_zajem'
     STAV_MA_ZAJEM = 'ma_zajem'
+    STAV_PRODANO = 'prodano'
     STAV_NECHCEME = 'nechceme'
     STAVY = [
         (STAV_LEAD_PRED, 'Lead před kontrolou webu'),
@@ -755,8 +760,13 @@ class PotencialniKontakt(models.Model):
         (STAV_SMS, 'Kontaktován SMS'),
         (STAV_TELEFON, 'Kontaktován telefonicky'),
         (STAV_OSOBNE, 'Kontaktován osobně'),
+        (STAV_NEFUNKCNI_TELEFON, 'Nefunkční telefon'),
+        (STAV_ZAVOLAT_ZNOVU, 'Zavolat znovu'),
+        (STAV_OZVAT_SE_POZDEJI, 'Ozvat se později'),
+        (STAV_DOMLUVENA_SCHUZKA, 'Domluvená schůzka'),
         (STAV_NEMA_ZAJEM, 'Nemá zájem'),
         (STAV_MA_ZAJEM, 'Má zájem'),
+        (STAV_PRODANO, 'Prodáno'),
         (STAV_NECHCEME, 'Nechceme'),
     ]
 

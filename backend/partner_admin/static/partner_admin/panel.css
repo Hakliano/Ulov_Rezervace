@@ -1141,8 +1141,13 @@ small { color: var(--muted); }
 .stav-kontakt_sms,
 .stav-kontakt_telefon,
 .stav-kontakt_osobne { background: #7a8b9c; }
+.stav-nefunkcni_telefon { background: #b07040; }
+.stav-zavolat_znovu { background: #4a7ab5; }
+.stav-ozvat_se_pozdeji { background: #6b6aa8; }
+.stav-domluvena_schuzka { background: #2a9d8f; }
 .stav-nema_zajem { background: #8a6b4a; }
 .stav-ma_zajem { background: #3cb371; }
+.stav-prodano { background: #1f8a4c; }
 .stav-nechceme { background: #c45c5c; }
 .lead-table-wrap { display: grid; gap: .55rem; margin: 0 0 1.4rem; }
 .lead-head, .lead-row {
