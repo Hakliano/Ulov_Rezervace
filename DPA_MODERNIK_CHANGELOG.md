@@ -3,9 +3,9 @@
 | Položka | Hodnota |
 |--------|---------|
 | Soubor | `modernik/dpa.html` |
-| Stav | **návrh ke schválení** (staging) |
+| Stav | **finální znění — ke schválení před LIVE** (staging) |
 | Datum dokumentu | říjen 2026 |
-| Účinnost | Až po schválení vedením / právním posouzení a výslovném nasazení — **ne zpětně** |
+| Účinnost | Až po schválení vedením a výslovném nasazení na LIVE — **ne zpětně** |
 | Podklady | `DPA_MODERNIK_TECHNICKY_AUDIT.md`, `DPA_MODERNIK_DOPLNUJICI_ANALYZA.md` |
 | Produktový kód | **Beze změny** |
 | LIVE | **Beze změny** |
@@ -174,8 +174,21 @@
 
 ---
 
+## Finální doladění (po b170970)
+
+| Bod | Úprava |
+|-----|--------|
+| A Fotografie | VI.13–14: Partner = právní důvod pořízení/uložení/zveřejnění; Zpracovatel = TOM; rozlišení interních příloh Archivníku (API) vs. veřejných médií webu (CDN). **Bez** tvrzení o nemožnosti přístupu přes CDN. |
+| B Uchování | VII.3–4, 6, 8: výslovně neúplná anonymizace do 24 h; oddělení rezervací vs. Archivník; zálohy přetrvají omezeně dle retenční politiky (14 dní). |
+| C Výmaz / konec | VII.9 zachován; XII.3–4: předání/výmaz na žádost Partnera; bez slibu automatického kompletního offboardingu. |
+| D Zvláštní kategorie | III: Partner odpovídá za zákonnost včetně zdraví člověka; systém technicky nevylučuje vložení. |
+| Meta | Stav „finální znění — ke schválení před LIVE“; Čl. XIII/7. |
+
+**Návaznost:** VOP v2.2, Smlouva v2, Specifikace v2 — bez rozporu; jejich obchodní text neměněn.
+
 ## Potvrzení rozsahu
 
 - Změněn pouze `modernik/dpa.html` (+ tento changelog).  
 - Neměněno: rezervace/anonymizace, Archivník kód, FLOW, Materiálník, VOP, Smlouva, Specifikace, Bunny config, LIVE.  
-- Staging deploy: dle pipeline z `origin/dev` po pushi.
+- Staging deploy: dle pipeline z `origin/dev` po pushi.  
+- LIVE: až po výslovném schválení vedením.
