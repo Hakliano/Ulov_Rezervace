@@ -1812,6 +1812,26 @@ a.promo-card-img:hover {
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
   color: var(--gold-light);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.docs-badge {
+  display: inline-block;
+  padding: 0.18rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(232, 238, 247, 0.72);
+  font-family: var(--font-body, "DM Sans", sans-serif);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .docs-item p {
