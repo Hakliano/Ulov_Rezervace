@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Právní dokumenty — ULOV KLIENTY</title>
+  <meta name="description" content="Rozcestník právní dokumentace projektů ULOV KLIENTY — Moderník a HereYouAre.">
+  <link rel="canonical" href="https://www.ulovklienty.cz/pravni-dokumenty/">
+  <link rel="icon" type="image/png" href="https://haklweb.b-cdn.net/ULOV_KLIENTA/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../hub.css?v=15">
+  <link rel="stylesheet" href="../cookie-consent.css?v=1">
+  <style>
+    .legal-hub {
+      padding: clamp(2.25rem, 5vw, 4rem) 0 4rem;
+    }
+
+    .legal-hub-head {
+      max-width: 40rem;
+      margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+    }
+
+    .legal-hub-head h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      line-height: 1.15;
+      margin-bottom: 0.85rem;
+      color: var(--gold-light);
+    }
+
+    .legal-hub-head p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .legal-hub-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 760px) {
+      .legal-hub-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+      }
+    }
+
+    .legal-hub-card {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.5rem;
+      min-height: 100%;
+      border-radius: var(--radius);
+      border: 1px solid rgba(201, 166, 74, 0.35);
+      background: linear-gradient(145deg, rgba(23, 44, 73, 0.95), rgba(15, 31, 53, 0.88));
+    }
+
+    .legal-hub-card img {
+      width: min(100%, 240px);
+      height: 4.5rem;
+      object-fit: contain;
+      object-position: left center;
+    }
+
+    .legal-hub-card h2 {
+      font-family: var(--font-display);
+      font-size: 1.65rem;
+      color: var(--gold-light);
+      margin: 0;
+    }
+
+    .legal-hub-card .hub-header-cta {
+      margin-top: auto;
+      align-self: flex-start;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="hub-header">
+    <div class="hub-wrap hub-header-inner">
+      <a href="../" class="hub-brand">
+        <img src="https://haklweb.b-cdn.net/ULOV_KLIENTA/logo_080226.webp" alt="" width="52" height="52">
+        <span>ULOV KLIENTY</span>
+      </a>
+      <div class="hub-header-actions">
+        <a href="mailto:info@ulovklienty.cz" class="hub-header-link">info@ulovklienty.cz</a>
+        <a href="./" class="hub-header-cta hub-header-cta-secondary" aria-current="page">Právní dokumenty</a>
+        <a href="../#poptavka" class="hub-header-cta">Poptávka</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="legal-hub">
+      <div class="hub-wrap">
+        <div class="legal-hub-head">
+          <h1>Právní dokumenty</h1>
+          <p>Vyberte projekt, jehož právní dokumentaci chcete zobrazit.</p>
+        </div>
+
+        <div class="legal-hub-grid">
+          <article class="legal-hub-card">
+            <img
+              src="https://haklweb.b-cdn.net/modernik/modernik_logo.webp"
+              alt=""
+              width="280"
+              height="120"
+              loading="eager"
+              decoding="async"
+            >
+            <h2>Moderník</h2>
+            <a
+              class="hub-header-cta"
+              href="https://www.modernik.cz/dokumentace.html"
+              target="_blank"
+              rel="noopener"
+            >Právní dokumentace projektu Moderník</a>
+          </article>
+
+          <article class="legal-hub-card">
+            <img
+              class="hub-card-logo-hya"
+              src="https://hereyouare.b-cdn.net/Presentation_web_hya/img_for_all_proiperty/Mountain%20Cabin%20HereYouAre%20Logo.webp"
+              alt=""
+              width="280"
+              height="120"
+              loading="eager"
+              decoding="async"
+            >
+            <h2>HereYouAre</h2>
+            <a
+              class="hub-header-cta"
+              href="https://hereyouare.cz/pravni-dokumenty/"
+              target="_blank"
+              rel="noopener"
+            >Právní dokumentace projektu HereYouAre</a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="hub-footer">
+    <div class="hub-wrap hub-footer-inner">
+      <p>© 2026 ULOV KLIENTY · služby poskytuje Jiří Hakl</p>
+      <p>
+        <a href="../dokumentace.html">Dokumentace</a>
+        · <a href="../vop.html">VOP</a>
+        · <a href="../gdpr.html">GDPR</a>
+        · <a href="#cookies" data-ulov-cookie-settings>Cookies</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    window.ULOV_COOKIE_CONSENT = {
+      gaMeasurementId: "",
+      privacyUrl: "../gdpr.html"
+    };
+  </script>
+  <script src="../cookie-consent.js?v=1" defer></script>
+</body>
+</html>
