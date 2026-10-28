@@ -19,7 +19,7 @@
 
   var defaults = {
     gaMeasurementId: "",
-    privacyUrl: "gdpr.html",
+    privacyUrl: "cookies.html",
     categories: [
       {
         id: "necessary",
