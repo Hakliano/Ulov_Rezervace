@@ -3,7 +3,7 @@
 | Položka | Hodnota |
 |--------|---------|
 | Datum | 28. 10. 2026 |
-| Commit (dev) | po pushi |
+| Commit (dev) | `fc5a82c` |
 | Prostředí | **STAGING** (LIVE až po schválení) |
 | Archivní kopie | `archive/ulov-legal-legacy-20261028/` (mimo `presentace/`, nenasazuje se) |
 
