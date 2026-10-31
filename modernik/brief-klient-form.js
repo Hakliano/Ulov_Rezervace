@@ -11,7 +11,6 @@
 
   var DOPLNKY_LABELS = {
     qr_kod: "QR kód na web (zdarma)",
-    nfc_karta: "NFC karta (100–200 Kč)",
     nfc_stojanek: "NFC stojánek (250 Kč)",
     vizitky: "Klasické vizitky",
     reklamni_predmety: "Reklamní předměty",

@@ -2560,7 +2560,6 @@ html.is-staging .experiment-banner {
   .extras-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .docs-hero-grid { grid-template-columns: 1fr; }
   .docs-hero-media { max-width: 28rem; }
-  .header-actions .btn-outline { display: none; }
   .nav a { font-size: 0.74rem; }
 }
 
@@ -2591,8 +2590,7 @@ html.is-staging .experiment-banner {
     display: inline;
     font-size: 0.72rem;
   }
-  .header-actions { gap: 0.4rem; }
-  .header-actions .btn-outline { display: none; }
+  .header-actions { gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
   .header-actions .btn { min-height: 40px; padding: 0.5rem 0.85rem; font-size: 0.72rem; }
   .tiles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .offer-row,
