@@ -22,8 +22,14 @@
           </tr>
           <tr>
             <td style="padding:12px 28px 0;font-size:15px;line-height:1.55;color:#b7c0ce;">
+              {% if znovu %}
+              bylo vám znovu odesláno přihlášení do partner-admin ULOV KLIENTY
+              jako <strong style="color:#f3e6b8;">{{ role_label }}</strong>
+              — níže je <strong style="color:#f3e6b8;">nové heslo</strong>.
+              {% else %}
               byl vám vytvořen přístup do partner-admin ULOV KLIENTY
               jako <strong style="color:#f3e6b8;">{{ role_label }}</strong>.
+              {% endif %}
             </td>
           </tr>
           <tr>

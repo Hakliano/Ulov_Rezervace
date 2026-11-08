@@ -741,6 +741,33 @@ class TymUzivatelForm(forms.Form):
         return (self.cleaned_data.get('jmeno') or '').strip()
 
 
+class TymUpravaForm(forms.Form):
+    jmeno = forms.CharField(label='Jméno', max_length=150)
+    email = forms.EmailField(
+        label='E-mail (přihlášení)',
+        max_length=150,
+        help_text='Změní i přihlašovací jméno. Po změně e-mailu pošlete přístup znovu.',
+    )
+    role = forms.ChoiceField(label='Role', choices=PartnerAdminProfil.ROLE_CHOICES)
+
+    def __init__(self, *args, profil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.profil = profil
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        User = get_user_model()
+        qs = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email))
+        if self.profil:
+            qs = qs.exclude(pk=self.profil.user_id)
+        if qs.exists():
+            raise forms.ValidationError('Účet s tímto e-mailem už existuje.')
+        return email
+
+    def clean_jmeno(self):
+        return (self.cleaned_data.get('jmeno') or '').strip()
+
+
 class PartnerAdminLoginForm(AuthenticationForm):
     """E-mail nebo username. Účet bez přístupu do panelu se nepřihlásí."""
 

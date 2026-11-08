@@ -1,6 +1,6 @@
 Dobrý den {{ jmeno }},
 
-byl vám vytvořen přístup do partner-admin ULOV KLIENTY jako {{ role_label }}.
+{% if znovu %}bylo vám znovu odesláno přihlášení do partner-admin ULOV KLIENTY jako {{ role_label }} (nové heslo).{% else %}byl vám vytvořen přístup do partner-admin ULOV KLIENTY jako {{ role_label }}.{% endif %}
 
 Přihlášení: {{ email }}
 Heslo: {{ heslo }}

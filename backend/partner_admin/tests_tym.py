@@ -166,6 +166,69 @@ class TymPristupyTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('/partner-admin/login/', response['Location'])
 
+    def test_poslat_pristup_znovu_a_zablokovat_aktivovat(self):
+        self.client.force_login(self.superuser)
+        profil = self.kam_user.partner_admin_profil
+        nove_heslo = 'nove-heslo-abc12'
+        with patch('partner_admin.tym.vygeneruj_demo_heslo', return_value=nove_heslo):
+            response = self.client.post(reverse('partner_admin:tym_poslat_pristup', args=[profil.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.kam_user.refresh_from_db()
+        self.assertTrue(self.kam_user.check_password(nove_heslo))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Nové heslo', mail.outbox[0].subject)
+
+        self.client.post(reverse('partner_admin:tym_zablokovat', args=[profil.pk]))
+        self.kam_user.refresh_from_db()
+        self.assertFalse(self.kam_user.is_active)
+        self.client.logout()
+        login = self.client.post(
+            '/partner-admin/login/',
+            {'username': 'kam@example.test', 'password': nove_heslo},
+        )
+        self.assertEqual(login.status_code, 200)
+        self.assertFalse(login.wsgi_request.user.is_authenticated)
+
+        self.client.force_login(self.superuser)
+        self.client.post(reverse('partner_admin:tym_aktivovat', args=[profil.pk]))
+        self.kam_user.refresh_from_db()
+        self.assertTrue(self.kam_user.is_active)
+        self.client.logout()
+        login = self.client.post(
+            '/partner-admin/login/',
+            {'username': 'kam@example.test', 'password': nove_heslo},
+        )
+        self.assertEqual(login.status_code, 302)
+        self.assertEqual(login['Location'], '/partner-admin/')
+
+    def test_ulozit_jmeno_a_email(self):
+        profil = self.kam_user.partner_admin_profil
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse('partner_admin:tym_ulozit', args=[profil.pk]),
+            {
+                'jmeno': 'KAM Přejmenovaný',
+                'email': 'kam.novy@example.test',
+                'role': ROLE_KAM,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        profil.refresh_from_db()
+        self.kam_user.refresh_from_db()
+        self.assertEqual(profil.jmeno, 'KAM Přejmenovaný')
+        self.assertEqual(self.kam_user.email, 'kam.novy@example.test')
+        self.assertEqual(self.kam_user.username, 'kam.novy@example.test')
+
+    def test_kam_nemuze_spravovat_tym(self):
+        profil = self.kam_user.partner_admin_profil
+        self.client.force_login(self.kam_user)
+        for name, args in (
+            ('partner_admin:tym_poslat_pristup', (profil.pk,)),
+            ('partner_admin:tym_zablokovat', (profil.pk,)),
+            ('partner_admin:tym_aktivovat', (profil.pk,)),
+        ):
+            self.assertEqual(self.client.post(reverse(name, args=args)).status_code, 403)
+
     def test_vytvor_tym_uzivatele_helper(self):
         user, profil, email_ok, _chyba = vytvor_tym_uzivatele(
             jmeno='Helper',

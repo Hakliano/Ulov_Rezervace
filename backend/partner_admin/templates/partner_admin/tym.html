@@ -29,6 +29,7 @@
               <th>Jméno</th>
               <th>E-mail</th>
               <th>Role</th>
+              <th>Stav</th>
               <th>Vytvořeno</th>
               <th></th>
             </tr>
@@ -39,10 +40,33 @@
                 <td>{{ clen.jmeno }}</td>
                 <td>{{ clen.user.email }}</td>
                 <td>{{ clen.get_role_display }}</td>
-                <td>{{ clen.vytvoreno|date:"d.m.Y H:i" }}</td>
                 <td>
+                  {% if clen.user.is_active %}
+                    <span class="badge badge-ok">Aktivní</span>
+                  {% else %}
+                    <span class="badge badge-blocked">Zablokován</span>
+                  {% endif %}
+                </td>
+                <td>{{ clen.vytvoreno|date:"d.m.Y H:i" }}</td>
+                <td class="tym-actions">
                   {% if clen.user_id != request.user.id %}
-                    <form method="post" action="{% url 'partner_admin:tym_smazat' clen.id %}" onsubmit="return confirm('Smazat účet {{ clen.jmeno }}?');">
+                    {% if clen.user.is_active %}
+                      <form method="post" action="{% url 'partner_admin:tym_poslat_pristup' clen.id %}" onsubmit="return confirm('Poslat {{ clen.jmeno }} nové heslo e-mailem? Staré přestane platit.');">
+                        {% csrf_token %}
+                        <button class="btn btn-secondary btn-tiny" type="submit">Poslat přístup znovu</button>
+                      </form>
+                      <form method="post" action="{% url 'partner_admin:tym_zablokovat' clen.id %}" onsubmit="return confirm('Zablokovat přístup pro {{ clen.jmeno }}? Nepřihlásí se do panelu.');">
+                        {% csrf_token %}
+                        <button class="btn btn-warning btn-tiny" type="submit">Zablokovat přístup</button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{% url 'partner_admin:tym_aktivovat' clen.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-success btn-tiny" type="submit">Aktivovat přístup</button>
+                      </form>
+                    {% endif %}
+                    <a class="btn btn-primary btn-tiny" href="{% url 'partner_admin:tym' %}?upravit={{ clen.id }}">Upravit</a>
+                    <form method="post" action="{% url 'partner_admin:tym_smazat' clen.id %}" onsubmit="return confirm('Smazat účet {{ clen.jmeno }}? Historie (kdo označil platbu, výdaje…) zůstane, jen bez odkazu na uživatele. U ukončené spolupráce je bezpečnější Zablokovat přístup.');">
                       {% csrf_token %}
                       <button class="btn btn-danger btn-tiny" type="submit">Smazat</button>
                     </form>
@@ -57,6 +81,43 @@
       <p class="empty">Zatím žádný týmový účet. Superadmin se tady nevypisuje.</p>
     {% endif %}
   </section>
+
+  {% if edituje and uprava_form %}
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Úprava</p>
+          <h2>{{ edituje.jmeno }}</h2>
+        </div>
+        <a class="btn btn-quiet" href="{% url 'partner_admin:tym' %}">Zrušit</a>
+      </div>
+      <form class="form-grid" method="post" action="{% url 'partner_admin:tym_ulozit' edituje.id %}" autocomplete="off">
+        {% csrf_token %}
+        {% if uprava_form.non_field_errors %}
+          <div class="full">{{ uprava_form.non_field_errors }}</div>
+        {% endif %}
+        <label>
+          {{ uprava_form.jmeno.label }}
+          {{ uprava_form.jmeno }}
+          {% if uprava_form.jmeno.errors %}<small class="field-error">{{ uprava_form.jmeno.errors|striptags }}</small>{% endif %}
+        </label>
+        <label>
+          {{ uprava_form.email.label }}
+          {{ uprava_form.email }}
+          {% if uprava_form.email.help_text %}<small>{{ uprava_form.email.help_text }}</small>{% endif %}
+          {% if uprava_form.email.errors %}<small class="field-error">{{ uprava_form.email.errors|striptags }}</small>{% endif %}
+        </label>
+        <label>
+          {{ uprava_form.role.label }}
+          {{ uprava_form.role }}
+          {% if uprava_form.role.errors %}<small class="field-error">{{ uprava_form.role.errors|striptags }}</small>{% endif %}
+        </label>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Uložit změny</button>
+        </div>
+      </form>
+    </section>
+  {% endif %}
 
   <section class="panel">
     <div class="panel-head">
