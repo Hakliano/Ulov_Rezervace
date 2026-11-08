@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Přehled · Pošťák{% endblock %}
+{% block content %}
+<h1>Přehled</h1>
+<p class="muted">Pracovní plocha je připravená. Data z pošty, klientů a kalendáře tu zatím nejsou.</p>
+<div class="grid">
+  {% for nazev, text, odkaz in karty %}
+  <a class="card link" href="{% url odkaz %}">
+    <h2>{{ nazev }}</h2>
+    <p>{{ text }}</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

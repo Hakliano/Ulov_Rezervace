@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ cil.username }} · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>{{ cil.get_full_name|default:cil.username }}</h1>
+  <a class="btn secondary" href="{% url 'uzivatele' %}">Zpět</a>
+</div>
+<div class="stack">
+  <section class="card">
+    <h2>Účet</h2>
+    <dl class="meta">
+      <div><dt>Uživatelské jméno</dt><dd>{{ cil.username }}</dd></div>
+      <div><dt>Stav</dt><dd>{% if cil.is_active %}Aktivní{% else %}Neaktivní{% endif %}</dd></div>
+    </dl>
+    <form method="post" class="inline">
+      {% csrf_token %}
+      <label for="role">Role</label>
+      <select id="role" name="role">
+        <option value="user" {% if not cil.is_superuser %}selected{% endif %}>USER</option>
+        <option value="superuser" {% if cil.is_superuser %}selected{% endif %}>SUPERUSER</option>
+      </select>
+      <button class="btn secondary" type="submit" name="akce" value="role">Uložit roli</button>
+    </form>
+    {% if cil.is_active %}
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn danger" type="submit" name="akce" value="deaktivovat" {% if posledni or cil.pk == user.pk %}disabled{% endif %}>Deaktivovat</button>
+    </form>
+    {% else %}
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn" type="submit" name="akce" value="aktivovat">Aktivovat</button>
+    </form>
+    {% endif %}
+  </section>
+  <section class="card">
+    <h2>Nové heslo</h2>
+    <p class="muted">Heslo nastavíte vy. Pošťák ho nikam neposílá.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "pole.html" with form=heslo_form %}
+      <button class="btn" type="submit" name="akce" value="heslo">Nastavit heslo</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

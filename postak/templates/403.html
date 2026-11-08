@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Bez oprávnění · Pošťák{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Bez oprávnění</h1>
+  <p class="muted">Správu uživatelů má jen SUPERUSER.</p>
+  <a class="btn secondary" href="{% url 'nastaveni' %}">Zpět do nastavení</a>
+</section>
+{% endblock %}
