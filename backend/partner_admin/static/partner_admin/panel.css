@@ -683,6 +683,8 @@ label.check input { width: auto; min-height: 0; }
 }
 .feature-toggle .field-error { margin-top: .5rem; }
 .btn-tiny { padding: .28rem .55rem; font-size: .72rem; }
+.tym-actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; max-width: 22rem; }
+.tym-actions form { margin: 0; }
 .faktura-cell { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; min-width: 14rem; }
 .faktura-now {
   display: flex;
