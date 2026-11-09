@@ -108,8 +108,13 @@ Samostatný compose `postak-staging`, vlastní Postgres volume — **nesdílí**
 
 ---
 
-## Commit / verze nasazená na staging
+## Commit / verze pro staging deploy
 
-*Vyplnit po deployi:* `GIT_SHA=…` z `deploy/postak/deploy-staging-postak.sh`.
+| Commit | Popis |
+|--------|--------|
+| `86f8d73` | Pošťák — kostra (auth, role) |
+| `ce2b0b9` | Plná aplikace + Postak API + staging deploy artefakty |
 
-**Aktuální lokální HEAD (referenční, starý skeleton):** `86f8d73` — **nereprezentuje** HELP-01 / USER-02 stav bez nového commitu.
+`origin/dev` po pushi směřuje na **`ce2b0b9`**. NASAZENÍ NA SERVER ZATÍM **NESPUŠTĚNO**.
+
+*Po deployi doplnit:* výstup `git rev-parse HEAD` na serveru po `deploy-staging-postak.sh`.
