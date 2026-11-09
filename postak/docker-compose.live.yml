@@ -1,0 +1,62 @@
+# Pošťák LIVE — samostatný compose (ne sdílet DB s ULOV API/Materiálník).
+#   docker compose -p postak-live -f docker-compose.live.yml --env-file .env up -d --build
+#
+# Nginx www.ulovklienty.cz → ulov-live-postak:8000 (síť ulov_default).
+
+name: postak-live
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postak_live}
+      POSTGRES_USER: ${POSTGRES_USER:-postak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postak_live_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postak} -d ${POSTGRES_DB:-postak_live}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: ulov-live-postak
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - postak_live_logs:/var/log/postak
+    expose:
+      - '8000'
+    networks:
+      - default
+      - ulov_live
+
+  backup:
+    image: postgres:16-alpine
+    profiles: ['backup']
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-postak}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-postak_live}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ['sh', '-c', 'pg_dump -Fc -f /backups/postak_live_$$(date +%Y%m%d_%H%M%S).dump && echo OK']
+
+volumes:
+  postak_live_pgdata:
+  postak_live_logs:
+
+networks:
+  ulov_live:
+    external: true
+    name: ulov_default

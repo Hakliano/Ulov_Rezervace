@@ -70,6 +70,9 @@ HYA_API_BASE = os.environ.get(
     'http://127.0.0.1:8000/internal/postak/v1',
 ).strip().rstrip('/')
 HYA_POSTAK_API_TOKEN = os.environ.get('HYA_POSTAK_API_TOKEN', '').strip()
+# CRM zápisy do Moderníku/HYA — na LIVE výchozí vypnuto (jen čtení + lokální cache).
+POSTAK_MODERNIK_CRM_WRITE = _env_bool('POSTAK_MODERNIK_CRM_WRITE', DEBUG)
+POSTAK_HYA_CRM_WRITE = _env_bool('POSTAK_HYA_CRM_WRITE', False)
 
 INSTALLED_APPS = [
     'django.contrib.auth',

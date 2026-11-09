@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -13,6 +14,23 @@ from .klienti_sync import bootstrap_if_empty, maybe_auto_nocni_sync, synchronizu
 from .modernik_client import ModernikApiError, detail as api_detail, meta as api_meta, upravit as api_upravit, vytvorit as api_vytvorit, zmenit_stav as api_zmenit_stav
 from .kalendar_services import klient_udalosti_hya, klient_udalosti_modernik
 from .views import login_required_view
+
+
+def _crm_zapis_povolen(projekt: str) -> bool:
+    if projekt == PROJEKT_HYA:
+        return bool(getattr(settings, 'POSTAK_HYA_CRM_WRITE', False))
+    if projekt == PROJEKT_MODERNIK:
+        return bool(getattr(settings, 'POSTAK_MODERNIK_CRM_WRITE', False))
+    return False
+
+
+def _odmitnout_zapis(request, projekt: str):
+    messages.error(
+        request,
+        'Zápis do CRM je na tomto prostředí vypnutý (pouze čtení a synchronizace).',
+    )
+    return redirect('klienti')
+
 
 PER_PAGE = (25, 50, 100)
 PROJEKT_MAP = dict(PROJEKTY)
@@ -250,6 +268,8 @@ def klient_novy(request):
     stavy = stavy_mod if projekt == PROJEKT_MODERNIK else stavy_hya
     initial = {'projekt': projekt}
     if request.method == 'POST':
+        if not _crm_zapis_povolen(projekt):
+            return _odmitnout_zapis(request, projekt)
         try:
             if projekt == PROJEKT_HYA:
                 body = {
@@ -310,6 +330,8 @@ def klient_detail(request, projekt, pk):
     stavy_mod, stavy_hya, sektory = _fetch_meta()
     stavy = stavy_mod if projekt == PROJEKT_MODERNIK else stavy_hya
     if request.method == 'POST':
+        if not _crm_zapis_povolen(projekt):
+            return _odmitnout_zapis(request, projekt)
         try:
             if projekt == PROJEKT_HYA:
                 body = {
@@ -387,6 +409,8 @@ def klient_detail(request, projekt, pk):
 @require_POST
 def klient_stav(request, projekt, pk):
     lokal = _lokal(projekt, pk)
+    if not _crm_zapis_povolen(projekt):
+        return _odmitnout_zapis(request, projekt)
     stav = (request.POST.get('stav') or '').strip()
     try:
         if projekt == PROJEKT_HYA:
