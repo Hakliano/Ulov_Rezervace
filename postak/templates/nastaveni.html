@@ -1,25 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Nastavení · Pošťák{% endblock %}
+{% load postak_tags %}
+{% block title %}Nastavení uživatele · Pošťák{% endblock %}
 {% block content %}
-<h1>Nastavení</h1>
+<h1>Nastavení uživatele</h1>
+{% if vyzadovat_zmenu_hesla %}
+<p class="warn">Máte dočasné heslo — před pokračováním do aplikace si prosím nastavte nové heslo níže.</p>
+{% endif %}
 <div class="stack">
   <section class="card">
     <h2>Profil</h2>
+    {% with src=user|profil_foto %}
+    {% if src %}<img class="avatar" src="{{ src }}" alt="">{% endif %}
+    {% endwith %}
     <dl class="meta">
-      <div><dt>Jméno</dt><dd>{{ user.get_full_name|default:"—" }}</dd></div>
-      <div><dt>Účet</dt><dd>{{ user.username }}</dd></div>
+      <div><dt>Uživatelské jméno</dt><dd>{{ user.username }}</dd></div>
       <div><dt>Role</dt><dd>{% if user.is_superuser %}SUPERUSER{% else %}USER{% endif %}</dd></div>
     </dl>
-    {% if user.is_superuser %}
-    <a class="btn" href="{% url 'uzivatele' %}">Správa uživatelů</a>
-    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% include "pole.html" with form=profil_form %}
+      <button class="btn" type="submit" name="akce" value="profil">Uložit profil</button>
+    </form>
   </section>
   <section class="card">
     <h2>Vlastní heslo</h2>
     <form method="post">
       {% csrf_token %}
       {% include "pole.html" %}
-      <button class="btn" type="submit">Uložit heslo</button>
+      <button class="btn" type="submit" name="akce" value="heslo">Uložit heslo</button>
     </form>
   </section>
 </div>

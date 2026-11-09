@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ klient.jmeno }} · Klienti{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>{{ klient.jmeno }}</h1>
+  <span class="muted">{{ projekt_label }}</span>
+  <a class="btn secondary" href="{% url 'klienti' %}">Zpět</a>
+</div>
+<section class="card narrow">
+  <form method="post">
+    {% csrf_token %}
+    <div class="field"><label for="jmeno">Jméno / firma</label><input id="jmeno" name="jmeno" value="{{ klient.jmeno }}" required></div>
+    {% if projekt == 'hya' %}
+    <div class="field"><label for="kontakt_jmeno">Kontaktní osoba</label><input id="kontakt_jmeno" name="kontakt_jmeno" value="{{ klient.kontakt_jmeno }}"></div>
+    {% endif %}
+    <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" value="{{ klient.email }}" {% if projekt == 'modernik' %}required{% endif %}></div>
+    <div class="field"><label for="telefon">Telefon</label><input id="telefon" name="telefon" value="{{ klient.telefon }}"></div>
+    <div class="field"><label for="web">Web</label><input id="web" name="web" value="{{ klient.web }}"></div>
+    {% if projekt == 'modernik' %}
+    <div class="field"><label for="ico">IČO</label><input id="ico" name="ico" value="{{ klient.ico }}"></div>
+    <div class="field"><label for="adresa">Adresa</label><textarea id="adresa" name="adresa" rows="2">{{ klient.adresa }}</textarea></div>
+    <div class="field"><label for="sektor_id">Sektor</label>
+      <select id="sektor_id" name="sektor_id">
+        <option value="">—</option>
+        {% for s in sektory %}
+        <option value="{{ s.remote_id }}" {% if klient.sektor_remote_id == s.remote_id %}selected{% endif %}>{{ s.nazev }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <div class="field"><label for="lokalita">Lokalita</label><input id="lokalita" name="lokalita" value="{{ klient.lokalita }}"></div>
+    <div class="field"><label for="zdroj">Zdroj</label><input id="zdroj" name="zdroj" value="{{ klient.zdroj }}"></div>
+    <div class="field"><label for="ma_web">Má web</label>
+      <select id="ma_web" name="ma_web">
+        <option value="" {% if not klient.ma_web or klient.ma_web == 'unknown' %}selected{% endif %}>neznámo</option>
+        <option value="yes" {% if klient.ma_web == 'yes' %}selected{% endif %}>ano</option>
+        <option value="no" {% if klient.ma_web == 'no' %}selected{% endif %}>ne</option>
+      </select>
+    </div>
+    <div class="field"><label for="ma_rezervace">Má rezervační systém</label>
+      <select id="ma_rezervace" name="ma_rezervace">
+        <option value="" {% if not klient.ma_rezervace or klient.ma_rezervace == 'unknown' %}selected{% endif %}>neznámo</option>
+        <option value="yes" {% if klient.ma_rezervace == 'yes' %}selected{% endif %}>ano</option>
+        <option value="no" {% if klient.ma_rezervace == 'no' %}selected{% endif %}>ne</option>
+      </select>
+    </div>
+    {% endif %}
+    <div class="field"><label for="poznamka">Poznámka</label><textarea id="poznamka" name="poznamka" rows="3">{{ klient.poznamka }}</textarea></div>
+    <div class="field"><label for="stav">Status</label>
+      <select id="stav" name="stav">
+        {% for s in stavy %}<option value="{{ s.kod }}" {% if klient.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <p class="muted">Upraveno ve zdroji: {{ klient.remote_upraveno|date:"d.m.Y H:i" }}</p>
+    <button class="btn" type="submit">Uložit</button>
+  </form>
+</section>
+{% if kalendar_udalosti %}
+<section class="card">
+  <h2>Související události</h2>
+  <ul class="overview-list">
+    {% for ev in kalendar_udalosti %}
+    <li><a href="{% url 'kalendar_detail' ev.pk %}">{{ ev.zacatek|date:"d.m.Y H:i" }} — {{ ev.nazev }} ({{ ev.get_typ_display }})</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% if historie %}
+<section class="card">
+  <h2>Historie stavů (Moderník)</h2>
+  <ul class="compact">
+    {% for h in historie %}
+    <li>{{ h.kdy|date:"d.m.Y H:i" }} — {{ h.stav_label|default:h.stav }}{% if h.kdo %} ({{ h.kdo }}){% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

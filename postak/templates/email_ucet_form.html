@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ nadpis }} · Pošťák{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>{{ nadpis }}</h1>
+  <p class="nav-back"><a class="btn secondary btn-small" href="{% url 'email_ucty' %}">← E-mailové účty</a></p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "pole.html" %}
+    <button class="btn" type="submit">Uložit</button>
+    <a class="btn secondary" href="{% url 'email_ucty' %}">Zpět</a>
+  </form>
+  <p class="muted">Výchozí servery FORPSI: IMAP <code>imap.forpsi.com</code> (993, SSL), SMTP <code>smtp.forpsi.com</code> (465, SSL).</p>
+</section>
+{% endblock %}

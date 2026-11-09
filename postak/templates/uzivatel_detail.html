@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load postak_tags %}
 {% block title %}{{ cil.username }} · Pošťák{% endblock %}
 {% block content %}
 <div class="row">
@@ -8,10 +9,15 @@
 <div class="stack">
   <section class="card">
     <h2>Účet</h2>
-    <dl class="meta">
-      <div><dt>Uživatelské jméno</dt><dd>{{ cil.username }}</dd></div>
-      <div><dt>Stav</dt><dd>{% if cil.is_active %}Aktivní{% else %}Neaktivní{% endif %}</dd></div>
-    </dl>
+    {% with src=cil|profil_foto %}
+    {% if src %}<img class="avatar" src="{{ src }}" alt="">{% endif %}
+    {% endwith %}
+    <p class="muted">Stav: {% if cil.is_active %}aktivní{% else %}neaktivní{% endif %}</p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "pole.html" with form=ucet_form %}
+      <button class="btn" type="submit" name="akce" value="ucet">Uložit údaje</button>
+    </form>
     <form method="post" class="inline">
       {% csrf_token %}
       <label for="role">Role</label>
@@ -32,6 +38,11 @@
       <button class="btn" type="submit" name="akce" value="aktivovat">Aktivovat</button>
     </form>
     {% endif %}
+  </section>
+  <section class="card">
+    <h2>Přístup e-mailem</h2>
+    <p class="muted">Přihlašovací identifikátor: <strong>{{ login_id }}</strong></p>
+    <a class="btn" href="{% url 'uzivatel_odeslat_prihlasovaci' cil.pk %}">Odeslat přihlašovací údaje</a>
   </section>
   <section class="card">
     <h2>Nové heslo</h2>

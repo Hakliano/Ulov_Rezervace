@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-RUN SECRET_KEY=build-only DEBUG=false python manage.py collectstatic --noinput
+RUN SECRET_KEY=build-only DEBUG=true python manage.py collectstatic --noinput
 
 EXPOSE 8000
 

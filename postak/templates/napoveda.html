@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}Nápověda · Pošťák{% endblock %}
+{% block content %}
+<article class="help-page">
+  <header class="help-header">
+    <h1>Jak používat Pošťáka?</h1>
+  </header>
+
+  <section class="help-intro card" id="uvod" aria-labelledby="uvod-nadpis">
+    <h2 id="uvod-nadpis">Vítejte v Pošťákovi!</h2>
+    <p class="help-lead"><strong>Všechno důležité na jednom místě.</strong></p>
+    <p>Pošťák vám pomáhá s každodenní prací. Najdete v něm e-maily, zákazníky, úkoly, kalendář, dokumenty i své kolegy.</p>
+    <p>Nemusíte se učit nic složitého. Vyberte si níže část, se kterou potřebujete pomoci, a ukážeme vám, jak na to.</p>
+  </section>
+
+  <nav class="help-cards" aria-label="Kapitoly nápovědy">
+    <a class="help-card" href="#prehled">
+      <span class="help-card-icon" aria-hidden="true">▦</span>
+      <span class="help-card-title">Přehled</span>
+      <span class="help-card-desc">Co mě dnes čeká?</span>
+    </a>
+    <a class="help-card" href="#emaily">
+      <span class="help-card-icon" aria-hidden="true">✉</span>
+      <span class="help-card-title">E-maily</span>
+      <span class="help-card-desc">Pošta v Pošťákovi</span>
+    </a>
+    <a class="help-card" href="#tym">
+      <span class="help-card-icon" aria-hidden="true">💬</span>
+      <span class="help-card-title">Tým a chat</span>
+      <span class="help-card-desc">Zprávy kolegům</span>
+    </a>
+    <a class="help-card" href="#klienti">
+      <span class="help-card-icon" aria-hidden="true">◆</span>
+      <span class="help-card-title">Potenciální klienti</span>
+      <span class="help-card-desc">Obchodní kontakty</span>
+    </a>
+    <a class="help-card" href="#kalendar">
+      <span class="help-card-icon" aria-hidden="true">📅</span>
+      <span class="help-card-title">Kalendář</span>
+      <span class="help-card-desc">Schůzky a úkoly</span>
+    </a>
+    <a class="help-card" href="#dokumentace">
+      <span class="help-card-icon" aria-hidden="true">📁</span>
+      <span class="help-card-title">Dokumentace</span>
+      <span class="help-card-desc">Soubory týmu</span>
+    </a>
+    <a class="help-card" href="#poznamky">
+      <span class="help-card-icon" aria-hidden="true">📝</span>
+      <span class="help-card-title">Poznámky a koncepty</span>
+      <span class="help-card-desc">Zápisník a rozpracované e-maily</span>
+    </a>
+    <a class="help-card" href="#nastaveni">
+      <span class="help-card-icon" aria-hidden="true">⚙</span>
+      <span class="help-card-title">Nastavení uživatele</span>
+      <span class="help-card-desc">Váš účet</span>
+    </a>
+    {% if je_superuser %}
+    <a class="help-card" href="#email-ucty">
+      <span class="help-card-icon" aria-hidden="true">📬</span>
+      <span class="help-card-title">E-mailové účty</span>
+      <span class="help-card-desc">Pro správce</span>
+    </a>
+    <a class="help-card" href="#sprava">
+      <span class="help-card-icon" aria-hidden="true">👤</span>
+      <span class="help-card-title">Správa uživatelů</span>
+      <span class="help-card-desc">Pouze správce</span>
+    </a>
+    {% endif %}
+  </nav>
+
+  <section class="help-chapter card" id="prehled" aria-labelledby="h-prehled">
+    <h2 id="h-prehled">1. Přehled – Co mě dnes čeká?</h2>
+    <p class="help-tagline"><strong>Přehled je vaše pracovní nástěnka.</strong></p>
+    <p>Po přihlášení se jako první dostanete právě sem. Na jednom místě uvidíte, co je nového a na co byste neměli zapomenout.</p>
+    <h3>Co zde najdete?</h3>
+    <ul class="help-list">
+      <li>Počet potenciálních klientů.</li>
+      <li>Nepřečtené e-maily.</li>
+      <li>Nové zprávy od kolegů.</li>
+      <li>Úkoly, které čekají na dokončení.</li>
+      <li>Dnešní program.</li>
+      <li>Přehled klientů podle stavu jednání.</li>
+    </ul>
+    <h3>Jak to používat?</h3>
+    <ol class="help-steps">
+      <li>Ráno otevřete Pošťáka.</li>
+      <li>Podívejte se, jestli máte nové zprávy.</li>
+      <li>Zkontrolujte dnešní úkoly a schůzky.</li>
+      <li>Vyberte, čemu se budete věnovat jako první.</li>
+    </ol>
+    <p class="help-example"><strong>Příklad:</strong> Vidíte, že máte dva nepřečtené e-maily a jednu dnešní schůzku. Nejdříve vyřídíte poštu a potom se připravíte na schůzku.</p>
+    <p><a class="btn help-open" href="{% url 'prehled' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="emaily" aria-labelledby="h-emaily">
+    <h2 id="h-emaily">2. E-maily – Všechna pošta pohromadě</h2>
+    <p class="help-tagline"><strong>E-maily můžete číst a odesílat přímo v Pošťákovi.</strong></p>
+    <p>Nemusíte kvůli tomu otevírat další e-mailovou aplikaci.</p>
+    <h3>Jak přečíst e-mail?</h3>
+    <ol class="help-steps">
+      <li>V levém menu klikněte na „E-maily“.</li>
+      <li>Vyberte schránku, pokud jich máte více.</li>
+      <li>Otevřete doručenou poštu.</li>
+      <li>Klikněte na zprávu, kterou si chcete přečíst.</li>
+    </ol>
+    <h3>Jak odpovědět?</h3>
+    <ol class="help-steps">
+      <li>Otevřete přijatý e-mail.</li>
+      <li>Klikněte na „Odpovědět“.</li>
+      <li>Napište zprávu.</li>
+      <li>Odešlete zprávu.</li>
+    </ol>
+    <h3>Jak napsat nový e-mail?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „E-maily“ a zvolte schránku.</li>
+      <li>Klikněte na „Nová zpráva“.</li>
+      <li>Vyplňte příjemce a předmět.</li>
+      <li>Napište text.</li>
+      <li>Případně přiložte soubor.</li>
+      <li>Odešlete zprávu.</li>
+    </ol>
+    <p class="help-tip"><strong>Užitečný tip:</strong> Tlačítkem „SYNCHRONIZOVAT SCHRÁNKU“ zkontrolujete nové zprávy ve schránce.</p>
+    <p><a class="btn help-open" href="{% url 'emaily' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="tym" aria-labelledby="h-tym">
+    <h2 id="h-tym">3. Tým a chat – Napište kolegovi</h2>
+    <p class="help-tagline"><strong>Potřebujete něco rychle vyřešit? Napište kolegovi přímo v Pošťákovi.</strong></p>
+    <p>Nemusíte hledat telefon ani posílat e-mail.</p>
+    <h3>Jak poslat zprávu?</h3>
+    <ol class="help-steps">
+      <li>Klikněte na „Tým a chat“.</li>
+      <li>Vyberte kolegu ze seznamu (tlačítko „Napsat zprávu“).</li>
+      <li>Napište zprávu.</li>
+      <li>Odešlete ji.</li>
+    </ol>
+    <h3>Co je dobré vědět?</h3>
+    <ul class="help-list">
+      <li>Zprávy jsou určené konkrétnímu kolegovi.</li>
+      <li>Uvidíte upozornění na nepřečtené zprávy.</li>
+      <li>Nové zprávy můžete zkontrolovat tlačítkem „SYNCHRONIZOVAT CHAT“.</li>
+    </ul>
+    <p class="help-example"><strong>Příklad:</strong> Potřebujete vědět, kdo bude dnes volat zákazníkovi. Napíšete kolegovi a domluvíte se přímo v chatu.</p>
+    <p><a class="btn help-open" href="{% url 'tym' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="klienti" aria-labelledby="h-klienti">
+    <h2 id="h-klienti">4. Potenciální klienti – Vaše obchodní kontakty</h2>
+    <p class="help-tagline"><strong>Tady máte přehled lidí a firem, které můžete oslovit.</strong></p>
+    <p>Pošťák pracuje s klienty projektů Moderník a HereYouAre.</p>
+    <h3>Jak najít klienta?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „Potenciální klienti“.</li>
+      <li>Vyberte Moderník, HereYouAre nebo všechny klienty.</li>
+      <li>Použijte vyhledávání nebo filtry.</li>
+      <li>Otevřete vybraný kontakt.</li>
+    </ol>
+    <h3>Jak upravit klienta?</h3>
+    <ol class="help-steps">
+      <li>Otevřete jeho detail.</li>
+      <li>Změňte potřebné údaje.</li>
+      <li>Uložte změny.</li>
+    </ol>
+    <h3>K čemu slouží stav klienta?</h3>
+    <p>Stav vám pomáhá poznat, jak daleko jste v obchodním jednání — například jestli je klient nový, už jste ho kontaktovali, nebo se s ním chystáte jednat.</p>
+    <p class="help-example"><strong>Příklad:</strong> Zavoláte zákazníkovi a domluvíte další kontakt. Upravíte jeho stav a naplánujete si připomenutí v kalendáři.</p>
+    <p class="help-important"><strong>Důležité:</strong> Klienty z Pošťáka nemažeme. Změny se předávají do příslušného projektu.</p>
+    <p class="help-tip"><strong>Tip:</strong> Tlačítko „SYNCHRONIZOVAT KLIENTY“ aktualizuje seznam podle zdrojových systémů.</p>
+    <p><a class="btn help-open" href="{% url 'klienti' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="kalendar" aria-labelledby="h-kalendar">
+    <h2 id="h-kalendar">5. Kalendář – Schůzky, telefonáty a úkoly</h2>
+    <p class="help-tagline"><strong>Kalendář vám pomůže nezapomenout na důležité věci.</strong></p>
+    <p>Můžete si sem zapisovat schůzky, telefonáty i běžné pracovní úkoly.</p>
+    <h3>Jak přidat událost?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „Kalendář“.</li>
+      <li>Klikněte na požadovaný den nebo vytvořte novou událost.</li>
+      <li>Napište název.</li>
+      <li>Vyberte datum a čas.</li>
+      <li>Zvolte typ události.</li>
+      <li>Uložte.</li>
+    </ol>
+    <h3>Jak vytvořit úkol?</h3>
+    <ol class="help-steps">
+      <li>Při vytváření události vyberte typ „Úkol“.</li>
+      <li>Napište, co potřebujete udělat.</li>
+      <li>Nastavte termín.</li>
+      <li>Uložte.</li>
+      <li>Po dokončení označte úkol jako hotový.</li>
+    </ol>
+    <p class="help-example"><strong>Příklad:</strong> Zákazník chce zavolat příští středu. Do kalendáře si přidáte „Zavolat panu Novákovi“ a nastavíte správný den.</p>
+    <p class="help-tip"><strong>Tip:</strong> Událost můžete propojit s konkrétním klientem.</p>
+    <p><a class="btn help-open" href="{% url 'kalendar' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="dokumentace" aria-labelledby="h-dokumentace">
+    <h2 id="h-dokumentace">6. Dokumentace – Vaše soubory na jednom místě</h2>
+    <p class="help-tagline"><strong>Sem si můžete ukládat obrázky, letáky, PDF a další pracovní materiály.</strong></p>
+    <p>Soubory nemusíte hledat po různých složkách v počítači.</p>
+    <h3>Sdílené dokumenty</h3>
+    <p>Dokumenty, které mají být dostupné celému týmu.</p>
+    <h3>Moje dokumenty</h3>
+    <p>Vaše vlastní pracovní soubory, které ostatním zbytečně nezaplňují seznam.</p>
+    <h3>Jak nahrát soubor?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „Dokumentace“.</li>
+      <li>Vyberte „Sdílené dokumenty“ nebo „Moje dokumenty“.</li>
+      <li>Otevřete požadovanou složku ve stromu vlevo.</li>
+      <li>Vyberte soubor v počítači (pole pro nahrání).</li>
+      <li>Klikněte na „Nahrát soubor“.</li>
+    </ol>
+    <h3>Jak vytvořit složku?</h3>
+    <ol class="help-steps">
+      <li>Vyberte místo, kde má složka vzniknout.</li>
+      <li>Napište její název.</li>
+      <li>Klikněte na „Nová složka“.</li>
+    </ol>
+    <h3>Jak stáhnout soubor?</h3>
+    <p>Najděte soubor v seznamu a klikněte na „Stáhnout“.</p>
+    <p class="help-example"><strong>Příklad:</strong> Máte nový reklamní leták. Nahrajete ho do Sdílených dokumentů, aby ho kolegové snadno našli.</p>
+    <p class="help-important"><strong>Pozor:</strong> Maximální velikost jednoho souboru je 20 MB.</p>
+    <p>Pokud máte příliš velký obrázek, můžete ho zmenšit zde: <a href="https://cloudinary.com/tools/image-to-webp" target="_blank" rel="noopener noreferrer">cloudinary.com/tools/image-to-webp</a></p>
+    <p class="muted small">Práva k úpravám sdílených dokumentů se řídí nastavením uživatelského účtu.</p>
+    <p><a class="btn help-open" href="{% url 'dokumentace' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="poznamky" aria-labelledby="h-poznamky">
+    <h2 id="h-poznamky">7. Poznámky a koncepty – Nic nezapomenete</h2>
+    <p class="help-tagline"><strong>Poznámky jsou váš osobní zápisník.</strong></p>
+    <p>Můžete si sem ukládat nápady, důležité informace nebo texty, které používáte opakovaně.</p>
+    <h3>Jak vytvořit poznámku?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „Poznámky a koncepty“.</li>
+      <li>Vytvořte novou poznámku.</li>
+      <li>Napište název a text.</li>
+      <li>Uložte.</li>
+    </ol>
+    <h3>K čemu jsou koncepty e-mailů?</h3>
+    <p>Koncept je zpráva, kterou jste začali psát v části E-maily, ale ještě ji nechcete odeslat. Najdete je pod „Koncepty e-mailů“ v menu e-mailů.</p>
+    <p class="help-example"><strong>Příklad:</strong> Připravujete nabídku pro zákazníka, ale čekáte na další informace. Zprávu uložíte jako koncept a odešlete ji až později.</p>
+    <p class="help-tip"><strong>Tip:</strong> Uložené texty z poznámek můžete kopírovat a znovu používat.</p>
+    <p>
+      <a class="btn help-open" href="{% url 'poznamky' %}">Poznámky</a>
+      <a class="btn secondary help-open" href="{% url 'posta_koncepty' %}">Koncepty e-mailů</a>
+    </p>
+  </section>
+
+  <section class="help-chapter card" id="nastaveni" aria-labelledby="h-nastaveni">
+    <h2 id="h-nastaveni">8. Nastavení uživatele – Váš účet</h2>
+    <p class="help-tagline"><strong>Tady si upravíte své osobní údaje.</strong></p>
+    <h3>Co můžete změnit?</h3>
+    <ul class="help-list">
+      <li>Zobrazované jméno.</li>
+      <li>Profilovou fotografii.</li>
+      <li>Heslo.</li>
+      <li>Další dostupné údaje profilu.</li>
+    </ul>
+    <h3>Jak změnit heslo?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „Nastavení uživatele“.</li>
+      <li>Najděte sekci „Vlastní heslo“.</li>
+      <li>Vyplňte požadované údaje.</li>
+      <li>Uložte změnu tlačítkem „Uložit heslo“.</li>
+    </ol>
+    <p class="help-tip"><strong>Tip:</strong> Používejte heslo, které nikomu nesdělujete.</p>
+    <p><a class="btn help-open" href="{% url 'nastaveni' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  {% if je_superuser %}
+  <section class="help-chapter card" id="email-ucty" aria-labelledby="h-email-ucty">
+    <h2 id="h-email-ucty">9. Nastavení e-mailových účtů</h2>
+    <p class="help-tagline"><strong>Tady se nastavují e-mailové schránky, se kterými budete v Pošťákovi pracovat.</strong></p>
+    <p>Každá schránka potřebuje správné přihlašovací údaje a nastavení poštovního serveru.</p>
+    <p>Pokud už vám e-maily fungují, nemusíte zde nic měnit.</p>
+    <p>Pokud schránka nefunguje, obraťte se na správce Pošťáka.</p>
+    <p><a class="btn help-open" href="{% url 'email_ucty' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+
+  <section class="help-chapter card" id="sprava" aria-labelledby="h-sprava">
+    <h2 id="h-sprava">10. Správa uživatelů – Pouze pro správce</h2>
+    <p class="help-tagline"><strong>Tuto část používá správce aplikace.</strong></p>
+    <p>Může zde zakládat a spravovat uživatelské účty.</p>
+    <h3>Jak přidat kolegu?</h3>
+    <ol class="help-steps">
+      <li>Otevřete „Správa uživatelů“.</li>
+      <li>Zvolte vytvoření nového uživatele.</li>
+      <li>Vyplňte potřebné údaje.</li>
+      <li>Nastavte jeho přístup.</li>
+      <li>Uložte.</li>
+    </ol>
+    <p>Na detailu uživatele můžete použít tlačítko <strong>Odeslat přihlašovací údaje</strong> — novému kolegovi přijde e-mail s dočasným heslem a odkazem pro přihlášení.</p>
+    <p><a class="btn help-open" href="{% url 'uzivatele' %}">Otevřít tuto část Pošťáka</a></p>
+  </section>
+  {% endif %}
+
+  <footer class="help-finish card">
+    <h2>A to je všechno!</h2>
+    <p>Pošťák není složitý. Nemusíte znát všechny funkce najednou.</p>
+    <p>Začněte Přehledem, vyzkoušejte e-maily a postupně objevujte další části.</p>
+    <p class="help-rule"><strong>Nejdůležitější pravidlo: Když si nejste jistí, otevřete Nápovědu.</strong></p>
+    <p><a class="btn help-back" href="{% url 'prehled' %}">Zpět na Přehled</a></p>
+  </footer>
+</article>
+{% endblock %}

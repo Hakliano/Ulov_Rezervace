@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Potenciální klienti · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>Potenciální klienti</h1>
+  <div class="card-actions">
+    <form method="post" action="{% url 'klienti_sync' %}" id="klienti-sync-form">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sync" id="klienti-sync-btn">SYNCHRONIZOVAT KLIENTY</button>
+    </form>
+    <a class="btn" href="{% url 'klient_novy' %}">Nový klient</a>
+  </div>
+</div>
+{% if prazdna_cache %}
+<p class="muted">Lokální cache je prázdná — spusťte synchronizaci.</p>
+{% endif %}
+<div class="sync-meta-grid muted small">
+  <div>Moderník — poslední sync: {% if sync_mod and sync_mod.posledni_delta %}{{ sync_mod.posledni_delta|date:"d.m.Y H:i" }}{% else %}—{% endif %}{% if sync_mod and sync_mod.posledni_chyba %}<span class="warn block">{{ sync_mod.posledni_chyba }}</span>{% endif %}</div>
+  <div>HereYouAre — poslední sync: {% if sync_hya and sync_hya.posledni_delta %}{{ sync_hya.posledni_delta|date:"d.m.Y H:i" }}{% else %}—{% endif %}{% if sync_hya and sync_hya.posledni_chyba %}<span class="warn block">{{ sync_hya.posledni_chyba }}</span>{% endif %}</div>
+</div>
+<section class="card">
+  <form method="get" class="filters-grid">
+    <div class="field"><label for="projekt">Projekt</label>
+      <select id="projekt" name="projekt">
+        <option value="">— vše —</option>
+        {% for kod, nazev in projekty %}
+        <option value="{{ kod }}" {% if filtry.projekt == kod %}selected{% endif %}>{{ nazev }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="q">Hledat</label><input id="q" name="q" value="{{ filtry.q }}" placeholder="jméno, e-mail, telefon…"></div>
+    <div class="field"><label for="stav">Status</label>
+      <select id="stav" name="stav">
+        <option value="">— vše —</option>
+        {% for s in stavy %}<option value="{{ s.kod }}" {% if filtry.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if filtry.projekt != 'hya' %}
+    <div class="field"><label for="sektor">Sektor (Moderník)</label>
+      <select id="sektor" name="sektor">
+        <option value="">— vše —</option>
+        {% for s in sektory %}<option value="{{ s.remote_id }}" {% if filtry.sektor == s.remote_id|stringformat:"s" %}selected{% endif %}>{{ s.nazev }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="field"><label for="per_page">Na stránku</label>
+      <select name="per_page" id="per_page">
+        <option value="25" {% if filtry.per_page == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if filtry.per_page == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if filtry.per_page == 100 %}selected{% endif %}>100</option>
+      </select>
+    </div>
+    <button class="btn secondary" type="submit">Filtrovat</button>
+  </form>
+  <div class="table-wrap">
+    <table class="users mail-table">
+      <thead>
+        <tr><th>Projekt</th><th>Jméno / firma</th><th>E-mail</th><th>Telefon</th><th>Status</th><th>Detail</th><th>Akce</th></tr>
+      </thead>
+      <tbody>
+        {% for k in stranka %}
+        <tr>
+          <td data-label="Projekt">{{ k.projekt_label }}</td>
+          <td data-label="Jméno"><a href="{% url 'klient_detail' k.projekt k.pk %}">{{ k.jmeno }}</a></td>
+          <td data-label="E-mail">{{ k.email }}</td>
+          <td data-label="Telefon">{{ k.telefon }}</td>
+          <td data-label="Status">
+            <form method="post" action="{% url 'klient_stav' k.projekt k.pk %}" class="inline-stav">
+              {% csrf_token %}
+              <input type="hidden" name="back_qs" value="{{ request.GET.urlencode }}">
+              <select name="stav" onchange="this.form.submit()">
+                {% if k.projekt == 'modernik' %}
+                  {% for s in stavy_mod %}<option value="{{ s.kod }}" {% if k.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                {% else %}
+                  {% for s in stavy_hya %}<option value="{{ s.kod }}" {% if k.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                {% endif %}
+              </select>
+            </form>
+          </td>
+          <td data-label="Detail" class="muted">{{ k.extra }}</td>
+          <td data-label="Akce"><a class="btn secondary btn-small" href="{% url 'klient_detail' k.projekt k.pk %}">Detail</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="muted">Žádní klienti v cache.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="pager">
+    {% if stranka.has_previous %}<a class="btn secondary" href="?stranka={{ stranka.previous_page_number }}&{{ request.GET.urlencode }}">Předchozí</a>{% endif %}
+    <span class="muted">Strana {{ stranka.number }}/{{ stranka.paginator.num_pages }} · {{ stranka.paginator.count }} celkem</span>
+    {% if stranka.has_next %}<a class="btn secondary" href="?stranka={{ stranka.next_page_number }}&{{ request.GET.urlencode }}">Další</a>{% endif %}
+  </div>
+</section>
+<script>
+(function () {
+  var f = document.getElementById('klienti-sync-form');
+  var b = document.getElementById('klienti-sync-btn');
+  if (f && b) f.addEventListener('submit', function () { b.disabled = true; b.textContent = 'Synchronizuji…'; });
+})();
+</script>
+{% endblock %}

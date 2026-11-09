@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}Nová zpráva · Pošťák{% endblock %}
+{% block extra_head %}
+<link href="{% postak_static 'vendor/quill/quill.snow.css' %}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="card narrow compose-card">
+  <h1>{% if mode == 'new' %}Nová zpráva{% elif mode == 'forward' %}Přeposlat{% else %}Odpověď{% endif %}</h1>
+  <p class="muted">Odesíláte z {{ schranka.email }}</p>
+  <p class="nav-back"><a class="btn secondary btn-small" href="{% url 'posta_koncepty' %}">Rozepsané e-maily</a></p>
+  <form method="post" enctype="multipart/form-data" id="compose-form">
+    {% csrf_token %}
+    <input type="hidden" name="otp" value="{{ otp }}">
+    <input type="hidden" name="in_reply_to" value="{{ initial.in_reply_to }}">
+    <input type="hidden" name="koncept_id" value="{{ koncept_id }}">
+    <div class="field"><label for="komu">Komu</label><input id="komu" name="komu" type="text" value="{{ initial.komu }}"></div>
+    <div class="field"><label for="kopie">Kopie (CC)</label><input id="kopie" name="kopie" type="text" value="{{ initial.kopie }}"></div>
+    <div class="field"><label for="skryte">Skrytá kopie (BCC)</label><input id="skryte" name="skryte" type="text" value="{{ initial.skryte }}"></div>
+    <div class="field"><label for="predmet">Předmět</label><input id="predmet" name="predmet" type="text" value="{{ initial.predmet }}"></div>
+    {{ initial.telo|default:""|json_script:"compose-initial" }}
+    <div class="field">
+      <label for="compose-editor">Zpráva</label>
+      <div id="compose-editor" class="compose-editor"></div>
+      <input type="hidden" id="telo-hidden" name="telo" value="">
+    </div>
+    {% if koncept and koncept.prilohy.all %}
+    <div class="field">
+      <span class="field-label">Přílohy v konceptu</span>
+      <ul class="attach-list">
+        {% for pr in koncept.prilohy.all %}
+        <li>
+          <label><input type="checkbox" name="zachovat_priloha" value="{{ pr.pk }}" checked> {{ pr.nazev }} ({{ pr.velikost }} B)</label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <div class="field"><label for="prilohy">Nové přílohy</label><input id="prilohy" name="prilohy" type="file" multiple></div>
+    <button class="btn" type="submit" name="akce" value="odeslat">Odeslat</button>
+    <button class="btn secondary" type="submit" name="akce" value="koncept">Uložit koncept</button>
+    <a class="btn secondary" href="{% url 'posta_seznam' schranka.pk %}?slozka={{ folder|urlencode }}">Zpět</a>
+  </form>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script src="{% postak_static 'vendor/quill/quill.js' %}"></script>
+<script src="{% postak_static 'postak-quill.js' %}"></script>
+<script src="{% postak_static 'posta-compose.js' %}"></script>
+{% endblock %}

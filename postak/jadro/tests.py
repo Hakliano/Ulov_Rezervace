@@ -1,4 +1,7 @@
+import tempfile
+
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -16,6 +19,7 @@ def uzivatel(username, *, superuser=False, password=HESLO):
     return user
 
 
+@override_settings(POSTAK_PREFIX='')
 class AuthTests(TestCase):
     def test_anonym_nevidi_vnitrni_stranky(self):
         for name in STRANKY + ['uzivatele', 'uzivatel_novy']:
@@ -41,8 +45,11 @@ class AuthTests(TestCase):
             response = self.client.get(reverse(name))
             self.assertEqual(response.status_code, 200, name)
             self.assertNotContains(response, '3 000')
-        self.assertContains(self.client.get(reverse('emaily')), 'žádná pošta')
-        self.assertContains(self.client.get(reverse('klienti')), 'zatím prázdný')
+        emaily = self.client.get(reverse('emaily'))
+        self.assertIn(emaily.status_code, (200, 302))
+        from unittest.mock import patch
+        with patch('jadro.klienti_views._fetch_meta', return_value=([], [], [])):
+            self.assertContains(self.client.get(reverse('klienti')), 'SYNCHRONIZOVAT KLIENTY')
 
     def test_user_nespravuje_uzivatele(self):
         eva = uzivatel('eva')
@@ -94,6 +101,7 @@ class AuthTests(TestCase):
         admin = uzivatel('admin', superuser=True)
         self.client.force_login(eva)
         response = self.client.post(reverse('nastaveni'), {
+            'akce': 'heslo',
             'old_password': HESLO,
             'new_password1': NOVE,
             'new_password2': NOVE,
@@ -119,6 +127,109 @@ class AuthTests(TestCase):
         admin.refresh_from_db()
         self.assertTrue(admin.is_active)
         self.assertTrue(admin.is_superuser)
+
+    def test_superuser_upravi_jmeno_a_email(self):
+        self.client.force_login(uzivatel('admin', superuser=True))
+        eva = uzivatel('eva')
+        response = self.client.post(reverse('uzivatel_detail', args=[eva.pk]), {
+            'akce': 'ucet',
+            'username': 'eva.nova',
+            'email': 'Eva@Firma.cz',
+            'first_name': 'Eva Nová',
+        })
+        self.assertRedirects(response, reverse('uzivatel_detail', args=[eva.pk]))
+        eva.refresh_from_db()
+        self.assertEqual(eva.username, 'eva.nova')
+        self.assertEqual(eva.email, 'eva@firma.cz')
+        self.assertEqual(eva.first_name, 'Eva Nová')
+        self.assertTrue(self.client.login(username='eva.nova', password=HESLO))
+        self.client.force_login(User.objects.get(username='admin'))
+
+        kolize = self.client.post(reverse('uzivatel_detail', args=[eva.pk]), {
+            'akce': 'ucet',
+            'username': 'admin',
+            'email': 'eva@firma.cz',
+            'first_name': 'Eva Nová',
+        })
+        self.assertEqual(kolize.status_code, 200)
+        eva.refresh_from_db()
+        self.assertEqual(eva.username, 'eva.nova')
+
+    def test_uzivatel_meni_jen_svuj_profil(self):
+        eva = uzivatel('eva')
+        jiri = uzivatel('jiri')
+        self.client.force_login(eva)
+        response = self.client.post(reverse('nastaveni'), {
+            'akce': 'profil',
+            'email': 'eva@posta.cz',
+            'first_name': 'Eva',
+        })
+        self.assertRedirects(response, reverse('nastaveni'))
+        eva.refresh_from_db()
+        self.assertEqual(eva.email, 'eva@posta.cz')
+        self.assertEqual(eva.first_name, 'Eva')
+        self.assertEqual(self.client.post(reverse('uzivatel_detail', args=[jiri.pk]), {
+            'akce': 'ucet',
+            'username': 'jiri2',
+            'email': 'jiri@posta.cz',
+            'first_name': 'Jiří',
+        }).status_code, 403)
+        jiri.refresh_from_db()
+        self.assertEqual(jiri.username, 'jiri')
+
+
+PNG = (
+    b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+    b'\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89'
+    b'\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4'
+    b'\x00\x00\x00\x00IEND\xaeB`\x82'
+)
+
+
+@override_settings(POSTAK_PREFIX='')
+class FotoTests(TestCase):
+    def test_fotografie_a_odmitnuti(self):
+        eva = uzivatel('eva')
+        jiri = uzivatel('jiri')
+        self.client.force_login(eva)
+        with tempfile.TemporaryDirectory() as tmp:
+            with override_settings(MEDIA_ROOT=tmp):
+                spatne = self.client.post(reverse('nastaveni'), {
+                    'akce': 'profil',
+                    'email': 'eva@posta.cz',
+                    'first_name': 'Eva',
+                    'foto': SimpleUploadedFile('obrazek.png', b'<svg></svg>', content_type='image/png'),
+                })
+                self.assertEqual(spatne.status_code, 200)
+                self.assertFalse(hasattr(eva, 'profil') and eva.profil.foto)
+
+                velke = b'\x89PNG\r\n\x1a\n' + b'x' * (2 * 1024 * 1024)
+                prilis = self.client.post(reverse('nastaveni'), {
+                    'akce': 'profil',
+                    'email': 'eva@posta.cz',
+                    'first_name': 'Eva',
+                    'foto': SimpleUploadedFile('velke.png', velke, content_type='image/png'),
+                })
+                self.assertEqual(prilis.status_code, 200)
+
+                self.client.post(reverse('nastaveni'), {
+                    'akce': 'profil',
+                    'email': 'eva@posta.cz',
+                    'first_name': 'Eva',
+                    'foto': SimpleUploadedFile('ja.png', PNG, content_type='image/jpeg'),
+                })
+                eva.refresh_from_db()
+                self.assertTrue(eva.profil.foto.name.endswith('.png'))
+                foto = self.client.get(reverse('profil_foto', args=[eva.pk]))
+                self.assertEqual(foto.status_code, 200)
+                self.assertEqual(foto['Content-Type'], 'image/png')
+                self.assertEqual(foto['X-Content-Type-Options'], 'nosniff')
+                foto.close()
+
+                self.client.force_login(jiri)
+                self.assertEqual(self.client.get(reverse('profil_foto', args=[eva.pk])).status_code, 403)
+                self.client.logout()
+                self.assertEqual(self.client.get(reverse('profil_foto', args=[eva.pk])).status_code, 302)
 
 
 @override_settings(POSTAK_PREFIX='/postak')

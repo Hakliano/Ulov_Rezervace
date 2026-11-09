@@ -5,46 +5,77 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Pošťák{% endblock %}</title>
+  <link rel="icon" type="image/webp" href="{% postak_static 'favicon.webp' %}">
   <link rel="stylesheet" href="{% postak_static 'postak.css' %}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if user.is_authenticated %}in{% else %}out{% endif %}">
   <div class="app">
     <input id="menu" class="menu-check" type="checkbox">
     <header class="topbar">
       <label class="menu-btn" for="menu">Menu</label>
-      <a class="brand" href="{% if user.is_authenticated %}{% url 'prehled' %}{% else %}{% url 'prihlaseni' %}{% endif %}">Pošťák</a>
-      {% if user.is_authenticated %}
-      <span class="who">{{ user.get_full_name|default:user.username }}</span>
-      {% endif %}
+      <a class="brand" href="{% if user.is_authenticated %}{% url 'prehled' %}{% else %}{% url 'prihlaseni' %}{% endif %}">
+        <img class="posta-logo posta-logo-top" src="{% postak_logo %}" alt="Pošťák" width="360" height="120">
+        <span class="brand-text">Pošťák</span>
+      </a>
     </header>
     <div class="frame">
       {% if user.is_authenticated %}
       <nav class="nav">
+        <a class="nav-profile" href="{% url 'nastaveni' %}">
+          {% with foto=user|profil_foto %}
+          {% if foto %}
+          <img class="nav-avatar" src="{{ foto }}" alt="" width="48" height="48">
+          {% else %}
+          <span class="nav-avatar initials" aria-hidden="true">{{ user|user_initials }}</span>
+          {% endif %}
+          {% endwith %}
+          <span class="nav-profile-name">{{ user.get_full_name|default:user.username }}</span>
+        </a>
         {% with name=request.resolver_match.url_name %}
         <a class="{% if name == 'prehled' %}active{% endif %}" href="{% url 'prehled' %}">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7"></rect><rect x="13.5" y="3.5" width="7" height="7"></rect><rect x="3.5" y="13.5" width="7" height="7"></rect><rect x="13.5" y="13.5" width="7" height="7"></rect></svg>
           Přehled
         </a>
-        <a class="{% if name == 'emaily' %}active{% endif %}" href="{% url 'emaily' %}">
+        <a class="{% if name == 'emaily' or name == 'posta_seznam' or name == 'posta_zprava' or name == 'posta_priloha' or name == 'posta_napsat' or name == 'posta_odpoved' or name == 'posta_odpoved_vsem' or name == 'posta_preposlat' or name == 'posta_sync' or name == 'posta_koncepty' or name == 'posta_koncept_upravit' or name == 'posta_koncept_smazat' %}active{% endif %}" href="{% url 'emaily' %}">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M4 7l8 6 8-6"></path></svg>
           E-maily
         </a>
-        <a class="{% if name == 'klienti' %}active{% endif %}" href="{% url 'klienti' %}">
+        <a class="nav-with-badge {% if name == 'tym' or name == 'tym_konverzace' or name == 'tym_sync' %}active{% endif %}" href="{% url 'tym' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="3"></circle><circle cx="16" cy="9" r="3"></circle><path d="M4.5 18c.8-2.5 2.5-3.8 5.5-3.8s4.7 1.3 5.5 3.8"></path></svg>
+          Tým a chat
+          {% if chat_neprectenych %}<span class="nav-badge">{{ chat_neprectenych }}</span>{% endif %}
+        </a>
+        <a class="{% if name == 'klienti' or name == 'klient_novy' or name == 'klient_detail' or name == 'klient_detail_legacy' or name == 'klient_stav' or name == 'klienti_sync' %}active{% endif %}" href="{% url 'klienti' %}">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19c.6-3 2.6-4.5 5.5-4.5S14.4 16 15 19"></path><circle cx="17" cy="9" r="2.2"></circle><path d="M16.2 14.6c2.2.3 3.8 1.6 4.3 4.4"></path></svg>
           Potenciální klienti
         </a>
-        <a class="{% if name == 'kalendar' %}active{% endif %}" href="{% url 'kalendar' %}">
+        <a class="{% if name == 'kalendar' or name == 'kalendar_nova' or name == 'kalendar_detail' or name == 'kalendar_upravit' or name == 'kalendar_smazat' or name == 'kalendar_hotovo' %}active{% endif %}" href="{% url 'kalendar' %}">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"></rect><path d="M3.5 10h17M8 3.5V7M16 3.5V7"></path></svg>
           Kalendář
         </a>
-        <a class="{% if name == 'dokumentace' %}active{% endif %}" href="{% url 'dokumentace' %}">
+        <a class="{% if name == 'dokumentace' or name|slice:':12' == 'dokumentace_' %}active{% endif %}" href="{% url 'dokumentace' %}">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h6l2 2H20v9.5H4z"></path><path d="M4 7.5V5.8A1.8 1.8 0 0 1 5.8 4H10l2 2"></path></svg>
           Dokumentace
         </a>
-        <a class="{% if name == 'nastaveni' or name == 'uzivatele' or name == 'uzivatel_novy' or name == 'uzivatel_detail' %}active{% endif %}" href="{% url 'nastaveni' %}">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M18 6l-1.6 1.6M7.6 16.4L6 18"></path></svg>
-          Nastavení
+        <a class="{% if name == 'poznamky' or name == 'poznamka_nova' or name == 'poznamka_detail' or name == 'poznamka_smazat' %}active{% endif %}" href="{% url 'poznamky' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l2 4v12H5V4z"></path><path d="M9 4V3h6v1M9 12h6M9 16h6"></path></svg>
+          Poznámky a koncepty
         </a>
+        <a class="{% if name == 'nastaveni' %}active{% endif %}" href="{% url 'nastaveni' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M18 6l-1.6 1.6M7.6 16.4L6 18"></path></svg>
+          Nastavení uživatele
+        </a>
+        {% if user.is_superuser %}
+        <a class="{% if name == 'uzivatele' or name == 'uzivatel_novy' or name == 'uzivatel_detail' %}active{% endif %}" href="{% url 'uzivatele' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19c.6-3 2.6-4.5 5.5-4.5S14.4 16 15 19"></path><circle cx="17" cy="9" r="2.2"></circle><path d="M16.2 14.6c2.2.3 3.8 1.6 4.3 4.4"></path></svg>
+          Správa uživatelů
+        </a>
+        <a class="{% if name == 'email_ucty' or name == 'email_ucet_novy' or name == 'email_ucet_detail' or name == 'email_ucet_test' %}active{% endif %}" href="{% url 'email_ucty' %}">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 12h4M7 9h10"></path></svg>
+          Nastavení e-mailových účtů
+        </a>
+        {% endif %}
         {% endwith %}
         <form class="logout" method="post" action="{% url 'odhlaseni' %}">
           {% csrf_token %}
@@ -64,5 +95,6 @@
       </main>
     </div>
   </div>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

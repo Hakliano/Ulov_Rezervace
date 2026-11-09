@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Odeslat přihlašovací údaje · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>Odeslat přihlašovací údaje</h1>
+  <a class="btn secondary" href="{% url 'uzivatel_detail' cil.pk %}">Zpět na detail</a>
+</div>
+<section class="card narrow">
+  <p>Uživatel: <strong>{{ cil.get_full_name|default:cil.username }}</strong> (přihlašovací e-mail: <strong>{{ login_id }}</strong>)</p>
+  <p class="muted">Na zadanou adresu odešleme nové dočasné heslo. Původní heslo nelze získat z databáze.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "pole.html" with form=form %}
+    <p class="warn">{{ potvrzeni_text }}</p>
+    <button class="btn" type="submit" name="akce" value="odeslat">Odeslat přihlašovací údaje</button>
+    <a class="btn secondary" href="{% url 'uzivatel_detail' cil.pk %}">Zrušit</a>
+  </form>
+  {% if historie %}
+  <h2 class="dash-h3">Poslední odeslání</h2>
+  <ul class="compact muted">
+    {% for h in historie %}
+    <li>{{ h.vytvoreno|date:"d.m.Y H:i" }} → {{ h.prijemce }} — {% if h.uspech %}OK{% else %}chyba{% endif %}{% if h.chyba %}: {{ h.chyba }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

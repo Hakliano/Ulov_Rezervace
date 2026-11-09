@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}E-maily · {{ schranka.email }}{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>E-maily</h1>
+  <div class="card-actions">
+    <form method="post" action="{% url 'posta_sync' schranka.pk %}" class="sync-form" id="posta-sync-form">
+      {% csrf_token %}
+      <input type="hidden" name="slozka" value="{{ folder }}">
+      <input type="hidden" name="stranka" value="{% if prehled %}{{ prehled.page }}{% else %}1{% endif %}">
+      <input type="hidden" name="uv" value="{% if prehled %}{{ prehled.uidvalidity }}{% endif %}">
+      <button class="btn btn-sync" type="submit" id="posta-sync-btn">SYNCHRONIZOVAT SCHRÁNKU</button>
+    </form>
+    <a class="btn" href="{% url 'posta_napsat' schranka.pk %}?slozka={{ folder|urlencode }}">Nová zpráva</a>
+    <a class="btn secondary" href="{% url 'posta_koncepty' %}">Koncepty</a>
+    <select id="schranka" onchange="location.href=this.options[this.selectedIndex].dataset.url;">
+      {% for s in schranky %}
+      <option data-url="{% url 'posta_seznam' s.pk %}?slozka={{ folder|urlencode }}" {% if s.pk == schranka.pk %}selected{% endif %}>{{ s.email }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+{% if chyba %}<p class="error">{{ chyba }}</p>{% endif %}
+<div class="posta-layout">
+  <nav class="card posta-folders">
+    <h2>Složky</h2>
+    <ul class="folder-list">
+      {% for slo in slozky %}
+      <li><a class="{% if slo.name == folder %}active{% endif %}" href="{% url 'posta_seznam' schranka.pk %}?slozka={{ slo.name|urlencode }}">{{ slo.label }}</a></li>
+      {% empty %}
+      <li><a class="active" href="{% url 'posta_seznam' schranka.pk %}">Doručená</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  <section class="card posta-list">
+    {% if prehled %}
+    <form method="post" action="{% url 'posta_akce' schranka.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="slozka" value="{{ folder }}">
+      <input type="hidden" name="stranka" value="{{ prehled.page }}">
+      <input type="hidden" name="uv" value="{{ prehled.uidvalidity }}">
+      <div class="row-actions">
+        {% if in_trash %}
+        <button class="btn secondary" type="submit" name="akce" value="restore" onclick="return confirm('Obnovit vybrané zprávy?');">Obnovit</button>
+        <button class="btn danger" type="submit" name="akce" value="delete" onclick="return confirm('Trvale smazat vybrané zprávy? Tuto akci nelze vrátit.');">Smazat natrvalo</button>
+        {% else %}
+        <button class="btn secondary" type="submit" name="akce" value="seen_on">Přečtené</button>
+        <button class="btn secondary" type="submit" name="akce" value="seen_off">Nepřečtené</button>
+        <button class="btn danger" type="submit" name="akce" value="trash">Do koše</button>
+        {% endif %}
+      </div>
+      <p class="muted">Celkem {{ prehled.total }} · strana {{ prehled.page }}/{{ prehled.pages }}</p>
+      <div class="table-wrap">
+        <table class="users mail-table">
+          <thead>
+            <tr><th></th><th>Od</th><th>Předmět</th><th>Datum</th></tr>
+          </thead>
+          <tbody>
+            {% for z in prehled.items %}
+            <tr class="{% if z.unread %}unread{% endif %}">
+              <td data-label=""><input type="checkbox" name="uid" value="{{ z.uid }}"></td>
+              <td data-label="Od">{% if z.unread %}<span class="dot"></span>{% endif %}{{ z.from_name|default:z.from_email }}</td>
+              <td data-label="Předmět"><a href="{% url 'posta_zprava' schranka.pk z.uid %}?slozka={{ folder|urlencode }}&uv={{ prehled.uidvalidity|urlencode }}&stranka={{ prehled.page }}">{{ z.subject }}</a></td>
+              <td data-label="Datum">{{ z.date }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="muted">Složka je prázdná.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+    <div class="pager">
+      {% if prehled.page > 1 %}
+      <a class="btn secondary" href="{% url 'posta_seznam' schranka.pk %}?slozka={{ folder|urlencode }}&stranka={{ prehled.page|add:'-1' }}">Předchozí</a>
+      {% endif %}
+      {% if prehled.page < prehled.pages %}
+      <a class="btn secondary" href="{% url 'posta_seznam' schranka.pk %}?slozka={{ folder|urlencode }}&stranka={{ prehled.page|add:'1' }}">Další</a>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="muted">Seznam zpráv se nepodařilo načíst.</p>
+    {% endif %}
+  </section>
+</div>
+<script>
+(function () {
+  var form = document.getElementById('posta-sync-form');
+  var btn = document.getElementById('posta-sync-btn');
+  if (!form || !btn) return;
+  form.addEventListener('submit', function () {
+    btn.disabled = true;
+    btn.textContent = 'Synchronizuji…';
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ schranka.email }} · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>{{ schranka.email }}</h1>
+  <a class="btn secondary" href="{% url 'email_ucty' %}">Zpět</a>
+</div>
+<div class="stack">
+  <section class="card">
+    <h2>Přehled</h2>
+    <dl class="meta">
+      <div><dt>Projekt</dt><dd>{{ schranka.get_projekt_display }}</dd></div>
+      <div><dt>Stav</dt><dd><span class="stav stav-{{ schranka.test_stav }}">{{ schranka.get_test_stav_display }}</span></dd></div>
+      {% if schranka.test_info %}<div><dt>Poslední test</dt><dd>{{ schranka.test_info }}</dd></div>{% endif %}
+      <div><dt>Heslo uloženo</dt><dd>{% if schranka.ma_heslo %}ano{% else %}ne{% endif %}</dd></div>
+    </dl>
+    {% if muze_spravovat %}
+    <form method="post" action="{% url 'email_ucet_test' schranka.pk %}">
+      {% csrf_token %}
+      <button class="btn secondary" type="submit">Otestovat připojení</button>
+    </form>
+    {% endif %}
+  </section>
+  {% if muze_spravovat and form %}
+  <section class="card">
+    <h2>Konfigurace</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% include "pole.html" with form=form %}
+      <button class="btn" type="submit" name="akce" value="ulozit">Uložit</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Přidělení uživatelů</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% include "pole.html" with form=pristup_form %}
+      <button class="btn secondary" type="submit" name="akce" value="pristup">Uložit přidělení</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Podpis schránky</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% include "pole.html" with form=podpis_form %}
+      <button class="btn secondary" type="submit" name="akce" value="podpis">Uložit podpis</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Odpojit</h2>
+    <p class="muted">Smaže konfiguraci schránky v Pošťákovi. E-maily na serveru FORPSI zůstanou beze změny.</p>
+    <form method="post" onsubmit="return confirm('Opravdu odpojit tuto schránku?');">
+      {% csrf_token %}
+      <button class="btn danger" type="submit" name="akce" value="odpojit">Odpojit schránku</button>
+    </form>
+  </section>
+  {% elif not muze_spravovat %}
+  <section class="card">
+    <p class="muted">Toto je jen náhled přidělené schránky. Přístupové údaje vidí pouze SUPERUSER.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

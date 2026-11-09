@@ -51,6 +51,26 @@ ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 # otevření /postak/ by zdvojil cestu. Prázdný prefix = kořen domény.
 POSTAK_PREFIX = _prefix()
 
+POSTAK_LOGO_URL = (
+    'https://haklweb.b-cdn.net/modernik/Cheerful%20Pigeon%20Mail%20Carrier%20Logo.webp'
+)
+# Volitelné — jinak odvozeno z POSTAK_PUBLIC_LOGIN_URL + /static/postak-logo-email.png
+POSTAK_EMAIL_LOGO_URL = os.environ.get('POSTAK_EMAIL_LOGO_URL', '').strip()
+
+MODERNIK_API_BASE = os.environ.get(
+    'MODERNIK_API_BASE',
+    'http://127.0.0.1:8000/partner-admin/api/postak/v1',
+).strip().rstrip('/')
+MODERNIK_API_TOKEN = os.environ.get('MODERNIK_API_TOKEN', '').strip()
+if DEBUG and not MODERNIK_API_TOKEN:
+    MODERNIK_API_TOKEN = 'dev-postak-local'
+
+HYA_API_BASE = os.environ.get(
+    'HYA_API_BASE',
+    'http://127.0.0.1:8000/internal/postak/v1',
+).strip().rstrip('/')
+HYA_POSTAK_API_TOKEN = os.environ.get('HYA_POSTAK_API_TOKEN', '').strip()
+
 INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -69,6 +89,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'jadro.middleware.VynutitZmenuHeslaMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -85,6 +106,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'jadro.context_processors.chat_badge',
             ],
         },
     },
@@ -92,12 +114,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'postak_site.wsgi.application'
 
-DATABASES = {
-    'default': {
+def _database_config():
+    if os.environ.get('POSTGRES_HOST', '').strip():
+        return {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': os.environ['POSTGRES_HOST'].strip(),
+            'PORT': os.environ.get('POSTGRES_PORT', '5432').strip(),
+            'NAME': os.environ.get('POSTGRES_DB', 'postak').strip(),
+            'USER': os.environ.get('POSTGRES_USER', 'postak').strip(),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'CONN_MAX_AGE': 60,
+        }
+    return {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.environ.get('SQLITE_PATH', str(BASE_DIR / 'db.sqlite3')),
     }
-}
+
+
+DATABASES = {'default': _database_config()}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -111,14 +145,30 @@ TIME_ZONE = 'Europe/Prague'
 USE_I18N = True
 USE_TZ = True
 
+MEDIA_ROOT = Path(os.environ.get('MEDIA_ROOT', BASE_DIR / 'media'))
+MEDIA_URL = '/media/'
+
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 WHITENOISE_USE_FINDERS = DEBUG
 WHITENOISE_AUTOREFRESH = DEBUG
 
+POSTAK_BUNNY_ENABLED = _env_bool('POSTAK_BUNNY_ENABLED', False)
+POSTAK_BUNNY_STORAGE_ZONE = os.environ.get('POSTAK_BUNNY_STORAGE_ZONE', 'wwweb').strip()
+POSTAK_BUNNY_ACCESS_KEY = os.environ.get('POSTAK_BUNNY_ACCESS_KEY', '').strip()
+POSTAK_BUNNY_API_BASE = os.environ.get('POSTAK_BUNNY_API_BASE', 'https://storage.bunnycdn.com').strip().rstrip('/')
+_default_bunny_root = 'postak/local' if DEBUG else 'postak'
+POSTAK_BUNNY_ROOT_PREFIX = os.environ.get('POSTAK_BUNNY_ROOT_PREFIX', _default_bunny_root).strip().strip('/')
+
+POSTAK_PUBLIC_LOGIN_URL = os.environ.get(
+    'POSTAK_PUBLIC_LOGIN_URL',
+    'https://www.ulovklienty.cz/postak/',
+).strip()
+POSTAK_SYSTEM_SCHRANKA_ID = os.environ.get('POSTAK_SYSTEM_SCHRANKA_ID', '').strip()
+
 STORAGES = {
-    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'default': {'BACKEND': 'jadro.postak_storage.PostakBunnyStorage'},
     'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 }
 
@@ -146,3 +196,15 @@ LOGOUT_REDIRECT_URL = 'prihlaseni'
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 X_FRAME_OPTIONS = 'DENY'
+
+POSTAK_MAIL_ENCRYPTION_KEY = os.environ.get('POSTAK_MAIL_ENCRYPTION_KEY', '').strip()
+if not POSTAK_MAIL_ENCRYPTION_KEY:
+    if DEBUG and SECRET_KEY:
+        import base64
+        import hashlib
+
+        digest = hashlib.sha256(f'{SECRET_KEY}:postak-mail-v1'.encode()).digest()
+        POSTAK_MAIL_ENCRYPTION_KEY = base64.urlsafe_b64encode(digest).decode()
+    elif not DEBUG:
+        from django.core.exceptions import ImproperlyConfigured
+        raise ImproperlyConfigured('POSTAK_MAIL_ENCRYPTION_KEY is required when DEBUG is off.')

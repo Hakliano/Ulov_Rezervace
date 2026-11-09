@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Dokumentace · Pošťák{% endblock %}
+{% block content %}
+<p class="muted">Knihovna fotek, letáků, log, PDF a dalších marketingových materiálů. Sdílené = pro celý tým, Moje = vaše pracovní soubory (ne jde o utajení na CDN).</p>
+<header class="doc-header">
+  <h1>Dokumentace</h1>
+  <nav class="doc-tabs doc-tabs-main" aria-label="Režim dokumentace">
+    <a class="doc-tab {% if rezim == REZIM_SDILENE %}active{% endif %}" href="{% url 'dokumentace' %}?rezim=sdilene">Sdílené dokumenty</a>
+    <a class="doc-tab {% if rezim == REZIM_MOJE %}active{% endif %}" href="{% url 'dokumentace' %}?rezim=moje&amp;vlastnik={{ vlastnik_kontext.pk }}">Moje dokumenty</a>
+  </nav>
+</header>
+{% if uzivatele_volba and rezim == REZIM_MOJE %}
+<form method="get" class="card doc-user-pick">
+  <input type="hidden" name="rezim" value="moje">
+  <div class="field">
+    <label for="vlastnik">Správa soukromých dokumentů uživatele</label>
+    <select id="vlastnik" name="vlastnik" onchange="this.form.submit()">
+      {% for u in uzivatele_volba %}
+      <option value="{{ u.pk }}" {% if u.pk == vlastnik_kontext.pk %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+{% endif %}
+
+<div class="doc-layout">
+  <aside class="card doc-tree">
+    <h2 class="doc-h2">Složky</h2>
+    <p><a class="{% if not aktualni_slozka %}active-folder{% endif %}" href="{% url 'dokumentace' %}?rezim={{ rezim }}{% if rezim == REZIM_MOJE %}&amp;vlastnik={{ vlastnik_kontext.pk }}{% endif %}">Kořen</a></p>
+    <ul class="doc-tree-list">
+      {% for row in strom %}
+      <li style="--depth: {{ row.depth }}">
+        <a class="{% if aktualni_slozka and aktualni_slozka.pk == row.slozka.pk %}active-folder{% endif %}" href="{% url 'dokumentace' %}?rezim={{ rezim }}{% if rezim == REZIM_MOJE %}&amp;vlastnik={{ vlastnik_kontext.pk }}{% endif %}&amp;slozka={{ row.slozka.pk }}">{{ row.slozka.nazev }}</a>
+      </li>
+      {% empty %}
+      <li class="muted">Zatím žádné složky.</li>
+      {% endfor %}
+    </ul>
+    {% if muze_spravovat %}
+    <form method="post" action="{% url 'dokumentace_slozka_nova' %}" class="doc-inline-form">
+      {% csrf_token %}
+      <input type="hidden" name="rezim" value="{{ rezim }}">
+      <input type="hidden" name="vlastnik" value="{{ vlastnik_kontext.pk }}">
+      {% if aktualni_slozka %}<input type="hidden" name="parent" value="{{ aktualni_slozka.pk }}">{% endif %}
+      <div class="field">
+        <label for="nazev_slozky">Nová složka{% if aktualni_slozka %} v „{{ aktualni_slozka.nazev }}“{% endif %}</label>
+        <input id="nazev_slozky" name="nazev" required maxlength="200" placeholder="Název složky">
+      </div>
+      <button class="btn btn-small" type="submit">Nová složka</button>
+    </form>
+    {% endif %}
+  </aside>
+
+  <section class="card doc-files">
+    <div class="row doc-files-head">
+      <h2 class="doc-h2">{% if aktualni_slozka %}{{ aktualni_slozka.nazev }}{% else %}Vyberte složku{% endif %}</h2>
+      {% if muze_spravovat and aktualni_slozka %}
+      <div class="doc-upload-wrap">
+        <p class="doc-upload-limit"><strong>Maximální velikost souboru: 20 MB</strong></p>
+        <form method="post" action="{% url 'dokumentace_nahrat' %}" enctype="multipart/form-data" class="doc-upload">
+          {% csrf_token %}
+          <input type="hidden" name="slozka" value="{{ aktualni_slozka.pk }}">
+          <input type="file" name="soubor" required accept=".pdf,.docx,.xlsx,.pptx,.txt,.jpg,.jpeg,.png,.webp">
+          <button class="btn" type="submit">Nahrát soubor</button>
+        </form>
+        <aside class="doc-img-tip card">
+          <h3 class="doc-img-tip-title">Máte příliš velký obrázek?</h3>
+          <p class="muted">Fotografie a obrázky můžete jednoduše zmenšit nebo převést do úspornějšího formátu WebP.</p>
+          <a class="btn" href="https://cloudinary.com/tools/image-to-webp" target="_blank" rel="noopener noreferrer">Zmenšit obrázek online</a>
+        </aside>
+      </div>
+      {% endif %}
+    </div>
+    {% if not aktualni_slozka %}
+    <p class="muted">Otevřete složku ve stromu vlevo. Soubory lze nahrát jen do konkrétní složky.</p>
+    {% elif soubory %}
+    <div class="table-wrap">
+      <table class="users doc-table">
+        <thead>
+          <tr>
+            <th>Název</th><th>Typ</th><th>Velikost</th><th>Vlastník</th><th>Datum</th><th>Akce</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in soubory %}
+          <tr>
+            <td data-label="Název">{{ f.nazev }}</td>
+            <td data-label="Typ">{{ f.pripona|upper }}</td>
+            <td data-label="Velikost">{{ f.velikost }} B</td>
+            <td data-label="Vlastník">{{ f.vlastnik.get_full_name|default:f.vlastnik.username }}</td>
+            <td data-label="Datum">{{ f.vytvoreno|date:"d.m.Y H:i" }}</td>
+            <td data-label="Akce">
+              <div class="row-actions table-actions doc-actions">
+                <a class="btn secondary btn-small" href="{% url 'dokumentace_stahnout' f.pk %}">Stáhnout</a>
+                {% if muze_spravovat %}
+                <form method="post" action="{% url 'dokumentace_soubor_prejmenovat' f.pk %}" class="inline doc-rename">
+                  {% csrf_token %}
+                  <input name="nazev" value="{{ f.nazev }}" maxlength="255" required>
+                  <button class="btn secondary btn-small" type="submit">Přejmenovat</button>
+                </form>
+                <form method="post" action="{% url 'dokumentace_soubor_presunout' f.pk %}" class="inline">
+                  {% csrf_token %}
+                  <select name="cil_slozka" required>
+                    {% for s in slozky_k_presunu %}
+                    {% if s.pk != aktualni_slozka.pk %}
+                    <option value="{{ s.pk }}">{{ s.nazev }}</option>
+                    {% endif %}
+                    {% endfor %}
+                  </select>
+                  <button class="btn secondary btn-small" type="submit">Přesunout</button>
+                </form>
+                <form method="post" action="{% url 'dokumentace_soubor_smazat' f.pk %}" onsubmit="return confirm('Smazat soubor „{{ f.nazev|escapejs }}“?');">
+                  {% csrf_token %}
+                  <button class="btn danger btn-small" type="submit">Odstranit</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">Složka je prázdná.</p>
+    {% endif %}
+
+    {% if muze_spravovat and aktualni_slozka %}
+    <section class="doc-folder-ops">
+      <h3>Složka</h3>
+      <form method="post" action="{% url 'dokumentace_slozka_prejmenovat' aktualni_slozka.pk %}" class="inline doc-rename">
+        {% csrf_token %}
+        <input name="nazev" value="{{ aktualni_slozka.nazev }}" maxlength="200" required>
+        <button class="btn secondary btn-small" type="submit">Přejmenovat</button>
+      </form>
+      <form method="post" action="{% url 'dokumentace_slozka_presunout' aktualni_slozka.pk %}" class="inline">
+        {% csrf_token %}
+        <select name="cil_parent">
+          <option value="">— kořen —</option>
+          {% for s in slozky_k_presunu %}
+          {% if s.pk != aktualni_slozka.pk %}
+          <option value="{{ s.pk }}">{{ s.nazev }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        <button class="btn secondary btn-small" type="submit">Přesunout</button>
+      </form>
+      <form method="post" action="{% url 'dokumentace_slozka_smazat' aktualni_slozka.pk %}" onsubmit="return confirm('Opravdu smazat složku „{{ aktualni_slozka.nazev|escapejs }}“ včetně celého obsahu?');">
+        {% csrf_token %}
+        <input type="hidden" name="potvrdit" value="1">
+        <button class="btn danger btn-small" type="submit">Odstranit složku</button>
+      </form>
+    </section>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

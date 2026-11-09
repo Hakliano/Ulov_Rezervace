@@ -1,3 +1,5 @@
 Django>=5.0,<5.2
+cryptography>=42.0
 gunicorn>=21.2
 whitenoise>=6.6
+psycopg[binary]>=3.1

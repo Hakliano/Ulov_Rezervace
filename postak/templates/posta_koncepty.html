@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Rozepsané e-maily · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>Rozepsané e-maily</h1>
+  <a class="btn secondary" href="{% url 'emaily' %}">Zpět k e-mailům</a>
+</div>
+<section class="card">
+  <div class="table-wrap">
+    <table class="users">
+      <thead>
+        <tr><th>Schránka</th><th>Příjemce</th><th>Předmět</th><th>Upraveno</th><th>Akce</th></tr>
+      </thead>
+      <tbody>
+        {% for k in koncepty %}
+        <tr>
+          <td data-label="Schránka">{{ k.schranka.email }}</td>
+          <td data-label="Příjemce">{{ k.komu|truncatechars:40 }}</td>
+          <td data-label="Předmět">{{ k.predmet|default:"(bez předmětu)"|truncatechars:50 }}</td>
+          <td data-label="Upraveno">{{ k.upraveno|date:"d.m.Y H:i" }}</td>
+          <td data-label="Akce">
+            <div class="row-actions table-actions">
+              <a class="btn btn-small" href="{% url 'posta_koncept_upravit' k.pk %}">Otevřít</a>
+              <form method="post" action="{% url 'posta_koncept_smazat' k.pk %}" onsubmit="return confirm('Smazat tento koncept?');">
+                {% csrf_token %}
+                <button class="btn danger btn-small" type="submit">Odstranit</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="muted">Nemáte uložené koncepty.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

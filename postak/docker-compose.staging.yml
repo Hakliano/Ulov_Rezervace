@@ -1,0 +1,65 @@
+# Pošťák STAGING — samostatný compose projekt (ne sdílet DB/volumes s ULOV ani Materiálník).
+# Na serveru: v /opt/ulov/postak (nebo vlastní složka) + secrets v .env (mimo git).
+#
+#   docker compose -p postak-staging -f docker-compose.staging.yml --env-file .env up -d --build
+#
+# Nginx (LIVE stack, síť ulov_default): proxy https://www.staging.ulovklienty.cz/postak/ → tento kontejner.
+# Viz deploy/postak/nginx-staging-snippet.conf
+
+name: postak-staging
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postak_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-postak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postak_staging_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postak} -d ${POSTGRES_DB:-postak_staging}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: ulov-staging-postak
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - postak_staging_logs:/var/log/postak
+    expose:
+      - '8000'
+    networks:
+      - default
+      - ulov_live
+
+  backup:
+    image: postgres:16-alpine
+    profiles: ['backup']
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-postak}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-postak_staging}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ['sh', '-c', 'pg_dump -Fc -f /backups/postak_staging_$$(date +%Y%m%d_%H%M%S).dump && echo OK']
+
+volumes:
+  postak_staging_pgdata:
+  postak_staging_logs:
+
+networks:
+  ulov_live:
+    external: true
+    name: ulov_default

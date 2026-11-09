@@ -465,6 +465,11 @@ def _sentry_scrub_smtp(event, hint):
     return _scrub(event)
 
 
+# Bearer token pro interní API potenciálních klientů (Pošťák).
+POSTAK_POTENCIALNI_API_TOKEN = os.environ.get('POSTAK_POTENCIALNI_API_TOKEN', '').strip()
+if DEBUG and not POSTAK_POTENCIALNI_API_TOKEN:
+    POSTAK_POTENCIALNI_API_TOKEN = 'dev-postak-local'
+
 # Sentry — aktivní jen když je nastaven SENTRY_DSN (jinak žádná režie).
 SENTRY_DSN = os.environ.get('SENTRY_DSN', '').strip()
 if SENTRY_DSN:

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import potencialni, prihlaseni, tym, views
+from . import postak_api, potencialni, prihlaseni, tym, views
 
 
 app_name = 'partner_admin'
@@ -18,6 +18,11 @@ urlpatterns = [
     path('potencialni/<int:pk>/ulozit/', potencialni.ulozit, name='potencialni_ulozit'),
     path('potencialni/<int:pk>/stav/', potencialni.zmenit_stav, name='potencialni_stav'),
     path('potencialni/<int:pk>/web/', potencialni.zmenit_web, name='potencialni_web'),
+    path('api/postak/v1/potencialni/', postak_api.kolekce, name='postak_api_potencialni'),
+    path('api/postak/v1/potencialni/zmeny/', postak_api.zmeny, name='postak_api_zmeny'),
+    path('api/postak/v1/potencialni/meta/', postak_api.stavy_a_sektory, name='postak_api_meta'),
+    path('api/postak/v1/potencialni/<int:pk>/', postak_api.detail, name='postak_api_detail'),
+    path('api/postak/v1/potencialni/<int:pk>/stav/', postak_api.zmena_stavu, name='postak_api_stav'),
     path('novy/', views.novy_partner, name='novy'),
     path('tarify/', views.tarify, name='tarify'),
     path('testovaci-pristupy/', views.testovaci_pristupy, name='testovaci_pristupy'),

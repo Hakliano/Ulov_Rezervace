@@ -1,14 +1,153 @@
 {% extends "base.html" %}
+{% load postak_tags %}
 {% block title %}Přehled · Pošťák{% endblock %}
+{% block extra_head %}
+{{ jmeniny_kalendar|json_script:"jmeniny-data" }}
+<script src="{% postak_static 'postak_banner.js' %}" defer></script>
+{% endblock %}
 {% block content %}
-<h1>Přehled</h1>
-<p class="muted">Pracovní plocha je připravená. Data z pošty, klientů a kalendáře tu zatím nejsou.</p>
-<div class="grid">
-  {% for nazev, text, odkaz in karty %}
-  <a class="card link" href="{% url odkaz %}">
-    <h2>{{ nazev }}</h2>
-    <p>{{ text }}</p>
-  </a>
-  {% endfor %}
+<div class="dash">
+  <header class="dash-hero">
+    <img class="dash-mascot" src="{% postak_logo %}" alt="Pošťák" width="200" height="67">
+    <div class="dash-hero-text">
+      <h1>Vítejte v Pošťákovi!</h1>
+      <p class="dash-lead">{{ user.get_full_name|default:user.username }} · {{ dnes_datum|date:"l d. F Y" }}</p>
+      <p class="dash-live">
+        <span class="dash-clock" id="dash-clock" aria-live="polite">--:--:--</span>
+        <span class="dash-live-sep" aria-hidden="true">·</span>
+        <span class="dash-jmeniny">Dnes má svátek:
+          <span id="dash-jmeniny">{% if jmeniny_text %}{{ jmeniny_text }}{% else %}—{% endif %}</span>
+        </span>
+      </p>
+      <p class="dash-sub">Váš obchodní den na jednom místě.</p>
+      <p class="dash-hero-actions">
+        <a class="btn help-hero-btn" href="{% url 'napoveda' %}">
+          <span class="help-hero-icon" aria-hidden="true">📖</span>
+          NÁPOVĚDA
+        </a>
+      </p>
+    </div>
+  </header>
+
+  <section class="dash-stats" aria-label="Statistiky">
+    <a class="stat-card stat-clients" href="{% url 'klienti' %}">
+      <span class="stat-icon" aria-hidden="true">◆</span>
+      <span class="stat-value">{{ klienti_stats.celkem }}</span>
+      <span class="stat-label">Potenciální klienti</span>
+      <span class="stat-meta">Moderník {{ klienti_stats.modernik }} · HYA {{ klienti_stats.hya }}</span>
+    </a>
+    <a class="stat-card stat-mail" href="{% url 'emaily' %}">
+      <span class="stat-icon" aria-hidden="true">✉</span>
+      <span class="stat-value">{% if email_prehled.pocet is not None %}{{ email_prehled.pocet }}{% else %}—{% endif %}</span>
+      <span class="stat-label">Nepřečtené e-maily</span>
+      {% if email_prehled.stav == 'nepristupne' %}<span class="stat-meta warn">Schránky nedostupné</span>{% endif %}
+    </a>
+    <a class="stat-card stat-chat" href="{% url 'tym' %}">
+      <span class="stat-icon" aria-hidden="true">●</span>
+      <span class="stat-value">{{ chat_pocet }}</span>
+      <span class="stat-label">Interní chat</span>
+    </a>
+    <a class="stat-card stat-tasks" href="{% url 'kalendar' %}?z=seznam&amp;ukoly=1">
+      <span class="stat-icon" aria-hidden="true">!</span>
+      <span class="stat-value">{{ ukoly_po_terminu }}</span>
+      <span class="stat-label">Úkoly po termínu</span>
+    </a>
+  </section>
+
+  <section class="card dash-pipeline">
+    <div class="row">
+      <h2>Obchodní pipeline</h2>
+      <form method="get" class="pipe-filters">
+        <button class="btn secondary btn-small {% if pipeline_filtr == 'vse' %}active{% endif %}" name="pipeline" value="vse" type="submit">Vše</button>
+        <button class="btn secondary btn-small {% if pipeline_filtr == 'modernik' %}active{% endif %}" name="pipeline" value="modernik" type="submit">Moderník</button>
+        <button class="btn secondary btn-small {% if pipeline_filtr == 'hya' %}active{% endif %}" name="pipeline" value="hya" type="submit">HereYouAre</button>
+      </form>
+    </div>
+    {% if pipeline %}
+    <p class="muted small">Počty z lokální cache podle skutečných statusů — bez slučování mezi projekty.</p>
+    <div class="pipe-chart">
+      {% for bar in pipeline %}
+      <div class="pipe-row pipe-{{ bar.projekt }}">
+        <span class="pipe-label" title="{{ bar.zobrazit }}">{{ bar.zobrazit }}</span>
+        <div class="pipe-track"><div class="pipe-fill" style="width: {{ bar.sirka }}%;"><span>{{ bar.pocet }}</span></div></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Zatím žádní klienti v cache pro zvolený filtr. Synchronizujte klienty.</p>
+    {% endif %}
+  </section>
+
+  <div class="overview-grid dash-panels">
+    <section class="card dash-panel">
+      <h2>Dnešní program</h2>
+      {% if dnes_program %}
+      <ul class="dash-timeline">
+        {% for ev in dnes_program %}
+        <li>
+          <time>{{ ev.zacatek|date:"H:i" }}</time>
+          <a href="{% url 'kalendar_detail' ev.pk %}">
+            <strong>{{ ev.nazev }}</strong>
+            <span class="muted block">{{ ev.get_typ_display }}{% if ev.klient_modernik %} · Moderník {{ ev.klient_modernik.jmeno }}{% elif ev.klient_hya %} · HYA {{ ev.klient_hya.jmeno }}{% endif %}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Dnes nic naplánováno.</p>
+      {% endif %}
+      <p class="panel-actions"><a class="btn secondary btn-small" href="{% url 'kalendar' %}">Kalendář</a></p>
+    </section>
+
+    <section class="card dash-panel">
+      <h2>Moje úkoly</h2>
+      {% if ukoly_po_terminu %}<p class="warn"><strong>{{ ukoly_po_terminu }}</strong> po termínu</p>{% endif %}
+      <ul class="dash-tasks">
+        {% for ev in ukoly %}
+        <li class="{% if ev.je_po_terminu %}overdue{% endif %}">
+          <a href="{% url 'kalendar_detail' ev.pk %}"><strong>{{ ev.konec|date:"d.m. H:i" }}</strong> {{ ev.nazev }}</a>
+          <form method="post" action="{% url 'kalendar_hotovo' ev.pk %}" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'prehled' %}">
+            <input type="hidden" name="hotovo" value="1">
+            <button class="btn secondary btn-small" type="submit">Hotovo</button>
+          </form>
+        </li>
+        {% empty %}
+        <li class="muted">Žádné otevřené úkoly.</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="card dash-panel dash-panel-wide">
+      <h2>Poslední aktivita</h2>
+      <h3 class="dash-h3">E-maily</h3>
+      {% if email_prehled.stav == 'nepristupne' %}
+      <p class="warn">E-mailové schránky teď nejsou dostupné.</p>
+      {% elif email_prehled.polozky %}
+      <ul class="overview-list">
+        {% for pol in email_prehled.polozky %}
+        <li><a href="{% url 'posta_zprava' pol.schranka_id pol.uid %}?slozka={{ pol.folder|urlencode }}"><strong>{{ pol.subject }}</strong><span class="muted block">{{ pol.from_name }}</span></a></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Žádné nové e-maily.</p>
+      {% endif %}
+      <h3 class="dash-h3">Chat</h3>
+      {% if chat_polozky %}
+      <ul class="overview-list chat-preview">
+        {% for z in chat_polozky %}
+        <li><a href="{% url 'tym_konverzace' z.odesilatel_id %}"><strong>{{ z.odesilatel.get_full_name|default:z.odesilatel.username }}</strong><span class="muted block">{{ z.text|truncatechars:72 }}</span></a></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Žádné nepřečtené chatové zprávy.</p>
+      {% endif %}
+      <p class="panel-actions">
+        <a class="btn secondary btn-small" href="{% url 'emaily' %}">E-maily</a>
+        <a class="btn secondary btn-small" href="{% url 'tym' %}">Tým a chat</a>
+      </p>
+    </section>
+  </div>
 </div>
 {% endblock %}
