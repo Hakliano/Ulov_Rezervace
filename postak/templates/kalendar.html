@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}Kalendář · Pošťák{% endblock %}
+{% block content %}
+<div class="row cal-toolbar">
+  <h1>Kalendář</h1>
+  <a class="btn" href="{% url 'kalendar_nova' %}?datum={{ anchor|date:'Y-m-d' }}">Nová událost</a>
+</div>
+<nav class="cal-tabs card">
+  <a class="{% if zobrazeni == 'mesic' %}active{% endif %}" href="?z=mesic&amp;u={{ filtr }}&amp;datum={{ anchor|date:'Y-m-d' }}">Měsíc</a>
+  <a class="{% if zobrazeni == 'tyden' %}active{% endif %}" href="?z=tyden&amp;u={{ filtr }}&amp;datum={{ anchor|date:'Y-m-d' }}">Týden</a>
+  <a class="{% if zobrazeni == 'seznam' %}active{% endif %}" href="?z=seznam&amp;u={{ filtr }}{% if jen_ukoly %}&amp;ukoly=1{% endif %}">Seznam</a>
+</nav>
+<form method="get" class="filters-grid card">
+  <input type="hidden" name="z" value="{{ zobrazeni }}">
+  <input type="hidden" name="datum" value="{{ anchor|date:'Y-m-d' }}">
+  <div class="field"><label for="u">Uživatel</label>
+    <select id="u" name="u">
+      <option value="">— všichni —</option>
+      <option value="me" {% if filtr == 'me' %}selected{% endif %}>Jen moje</option>
+      {% for u in uzivatele %}
+      <option value="{{ u.pk }}" {% if filtr == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if zobrazeni == 'seznam' %}
+  <div class="field">
+    <label><input type="checkbox" name="ukoly" value="1" {% if jen_ukoly %}checked{% endif %} onchange="this.form.submit()"> Jen nesplněné úkoly</label>
+  </div>
+  {% endif %}
+  <button class="btn secondary" type="submit">Filtrovat</button>
+</form>
+
+{% if zobrazeni == 'mesic' %}
+<section class="card cal-month">
+  <div class="cal-nav row">
+    <a class="btn secondary btn-small" href="?z=mesic&amp;u={{ filtr }}&amp;datum={{ pred_mesic|date:'Y-m-d' }}">‹ Předchozí</a>
+    <h2>{{ anchor|date:"F Y" }}</h2>
+    <a class="btn secondary btn-small" href="?z=mesic&amp;u={{ filtr }}&amp;datum={{ dalsi_mesic|date:'Y-m-d' }}">Další ›</a>
+  </div>
+  <table class="cal-grid">
+    <thead><tr><th>Po</th><th>Út</th><th>St</th><th>Čt</th><th>Pá</th><th>So</th><th>Ne</th></tr></thead>
+    <tbody>
+      {% for week in cells %}
+      <tr>
+        {% for day in week %}
+        <td class="cal-cell {% if not day %}cal-empty{% elif day == dnes %}cal-today{% endif %}">
+          {% if day %}
+          <a class="cal-cell-pad" href="{% url 'kalendar_nova' %}?datum={{ day|date:'Y-m-d' }}" aria-label="Nová událost {{ day|date:'j. n. Y' }}"></a>
+          <span class="cal-daynum">{{ day.day }}</span>
+          <ul class="cal-day-events">
+            {% for ev in by_day|get_item:day %}
+            <li><a class="cal-ev cal-ev-{{ ev.typ }}{% if ev.je_po_terminu %} overdue{% endif %}" href="{% url 'kalendar_detail' ev.pk %}">{{ ev.zacatek|date:"H:i" }} {{ ev.nazev|truncatechars:18 }}</a></li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% elif zobrazeni == 'tyden' %}
+<section class="card cal-week">
+  <div class="cal-week-grid">
+    {% for day in days %}
+    <div class="cal-week-col {% if day == dnes %}cal-today{% endif %}">
+      <h3>{{ day|date:"D d.m." }}</h3>
+      <div class="cal-week-body">
+        <a class="cal-cell-pad" href="{% url 'kalendar_nova' %}?datum={{ day|date:'Y-m-d' }}&amp;cas=09:00" aria-label="Nová událost"></a>
+        <ul class="cal-day-events">
+          {% for ev in by_day|get_item:day %}
+          <li><a class="cal-ev cal-ev-{{ ev.typ }}" href="{% url 'kalendar_detail' ev.pk %}">{{ ev.zacatek|date:"H:i" }}–{{ ev.konec|date:"H:i" }} {{ ev.nazev }}</a></li>
+          {% empty %}
+          <li class="muted cal-week-empty">Klikněte pro novou událost</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<section class="card">
+  <ul class="cal-list">
+    {% for ev in udalosti %}
+    <li class="{% if ev.je_po_terminu %}overdue{% endif %}">
+      <a class="cal-ev cal-ev-{{ ev.typ }}" href="{% url 'kalendar_detail' ev.pk %}">
+        <strong>{{ ev.zacatek|date:"d.m.Y H:i" }}</strong> — {{ ev.nazev }}
+        <span class="muted block">{{ ev.get_typ_display }} · {{ ev.prirazeny.get_full_name|default:ev.prirazeny.username }}</span>
+      </a>
+    </li>
+    {% empty %}
+    <li class="muted">Žádné nadcházející události.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

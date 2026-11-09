@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Nový klient · Pošťák{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Nový potenciální klient</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="field"><label for="projekt">Projekt</label>
+      <select id="projekt" name="projekt" onchange="location='?projekt='+this.value">
+        {% for kod, nazev in projekty %}
+        <option value="{{ kod }}" {% if projekt == kod %}selected{% endif %}>{{ nazev }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="jmeno">Jméno / firma</label><input id="jmeno" name="jmeno" value="{{ initial.jmeno }}" required></div>
+    {% if projekt == 'hya' %}
+    <div class="field"><label for="kontakt_jmeno">Kontaktní osoba</label><input id="kontakt_jmeno" name="kontakt_jmeno" value="{{ initial.kontakt_jmeno }}"></div>
+    {% endif %}
+    <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" value="{{ initial.email }}" {% if projekt == 'modernik' %}required{% endif %}></div>
+    <div class="field"><label for="telefon">Telefon</label><input id="telefon" name="telefon" value="{{ initial.telefon }}"></div>
+    <div class="field"><label for="web">Web</label><input id="web" name="web" value="{{ initial.web }}"></div>
+    {% if projekt == 'modernik' %}
+    <div class="field"><label for="ico">IČO</label><input id="ico" name="ico" value="{{ initial.ico }}"></div>
+    <div class="field"><label for="adresa">Adresa</label><textarea id="adresa" name="adresa" rows="2">{{ initial.adresa }}</textarea></div>
+    <div class="field"><label for="sektor_id">Sektor</label>
+      <select id="sektor_id" name="sektor_id">
+        <option value="">—</option>
+        {% for s in sektory %}
+        <option value="{{ s.remote_id }}" {% if initial.sektor_id == s.remote_id|stringformat:"s" %}selected{% endif %}>{{ s.nazev }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <div class="field"><label for="lokalita">Lokalita</label><input id="lokalita" name="lokalita" value="{{ initial.lokalita }}"></div>
+    <div class="field"><label for="zdroj">Zdroj</label><input id="zdroj" name="zdroj" value="{{ initial.zdroj }}"></div>
+    <div class="field"><label for="ma_web">Má web</label>
+      <select id="ma_web" name="ma_web">
+        <option value="">neznámo</option>
+        <option value="yes">ano</option>
+        <option value="no">ne</option>
+      </select>
+    </div>
+    <div class="field"><label for="ma_rezervace">Má rezervační systém</label>
+      <select id="ma_rezervace" name="ma_rezervace">
+        <option value="">neznámo</option>
+        <option value="yes">ano</option>
+        <option value="no">ne</option>
+      </select>
+    </div>
+    {% endif %}
+    <div class="field"><label for="poznamka">Poznámka</label><textarea id="poznamka" name="poznamka" rows="3">{{ initial.poznamka }}</textarea></div>
+    <div class="field"><label for="stav">Status</label>
+      <select id="stav" name="stav">
+        {% for s in stavy %}<option value="{{ s.kod }}" {% if initial.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">Založit</button>
+    <a class="btn secondary" href="{% url 'klienti' %}">Zpět</a>
+  </form>
+</section>
+{% endblock %}

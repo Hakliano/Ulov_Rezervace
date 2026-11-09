@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if nova %}Nová událost{% else %}Úprava události{% endif %} · Pošťák{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>{% if nova %}Nová událost{% else %}Úprava události{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="field"><label for="nazev">Název</label><input id="nazev" name="nazev" value="{{ udalost.nazev }}" required maxlength="200"></div>
+    <div class="field"><label for="typ">Typ</label>
+      <select id="typ" name="typ">
+        {% for kod, label in typy %}
+        <option value="{{ kod }}" {% if udalost.typ == kod %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="zacatek">Začátek</label><input id="zacatek" name="zacatek" type="datetime-local" value="{% if udalost.zacatek %}{{ udalost.zacatek|date:'Y-m-d\TH:i' }}{% endif %}" required></div>
+    <div class="field"><label for="konec">Konec</label><input id="konec" name="konec" type="datetime-local" value="{% if udalost.konec %}{{ udalost.konec|date:'Y-m-d\TH:i' }}{% endif %}" required></div>
+    <div class="field"><label for="prirazeny">Přiřazený uživatel</label>
+      <select id="prirazeny" name="prirazeny">
+        {% for u in uzivatele %}
+        <option value="{{ u.pk }}" {% if udalost.prirazeny_id == u.pk %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="klient">Potenciální klient</label>
+      <select id="klient" name="klient">
+        {% for val, label in klienti_volby %}
+        <option value="{{ val }}" {% if klient_vyber == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="popis">Popis</label><textarea id="popis" name="popis" rows="4">{{ udalost.popis }}</textarea></div>
+    <div class="field cal-ukol-only"><label><input type="checkbox" name="hotovo" {% if udalost.hotovo %}checked{% endif %}> Splněno (u úkolů)</label></div>
+    <button class="btn" type="submit">Uložit</button>
+    <a class="btn secondary" href="{% url 'kalendar' %}">Zpět</a>
+  </form>
+</section>
+{% endblock %}

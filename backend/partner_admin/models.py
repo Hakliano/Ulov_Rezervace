@@ -807,6 +807,32 @@ class PotencialniKontakt(models.Model):
         super().save(*args, **kwargs)
 
 
+class PotencialniKontaktStavHistorie(models.Model):
+    kontakt = models.ForeignKey(
+        PotencialniKontakt,
+        on_delete=models.CASCADE,
+        related_name='stav_historie',
+    )
+    stav_pred = models.CharField(max_length=32, blank=True, default='')
+    stav = models.CharField(max_length=32)
+    zmenil = models.CharField(max_length=120, blank=True, default='')
+    vytvoreno = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-vytvoreno']
+        verbose_name = 'historie stavu potenciálního klienta'
+        verbose_name_plural = 'historie stavů potenciálních klientů'
+
+
+class PotencialniKontaktTombstone(models.Model):
+    kontakt_id = models.PositiveIntegerField(unique=True)
+    smazano = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'smazaný potenciální klient (API)'
+        verbose_name_plural = 'smazaní potenciální klienti (API)'
+
+
 class PartnerAdminProfil(models.Model):
     """Přihlašovací účet týmu ULOV (ne KAM karta, ne majitel salonu)."""
 

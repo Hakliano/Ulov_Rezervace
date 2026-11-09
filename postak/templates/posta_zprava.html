@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{% if zprava %}{{ zprava.subject }}{% else %}Zpráva{% endif %} · Pošťák{% endblock %}
+{% block content %}
+<p class="nav-back"><a class="btn secondary btn-small" href="{% url 'posta_seznam' schranka.pk %}?slozka={{ folder|urlencode }}&stranka={{ stranka }}&uv={{ uidvalidity|urlencode }}">← Zpět do seznamu</a></p>
+{% if chyba %}<section class="card"><p class="error">{{ chyba }}</p></section>{% endif %}
+{% if zprava %}
+<div class="row-actions card">
+  <a class="btn secondary" href="{% url 'posta_odpoved' schranka.pk zprava.uid %}?slozka={{ folder|urlencode }}">Odpovědět</a>
+  <a class="btn secondary" href="{% url 'posta_odpoved_vsem' schranka.pk zprava.uid %}?slozka={{ folder|urlencode }}">Odpovědět všem</a>
+  <a class="btn secondary" href="{% url 'posta_preposlat' schranka.pk zprava.uid %}?slozka={{ folder|urlencode }}">Přeposlat</a>
+</div>
+<section class="card">
+  <h1 {% if zprava.unread %}class="unread-title"{% endif %}>{{ zprava.subject }}</h1>
+  <dl class="meta">
+    <div><dt>Od</dt><dd>{{ zprava.from }}</dd></div>
+    <div><dt>Komu</dt><dd>{{ zprava.to|default:"—" }}</dd></div>
+    {% if zprava.cc %}<div><dt>Kopie</dt><dd>{{ zprava.cc }}</dd></div>{% endif %}
+    <div><dt>Datum</dt><dd>{{ zprava.date }}</dd></div>
+  </dl>
+  <form method="post" class="row-actions">
+    {% csrf_token %}
+    <input type="hidden" name="slozka" value="{{ folder }}">
+    <input type="hidden" name="uv" value="{{ uidvalidity }}">
+    <input type="hidden" name="stranka" value="{{ stranka }}">
+    <button class="btn secondary" type="submit" name="akce" value="seen_off">Nepřečtené</button>
+    <button class="btn secondary" type="submit" name="akce" value="seen_on">Přečtené</button>
+    {% if in_trash %}
+    <button class="btn secondary" type="submit" name="akce" value="restore">Obnovit</button>
+    <button class="btn danger" type="submit" name="akce" value="delete" onclick="return confirm('Trvale smazat tuto zprávu?');">Smazat natrvalo</button>
+    {% else %}
+    <button class="btn danger" type="submit" name="akce" value="trash">Do koše</button>
+    {% endif %}
+  </form>
+  {% if zprava.attachments %}
+  <h2>Přílohy</h2>
+  <ul class="attach-list">
+    {% for p in zprava.attachments %}
+    <li><a href="{% url 'posta_priloha' schranka.pk zprava.uid p.part %}?slozka={{ folder|urlencode }}&uv={{ uidvalidity|urlencode }}">{{ p.filename }}</a> <span class="muted">({{ p.size }} B)</span></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+<section class="card mail-body">
+  {% if zprava.body_html %}
+  <div class="mail-html">{{ zprava.body_html|safe }}</div>
+  {% else %}
+  <pre class="mail-text">{{ zprava.body_text }}</pre>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

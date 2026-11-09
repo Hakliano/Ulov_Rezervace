@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Uživatelé · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>Uživatelé</h1>
+  <a class="btn" href="{% url 'uzivatel_novy' %}">Nový uživatel</a>
+</div>
+<div class="card table-wrap">
+  <table class="users">
+    <thead>
+      <tr>
+        <th>Účet</th>
+        <th>Jméno</th>
+        <th>E-mail</th>
+        <th>Role</th>
+        <th>Stav</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cil in uzivatele %}
+      <tr>
+        <td data-label="Účet">{{ cil.username }}</td>
+        <td data-label="Jméno">{{ cil.get_full_name|default:"—" }}</td>
+        <td data-label="E-mail">{{ cil.email|default:"—" }}</td>
+        <td data-label="Role">{% if cil.is_superuser %}SUPERUSER{% else %}USER{% endif %}</td>
+        <td data-label="Stav">{% if cil.is_active %}Aktivní{% else %}Neaktivní{% endif %}</td>
+        <td><a class="btn secondary" href="{% url 'uzivatel_detail' cil.pk %}">Upravit</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

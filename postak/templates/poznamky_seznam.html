@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}Poznámky a koncepty · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>Poznámky a koncepty</h1>
+  <a class="btn" href="{% url 'poznamka_nova' %}">Nový záznam</a>
+</div>
+<section class="card">
+  <form method="get" class="inline sort-form">
+    <label for="razeni">Řadit podle</label>
+    <select id="razeni" name="razeni" onchange="this.form.submit()">
+      <option value="poradi" {% if razeni == 'poradi' %}selected{% endif %}>Pořadí</option>
+      <option value="nazev" {% if razeni == 'nazev' %}selected{% endif %}>Názvu</option>
+      <option value="upraveno" {% if razeni == 'upraveno' %}selected{% endif %}>Poslední úpravy</option>
+    </select>
+  </form>
+  <p id="copy-notice" class="copy-notice muted" role="status" aria-live="polite"></p>
+  <div class="table-wrap">
+    <table class="users">
+      <thead>
+        <tr><th>Název</th><th>Pořadí</th><th>Upraveno</th><th>Akce</th></tr>
+      </thead>
+      <tbody>
+        {% for p in polozky %}
+        <tr>
+          <td data-label="Název"><a href="{% url 'poznamka_detail' p.pk %}">{{ p.nazev }}</a></td>
+          <td data-label="Pořadí">{{ p.poradi }}</td>
+          <td data-label="Upraveno">{{ p.upraveno|date:"d.m.Y H:i" }}</td>
+          <td data-label="Akce">
+            <div class="row-actions table-actions">
+              <button type="button" class="btn secondary btn-small btn-copy-poznamka" data-url="{% url 'poznamka_kopirovat' p.pk %}">Kopírovat</button>
+              <a class="btn secondary btn-small" href="{% url 'poznamka_detail' p.pk %}">Upravit</a>
+              <form method="post" action="{% url 'poznamka_smazat' p.pk %}" onsubmit="return confirm('Opravdu smazat „{{ p.nazev|escapejs }}“?');">
+                {% csrf_token %}
+                <button class="btn danger btn-small" type="submit">Odstranit</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="muted">Zatím nemáte žádné záznamy.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script src="{% postak_static 'postak-copy.js' %}"></script>
+<script src="{% postak_static 'poznamky-seznam.js' %}"></script>
+{% endblock %}

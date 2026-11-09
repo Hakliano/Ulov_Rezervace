@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vítejte v Pošťákovi</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(30,58,138,.12);">
+          <tr>
+            <td style="background:linear-gradient(90deg,#dbeafe 0%,#60a5fa 50%,#1e3a8a 100%);padding:24px;text-align:center;">
+              <img src="{{ logo_url }}" alt="Pošťák" width="180" style="display:block;margin:0 auto;max-width:180px;height:auto;border:0;outline:none;text-decoration:none;">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 24px;">
+              <h1 style="margin:0 0 12px;font-size:1.5rem;color:#dc2626;">Vítejte v Pošťákovi!</h1>
+              <p style="margin:0 0 16px;line-height:1.5;">Dobrý den{% if uzivatel.get_full_name %}, {{ uzivatel.get_full_name }}{% endif %},</p>
+              <p style="margin:0 0 16px;line-height:1.5;">Pošťák je interní pracovní aplikace pro e-maily, klienty, týmovou komunikaci, kalendář, úkoly a dokumentaci.</p>
+              <table role="presentation" width="100%" style="background:#eff6ff;border-radius:12px;padding:16px;margin:0 0 20px;">
+                <tr><td style="font-size:.9rem;color:#475569;">Přihlašovací e-mail</td></tr>
+                <tr><td style="font-size:1.1rem;font-weight:700;color:#1e3a8a;">{{ login_id }}</td></tr>
+                <tr><td style="height:12px;"></td></tr>
+                <tr><td style="font-size:.9rem;color:#475569;">Dočasné heslo</td></tr>
+                <tr><td style="font-size:1.1rem;font-weight:700;font-family:Consolas,monospace;">{{ heslo }}</td></tr>
+              </table>
+              <p style="margin:0 0 20px;font-size:.95rem;color:#b45309;font-weight:600;">Při prvním přihlášení si prosím heslo změňte.</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto 20px;">
+                <tr>
+                  <td style="border-radius:10px;background:#1e40af;">
+                    <a href="{{ login_url }}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-weight:700;text-decoration:none;font-size:1rem;">Přihlásit se do Pošťáka</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0;font-size:.85rem;color:#64748b;">Záložní odkaz: <a href="{{ login_url }}" style="color:#2563eb;">{{ login_url }}</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

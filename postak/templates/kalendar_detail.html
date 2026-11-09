@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ udalost.nazev }} · Kalendář{% endblock %}
+{% block content %}
+<div class="row">
+  <h1 class="cal-ev cal-ev-{{ udalost.typ }}">{{ udalost.nazev }}</h1>
+  <a class="btn secondary" href="{% url 'kalendar' %}">Zpět</a>
+</div>
+<section class="card">
+  <dl class="meta">
+    <div><dt>Typ</dt><dd>{{ udalost.get_typ_display }}</dd></div>
+    <div><dt>Začátek</dt><dd>{{ udalost.zacatek|date:"d.m.Y H:i" }}</dd></div>
+    <div><dt>Konec</dt><dd>{{ udalost.konec|date:"d.m.Y H:i" }}</dd></div>
+    <div><dt>Přiřazen</dt><dd>{{ udalost.prirazeny.get_full_name|default:udalost.prirazeny.username }}</dd></div>
+    {% if udalost.klient_modernik %}
+    <div><dt>Klient</dt><dd><a href="{% url 'klient_detail' 'modernik' udalost.klient_modernik_id %}">Moderník — {{ udalost.klient_modernik.jmeno }}</a></dd></div>
+    {% elif udalost.klient_hya %}
+    <div><dt>Klient</dt><dd><a href="{% url 'klient_detail' 'hya' udalost.klient_hya_id %}">HereYouAre — {{ udalost.klient_hya.jmeno }}</a></dd></div>
+    {% endif %}
+    {% if udalost.typ == 'ukol' %}
+    <div><dt>Stav</dt><dd>{% if udalost.hotovo %}Hotovo{% elif udalost.je_po_terminu %}<span class="warn">Po termínu</span>{% else %}Otevřený{% endif %}</dd></div>
+    {% endif %}
+  </dl>
+  {% if udalost.popis %}<p class="mail-text">{{ udalost.popis|linebreaksbr }}</p>{% endif %}
+  <div class="row-actions">
+    {% if muze_editovat %}
+    <a class="btn" href="{% url 'kalendar_upravit' udalost.pk %}">Upravit</a>
+    {% if udalost.typ == 'ukol' %}
+    <form method="post" action="{% url 'kalendar_hotovo' udalost.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="hotovo" value="{% if udalost.hotovo %}0{% else %}1{% endif %}">
+      <button class="btn secondary" type="submit">{% if udalost.hotovo %}Znovu otevřít{% else %}Označit hotové{% endif %}</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'kalendar_smazat' udalost.pk %}" onsubmit="return confirm('Smazat událost?');">
+      {% csrf_token %}
+      <button class="btn danger" type="submit">Smazat</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

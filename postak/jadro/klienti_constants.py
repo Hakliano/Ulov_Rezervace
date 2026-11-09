@@ -1,0 +1,10 @@
+PROJEKT_MODERNIK = 'modernik'
+PROJEKT_HYA = 'hya'
+
+PROJEKTY = (
+    (PROJEKT_MODERNIK, 'Moderník'),
+    (PROJEKT_HYA, 'HereYouAre'),
+)
+
+SYNC_META_MODERNIK = 1
+SYNC_META_HYA = 2

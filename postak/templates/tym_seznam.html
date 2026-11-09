@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}Tým a chat · Pošťák{% endblock %}
+{% block content %}
+<h1>Tým a chat</h1>
+<p class="muted">Aktivní kolegové v Pošťáku. Vyberte konverzaci nebo napište novou zprávu.</p>
+<ul class="team-list team-only">
+  {% for row in kolegove_meta %}
+  {% with kolega=row.user %}
+  <li class="team-row">
+    <div class="team-who">
+      {% with foto=kolega|profil_foto %}
+      {% if foto %}
+      <img class="avatar sm" src="{{ foto }}" alt="" width="40" height="40">
+      {% else %}
+      <span class="avatar sm initials">{{ kolega|user_initials }}</span>
+      {% endif %}
+      {% endwith %}
+      <div>
+        <strong>{{ kolega.get_full_name|default:kolega.username }}</strong>
+        <span class="muted block">{{ kolega.email|default:"—" }}</span>
+        {% if row.telefon %}<span class="muted block">{{ row.telefon }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="team-actions">
+      {% if row.neprectenych %}<span class="badge" title="Nepřečtené">{{ row.neprectenych }}</span>{% endif %}
+      <a class="btn secondary" href="{% url 'tym_konverzace' kolega.pk %}">Napsat zprávu</a>
+    </div>
+  </li>
+  {% endwith %}
+  {% empty %}
+  <li class="muted">Žádní další aktivní uživatelé.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

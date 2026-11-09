@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}{% if nova %}Nový záznam{% else %}{{ poznamka.nazev }}{% endif %} · Pošťák{% endblock %}
+{% block extra_head %}
+<link href="{% postak_static 'vendor/quill/quill.snow.css' %}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{% if nova %}Nový záznam{% else %}Upravit záznam{% endif %}</h1>
+  {% if poznamka %}
+  <p class="muted">Vytvořeno {{ poznamka.vytvoreno|date:"d.m.Y H:i" }} · naposledy {{ poznamka.upraveno|date:"d.m.Y H:i" }}</p>
+  {% endif %}
+  {{ initial.obsah_html|default:""|json_script:"compose-initial" }}
+  <form method="post" id="poznamka-form">
+    {% csrf_token %}
+    <div class="field"><label for="nazev">Název</label><input id="nazev" name="nazev" type="text" value="{{ initial.nazev }}" required maxlength="200"></div>
+    <div class="field"><label for="poradi">Pořadí</label><input id="poradi" name="poradi" type="number" value="{{ initial.poradi|default:0 }}" step="1"></div>
+    <div class="field">
+      <label for="compose-editor">Obsah</label>
+      <div id="compose-editor" class="compose-editor"></div>
+      <input type="hidden" id="obsah-hidden" name="obsah_html" value="">
+    </div>
+    <button class="btn" type="submit">Uložit</button>
+    <button class="btn secondary" type="button" id="copy-btn">KOPÍROVAT OBSAH</button>
+    <p id="copy-notice" class="copy-notice muted" role="status" aria-live="polite"></p>
+    <a class="btn secondary" href="{% url 'poznamky' %}">Zpět na seznam</a>
+    {% if poznamka %}
+    <button class="btn danger" type="submit" formaction="{% url 'poznamka_smazat' poznamka.pk %}" formmethod="post" onclick="return confirm('Opravdu smazat tento záznam?');">Smazat</button>
+    {% endif %}
+  </form>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script src="{% postak_static 'vendor/quill/quill.js' %}"></script>
+<script src="{% postak_static 'postak-quill.js' %}"></script>
+<script src="{% postak_static 'postak-copy.js' %}"></script>
+<script src="{% postak_static 'poznamka-edit.js' %}"></script>
+{% endblock %}

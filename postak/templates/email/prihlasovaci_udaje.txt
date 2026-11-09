@@ -1,0 +1,10 @@
+Vítejte v Pošťákovi!
+
+Pošťák je interní pracovní aplikace pro e-maily, klienty, týmovou komunikaci, kalendář, úkoly a dokumentaci.
+
+Přihlašovací e-mail: {{ login_id }}
+Dočasné heslo: {{ heslo }}
+
+Při prvním přihlášení si prosím heslo změňte.
+
+Přihlásit se: {{ login_url }}

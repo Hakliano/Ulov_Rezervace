@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Nový uživatel · Pošťák{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Nový uživatel</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "pole.html" %}
+    <button class="btn" type="submit">Vytvořit</button>
+    <a class="btn secondary" href="{% url 'uzivatele' %}">Zpět</a>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}{{ partner.get_full_name|default:partner.username }} · Tým a chat{% endblock %}
+{% block content %}
+<div class="chat-layout">
+  <aside class="chat-colleagues">
+    <div class="chat-aside-head">
+      <h1 class="chat-title">Tým a chat</h1>
+      <a class="btn secondary chat-back" href="{% url 'tym' %}">Seznam</a>
+    </div>
+    <ul class="team-list">
+      {% for row in kolegove_meta %}
+      {% with kolega=row.user %}
+      <li class="team-row {% if kolega.pk == partner.pk %}active{% endif %}">
+        <a class="team-link" href="{% url 'tym_konverzace' kolega.pk %}">
+          <div class="team-who">
+            {% with foto=kolega|profil_foto %}
+            {% if foto %}
+            <img class="avatar sm" src="{{ foto }}" alt="" width="40" height="40">
+            {% else %}
+            <span class="avatar sm initials">{{ kolega|user_initials }}</span>
+            {% endif %}
+            {% endwith %}
+            <span class="team-name">
+              <strong>{{ kolega.get_full_name|default:kolega.username }}</strong>
+              {% if row.neprectenych %}<span class="badge sm">{{ row.neprectenych }}</span>{% endif %}
+            </span>
+          </div>
+        </a>
+      </li>
+      {% endwith %}
+      {% endfor %}
+    </ul>
+  </aside>
+  <section class="chat-thread">
+    <header class="chat-header card">
+      <a class="chat-back-mobile btn secondary" href="{% url 'tym' %}">← Kolegové</a>
+      {% with foto=partner|profil_foto %}
+      {% if foto %}
+      <img class="avatar" src="{{ foto }}" alt="" width="48" height="48">
+      {% else %}
+      <span class="avatar initials">{{ partner|user_initials }}</span>
+      {% endif %}
+      {% endwith %}
+      <div>
+        <h2>{{ partner.get_full_name|default:partner.username }}</h2>
+        <p class="muted">{{ partner.email|default:"—" }}{% if partner_telefon %} · {{ partner_telefon }}{% endif %}</p>
+      </div>
+      <form method="post" action="{% url 'tym_sync' partner.pk %}" class="chat-sync">
+        {% csrf_token %}
+        <button class="btn secondary" type="submit">SYNCHRONIZOVAT CHAT</button>
+      </form>
+    </header>
+    <div class="chat-messages card" id="chat-msgs">
+      {% for z in zpravy %}
+      <div class="chat-bubble {% if z.odesilatel_id == user.pk %}mine{% else %}theirs{% endif %}">
+        <p class="chat-text">{{ z.text|escape|linebreaksbr }}</p>
+        <time class="chat-time muted">{{ z.vytvoreno|date:"d.m.Y H:i" }}</time>
+      </div>
+      {% empty %}
+      <p class="muted">Zatím žádné zprávy. Napište první.</p>
+      {% endfor %}
+    </div>
+    {% if muze_psat %}
+    <form method="post" class="chat-compose card">
+      {% csrf_token %}
+      <label class="sr-only" for="chat-text">Zpráva</label>
+      <textarea id="chat-text" name="text" rows="3" maxlength="5000" required placeholder="Napište zprávu…"></textarea>
+      <button class="btn" type="submit">Odeslat</button>
+    </form>
+    {% else %}
+    <p class="muted card">Tomuto uživateli nelze posílat nové zprávy{% if not partner.is_active %} (účet je deaktivovaný){% endif %}.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
