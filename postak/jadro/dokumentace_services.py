@@ -196,8 +196,6 @@ def precti_obsah(soubor: DokumentSoubor) -> bytes:
     name = (soubor.soubor.name or '').replace('\\', '/')
     if not name or '..' in name:
         raise ValidationError('Neplatná cesta souboru.')
-    if not default_storage.exists(name):
-        raise ValidationError('Soubor na úložišti neexistuje.')
     with default_storage.open(name, 'rb') as handle:
         return handle.read()
 

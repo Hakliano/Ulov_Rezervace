@@ -3,6 +3,8 @@ from pathlib import Path
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
+
+from .bunny_client import BunnyStorageError
 from django.core.files.base import ContentFile
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -253,7 +255,19 @@ def dokumentace_stahnout(request, pk):
     soubor = get_object_or_404(DokumentSoubor.objects.select_related('slozka'), pk=pk)
     if not muze_cist_soubor(request.user, soubor):
         raise PermissionDenied
-    response = HttpResponse(precti_obsah(soubor), content_type=soubor_mime(soubor.pripona))
+    try:
+        data = precti_obsah(soubor)
+    except ValidationError:
+        raise Http404
+    except FileNotFoundError:
+        raise Http404
+    except BunnyStorageError:
+        return HttpResponse(
+            'Soubor se teď nepodařilo načíst z úložiště. Zkuste to později.',
+            status=503,
+            content_type='text/plain; charset=utf-8',
+        )
+    response = HttpResponse(data, content_type=soubor_mime(soubor.pripona))
     response['Content-Disposition'] = f'attachment; filename="{soubor.nazev}"'
     response['X-Content-Type-Options'] = 'nosniff'
     return response
