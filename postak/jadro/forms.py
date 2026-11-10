@@ -19,10 +19,28 @@ class PrihlaseniForm(AuthenticationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].label = 'Uživatelské jméno'
+        self.fields['username'].label = 'E-mail nebo uživatelské jméno'
         self.fields['password'].label = 'Heslo'
         self.fields['username'].widget.attrs['autocomplete'] = 'username'
         self.fields['password'].widget.attrs['autocomplete'] = 'current-password'
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username is None:
+            return username
+        ident = username.strip()
+        if '@' not in ident:
+            return ident
+        matches = User.objects.filter(email__iexact=ident)
+        count = matches.count()
+        if count == 1:
+            return matches.get().username
+        if count > 1:
+            raise ValidationError(
+                self.error_messages['invalid_login'],
+                code='invalid_login',
+            )
+        return ident
 
 
 class VlastniHesloForm(PasswordChangeForm):
