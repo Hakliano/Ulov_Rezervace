@@ -12,6 +12,14 @@
 - Síť Docker `ulov_default` existuje (běží hlavní compose).
 - Soubor `postak/.env` na serveru (z `.env.staging.example`, **mimo git**).
 
+### Konfigurace STAGING vs LIVE (povinné)
+
+- STAGING používá **`postak/.env`**.
+- LIVE používá **`postak/.env.live`**.
+- Tyto soubory **nesmí** být vzájemně kopírovány ani přepisovány.
+- Každé prostředí má vlastní databázi, přístupové údaje a konfiguraci (`POSTGRES_DB`, `ALLOWED_HOSTS`, API tokeny, Bunny prefix atd.).
+- Před spuštěním nebo nasazením STAGING ověřte, že `postak/.env` odpovídá **staging** hodnotám (viz `.env.staging.example`), ne LIVE.
+
 ---
 
 ## 1. SSH — host key (`Host key verification failed`)
