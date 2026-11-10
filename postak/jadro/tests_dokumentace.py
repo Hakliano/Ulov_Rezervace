@@ -1,11 +1,13 @@
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from jadro.bunny_client import BunnyStorageError
 from jadro.dokumentace_models import REZIM_MOJE, REZIM_SDILENE, DokumentSlozka, DokumentSoubor
 
 MAIL_KEY = '5UJw-fkaQCvOYE6rjCyROlCttrakyH3-D8Qieby3Mvc='
@@ -36,6 +38,38 @@ class DokumentaceTests(TestCase):
     def _nahrat(self, client, slozka, nazev='doc.pdf', data=PDF):
         f = SimpleUploadedFile(nazev, data, content_type='application/pdf')
         return client.post(reverse('dokumentace_nahrat'), {'slozka': slozka.pk, 'soubor': f})
+
+    @patch('jadro.dokumentace_services.default_storage.exists')
+    def test_stahnout_bez_exists_kontroli(self, exists_mock):
+        sl = self._slozka(REZIM_SDILENE, 'Firemni')
+        self.client.force_login(self.su)
+        self._nahrat(self.client, sl)
+        soubor = DokumentSoubor.objects.get()
+        exists_mock.side_effect = BunnyStorageError('Bunny HTTP 401')
+        r = self.client.get(reverse('dokumentace_stahnout', args=[soubor.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content.startswith(b'%PDF'))
+        exists_mock.assert_not_called()
+
+    @patch('jadro.dokumentace_services.default_storage.open')
+    def test_stahnout_chybejici_soubor_404(self, open_mock):
+        sl = self._slozka(REZIM_SDILENE, 'Firemni')
+        self.client.force_login(self.su)
+        self._nahrat(self.client, sl)
+        soubor = DokumentSoubor.objects.get()
+        open_mock.side_effect = FileNotFoundError('missing')
+        r = self.client.get(reverse('dokumentace_stahnout', args=[soubor.pk]))
+        self.assertEqual(r.status_code, 404)
+
+    @patch('jadro.dokumentace_services.default_storage.open')
+    def test_stahnout_bunny_chyba_503(self, open_mock):
+        sl = self._slozka(REZIM_SDILENE, 'Firemni')
+        self.client.force_login(self.su)
+        self._nahrat(self.client, sl)
+        soubor = DokumentSoubor.objects.get()
+        open_mock.side_effect = BunnyStorageError('Bunny HTTP 500')
+        r = self.client.get(reverse('dokumentace_stahnout', args=[soubor.pk]))
+        self.assertEqual(r.status_code, 503)
 
     def test_sdilene_cist_vs_sprava(self):
         sl = self._slozka(REZIM_SDILENE, 'Firemni')
