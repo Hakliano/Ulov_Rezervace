@@ -1,0 +1,263 @@
+.phone-prep,
+.phone-call {
+  max-width: 720px;
+}
+
+.phone-prep h1 {
+  margin-bottom: 4px;
+}
+
+.phone-prep-intro {
+  color: var(--posta-muted);
+  margin: 0 0 8px;
+}
+
+.phone-prep-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.phone-prep-head h1 {
+  margin-bottom: 4px;
+}
+
+.phone-manage-link[hidden] {
+  display: none !important;
+}
+
+.phone-field {
+  margin-bottom: 18px;
+}
+
+.phone-field legend,
+.phone-field-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.phone-cards {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.phone-card {
+  border: 2px solid var(--posta-border);
+  border-radius: 10px;
+  background: var(--posta-card);
+  padding: 14px 12px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.phone-card:hover {
+  border-color: var(--posta-blue);
+}
+
+.phone-card.is-selected {
+  border-color: var(--posta-blue);
+  background: var(--posta-blue-soft);
+}
+
+.phone-card strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.phone-card span {
+  color: var(--posta-muted);
+  font-size: 0.92rem;
+}
+
+.phone-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.phone-chip {
+  border: 2px solid var(--posta-border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--posta-card);
+  cursor: pointer;
+  font: inherit;
+}
+
+.phone-chip.is-selected {
+  border-color: var(--posta-blue);
+  background: var(--posta-blue-soft);
+}
+
+.phone-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 12px;
+  font: inherit;
+  border: 1px solid var(--posta-border);
+  border-radius: 8px;
+}
+
+.phone-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.phone-status {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.phone-status.ok {
+  background: #e6f4ea;
+  color: #1e6b34;
+}
+
+.phone-status.err {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.phone-status.wait {
+  background: var(--posta-blue-soft);
+  color: var(--posta-blue-dark);
+}
+
+.phone-call[hidden],
+.phone-prep.is-hidden {
+  display: none !important;
+}
+
+.phone-say-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--posta-muted);
+  margin: 0 0 8px;
+}
+
+.phone-say-text {
+  font-size: 1.45rem;
+  line-height: 1.35;
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+
+.phone-goal {
+  font-size: 0.95rem;
+  color: var(--posta-muted);
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  background: var(--posta-blue-soft);
+  border-radius: 8px;
+}
+
+.phone-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.phone-answer-btn {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 1.02rem;
+  border: 2px solid var(--posta-border);
+  border-radius: 10px;
+  background: var(--posta-card);
+  cursor: pointer;
+}
+
+.phone-answer-btn:active {
+  background: var(--posta-blue-soft);
+  border-color: var(--posta-blue);
+}
+
+.phone-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--posta-border);
+}
+
+.phone-toolbar .btn {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.phone-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 32, 51, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  z-index: 50;
+}
+
+.phone-overlay[hidden] {
+  display: none !important;
+}
+
+.phone-overlay-panel {
+  width: 100%;
+  max-width: 720px;
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--posta-card);
+  border-radius: 12px 12px 8px 8px;
+  padding: 16px;
+}
+
+.phone-overlay-panel h2 {
+  margin-top: 0;
+}
+
+.phone-objection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.phone-objection-view[hidden] {
+  display: none !important;
+}
+
+.phone-meta-bar {
+  font-size: 0.88rem;
+  color: var(--posta-muted);
+  margin-bottom: 12px;
+}
+
+.phone-area-jump select {
+  width: 100%;
+  max-width: 100%;
+  padding: 10px;
+  font: inherit;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 480px) {
+  .phone-say-text {
+    font-size: 1.25rem;
+  }
+}

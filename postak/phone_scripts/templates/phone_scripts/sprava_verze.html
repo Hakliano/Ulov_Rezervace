@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ script.name }} · verze{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>{{ script.name }}</h1>
+  <a class="btn secondary" href="{% url 'telefonni_klikacka_sprava_seznam' %}">Seznam scénářů</a>
+  <a class="btn" href="{% url 'telefonni_klikacka_sprava_import_script' script.slug %}">Import nové verze</a>
+</div>
+<p class="muted">Produkt: {{ script.get_product_display }} · slug: {{ script.slug }}</p>
+<section class="card">
+  <div class="table-wrap">
+    <table class="users">
+      <thead>
+        <tr>
+          <th>Verze</th>
+          <th>Stav</th>
+          <th>Vytvořeno</th>
+          <th>Autor</th>
+          <th>Poznámka</th>
+          <th>Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ver in versions %}
+        <tr>
+          <td data-label="Verze">v{{ ver.version_number }}{% if ver.is_current %} (aktuální){% endif %}</td>
+          <td data-label="Stav">{{ ver.get_status_display }}</td>
+          <td data-label="Vytvořeno">{{ ver.created_at|date:"d.m.Y H:i" }}</td>
+          <td data-label="Autor">{% if ver.created_by %}{{ ver.created_by.get_full_name|default:ver.created_by.username }}{% else %}—{% endif %}</td>
+          <td data-label="Poznámka">{{ ver.note|default:"—" }}</td>
+          <td data-label="Akce">
+            <div class="table-actions">
+              <a class="btn secondary btn-small" href="{% url 'telefonni_klikacka_sprava_export' ver.pk %}">Export</a>
+              <a class="btn secondary btn-small" href="{% url 'telefonni_klikacka_sprava_testovat' ver.pk %}">Testovat</a>
+              {% if not ver.is_current or ver.status != 'published' %}
+              <a class="btn btn-small" href="{% url 'telefonni_klikacka_sprava_publikovat' ver.pk %}">Publikovat</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

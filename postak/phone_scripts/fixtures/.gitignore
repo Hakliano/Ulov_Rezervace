@@ -1,0 +1,8 @@
+# Obchodní / demo JSON se nedistribuuje přes Git (jen technická šablona schema-*.template.json)
+demo-*.json
+*.export.json
+*.sample.json
+stress-*.json
+modernik-*.json
+hereyouare-*.json
+local-*.json

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Publikovat v{{ version.version_number }}{% endblock %}
+{% block content %}
+<h1>Publikovat verzi</h1>
+<p>{{ version.script.name }} · v{{ version.version_number }} ({{ version.get_status_display }})</p>
+{% if not validation.ok %}
+<div class="messages">
+  <li class="error">Verze neprošla validací:</li>
+  {% for err in validation.errors %}
+  <li class="error">{{ err }}</li>
+  {% endfor %}
+</div>
+{% elif validation.warnings %}
+<ul class="muted">
+  {% for w in validation.warnings %}
+  <li>{{ w }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% if validation.ok %}
+<section class="card">
+  <form method="post" class="pole">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn" type="submit">Publikovat</button>
+    <a class="btn secondary" href="{% url 'telefonni_klikacka_sprava_verze' version.script.slug %}">Zpět</a>
+  </form>
+</section>
+{% else %}
+<p><a class="btn secondary" href="{% url 'telefonni_klikacka_sprava_verze' version.script.slug %}">Zpět</a></p>
+{% endif %}
+{% endblock %}

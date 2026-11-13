@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+
+{% block title %}Telefonní klikačka · Pošťák{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% postak_static 'phone-clicker.css' %}">
+{% endblock %}
+
+{% block content %}
+  {{ phone_clicker_config|json_script:"phone-clicker-config" }}
+  <div id="phone-clicker-app">
+
+    <section class="phone-prep" data-phone-prep>
+      <div class="row phone-prep-head">
+        <div>
+          <h1>Telefonní klikačka</h1>
+          <p class="phone-prep-intro">Nastavte parametry hovoru, připravte scénář a až poté spusťte rozhovor.</p>
+      {% if catalog_empty %}
+      <p class="phone-status wait">Zatím není k dispozici žádný publikovaný scénář. Superadmin může nahrát JSON ve správě scénářů.</p>
+      {% endif %}
+        </div>
+        <a class="btn secondary phone-manage-link" data-manage-link href="#" hidden>Správa scénářů</a>
+      </div>
+
+      <fieldset class="phone-field">
+        <legend>Produkt</legend>
+        <div class="phone-cards">
+          <button type="button" class="phone-card" data-product="modernik">
+            <strong>Moderník</strong>
+            <span>Salony a provozovny</span>
+          </button>
+          <button type="button" class="phone-card" data-product="hereyouare">
+            <strong>HereYouAre</strong>
+            <span>Ubytování a hosté</span>
+          </button>
+        </div>
+      </fieldset>
+
+      <div class="phone-field" data-scenario-field hidden>
+        <label class="phone-field-label" for="phone-scenario-select">Scénář</label>
+        <select class="phone-input" id="phone-scenario-select" data-scenario-select></select>
+      </div>
+
+      <div class="phone-field" data-version-field hidden>
+        <label class="phone-field-label" for="phone-version-select">Verze</label>
+        <select class="phone-input" id="phone-version-select" data-version-select></select>
+      </div>
+
+      <fieldset class="phone-field">
+        <legend>Web zákazníka</legend>
+        <div class="phone-option-row">
+          <button type="button" class="phone-chip" data-web="has_web">Má vlastní web</button>
+          <button type="button" class="phone-chip" data-web="no_web">Nemá vlastní web</button>
+          <button type="button" class="phone-chip" data-web="unknown">Nevíme / nezjištěno</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="phone-field">
+        <legend>Styl prodeje</legend>
+        <div class="phone-option-row">
+          <button type="button" class="phone-chip" data-sales-style="calm">Pomalý, klidný prodej</button>
+          <button type="button" class="phone-chip" data-sales-style="dynamic">Dynamický prodej</button>
+        </div>
+      </fieldset>
+
+      <div class="phone-field">
+        <label class="phone-field-label" for="phone-agent-name">Jméno telefonisty</label>
+        <input class="phone-input" id="phone-agent-name" type="text" data-agent-name autocomplete="name">
+      </div>
+
+      <div class="phone-actions">
+        <button type="button" class="btn" data-btn-prepare>Připravit scénář</button>
+        <button type="button" class="btn secondary" data-btn-start disabled>Start hovoru</button>
+      </div>
+
+      <p class="phone-status" data-prepare-status hidden></p>
+    </section>
+
+    <section class="phone-call" data-phone-call hidden>
+      <p class="phone-meta-bar" data-meta-bar></p>
+      <p class="phone-say-label">Co říct zákazníkovi</p>
+      <p class="phone-say-text" data-say-text></p>
+      <p class="phone-goal" data-goal-note hidden></p>
+      <div class="phone-answers" data-answers></div>
+
+      <div class="phone-area-jump">
+        <label class="phone-field-label" for="phone-area-select">Jiná oblast</label>
+        <select id="phone-area-select" data-area-select></select>
+        <button type="button" class="btn secondary" data-btn-area>Přejít do oblasti</button>
+      </div>
+
+      <div class="phone-toolbar">
+        <button type="button" class="btn secondary" data-btn-back>Zpět</button>
+        <button type="button" class="btn secondary" data-btn-objections>Námitky</button>
+        <button type="button" class="btn secondary" data-btn-copy>Kopírovat text</button>
+        <button type="button" class="btn secondary" data-btn-new>Nový hovor</button>
+      </div>
+    </section>
+
+    <div class="phone-overlay" data-overlay hidden>
+      <div class="phone-overlay-panel">
+        <div class="phone-objection-list" data-objection-list></div>
+        <div class="phone-objection-view" data-objection-view hidden>
+          <h2 data-objection-title></h2>
+          <div data-objection-responses></div>
+          <button type="button" class="btn secondary" data-objection-back>Seznam námitek</button>
+        </div>
+        <button type="button" class="btn" data-close-overlay style="margin-top:12px;width:100%">Zavřít</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% postak_static 'phone-clicker.js' %}" defer></script>
+{% endblock %}
