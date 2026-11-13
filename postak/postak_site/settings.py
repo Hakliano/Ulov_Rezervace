@@ -75,12 +75,14 @@ POSTAK_MODERNIK_CRM_WRITE = _env_bool('POSTAK_MODERNIK_CRM_WRITE', DEBUG)
 POSTAK_HYA_CRM_WRITE = _env_bool('POSTAK_HYA_CRM_WRITE', False)
 
 INSTALLED_APPS = [
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'jadro.apps.JadroConfig',
+    'phone_scripts.apps.PhoneScriptsConfig',
 ]
 
 MIDDLEWARE = [

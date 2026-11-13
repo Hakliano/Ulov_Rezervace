@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Import JSON · scénáře{% endblock %}
+{% block content %}
+<h1>Import JSON</h1>
+<p class="muted">Import uloží verzi jako <strong>koncept</strong>. Telefonisty se změna nedotkne, dokud verzi nepublikuje superadmin.</p>
+<section class="card">
+  <form method="post" enctype="multipart/form-data" class="pole">
+    {% csrf_token %}
+    {{ form.mode.label_tag }}
+    {{ form.mode }}
+    <p>{{ form.json_file.label_tag }}{{ form.json_file }}</p>
+    <p>{{ form.note.label_tag }}{{ form.note }}</p>
+    <div id="import-existing" {% if script %}style=""{% endif %}>
+      {{ form.existing_script.label_tag }}
+      {{ form.existing_script }}
+    </div>
+    <h2>Nový scénář (pokud nevyberete existující)</h2>
+    <p>
+      <label for="new_name">Název</label>
+      <input id="new_name" name="new_name" type="text" value="{{ new_script_defaults.name }}">
+    </p>
+    <p>
+      <label for="new_slug">Slug</label>
+      <input id="new_slug" name="new_slug" type="text" value="{{ new_script_defaults.slug }}">
+    </p>
+    <p>
+      <label for="new_product">Produkt</label>
+      <select id="new_product" name="new_product">
+        <option value="modernik" {% if new_script_defaults.product == 'modernik' %}selected{% endif %}>Moderník</option>
+        <option value="hereyouare" {% if new_script_defaults.product == 'hereyouare' %}selected{% endif %}>HereYouAre</option>
+      </select>
+    </p>
+    <button class="btn" type="submit">Nahrát a validovat</button>
+    <a class="btn secondary" href="{% url 'telefonni_klikacka_sprava_seznam' %}">Zpět</a>
+  </form>
+</section>
+{% endblock %}

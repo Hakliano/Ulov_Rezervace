@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load postak_tags %}
+{% block title %}Správa scénářů · Pošťák{% endblock %}
+{% block content %}
+<div class="row">
+  <h1>Správa telefonních scénářů</h1>
+  <a class="btn" href="{% url 'telefonni_klikacka_sprava_novy' %}">Nový scénář</a>
+  <a class="btn secondary" href="{% url 'telefonni_klikacka' %}">Zpět na klikačku</a>
+</div>
+<section class="card">
+  <div class="table-wrap">
+    <table class="users">
+      <thead>
+        <tr>
+          <th>Produkt</th>
+          <th>Název</th>
+          <th>Aktuální verze</th>
+          <th>Počet verzí</th>
+          <th>Stav</th>
+          <th>Upraveno</th>
+          <th>Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td data-label="Produkt">{{ row.script.get_product_display }}</td>
+          <td data-label="Název">{{ row.script.name }}<br><span class="muted">{{ row.script.slug }}</span></td>
+          <td data-label="Aktuální verze">{{ row.current_number }}</td>
+          <td data-label="Počet verzí">{{ row.version_count }}</td>
+          <td data-label="Stav">{% if row.script.is_active %}Aktivní{% else %}Neaktivní{% endif %}</td>
+          <td data-label="Upraveno">{{ row.script.updated_at|date:"d.m.Y H:i" }}</td>
+          <td data-label="Akce">
+            <div class="table-actions">
+              <a class="btn secondary btn-small" href="{% url 'telefonni_klikacka_sprava_verze' row.script.slug %}">Verze</a>
+              <a class="btn secondary btn-small" href="{% url 'telefonni_klikacka_sprava_import_script' row.script.slug %}">Import JSON</a>
+              {% if row.script.is_active %}
+              <form method="post" action="{% url 'telefonni_klikacka_sprava_deaktivovat' row.script.slug %}" onsubmit="return confirm('Deaktivovat tento scénář?');">
+                {% csrf_token %}
+                <button type="submit" class="btn danger btn-small">Deaktivovat</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Zatím žádné scénáře.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

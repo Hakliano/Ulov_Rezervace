@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "slug": "priklad-prazdny",
+    "name": "Technická šablona (bez obchodního obsahu)",
+    "product": "modernik"
+  },
+  "initialBranches": {
+    "has_web_calm": "start",
+    "has_web_dynamic": "start",
+    "no_web_calm": "start",
+    "no_web_dynamic": "start",
+    "unknown_calm": "start",
+    "unknown_dynamic": "start"
+  },
+  "areas": {
+    "test": {
+      "slug": "test",
+      "name": "Testovací oblast",
+      "sortOrder": 0,
+      "entryStepId": "start"
+    }
+  },
+  "steps": {
+    "start": {
+      "type": "question",
+      "areaSlug": "test",
+      "say": "[TECH] Testovací krok – nahraďte obchodním textem.",
+      "goal": "Validace struktury.",
+      "answers": [
+        {
+          "label": "Ukončit",
+          "endCall": true,
+          "sortOrder": 0
+        }
+      ]
+    }
+  },
+  "openings": [],
+  "objections": {},
+  "pricing": []
+}

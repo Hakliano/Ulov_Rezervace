@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Nový scénář{% endblock %}
+{% block content %}
+<h1>Nový scénář</h1>
+<section class="card">
+  <form method="post" class="pole">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn" type="submit">Pokračovat na import JSON</button>
+    <a class="btn secondary" href="{% url 'telefonni_klikacka_sprava_seznam' %}">Zpět</a>
+  </form>
+</section>
+{% endblock %}
