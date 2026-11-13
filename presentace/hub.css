@@ -330,6 +330,18 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
 }
 
+.hub-card-pricing {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.hub-card-pricing a {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
 .hub-video {
   padding: 0 0 3.5rem;
 }
