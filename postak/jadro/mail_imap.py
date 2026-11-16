@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import email
 import imaplib
+import logging
 import re
 import ssl
 from contextlib import contextmanager
@@ -13,6 +14,8 @@ from email.utils import parseaddr, parsedate_to_datetime
 from .mail_sanitize import display_bodies
 from .mail_secrets import MailDecryptError, decrypt_secret
 from .models import EmailSchranka
+
+logger = logging.getLogger(__name__)
 
 TIMEOUT = 25
 CTX = ssl.create_default_context()
@@ -72,6 +75,14 @@ def _safe_folder(name: str) -> str:
     return name
 
 
+def _imap_mailbox_arg(client, folder: str) -> str:
+    """Argument pro imaplib SELECT/COPY/APPEND — mezera jinak rozbije příkaz."""
+    folder = _safe_folder(folder)
+    if ' ' in folder:
+        return client._quote(folder)
+    return folder
+
+
 @contextmanager
 def imap_session(schranka: EmailSchranka, *, timeout=None):
     cfg = _cfg(schranka)
@@ -98,9 +109,27 @@ def imap_session(schranka: EmailSchranka, *, timeout=None):
             pass
 
 
+def _imap_select_debug(data) -> str:
+    if not data:
+        return ''
+    parts = []
+    for item in data:
+        if item is None:
+            continue
+        text = item.decode('utf-8', errors='replace') if isinstance(item, bytes) else str(item)
+        parts.append(text.replace('\r', ' ').replace('\n', ' ').strip()[:500])
+    return ' | '.join(parts)[:800]
+
+
 def _folder_uidvalidity(client, folder):
-    typ, data = client.select(folder, readonly=True)
+    typ, data = client.select(_imap_mailbox_arg(client, folder), readonly=True)
     if typ != 'OK':
+        logger.warning(
+            'IMAP SELECT selhalo folder=%r typ=%s data=%s',
+            folder,
+            typ,
+            _imap_select_debug(data),
+        )
         raise MailError('Složku nelze otevřít.')
     typ, resp = client.response('UIDVALIDITY')
     val = resp[0] if resp else None
@@ -224,7 +253,7 @@ def get_detail(schranka: EmailSchranka, *, folder, uid, mark_seen=True, uidvalid
         current = _folder_uidvalidity(client, folder)
         if uidvalidity and uidvalidity != current:
             raise MailError('Seznam zpráv se změnil. Obnovte stránku.')
-        client.select(folder, readonly=not mark_seen)
+        client.select(_imap_mailbox_arg(client, folder), readonly=not mark_seen)
         peek = 'BODY.PEEK[]' if not mark_seen else 'BODY[]'
         typ, fetched = client.uid('fetch', str(uid), f'(FLAGS {peek})')
         if typ != 'OK' or not fetched or not isinstance(fetched[0], tuple):
@@ -338,7 +367,7 @@ def overview_unseen(schranka: EmailSchranka, *, folder='INBOX', limit=8, timeout
     folder = _safe_folder(folder)
     limit = max(1, min(int(limit or 8), 20))
     with imap_session(schranka, timeout=timeout) as client:
-        client.select(folder, readonly=True)
+        client.select(_imap_mailbox_arg(client, folder), readonly=True)
         typ, data = client.uid('search', None, 'UNSEEN')
         if typ != 'OK':
             raise MailError('Nepřečtené nelze načíst.')

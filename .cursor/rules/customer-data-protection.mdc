@@ -1,0 +1,35 @@
+---
+description: Trvalá ochrana zákaznických dat — žádné mazání ani hromadné změny bez výslovného souhlasu uživatele (Moderník, Pošťák, LOCAL/STAGING/LIVE)
+alwaysApply: true
+---
+
+# Ochrana zákaznických dat (Moderník, Pošťák)
+
+Při jakékoliv práci na Moderníku, Pošťáku a souvisejících aplikacích platí:
+
+## Bez výslovného předchozího souhlasu uživatele
+
+- **Ne maž** ani neměň hromadně skutečná zákaznická data — žádný existující záznam.
+- **Zákaz** `DELETE`, `TRUNCATE`, `flush`, `.delete()`, hromadných `UPDATE`/`INSERT` a dalších destruktivních operací nad skutečnými daty.
+- Zákaz platí i při **ladění, testování, migracích a opravách**.
+- Platí pro **LOCAL, STAGING i LIVE**.
+
+## Testování
+
+- Testovací záznamy **vytvářej a maž pouze** v izolované testovací databázi (`TestCase`, `:memory:` / Django test DB).
+- **Nepoužívej** `manage.py shell`, `django.setup()` ani `--commit` importy proti výchozí / produkční databázi bez schválení.
+
+## Pokud úkol vyžaduje mazání nebo přepis dat
+
+1. **Zastav** práci.
+2. **Vysvětli** důvod.
+3. **Vyžádej si schválení** uživatele.
+
+## Migrace a modely
+
+- Přidání sloupců, úprava modelů nebo vytvoření migrace **není** souhlasem se změnou ani smazáním existujících zákaznických záznamů.
+- Spuštění `migrate` na prostředí se skutečnými daty vyžaduje zvláštní souhlas, pokud není explicitně součástí schváleného zadání.
+
+## Rozsah
+
+- Rozsah zadání **nikdy svévolně nerozšiřuj** (žádné vedlejší deploye, importy, shell experimenty).

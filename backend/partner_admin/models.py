@@ -771,10 +771,18 @@ class PotencialniKontakt(models.Model):
     ]
 
     jmeno = models.CharField('jméno', max_length=200, db_index=True)
-    email = models.EmailField('e-mail', unique=True)
+    email = models.EmailField('e-mail', unique=True, null=True, blank=True)
     telefon = models.CharField('telefon', max_length=200, blank=True, default='')
     web = models.CharField('web', max_length=400, blank=True, default='')
-    adresa = models.TextField('adresa', blank=True, default='')
+    adresa = models.TextField('adresa', blank=True, null=True)
+    mesto = models.CharField('město', max_length=120, blank=True, null=True, db_index=True)
+    cast_obce = models.CharField('část obce', max_length=120, blank=True, null=True)
+    latitude = models.DecimalField(
+        'latitude', max_digits=10, decimal_places=7, blank=True, null=True,
+    )
+    longitude = models.DecimalField(
+        'longitude', max_digits=10, decimal_places=7, blank=True, null=True,
+    )
     ico = models.CharField('IČO', max_length=20, blank=True, default='')
     poznamka = models.TextField('poznámka', blank=True, default='')
     stav = models.CharField(
@@ -802,7 +810,10 @@ class PotencialniKontakt(models.Model):
         return f'{self.jmeno} <{self.email}>'
 
     def save(self, *args, **kwargs):
-        self.email = (self.email or '').strip().lower()
+        if self.email:
+            self.email = self.email.strip().lower()
+        else:
+            self.email = None
         self.jmeno = (self.jmeno or '').strip()
         super().save(*args, **kwargs)
 

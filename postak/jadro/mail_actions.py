@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from .mail_imap import MailError, _safe_folder, imap_session, list_folders
+from .mail_imap import MailError, _imap_mailbox_arg, _safe_folder, imap_session, list_folders
 
 TRASH_HINTS = ('trash', 'kos', 'koš', 'deleted', 'smazan')
 SENT_HINTS = ('sent', 'odesl', 'odeslan')
@@ -42,7 +42,7 @@ def set_seen(schranka, *, folder, uid, seen: bool):
     folder = _safe_folder(folder)
     uid = int(uid)
     with imap_session(schranka) as client:
-        client.select(folder, readonly=False)
+        client.select(_imap_mailbox_arg(client, folder), readonly=False)
         action = '+FLAGS' if seen else '-FLAGS'
         typ, _ = client.uid('STORE', str(uid), action, r'(\Seen)')
         if typ != 'OK':
@@ -58,9 +58,10 @@ def move_to_trash(schranka, *, folder, uids):
     if not uids:
         raise MailError('Nejsou vybrané žádné zprávy.')
     with imap_session(schranka) as client:
-        client.select(folder, readonly=False)
+        client.select(_imap_mailbox_arg(client, folder), readonly=False)
+        dest = _imap_mailbox_arg(client, trash)
         for uid in uids:
-            typ, _ = client.uid('COPY', str(uid), trash)
+            typ, _ = client.uid('COPY', str(uid), dest)
             if typ != 'OK':
                 raise MailError(f'Zprávu {uid} nelze přesunout do koše.')
             typ, _ = client.uid('STORE', str(uid), '+FLAGS', r'(\Deleted)')
@@ -77,9 +78,10 @@ def restore_messages(schranka, *, folder, uids, target='INBOX'):
     uids = [int(u) for u in uids if str(u).isdigit()]
     target = _safe_folder(target)
     with imap_session(schranka) as client:
-        client.select(folder, readonly=False)
+        client.select(_imap_mailbox_arg(client, folder), readonly=False)
+        dest = _imap_mailbox_arg(client, target)
         for uid in uids:
-            typ, _ = client.uid('COPY', str(uid), target)
+            typ, _ = client.uid('COPY', str(uid), dest)
             if typ != 'OK':
                 raise MailError(f'Zprávu {uid} nelze obnovit.')
             typ, _ = client.uid('STORE', str(uid), '+FLAGS', r'(\Deleted)')
@@ -94,7 +96,7 @@ def delete_permanent(schranka, *, folder, uids):
         raise MailError('Trvalé smazání je povolené jen v koši.')
     uids = [int(u) for u in uids if str(u).isdigit()]
     with imap_session(schranka) as client:
-        client.select(folder, readonly=False)
+        client.select(_imap_mailbox_arg(client, folder), readonly=False)
         for uid in uids:
             typ, _ = client.uid('STORE', str(uid), '+FLAGS', r'(\Deleted)')
             if typ != 'OK':

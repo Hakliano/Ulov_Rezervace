@@ -1,5 +1,5 @@
 # Pošťák LIVE — samostatný compose (ne sdílet DB s ULOV API/Materiálník).
-#   docker compose -p postak-live -f docker-compose.live.yml --env-file .env up -d --build
+#   docker compose -p postak-live -f docker-compose.live.yml --env-file .env.live up -d --build
 #
 # Nginx www.ulovklienty.cz → ulov-live-postak:8000 (síť ulov_default).
 
@@ -25,7 +25,7 @@ services:
     build: .
     container_name: ulov-live-postak
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.live
     depends_on:
       db:
         condition: service_healthy

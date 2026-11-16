@@ -15,7 +15,7 @@ from email.utils import formataddr, formatdate, make_msgid, parseaddr
 import imaplib
 
 from .mail_actions import sent_folder
-from .mail_imap import MailError, imap_session, _cfg
+from .mail_imap import MailError, _imap_mailbox_arg, imap_session, _cfg
 from .mail_sanitize import html_to_plain, normalize_compose_body, sanitize_html
 from .mail_secrets import decrypt_secret
 from .models import EmailSchranka
@@ -124,7 +124,7 @@ def send_message(schranka: EmailSchranka, *, to, cc='', bcc='', subject, body, a
     try:
         with imap_session(schranka) as client:
             client.append(
-                sent,
+                _imap_mailbox_arg(client, sent),
                 '',
                 imaplib.Time2Internaldate(time.time()),
                 raw,

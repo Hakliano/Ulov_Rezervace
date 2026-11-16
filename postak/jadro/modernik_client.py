@@ -87,8 +87,8 @@ def smazat(pk, data):
     return _request('DELETE', f'/potencialni/{pk}/', body=data)
 
 
-def zmeny(since=None, limit=500):
-    q = {'limit': limit}
+def zmeny(since=None, limit=500, offset=0):
+    q = {'limit': limit, 'offset': offset}
     if since:
         q['since'] = since
     return _request('GET', '/potencialni/zmeny/', query=q)

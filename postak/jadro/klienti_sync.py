@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
+
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -40,8 +42,22 @@ def _tri_cache(val):
     return 'unknown'
 
 
+def _gps_z_api(val):
+    if val in (None, ''):
+        return None
+    try:
+        dec = Decimal(str(val).replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        return None
+    return dec
+
+
 def upsert_klient(item):
     upr = parse_datetime(item.get('upraveno') or '') or timezone.now()
+    lat = _gps_z_api(item.get('latitude'))
+    lon = _gps_z_api(item.get('longitude'))
+    if lat == 0 and lon == 0:
+        lat, lon = None, None
     KlientModernik.objects.update_or_create(
         remote_id=item['id'],
         defaults={
@@ -50,6 +66,10 @@ def upsert_klient(item):
             'telefon': item.get('telefon', '')[:200],
             'web': item.get('web', '')[:400],
             'adresa': item.get('adresa', ''),
+            'mesto': (item.get('mesto') or '')[:120],
+            'cast_obce': (item.get('cast_obce') or '')[:120],
+            'latitude': lat,
+            'longitude': lon,
             'ico': item.get('ico', '')[:20],
             'poznamka': item.get('poznamka', ''),
             'stav': item.get('stav', '')[:32],
@@ -93,14 +113,26 @@ def _sync_sektory(items):
 
 
 def _delta_modernik(since=None):
-    resp = zmeny(since=since)
-    for item in resp.get('items', []):
-        upsert_klient(item)
-    for row in resp.get('deleted', []):
-        KlientModernik.objects.filter(remote_id=row['id']).delete()
-    _sync_sektory(resp.get('sektory'))
-    server_time = parse_datetime(resp.get('server_time') or '') or timezone.now()
-    return {'updated': len(resp.get('items', [])), 'deleted': len(resp.get('deleted', [])), 'cursor': server_time}
+    offset = 0
+    updated = deleted = 0
+    server_time = timezone.now()
+    sektory_seen = False
+    while True:
+        resp = zmeny(since=since, limit=500, offset=offset)
+        for item in resp.get('items', []):
+            upsert_klient(item)
+        updated += len(resp.get('items', []))
+        for row in resp.get('deleted', []):
+            KlientModernik.objects.filter(remote_id=row['id']).delete()
+        deleted += len(resp.get('deleted', []))
+        if not sektory_seen:
+            _sync_sektory(resp.get('sektory'))
+            sektory_seen = True
+        server_time = parse_datetime(resp.get('server_time') or '') or server_time
+        if not resp.get('has_more'):
+            break
+        offset = int(resp.get('next_offset', offset + len(resp.get('items', []))))
+    return {'updated': updated, 'deleted': deleted, 'cursor': server_time}
 
 
 def _bootstrap_modernik():

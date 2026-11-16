@@ -15,11 +15,27 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from decimal import Decimal, InvalidOperation
+
 from .models import PotencialniKontakt, PotencialniSektor
 from .permissions import partner_admin_perm
 
 STRANKA = 50
 PREFIX_VET = re.compile(r'^\s*VET\s*[-–—]\s*', re.IGNORECASE)
+
+
+def _gps_z_post(lat_raw: str, lon_raw: str) -> tuple[Decimal | None, Decimal | None]:
+    lat_s, lon_s = (lat_raw or '').strip(), (lon_raw or '').strip()
+    if not lat_s and not lon_s:
+        return None, None
+    try:
+        lat = Decimal(lat_s.replace(',', '.')) if lat_s else None
+        lon = Decimal(lon_s.replace(',', '.')) if lon_s else None
+    except InvalidOperation:
+        raise ValueError('invalid gps')
+    if lat is not None and lon is not None and lat == 0 and lon == 0:
+        return None, None
+    return lat, lon
 PREFIX_SALON = re.compile(r'^\s*SALON\s*[-–—]\s*', re.IGNORECASE)
 JSON_NAPOVEDA = '''[
   {
@@ -149,6 +165,10 @@ def export_dict(kontakt: PotencialniKontakt) -> dict:
         'phone': kontakt.telefon or '',
         'website': kontakt.web or '',
         'address': kontakt.adresa or '',
+        'mesto': kontakt.mesto or '',
+        'cast_obce': kontakt.cast_obce or '',
+        'latitude': str(kontakt.latitude) if kontakt.latitude is not None else '',
+        'longitude': str(kontakt.longitude) if kontakt.longitude is not None else '',
         'description': kontakt.poznamka or '',
         'sektor': kontakt.sektor.nazev if kontakt.sektor_id else PotencialniSektor.KOD_NEZARAZENO,
         'status': kontakt.get_stav_display(),
@@ -162,6 +182,7 @@ def filtruj_kontakty(request):
     sektor = (request.GET.get('sektor') or '').strip()
     web = (request.GET.get('web') or '').strip()
     telefon = (request.GET.get('telefon') or '').strip()
+    mesto = (request.GET.get('mesto') or '').strip()
     if q:
         qs = qs.filter(Q(jmeno__icontains=q) | Q(email__icontains=q))
     if stav:
@@ -176,7 +197,9 @@ def filtruj_kontakty(request):
         qs = qs.exclude(telefon='')
     elif telefon == 'ne':
         qs = qs.filter(telefon='')
-    filtry = {'q': q, 'stav': stav, 'sektor': sektor, 'web': web, 'telefon': telefon}
+    if mesto:
+        qs = qs.filter(mesto__icontains=mesto)
+    filtry = {'q': q, 'stav': stav, 'sektor': sektor, 'web': web, 'telefon': telefon, 'mesto': mesto}
     return qs, filtry
 
 
@@ -355,7 +378,19 @@ def ulozit(request, pk):
     kontakt.email = email
     kontakt.telefon = (request.POST.get('telefon') or '').strip()[:200]
     kontakt.web = (request.POST.get('web_new') or '').strip()[:400]
-    kontakt.adresa = (request.POST.get('adresa') or '').strip()
+    adresa = (request.POST.get('adresa') or '').strip()
+    kontakt.adresa = adresa or None
+    kontakt.mesto = (request.POST.get('mesto') or '').strip()[:120] or None
+    kontakt.cast_obce = (request.POST.get('cast_obce') or '').strip()[:120] or None
+    lat_raw = (request.POST.get('latitude') or '').strip()
+    lon_raw = (request.POST.get('longitude') or '').strip()
+    try:
+        lat, lon = _gps_z_post(lat_raw, lon_raw)
+    except ValueError:
+        messages.error(request, 'GPS souřadnice nejsou platná čísla.')
+        return _redirect_seznam(request, {'edit': str(pk)})
+    kontakt.latitude = lat
+    kontakt.longitude = lon
     kontakt.ico = (request.POST.get('ico') or '').strip()[:20]
     kontakt.poznamka = (request.POST.get('poznamka') or '').strip()
     kontakt.sektor = PotencialniSektor.objects.filter(pk=sektor_id).first() if sektor_id.isdigit() else kontakt.sektor

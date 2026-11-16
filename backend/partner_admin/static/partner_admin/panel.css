@@ -1154,7 +1154,7 @@ small { color: var(--muted); }
 .lead-table-wrap { display: grid; gap: .55rem; margin: 0 0 1.4rem; }
 .lead-head, .lead-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.3fr) minmax(180px, 1.2fr) .7fr minmax(210px, 1.1fr) auto;
+  grid-template-columns: minmax(180px, 1.3fr) minmax(180px, 1.2fr) .55fr .7fr minmax(210px, 1.1fr) auto;
   gap: .75rem;
   align-items: center;
 }

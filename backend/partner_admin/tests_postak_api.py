@@ -41,3 +41,36 @@ class PostakApiTests(TestCase):
         r = self.client.get(reverse('partner_admin:postak_api_zmeny'), **self.h)
         self.assertTrue(r.json()['ok'])
         self.assertGreaterEqual(len(r.json()['items']), 1)
+
+    def test_create_uklada_adresni_pole(self):
+        body = {
+            'jmeno': 'Geo',
+            'email': 'geo-create@test.cz',
+            'mesto': 'Brno',
+            'adresa': 'Ulice 1',
+            'cast_obce': 'Střed',
+            'latitude': 0,
+            'longitude': 0,
+        }
+        r = self.client.post(
+            reverse('partner_admin:postak_api_potencialni'),
+            data=json.dumps(body),
+            content_type='application/json',
+            **self.h,
+        )
+        self.assertEqual(r.status_code, 201)
+        k = PotencialniKontakt.objects.get(email='geo-create@test.cz')
+        self.assertEqual(k.mesto, 'Brno')
+        self.assertIsNone(k.latitude)
+        self.assertIsNone(k.longitude)
+
+    def test_zmeny_strankuje_bez_since(self):
+        for i in range(3):
+            PotencialniKontakt.objects.create(jmeno=f'B{i}', email=f'page{i}@test.cz')
+        r1 = self.client.get(reverse('partner_admin:postak_api_zmeny'), {'limit': 2, 'offset': 0}, **self.h)
+        r2 = self.client.get(reverse('partner_admin:postak_api_zmeny'), {'limit': 2, 'offset': 2}, **self.h)
+        j1, j2 = r1.json(), r2.json()
+        self.assertTrue(j1['has_more'])
+        self.assertEqual(len(j1['items']), 2)
+        ids = {x['id'] for x in j1['items'] + j2['items']}
+        self.assertGreaterEqual(len(ids), 3)

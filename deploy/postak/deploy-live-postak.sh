@@ -26,11 +26,14 @@ if ! docker network inspect ulov_default >/dev/null 2>&1; then
   exit 1
 fi
 
-docker compose -p postak-live -f "$POSTAK_DIR/docker-compose.live.yml" --env-file "$ENV_FILE" up -d --build
-docker compose -p postak-live -f "$POSTAK_DIR/docker-compose.live.yml" --env-file "$ENV_FILE" exec -T web \
+# env_file: .env.live v compose je relativní ke složce compose souboru — spouštět z postak/
+cd "$POSTAK_DIR"
+docker compose -p postak-live -f docker-compose.live.yml --env-file .env.live up -d --build
+docker compose -p postak-live -f docker-compose.live.yml --env-file .env.live exec -T web \
   python manage.py migrate --noinput
-docker compose -p postak-live -f "$POSTAK_DIR/docker-compose.live.yml" --env-file "$ENV_FILE" exec -T web \
+docker compose -p postak-live -f docker-compose.live.yml --env-file .env.live exec -T web \
   python manage.py postak_bunny_smoke || echo "WARN: Bunny smoke"
+cd "$ROOT"
 
 curl -fsS -o /dev/null -w "postak_prihlaseni=%{http_code}\n" \
   "https://www.ulovklienty.cz/postak/prihlaseni/" || echo "WARN: curl LIVE"

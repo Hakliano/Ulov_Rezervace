@@ -138,7 +138,7 @@ def _fetch_meta():
     return stavy_mod, stavy_hya, sektory
 
 
-def _collect_rows(projekt, q, stav, sektor):
+def _collect_rows(projekt, q, stav, sektor, mesto=''):
     rows = []
     if projekt in ('', PROJEKT_MODERNIK):
         qs = KlientModernik.objects.all()
@@ -154,6 +154,8 @@ def _collect_rows(projekt, q, stav, sektor):
             qs = qs.filter(stav=stav)
         if sektor.isdigit():
             qs = qs.filter(sektor_remote_id=int(sektor))
+        if mesto:
+            qs = qs.filter(mesto__icontains=mesto)
         for k in qs:
             rows.append({
                 'projekt': PROJEKT_MODERNIK,
@@ -208,6 +210,7 @@ def klienti_seznam(request):
     q = (request.GET.get('q') or '').strip()
     stav = (request.GET.get('stav') or '').strip()
     sektor = (request.GET.get('sektor') or '').strip()
+    mesto = (request.GET.get('mesto') or '').strip()
     try:
         per_page = int(request.GET.get('per_page') or 25)
     except ValueError:
@@ -216,14 +219,14 @@ def klienti_seznam(request):
         per_page = 25
     stavy_mod, stavy_hya, sektory = _fetch_meta()
     stavy = _load_stavy(projekt, stavy_mod, stavy_hya)
-    rows = _collect_rows(projekt, q, stav, sektor)
+    rows = _collect_rows(projekt, q, stav, sektor, mesto=mesto)
     page = Paginator(rows, per_page).get_page(request.GET.get('stranka') or 1)
     sync_mod = KlientSyncMeta.objects.filter(pk=SYNC_META_MODERNIK).first()
     sync_hya = KlientSyncMeta.objects.filter(pk=SYNC_META_HYA).first()
     prazdna_cache = not KlientModernik.objects.exists() and not KlientHya.objects.exists()
     return render(request, 'klienti_seznam.html', {
         'stranka': page,
-        'filtry': {'q': q, 'stav': stav, 'sektor': sektor, 'per_page': per_page, 'projekt': projekt},
+        'filtry': {'q': q, 'stav': stav, 'sektor': sektor, 'mesto': mesto, 'per_page': per_page, 'projekt': projekt},
         'stavy': stavy,
         'stavy_mod': stavy_mod,
         'stavy_hya': stavy_hya,
@@ -294,6 +297,10 @@ def klient_novy(request):
                     'telefon': request.POST.get('telefon', ''),
                     'web': request.POST.get('web', ''),
                     'adresa': request.POST.get('adresa', ''),
+                    'mesto': request.POST.get('mesto', ''),
+                    'cast_obce': request.POST.get('cast_obce', ''),
+                    'latitude': request.POST.get('latitude', ''),
+                    'longitude': request.POST.get('longitude', ''),
                     'ico': request.POST.get('ico', ''),
                     'poznamka': request.POST.get('poznamka', ''),
                     'stav': request.POST.get('stav', ''),
@@ -357,6 +364,10 @@ def klient_detail(request, projekt, pk):
                     'telefon': request.POST.get('telefon', ''),
                     'web': request.POST.get('web', ''),
                     'adresa': request.POST.get('adresa', ''),
+                    'mesto': request.POST.get('mesto', ''),
+                    'cast_obce': request.POST.get('cast_obce', ''),
+                    'latitude': request.POST.get('latitude', ''),
+                    'longitude': request.POST.get('longitude', ''),
                     'ico': request.POST.get('ico', ''),
                     'poznamka': request.POST.get('poznamka', ''),
                     'stav': request.POST.get('stav', ''),

@@ -29,6 +29,9 @@
       </select>
     </div>
     <div class="field"><label for="q">Hledat</label><input id="q" name="q" value="{{ filtry.q }}" placeholder="jméno, e-mail, telefon…"></div>
+    {% if filtry.projekt != 'hya' %}
+    <div class="field"><label for="mesto">Město</label><input id="mesto" name="mesto" value="{{ filtry.mesto }}" placeholder="filtr podle města"></div>
+    {% endif %}
     <div class="field"><label for="stav">Status</label>
       <select id="stav" name="stav">
         <option value="">— vše —</option>

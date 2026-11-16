@@ -97,6 +97,10 @@
         <option value="ne" {% if lead_filtry.telefon == 'ne' %}selected{% endif %}>Nemá telefon</option>
       </select>
     </label>
+    <label>
+      Město
+      <input type="search" name="mesto" value="{{ lead_filtry.mesto }}" placeholder="např. Brno">
+    </label>
     <button class="btn btn-primary" type="submit">Filtrovat</button>
     <a class="btn btn-quiet" href="{% url 'partner_admin:potencialni' %}">Zrušit</a>
   </form>
@@ -107,6 +111,7 @@
     <div class="lead-head" aria-hidden="true">
       <span>Jméno</span>
       <span>Kontakt</span>
+      <span>Město</span>
       <span>Sektor</span>
       <span>Stav</span>
       <span></span>
@@ -123,6 +128,7 @@
           <span class="lead-meta">{% if k.telefon %}{{ k.telefon }}{% else %}bez telefonu{% endif %}</span>
           <span class="lead-meta lead-web">{% if k.web %}{{ k.web }}{% else %}bez webu{% endif %}</span>
         </div>
+        <div class="lead-mesto">{% if k.mesto %}{{ k.mesto }}{% else %}—{% endif %}</div>
         <div class="lead-sektor">{{ k.sektor.nazev|default:"nezařazeno" }}</div>
           {% if pa_can_write.potencialni %}
           <form class="lead-stav" method="post" action="{% url 'partner_admin:potencialni_stav' k.id %}{% if list_qs %}?{{ list_qs }}{% endif %}" data-autosave>
@@ -166,7 +172,11 @@
                 {% endfor %}
               </select>
             </label>
-            <label class="full">Adresa <input type="text" name="adresa" value="{{ k.adresa }}"></label>
+            <label>Město <input type="text" name="mesto" value="{{ k.mesto|default_if_none:'' }}"></label>
+            <label>Část obce <input type="text" name="cast_obce" value="{{ k.cast_obce|default_if_none:'' }}"></label>
+            <label class="full">Adresa <input type="text" name="adresa" value="{{ k.adresa|default_if_none:'' }}"></label>
+            <label>GPS latitude <input type="text" name="latitude" value="{% if k.latitude is not None %}{{ k.latitude }}{% endif %}"></label>
+            <label>GPS longitude <input type="text" name="longitude" value="{% if k.longitude is not None %}{{ k.longitude }}{% endif %}"></label>
             <label class="full">Poznámka <textarea name="poznamka" rows="3">{{ k.poznamka }}</textarea></label>
             <div class="form-actions">
               <button class="btn btn-primary" type="submit">Uložit změny</button>

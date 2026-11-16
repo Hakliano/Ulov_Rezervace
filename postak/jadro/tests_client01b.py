@@ -28,6 +28,7 @@ HYA_CLIENT = {
     MODERNIK_API_TOKEN='x',
     HYA_API_BASE='http://test/hya/internal/postak/v1',
     HYA_POSTAK_API_TOKEN='hya-token',
+    POSTAK_HYA_CRM_WRITE=True,
 )
 class Client01BTests(TestCase):
     def setUp(self):

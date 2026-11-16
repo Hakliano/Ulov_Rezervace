@@ -21,7 +21,11 @@
     <div class="field"><label for="web">Web</label><input id="web" name="web" value="{{ initial.web }}"></div>
     {% if projekt == 'modernik' %}
     <div class="field"><label for="ico">IČO</label><input id="ico" name="ico" value="{{ initial.ico }}"></div>
+    <div class="field"><label for="mesto">Město</label><input id="mesto" name="mesto" value="{{ initial.mesto }}"></div>
+    <div class="field"><label for="cast_obce">Část obce</label><input id="cast_obce" name="cast_obce" value="{{ initial.cast_obce }}"></div>
     <div class="field"><label for="adresa">Adresa</label><textarea id="adresa" name="adresa" rows="2">{{ initial.adresa }}</textarea></div>
+    <div class="field"><label for="latitude">GPS latitude</label><input id="latitude" name="latitude" value="{{ initial.latitude }}"></div>
+    <div class="field"><label for="longitude">GPS longitude</label><input id="longitude" name="longitude" value="{{ initial.longitude }}"></div>
     <div class="field"><label for="sektor_id">Sektor</label>
       <select id="sektor_id" name="sektor_id">
         <option value="">—</option>

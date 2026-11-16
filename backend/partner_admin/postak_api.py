@@ -32,6 +32,26 @@ def _iso(dt):
     return dt.isoformat()
 
 
+def _adresni_z_api(data: dict) -> dict:
+    from .partner_import import normalizuj_souradnice
+
+    out = {}
+    if 'adresa' in data:
+        raw = data.get('adresa')
+        out['adresa'] = raw if raw not in (None, '') else None
+    if 'mesto' in data:
+        out['mesto'] = (data.get('mesto') or '').strip()[:120] or None
+    if 'cast_obce' in data:
+        out['cast_obce'] = (data.get('cast_obce') or '').strip()[:120] or None
+    if 'latitude' in data or 'longitude' in data:
+        lat_in = data.get('latitude') if 'latitude' in data else None
+        lon_in = data.get('longitude') if 'longitude' in data else None
+        lat, lon = normalizuj_souradnice(lat_in, lon_in)
+        out['latitude'] = lat
+        out['longitude'] = lon
+    return out
+
+
 def _kontakt_json(kontakt: PotencialniKontakt) -> dict:
     return {
         'id': kontakt.id,
@@ -40,6 +60,10 @@ def _kontakt_json(kontakt: PotencialniKontakt) -> dict:
         'telefon': kontakt.telefon or '',
         'web': kontakt.web or '',
         'adresa': kontakt.adresa or '',
+        'mesto': kontakt.mesto or '',
+        'cast_obce': kontakt.cast_obce or '',
+        'latitude': str(kontakt.latitude) if kontakt.latitude is not None else '',
+        'longitude': str(kontakt.longitude) if kontakt.longitude is not None else '',
         'ico': kontakt.ico or '',
         'poznamka': kontakt.poznamka or '',
         'stav': kontakt.stav,
@@ -113,6 +137,9 @@ def _filtruj(qs, request):
         qs = qs.filter(stav=stav)
     if sektor.isdigit():
         qs = qs.filter(sektor_id=int(sektor))
+    mesto = (request.GET.get('mesto') or '').strip()
+    if mesto:
+        qs = qs.filter(mesto__icontains=mesto)
     return qs
 
 
@@ -164,17 +191,21 @@ def kolekce(request):
     stav = (data.get('stav') or PotencialniKontakt.STAV_LEAD_PRED).strip()
     if stav not in STAVY:
         stav = PotencialniKontakt.STAV_LEAD_PRED
-    kontakt = PotencialniKontakt.objects.create(
-        jmeno=jmeno[:200],
-        email=email,
-        telefon=(data.get('telefon') or '')[:200],
-        web=(data.get('web') or '')[:400],
-        adresa=(data.get('adresa') or ''),
-        ico=(data.get('ico') or '')[:20],
-        poznamka=(data.get('poznamka') or ''),
-        sektor=sektor,
-        stav=stav,
-    )
+    create_kwargs = {
+        'jmeno': jmeno[:200],
+        'email': email,
+        'telefon': (data.get('telefon') or '')[:200],
+        'web': (data.get('web') or '')[:400],
+        'ico': (data.get('ico') or '')[:20],
+        'poznamka': (data.get('poznamka') or ''),
+        'sektor': sektor,
+        'stav': stav,
+    }
+    if any(k in data for k in ('adresa', 'mesto', 'cast_obce', 'latitude', 'longitude')):
+        create_kwargs.update(_adresni_z_api(data))
+    else:
+        create_kwargs['adresa'] = (data.get('adresa') or '') or None
+    kontakt = PotencialniKontakt.objects.create(**create_kwargs)
     _zapis_stav_historie(kontakt, '', stav, data.get('zmenil', ''))
     return JsonResponse({'ok': True, 'kontakt': _kontakt_json(kontakt)}, status=201)
 
@@ -226,7 +257,8 @@ def detail(request, pk):
     kontakt.email = email
     kontakt.telefon = (data.get('telefon') if 'telefon' in data else kontakt.telefon)[:200]
     kontakt.web = (data.get('web') if 'web' in data else kontakt.web)[:400]
-    kontakt.adresa = data.get('adresa') if 'adresa' in data else kontakt.adresa
+    for fld, val in _adresni_z_api(data).items():
+        setattr(kontakt, fld, val)
     kontakt.ico = (data.get('ico') if 'ico' in data else kontakt.ico)[:20]
     kontakt.poznamka = data.get('poznamka') if 'poznamka' in data else kontakt.poznamka
     if 'sektor_id' in data:
@@ -273,18 +305,28 @@ def zmeny(request):
     since = parse_datetime(since_raw) if since_raw else None
     if since and timezone.is_naive(since):
         since = timezone.make_aware(since, timezone.get_current_timezone())
-    qs = PotencialniKontakt.objects.select_related('sektor')
-    if since:
-        qs = qs.filter(upraveno__gt=since)
     try:
         limit = min(max(int(request.GET.get('limit') or 500), 1), 1000)
+        offset = max(int(request.GET.get('offset') or 0), 0)
     except ValueError:
-        limit = 500
-    items = [_kontakt_json(k) for k in qs.order_by('upraveno')[:limit]]
+        limit, offset = 500, 0
+    qs = PotencialniKontakt.objects.select_related('sektor')
+    if since:
+        qs = qs.filter(upraveno__gt=since).order_by('upraveno', 'pk')
+    else:
+        qs = qs.order_by('pk')
+    total = qs.count()
+    page = list(qs[offset:offset + limit])
+    items = [_kontakt_json(k) for k in page]
+    has_more = offset + len(page) < total
     tomb_qs = PotencialniKontaktTombstone.objects.all()
     if since:
         tomb_qs = tomb_qs.filter(smazano__gt=since)
-    deleted = [{'id': t.kontakt_id, 'smazano': _iso(t.smazano)} for t in tomb_qs.order_by('smazano')[:limit]]
+    tomb_qs = tomb_qs.order_by('smazano', 'kontakt_id')
+    deleted = [
+        {'id': t.kontakt_id, 'smazano': _iso(t.smazano)}
+        for t in tomb_qs[offset:offset + limit]
+    ]
     sektory = list(PotencialniSektor.objects.order_by('razeni', 'nazev').values('id', 'nazev', 'razeni'))
     return JsonResponse({
         'ok': True,
@@ -292,6 +334,11 @@ def zmeny(request):
         'deleted': deleted,
         'sektory': sektory,
         'server_time': _iso(timezone.now()),
+        'total': total,
+        'offset': offset,
+        'limit': limit,
+        'has_more': has_more,
+        'next_offset': offset + len(page) if has_more else offset,
     })
 
 

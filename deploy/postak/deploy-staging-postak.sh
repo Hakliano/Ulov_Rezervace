@@ -27,14 +27,15 @@ if ! docker network inspect ulov_default >/dev/null 2>&1; then
 fi
 
 echo "### Build & up"
-docker compose -p postak-staging -f "$POSTAK_DIR/docker-compose.staging.yml" --env-file "$POSTAK_DIR/.env" up -d --build
+cd "$POSTAK_DIR"
+docker compose -p postak-staging -f docker-compose.staging.yml --env-file .env up -d --build
 
 echo "### Migrate"
-docker compose -p postak-staging -f "$POSTAK_DIR/docker-compose.staging.yml" --env-file "$POSTAK_DIR/.env" exec -T web \
+docker compose -p postak-staging -f docker-compose.staging.yml --env-file .env exec -T web \
   python manage.py migrate --noinput
 
 echo "### Bunny smoke (prefix postak/staging pouze)"
-docker compose -p postak-staging -f "$POSTAK_DIR/docker-compose.staging.yml" --env-file "$POSTAK_DIR/.env" exec -T web \
+docker compose -p postak-staging -f docker-compose.staging.yml --env-file .env exec -T web \
   python manage.py postak_bunny_smoke || {
   echo "WARN: Bunny smoke selhal — zkontrolujte POSTAK_BUNNY_* v .env"
 }
