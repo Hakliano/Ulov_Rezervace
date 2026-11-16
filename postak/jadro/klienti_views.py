@@ -167,6 +167,7 @@ def _collect_rows(projekt, q, stav, sektor, mesto=''):
                 'stav': k.stav,
                 'stav_label': k.stav_label,
                 'extra': k.sektor_nazev,
+                'mesto': (k.mesto or '').strip(),
                 'remote_upraveno': k.remote_upraveno,
             })
     if projekt in ('', PROJEKT_HYA):
@@ -192,6 +193,7 @@ def _collect_rows(projekt, q, stav, sektor, mesto=''):
                 'stav': k.stav,
                 'stav_label': k.stav_label,
                 'extra': k.lokalita,
+                'mesto': '',
                 'remote_upraveno': k.remote_upraveno,
             })
     rows.sort(key=lambda r: r['remote_upraveno'], reverse=True)

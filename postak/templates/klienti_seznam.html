@@ -59,7 +59,7 @@
   <div class="table-wrap">
     <table class="users mail-table">
       <thead>
-        <tr><th>Projekt</th><th>Jméno / firma</th><th>E-mail</th><th>Telefon</th><th>Status</th><th>Detail</th><th>Akce</th></tr>
+        <tr><th>Projekt</th><th>Jméno / firma</th><th>E-mail</th><th>Telefon</th><th>Město</th><th>Status</th><th>Detail</th><th>Akce</th></tr>
       </thead>
       <tbody>
         {% for k in stranka %}
@@ -68,6 +68,7 @@
           <td data-label="Jméno"><a href="{% url 'klient_detail' k.projekt k.pk %}">{{ k.jmeno }}</a></td>
           <td data-label="E-mail">{{ k.email }}</td>
           <td data-label="Telefon">{{ k.telefon }}</td>
+          <td data-label="Město">{% if k.mesto %}{{ k.mesto }}{% else %}—{% endif %}</td>
           <td data-label="Status">
             <form method="post" action="{% url 'klient_stav' k.projekt k.pk %}" class="inline-stav">
               {% csrf_token %}
@@ -85,7 +86,7 @@
           <td data-label="Akce"><a class="btn secondary btn-small" href="{% url 'klient_detail' k.projekt k.pk %}">Detail</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="muted">Žádní klienti v cache.</td></tr>
+        <tr><td colspan="8" class="muted">Žádní klienti v cache.</td></tr>
         {% endfor %}
       </tbody>
     </table>
