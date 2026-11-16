@@ -17,12 +17,30 @@ from .models import PotencialniKontakt
 from .potencialni import parse_import_json, sektor_podle_nazvu
 
 NOVA_POLE = ('mesto', 'adresa', 'cast_obce', 'latitude', 'longitude')
+DOPLNITELNA = ('email', 'telefon', 'web', 'ico', 'mesto', 'adresa', 'cast_obce')
 
 PHONE_RE = re.compile(r'\D+')
 PLACEHOLDER_EMAIL = re.compile(
     r'^(x+@x+(\.[a-z]+)?|xxxxx@xxxx\.cz|xxx@xxx\.(cz|com)|test@test\.(cz|com)|)$',
     re.IGNORECASE,
 )
+
+IMPORT_LOCK_KEY = 'partner_admin:potencialni_import_commit'
+IMPORT_TOKEN_PREFIX = 'partner_admin:import_token:'
+IMPORT_LOCK_TTL = 600
+PG_ADVISORY_LOCK_ID = 91337421
+
+
+class ImportZamcenError(Exception):
+    """Jiný commit importu právě běží."""
+
+
+class ImportNahledZastaralError(Exception):
+    """Náhled už neodpovídá aktuální databázi."""
+
+
+class ImportTokenPouzitError(Exception):
+    """Náhled byl už potvrzen nebo vypršel."""
 
 
 def normalizuj_email(raw: str) -> str:
@@ -68,7 +86,11 @@ def normalizuj_telefon(raw: str) -> str:
     elif digits.startswith('420') and len(digits) > 9:
         digits = digits[3:]
     if len(digits) >= 9:
-        return digits[-9:]
+        digits = digits[-9:]
+    else:
+        return ''
+    if len(set(digits)) == 1:
+        return ''
     return digits
 
 
@@ -108,6 +130,8 @@ def _prazdne(val, nazev_pole: str) -> bool:
 
 def extrahuj_adresni(raw: dict) -> dict:
     adresa = _prvni(raw, 'adresa', 'address', 'ulice', 'street')
+    if not adresa:
+        adresa = _prvni(raw, 'description', 'popis')
     lat, lon = normalizuj_souradnice(
         raw.get('latitude', raw.get('lat')),
         raw.get('longitude', raw.get('lon', raw.get('lng'))),
@@ -173,6 +197,7 @@ class ImportReport:
     neplatne: list[str] = field(default_factory=list)
     nejednoznacne_priklady: list[str] = field(default_factory=list)
     statusy_zmeneny: list[str] = field(default_factory=list)
+    zmeny: list[dict] = field(default_factory=list)
     pred_pocet: int = 0
     po_pocet: int = 0
 
@@ -182,8 +207,11 @@ class ImportReport:
             'UPDATE': self.aktualizovano,
             'INSERT': self.vytvoreno,
             'SKIP': self.preskoceno,
+            'BEZE_ZMENY': self.preskoceno,
             'jednoznacne': self.jednoznacne,
             'konflikty': self.nejednoznacne,
+            'KONFLIKT': self.nejednoznacne,
+            'zmeny': self.zmeny,
             'duplicity_json': self.duplicitni_vstup,
             'neplatne': self.neplatne,
             'nejednoznacne_priklady': self.nejednoznacne_priklady[:20],
@@ -216,67 +244,154 @@ def najdi_shodu(
     by_phone: dict[str, list[int]],
     by_ico: dict[str, list[int]],
 ) -> tuple[str, int | None]:
-    """Vrátí ('match', pk) | ('ambiguous', None) | ('none', None)."""
-    pouzite: list[tuple[str, set[int]]] = []
+    """('match', pk) | ('ambiguous', None) | ('none', None).
 
-    if data['_nt_email']:
-        ids = by_email.get(data['_nt_email'], [])
-        if len(ids) > 1:
-            return 'ambiguous', None
+    Hlasují jen identifikátory, které v DB někdo má. Průnik právě jednoho
+    kontaktu je UPDATE. Prázdný průnik nebo víc než jeden kontakt je konflikt.
+    """
+    hlasy: list[set[int]] = []
+    for klic, index in (
+        (data['_nt_email'], by_email),
+        (data['_nt_telefon'], by_phone),
+        (data['_nt_ico'], by_ico),
+    ):
+        if not klic:
+            continue
+        ids = index.get(klic, [])
         if ids:
-            pouzite.append(('email', {ids[0]}))
-
-    if data['_nt_telefon']:
-        ids = by_phone.get(data['_nt_telefon'], [])
-        if len(ids) > 1:
-            return 'ambiguous', None
-        if ids:
-            pouzite.append(('telefon', {ids[0]}))
-
-    if data['_nt_ico']:
-        ids = by_ico.get(data['_nt_ico'], [])
-        if ids:
-            pouzite.append(('ico', set(ids)))
-
-    if not pouzite:
+            hlasy.append(set(ids))
+    if not hlasy:
         return 'none', None
-
-    if len(pouzite) == 1 and pouzite[0][0] == 'ico':
-        return 'ambiguous', None
-
-    prunik = pouzite[0][1].copy()
-    for _, mnozina in pouzite[1:]:
-        prunik &= mnozina
+    prunik = set.intersection(*hlasy)
     if len(prunik) == 1:
         return 'match', next(iter(prunik))
-
-    sjednoceni: set[int] = set()
-    for _, mnozina in pouzite:
-        sjednoceni |= mnozina
-    if len(sjednoceni) > 1:
-        return 'ambiguous', None
-    if len(prunik) == 0 and len(pouzite) > 1:
-        return 'ambiguous', None
-    if len(pouzite) == 1 and len(pouzite[0][1]) == 1:
-        return 'match', next(iter(pouzite[0][1]))
     return 'ambiguous', None
 
 
-def _dopln_nova_pole(kontakt: PotencialniKontakt, data: dict) -> bool:
-    changed = False
-    for fld in NOVA_POLE:
+def _nesouhlasi(kontakt: PotencialniKontakt, data: dict) -> str:
+    """Vyplněný identifikátor na kontaktu se nesmí lišit od importu."""
+    dvojice = (
+        ('e-mail', data['_nt_email'], platny_email_pro_import(kontakt.email or '') or ''),
+        ('telefon', data['_nt_telefon'], normalizuj_telefon(kontakt.telefon)),
+        ('IČO', data['_nt_ico'], normalizuj_ico(kontakt.ico)),
+    )
+    for nazev, prichozi, stavajici in dvojice:
+        if prichozi and stavajici and prichozi != stavajici:
+            return f'{nazev} patří jinému provozu'
+    return ''
+
+
+def _dopln_prazdna_pole(kontakt: PotencialniKontakt, data: dict) -> list[str]:
+    changed: list[str] = []
+    for fld in DOPLNITELNA:
+        if fld == 'telefon' and not data.get('_nt_telefon'):
+            continue
+        if fld == 'email' and not data.get('email'):
+            continue
+        if fld == 'ico' and not data.get('_nt_ico'):
+            continue
         val = data.get(fld)
-        if _prazdne(getattr(kontakt, fld), fld):
-            if not _prazdne(val, fld):
-                setattr(kontakt, fld, val)
-                changed = True
+        if _prazdne(getattr(kontakt, fld), fld) and not _prazdne(val, fld):
+            setattr(kontakt, fld, val)
+            changed.append(fld)
+    if kontakt.latitude is None and kontakt.longitude is None:
+        if data.get('latitude') is not None and data.get('longitude') is not None:
+            kontakt.latitude = data['latitude']
+            kontakt.longitude = data['longitude']
+            changed.extend(('latitude', 'longitude'))
     if changed:
-        kontakt.save(update_fields=[*NOVA_POLE, 'upraveno'])
+        kontakt.save(update_fields=[*changed, 'upraveno'])
     return changed
 
 
 def _snapshot_stavu() -> dict[int, str]:
     return dict(PotencialniKontakt.objects.values_list('pk', 'stav'))
+
+
+def report_podpis(report: ImportReport) -> dict:
+    return {
+        'nacteno': report.nacteno,
+        'create': report.vytvoreno,
+        'update': report.aktualizovano,
+        'beze_zmeny': report.preskoceno,
+        'konflikt': report.nejednoznacne,
+        'neplatne': len(report.neplatne),
+        'pred_pocet': report.pred_pocet,
+        'duplicity_json': report.duplicitni_vstup,
+    }
+
+
+def podpis_souhlasi(ulozeny: dict, report: ImportReport) -> bool:
+    return ulozeny == report_podpis(report)
+
+
+def _kolize_telefonu_v_davce(
+    data: dict,
+    telefon_v_davce: dict[str, int],
+    shoda: str,
+    pk: int | None,
+    kontakt: PotencialniKontakt | None = None,
+) -> str:
+    nt_tel = data['_nt_telefon']
+    if not nt_tel:
+        return ''
+    vlastnik = telefon_v_davce.get(nt_tel)
+    if vlastnik is None:
+        return ''
+    if shoda == 'none' or pk != vlastnik:
+        return 'Duplicitní telefon v JSON'
+    if kontakt is not None and _nesouhlasi(kontakt, data):
+        return 'Duplicitní telefon v JSON'
+    return ''
+
+
+def _zarezervuj_telefon_v_davce(telefon_v_davce: dict[str, int], nt_tel: str, pk: int) -> None:
+    if nt_tel:
+        telefon_v_davce[nt_tel] = pk
+
+
+@contextmanager
+def import_commit_zamek():
+    from django.core.cache import cache
+    from django.db import connection
+
+    if not cache.add(IMPORT_LOCK_KEY, '1', IMPORT_LOCK_TTL):
+        raise ImportZamcenError('Import už probíhá. Počkejte na dokončení.')
+    pg_locked = True
+    if connection.vendor == 'postgresql':
+        with connection.cursor() as cur:
+            cur.execute('SELECT pg_try_advisory_lock(%s)', [PG_ADVISORY_LOCK_ID])
+            pg_locked = bool(cur.fetchone()[0])
+        if not pg_locked:
+            cache.delete(IMPORT_LOCK_KEY)
+            raise ImportZamcenError('Import už probíhá (databáze).')
+    try:
+        yield
+    finally:
+        cache.delete(IMPORT_LOCK_KEY)
+        if connection.vendor == 'postgresql' and pg_locked:
+            with connection.cursor() as cur:
+                cur.execute('SELECT pg_advisory_unlock(%s)', [PG_ADVISORY_LOCK_ID])
+
+
+def rezervuj_token_potvrzeni(token: str) -> None:
+    """Atomicky označí token — druhé potvrzení stejného náhledu selže."""
+    from django.core.cache import cache
+
+    klic = f'{IMPORT_TOKEN_PREFIX}{token}'
+    if not cache.add(klic, '1', 86400):
+        raise ImportTokenPouzitError('Tento náhled už byl potvrzen. Nahrajte JSON znovu.')
+
+
+def spust_import_commit(payloads: list, *, ulozeny_podpis: dict | None = None) -> ImportReport:
+    """Zápis do DB: kontrola podpisu náhledu + commit zámek."""
+    with import_commit_zamek():
+        kontrola = spust_import(payloads, dry_run=True)
+        if ulozeny_podpis is not None and not podpis_souhlasi(ulozeny_podpis, kontrola):
+            raise ImportNahledZastaralError(
+                'Databáze se od náhledu změnila. Zobrazte nový náhled a teprve potom potvrďte.',
+            )
+        return spust_import(payloads, dry_run=False)
 
 
 def nacti_soubory(cesty: list[Path]) -> list:
@@ -300,12 +415,24 @@ def _popis_radku(data: dict) -> str:
     return f'{em} ({data["jmeno"][:40]})'
 
 
+def _zaznam(akce: str, data: dict, *, pk=None, detail: str = '') -> dict:
+    return {
+        'akce': akce,
+        'id': pk or '',
+        'jmeno': data.get('jmeno') or '',
+        'email': data.get('email') or '',
+        'telefon': data.get('_nt_telefon') or '',
+        'ico': data.get('_nt_ico') or '',
+        'detail': detail,
+    }
+
+
 def spust_import(payloads: list, *, dry_run: bool = True) -> ImportReport:
     report = ImportReport()
     report.pred_pocet = PotencialniKontakt.objects.count()
     stav_pred = _snapshot_stavu()
     by_email, by_phone, by_ico = _index_kontaktu()
-    videne: set[str] = set()
+    telefon_v_davce: dict[str, int] = {}
 
     with _import_transakce(dry_run):
         for i, raw in enumerate(payloads, start=1):
@@ -314,34 +441,54 @@ def spust_import(payloads: list, *, dry_run: bool = True) -> ImportReport:
                 data = normalizuj_radek_partnera(raw)
             except (ValidationError, TypeError, ValueError) as exc:
                 report.neplatne.append(f'řádek {i}: {exc}')
+                report.zmeny.append(_zaznam('neplatne', {'jmeno': '', 'email': ''}, detail=f'řádek {i}: {exc}'))
                 continue
-
-            fp = import_fingerprint(data)
-            if fp in videne:
-                report.duplicitni_vstup += 1
-                continue
-            videne.add(fp)
 
             shoda, pk = najdi_shodu(data, by_email, by_phone, by_ico)
+            kontakt_pro_tel = None
+            if shoda == 'match' and pk is not None:
+                kontakt_pro_tel = PotencialniKontakt.objects.get(pk=pk)
+            dup_tel = _kolize_telefonu_v_davce(data, telefon_v_davce, shoda, pk, kontakt_pro_tel)
+            if dup_tel:
+                report.nejednoznacne += 1
+                report.duplicitni_vstup += 1
+                if len(report.nejednoznacne_priklady) < 15:
+                    report.nejednoznacne_priklady.append(_popis_radku(data))
+                report.zmeny.append(_zaznam('konflikt', data, pk=pk, detail=dup_tel))
+                continue
+
             if shoda == 'ambiguous':
                 report.nejednoznacne += 1
                 if len(report.nejednoznacne_priklady) < 15:
                     report.nejednoznacne_priklady.append(_popis_radku(data))
+                report.zmeny.append(_zaznam(
+                    'konflikt', data,
+                    detail='IČO, telefon nebo e-mail ukazují na víc kontaktů',
+                ))
                 continue
 
             if shoda == 'match' and pk is not None:
                 report.jednoznacne += 1
-                kontakt = PotencialniKontakt.objects.get(pk=pk)
-                if _dopln_nova_pole(kontakt, data):
+                kontakt = kontakt_pro_tel or PotencialniKontakt.objects.get(pk=pk)
+                duvod = _nesouhlasi(kontakt, data)
+                if duvod:
+                    report.nejednoznacne += 1
+                    report.jednoznacne -= 1
+                    if len(report.nejednoznacne_priklady) < 15:
+                        report.nejednoznacne_priklady.append(_popis_radku(data))
+                    report.zmeny.append(_zaznam('konflikt', data, pk=kontakt.pk, detail=duvod))
+                    continue
+                pole = _dopln_prazdna_pole(kontakt, data)
+                if pole:
                     report.aktualizovano += 1
+                    report.zmeny.append(_zaznam('update', data, pk=kontakt.pk, detail=', '.join(pole)))
                 else:
                     report.preskoceno += 1
+                    report.zmeny.append(_zaznam('beze_zmeny', data, pk=kontakt.pk))
+                _zarezervuj_telefon_v_davce(telefon_v_davce, data['_nt_telefon'], kontakt.pk)
                 continue
 
             if shoda == 'none':
-                if data['_nt_email'] and data['_nt_email'] in by_email:
-                    report.nejednoznacne += 1
-                    continue
                 novy = PotencialniKontakt.objects.create(
                     jmeno=data['jmeno'],
                     email=data['email'],
@@ -364,6 +511,8 @@ def spust_import(payloads: list, *, dry_run: bool = True) -> ImportReport:
                 if data['_nt_ico']:
                     by_ico.setdefault(data['_nt_ico'], []).append(novy.pk)
                 report.vytvoreno += 1
+                report.zmeny.append(_zaznam('create', data, detail='nový kontakt'))
+                _zarezervuj_telefon_v_davce(telefon_v_davce, data['_nt_telefon'], novy.pk)
 
     stav_po = _snapshot_stavu()
     for kid, stav in stav_pred.items():

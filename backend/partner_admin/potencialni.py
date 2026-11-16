@@ -136,24 +136,15 @@ def parse_import_json(payload) -> list:
 
 
 def importuj_kontakty(payload) -> dict:
-    radky = parse_import_json(payload)
-    existujici = set(PotencialniKontakt.objects.values_list('email', flat=True))
-    vytvoreno = 0
-    duplicita = 0
-    neplatne = []
-    for i, raw in enumerate(radky, start=1):
-        try:
-            data = normalizuj_radek(raw)
-        except (ValidationError, TypeError, ValueError) as exc:
-            neplatne.append(f'řádek {i}: {exc}')
-            continue
-        if data['email'] in existujici:
-            duplicita += 1
-            continue
-        PotencialniKontakt.objects.create(**data)
-        existujici.add(data['email'])
-        vytvoreno += 1
-    return {'vytvoreno': vytvoreno, 'duplicita': duplicita, 'neplatne': neplatne, 'celkem': len(radky)}
+    """Stejný UPSERT jako příkaz import_partneri_json. Zapíše hned."""
+    from .partner_import import spust_import
+
+    report = spust_import(parse_import_json(payload), dry_run=False)
+    data = report.as_dict()
+    data['vytvoreno'] = data['INSERT']
+    data['duplicita'] = data['SKIP']
+    data['celkem'] = data['nacteno']
+    return data
 
 
 def export_dict(kontakt: PotencialniKontakt) -> dict:
@@ -445,9 +436,105 @@ def pridat_sektor(request):
     return _redirect_seznam(request)
 
 
+def _nahled_dir():
+    from pathlib import Path
+
+    from django.conf import settings
+
+    cil = Path(settings.BASE_DIR) / 'import-nahledy'
+    cil.mkdir(exist_ok=True)
+    return cil
+
+
+def _smaz_nahled(request):
+    from pathlib import Path
+
+    meta = request.session.pop('partner_import_nahled', None) or {}
+    cesta = Path(meta.get('path') or '')
+    koren = _nahled_dir().resolve()
+    if cesta.is_file() and koren in cesta.resolve().parents:
+        cesta.unlink()
+
+
+def _report_pro_sablonu(report):
+    skupiny = {'create': [], 'update': [], 'konflikt': [], 'neplatne': []}
+    for radek in report.zmeny:
+        if radek['akce'] in skupiny:
+            skupiny[radek['akce']].append(radek)
+    return {
+        'nacteno': report.nacteno,
+        'create': report.vytvoreno,
+        'update': report.aktualizovano,
+        'beze_zmeny': report.preskoceno,
+        'konflikt': report.nejednoznacne,
+        'neplatne_pocet': len(report.neplatne),
+        'skupiny': skupiny,
+        'statusy_zmeneny': report.statusy_zmeneny,
+    }
+
+
 @partner_admin_perm('potencialni')
 @require_POST
 def import_json(request):
+    import secrets
+    from pathlib import Path
+
+    from .partner_import import nacti_soubory, report_podpis, spust_import
+
+    if request.POST.get('zrusit') == '1':
+        _smaz_nahled(request)
+        messages.info(request, 'Náhled importu je zahozený. Nic se nezapsalo.')
+        return _redirect_seznam(request)
+
+    if request.POST.get('potvrdit') == '1':
+        from .partner_import import (
+            ImportNahledZastaralError,
+            ImportTokenPouzitError,
+            ImportZamcenError,
+            report_podpis,
+            rezervuj_token_potvrzeni,
+            spust_import_commit,
+        )
+
+        meta = request.session.get('partner_import_nahled') or {}
+        token = (request.POST.get('token') or '').strip()
+        cesta = Path(meta.get('path') or '')
+        if not token or token != meta.get('token') or not cesta.is_file():
+            messages.error(request, 'Náhled vypršel. Nahrajte JSON znovu.')
+            return _redirect_seznam(request)
+        if not meta.get('podpis'):
+            messages.error(request, 'Náhled je neplatný. Nahrajte JSON znovu.')
+            return _redirect_seznam(request)
+        try:
+            rezervuj_token_potvrzeni(token)
+            payloads = nacti_soubory([cesta])
+            report = spust_import_commit(payloads, ulozeny_podpis=meta['podpis'])
+        except ImportTokenPouzitError as exc:
+            messages.error(request, str(exc))
+            return _redirect_seznam(request)
+        except ImportNahledZastaralError as exc:
+            _smaz_nahled(request)
+            messages.error(request, str(exc))
+            return _redirect_seznam(request)
+        except ImportZamcenError as exc:
+            messages.error(request, str(exc))
+            return _redirect_seznam(request)
+        except (ValidationError, json.JSONDecodeError, OSError) as exc:
+            messages.error(request, f'Import se nezapsal: {exc}')
+            return _redirect_seznam(request)
+        _smaz_nahled(request)
+        if report.statusy_zmeneny:
+            messages.error(request, 'Import změnil obchodní stav. Zkontrolujte report.')
+        messages.success(
+            request,
+            'Import zapsán. '
+            f'CREATE {report.vytvoreno}, UPDATE {report.aktualizovano}, '
+            f'BEZE ZMĚNY {report.preskoceno}, KONFLIKT {report.nejednoznacne}.',
+        )
+        if report.neplatne:
+            messages.warning(request, 'Neplatné řádky: ' + '; '.join(report.neplatne[:8]))
+        return _redirect_seznam(request)
+
     raw = (request.POST.get('json_text') or '').strip()
     soubor = request.FILES.get('json_file')
     if soubor and not raw:
@@ -460,20 +547,23 @@ def import_json(request):
         messages.error(request, 'Vlož JSON nebo nahraj soubor.')
         return _redirect_seznam(request)
     try:
-        vysledek = importuj_kontakty(raw)
-    except (ValidationError, json.JSONDecodeError) as exc:
+        payloads = parse_import_json(json.loads(raw))
+        report = spust_import(payloads, dry_run=True)
+    except (ValidationError, json.JSONDecodeError, TypeError, ValueError) as exc:
         messages.error(request, f'JSON nejde načíst: {exc}')
         return _redirect_seznam(request)
-    zprava = (
-        f'Import: {vysledek["vytvoreno"]} nových z {vysledek["celkem"]}. '
-        f'Přeskočeno duplicit: {vysledek["duplicita"]}.'
-    )
-    if vysledek['neplatne']:
-        zprava += ' Chyby: ' + '; '.join(vysledek['neplatne'][:8])
-        messages.warning(request, zprava)
-    else:
-        messages.success(request, zprava)
-    return _redirect_seznam(request)
+    token = secrets.token_urlsafe(16)
+    cil = _nahled_dir() / f'{token}.json'
+    cil.write_text(json.dumps(payloads, ensure_ascii=False), encoding='utf-8')
+    request.session['partner_import_nahled'] = {
+        'token': token,
+        'path': str(cil),
+        'podpis': report_podpis(report),
+    }
+    return render(request, 'partner_admin/potencialni_import_nahled.html', {
+        'token': token,
+        'report': _report_pro_sablonu(report),
+    })
 
 
 @partner_admin_perm('potencialni')

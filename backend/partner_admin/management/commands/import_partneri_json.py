@@ -10,7 +10,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from partner_admin.partner_import import ImportReport, nacti_soubory, spust_import
+from partner_admin.partner_import import ImportReport, ImportZamcenError, nacti_soubory, spust_import, spust_import_commit
 
 
 class Command(BaseCommand):
@@ -62,7 +62,13 @@ class Command(BaseCommand):
             self._zaloha_sqlite()
 
         payloads = nacti_soubory(cesty)
-        report = spust_import(payloads, dry_run=dry_run)
+        if commit:
+            try:
+                report = spust_import_commit(payloads)
+            except ImportZamcenError as exc:
+                raise CommandError(str(exc)) from exc
+        else:
+            report = spust_import(payloads, dry_run=True)
         self._vypis(report, dry_run=dry_run)
 
         out = (options.get('json_report') or '').strip()
@@ -95,8 +101,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING(f'Import partnerů [{rezim}]'))
         d = report.as_dict()
         for klic in (
-            'nacteno', 'UPDATE', 'INSERT', 'SKIP', 'konflikty',
-            'duplicity_json', 'jednoznacne', 'pred_pocet', 'po_pocet',
+            'nacteno', 'UPDATE', 'INSERT', 'BEZE_ZMENY', 'KONFLIKT',
+            'duplicity_json', 'pred_pocet', 'po_pocet',
         ):
             self.stdout.write(f'  {klic}: {d[klic]}')
         if report.statusy_zmeneny:

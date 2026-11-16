@@ -69,6 +69,12 @@ class ChatTests(TestCase):
         response = self.client.get(reverse('prehled'))
         self.assertContains(response, 'nav-badge')
 
+    def test_chat_nacita_scroll_skript(self):
+        self.client.force_login(self.a)
+        response = self.client.get(reverse('tym_konverzace', args=[self.b.pk]))
+        self.assertContains(response, 'chat-scroll.js')
+        self.assertContains(response, 'id="chat-msgs"')
+
 class PrehledEmailTests(TestCase):
     def test_imap_chyba_nezabije_prehled(self):
         from unittest.mock import patch

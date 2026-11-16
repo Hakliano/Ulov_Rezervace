@@ -1,5 +1,6 @@
 backend/.env
 backend/db.sqlite3
+backend/import-nahledy/
 materialnik/.env
 materialnik/db.sqlite3
 __pycache__/

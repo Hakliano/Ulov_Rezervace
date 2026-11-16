@@ -244,7 +244,7 @@
       <div>
         <p class="eyebrow">Hromadně</p>
         <h2>Import JSON</h2>
-        <p class="muted">Stav z JSON se ignoruje — každý nový záznam začíná jako „Lead před kontrolou webu“. Duplicitní e-mail se přeskočí.</p>
+        <p class="muted">Nejdřív náhled. Zápis až po potvrzení. Shoda podle IČO, telefonu a e-mailu doplní jen prázdná pole. Stav, poznámka a ID se nemění.</p>
       </div>
     </div>
     <form method="post" action="{% url 'partner_admin:potencialni_import' %}" enctype="multipart/form-data" class="form-grid">
@@ -254,12 +254,12 @@
         <textarea name="json_text" rows="10" placeholder="[{&quot;email&quot;:&quot;…&quot;,&quot;company_name&quot;:&quot;VET - …&quot;}]"></textarea>
       </label>
       <div class="form-actions">
-        <button class="btn btn-primary" type="submit">Importovat</button>
+        <button class="btn btn-primary" type="submit">Zobrazit náhled</button>
       </div>
     </form>
     <details class="lead-help">
       <summary>Jak má JSON vypadat</summary>
-      <p>Povinné je jen <code>email</code> a jméno (<code>company_name</code> nebo <code>jmeno</code>). Zbytek může chybět. <code>status</code> a <code>email_template</code> bereme na vědomí, ale stav se vždy nastaví na Lead před kontrolou webu.</p>
+      <p>Povinné je jméno a aspoň jeden identifikátor: e-mail, telefon nebo IČO. <code>status</code> se ignoruje. Nový kontakt začíná jako Lead před kontrolou webu. U existujícího se stav, poznámka a ID nemění a vyplněná pole se nepřepisují.</p>
       <p>Když název začíná <code>VET -</code>, sektor bude Veterina. <code>SALON -</code> → Beauty. Jinak nezařazeno. Prázdné <code>address</code> a vyplněné <code>description</code> se uloží jako adresa (jako ve tvém exportu z map).</p>
       <pre>{{ json_napoveda }}</pre>
     </details>

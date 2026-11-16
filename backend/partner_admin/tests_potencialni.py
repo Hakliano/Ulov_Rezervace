@@ -60,7 +60,8 @@ class PotencialniKlientiTests(TestCase):
     def test_import_vzoroveho_json_ignoruje_stav_a_mapuje_vet(self):
         vysledek = importuj_kontakty(VZOROVY_JSON)
         self.assertEqual(vysledek['vytvoreno'], 2)
-        jezek = PotencialniKontakt.objects.get(email='xxxx@xxx.cz')
+        jezek = PotencialniKontakt.objects.get(jmeno__startswith='VET - MVDr')
+        self.assertIsNone(jezek.email)
         self.assertEqual(jezek.stav, PotencialniKontakt.STAV_LEAD_PRED)
         self.assertEqual(jezek.sektor.nazev, 'Veterina')
         self.assertIn('Boleslavova', jezek.adresa)
@@ -226,3 +227,52 @@ class PotencialniKlientiTests(TestCase):
         self.assertIn('Stavy ze všech kontaktů', html)
         self.assertIn('width: 50.0000%', html)
         self.assertIn(druhy.get_stav_display(), html)
+
+    def test_web_import_nejdriv_nahled_pak_zapis(self):
+        import json
+
+        self.client.force_login(self.superuser)
+        url = reverse('partner_admin:potencialni_import')
+        raw = json.dumps([{
+            'email': 'nahled@example.test',
+            'company_name': 'Salon Náhled',
+            'phone': '777222333',
+            'mesto': 'Brno',
+            'status': 'prodano',
+        }])
+        nahled = self.client.post(url, {'json_text': raw})
+        self.assertEqual(nahled.status_code, 200)
+        self.assertContains(nahled, 'CREATE')
+        self.assertEqual(PotencialniKontakt.objects.count(), 0)
+        token = nahled.context['token']
+        zapis = self.client.post(url, {'potvrdit': '1', 'token': token})
+        self.assertEqual(zapis.status_code, 302)
+        duplicitni = self.client.post(url, {'potvrdit': '1', 'token': token})
+        self.assertEqual(duplicitni.status_code, 302)
+        self.assertEqual(PotencialniKontakt.objects.filter(email='nahled@example.test').count(), 1)
+        kontakt = PotencialniKontakt.objects.get(email='nahled@example.test')
+        self.assertEqual(kontakt.mesto, 'Brno')
+        self.assertEqual(kontakt.stav, PotencialniKontakt.STAV_LEAD_PRED)
+        znovu = self.client.post(url, {'json_text': raw})
+        self.assertContains(znovu, 'BEZE ZMĚNY')
+        self.assertEqual(PotencialniKontakt.objects.count(), 1)
+
+    def test_potvrzeni_po_zmene_db_vyzaduje_novy_nahled(self):
+        import json
+
+        self.client.force_login(self.superuser)
+        url = reverse('partner_admin:potencialni_import')
+        raw = json.dumps([{
+            'email': 'zastaraly@example.test',
+            'company_name': 'Salon',
+            'phone': '777888999',
+            'mesto': 'Brno',
+        }])
+        nahled = self.client.post(url, {'json_text': raw})
+        self.assertEqual(nahled.status_code, 200)
+        PotencialniKontakt.objects.create(
+            jmeno='Jiný', email='zastaraly@example.test', stav=PotencialniKontakt.STAV_LEAD_PRED,
+        )
+        zapis = self.client.post(url, {'potvrdit': '1', 'token': nahled.context['token']})
+        self.assertEqual(zapis.status_code, 302)
+        self.assertEqual(PotencialniKontakt.objects.filter(email='zastaraly@example.test').count(), 1)

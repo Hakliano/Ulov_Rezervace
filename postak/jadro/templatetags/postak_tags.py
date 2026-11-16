@@ -2,6 +2,7 @@ from django import template
 from django.conf import settings
 from django.urls import reverse
 
+from jadro.kontakt_odkazy import telefon_odkaz, web_odkaz
 from jadro.models import Profil
 
 register = template.Library()
@@ -40,6 +41,22 @@ def get_item(mapping, key):
     if mapping is None:
         return []
     return mapping.get(key, [])
+
+
+@register.simple_tag
+def web_kontakt(raw):
+    odkaz = web_odkaz(raw)
+    if not odkaz:
+        return {'ok': False}
+    return {'ok': True, **odkaz}
+
+
+@register.simple_tag
+def telefon_kontakt(raw):
+    odkaz = telefon_odkaz(raw)
+    if not odkaz:
+        return {'ok': False}
+    return {'ok': True, **odkaz}
 
 
 @register.filter

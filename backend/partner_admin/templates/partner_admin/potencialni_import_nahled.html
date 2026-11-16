@@ -1,0 +1,67 @@
+{% extends 'partner_admin/base.html' %}
+
+{% block title %}Náhled importu{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Import JSON</p>
+      <h1>Náhled — nic se zatím nezapsalo</h1>
+      <p class="muted">CREATE založí kontakt. UPDATE doplní jen prázdná pole. Vyplněný stav, poznámka a ID zůstanou. KONFLIKT se nezapíše.</p>
+    </div>
+  </div>
+
+  <section class="metrics">
+    <article><span>CREATE</span><strong>{{ report.create }}</strong></article>
+    <article><span>UPDATE</span><strong>{{ report.update }}</strong></article>
+    <article><span>BEZE ZMĚNY</span><strong>{{ report.beze_zmeny }}</strong></article>
+    <article><span>KONFLIKT</span><strong>{{ report.konflikt }}</strong></article>
+  </section>
+
+  {% if report.neplatne_pocet %}
+    <p class="muted">Neplatné řádky: {{ report.neplatne_pocet }}. Nezapíší se.</p>
+  {% endif %}
+  {% if report.statusy_zmeneny %}
+    <p class="muted">Varování: náhled by změnil stav. Import nepotvrzujte.</p>
+  {% endif %}
+
+  <section class="panel">
+    <h2>CREATE ({{ report.create }})</h2>
+    <div class="lead-table-wrap">
+      {% for r in report.skupiny.create %}
+        <article class="lead-row"><div class="lead-id"><strong>{{ r.jmeno }}</strong><span class="lead-meta">{{ r.email }} {{ r.telefon }} {{ r.ico }}</span></div></article>
+      {% empty %}
+        <p class="muted">Žádné.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>UPDATE ({{ report.update }})</h2>
+    <div class="lead-table-wrap">
+      {% for r in report.skupiny.update %}
+        <article class="lead-row"><div class="lead-id"><strong>{{ r.jmeno }}</strong><span class="lead-meta">id {{ r.id }} — {{ r.detail }}</span></div></article>
+      {% empty %}
+        <p class="muted">Žádné.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>KONFLIKT ({{ report.konflikt }})</h2>
+    <div class="lead-table-wrap">
+      {% for r in report.skupiny.konflikt %}
+        <article class="lead-row"><div class="lead-id"><strong>{{ r.jmeno }}</strong><span class="lead-meta">{{ r.detail }} — {{ r.email }} {{ r.telefon }} {{ r.ico }}</span></div></article>
+      {% empty %}
+        <p class="muted">Žádné.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <form method="post" action="{% url 'partner_admin:potencialni_import' %}" class="form-actions">
+    {% csrf_token %}
+    <input type="hidden" name="token" value="{{ token }}">
+    <button class="btn btn-primary" type="submit" name="potvrdit" value="1">Zapsat do databáze</button>
+    <button class="btn btn-quiet" type="submit" name="zrusit" value="1">Zahodit náhled</button>
+  </form>
+{% endblock %}
