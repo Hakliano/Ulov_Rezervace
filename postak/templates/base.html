@@ -46,7 +46,7 @@
           Tým a chat
           {% if chat_neprectenych %}<span class="nav-badge">{{ chat_neprectenych }}</span>{% endif %}
         </a>
-        <a class="{% if name == 'klienti' or name == 'klient_novy' or name == 'klient_detail' or name == 'klient_detail_legacy' or name == 'klient_stav' or name == 'klienti_sync' %}active{% endif %}" href="{% url 'klienti' %}">
+        <a class="{% if name == 'klienti' or name == 'klient_novy' or name == 'klient_detail' or name == 'klient_detail_legacy' or name == 'klient_stav' or name == 'klienti_sync_modernik' or name == 'klienti_sync_hya' %}active{% endif %}" href="{% url 'klienti' %}">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19c.6-3 2.6-4.5 5.5-4.5S14.4 16 15 19"></path><circle cx="17" cy="9" r="2.2"></circle><path d="M16.2 14.6c2.2.3 3.8 1.6 4.3 4.4"></path></svg>
           Potenciální klienti
         </a>

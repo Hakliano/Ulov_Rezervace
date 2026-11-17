@@ -9,6 +9,9 @@ from django.utils.dateparse import parse_datetime
 
 from .hya_client import HyaApiError, meta_statuses, seznam as hya_seznam, smazane as hya_smazane, zmeny as hya_zmeny
 from .klienti_constants import SYNC_META_HYA, SYNC_META_MODERNIK
+from .klienti_hya_merge import defaults_from_hya_api, merge_hya_api_into_defaults
+from .klienti_merge import defaults_from_api_item, merge_api_into_defaults
+from .obchodni_stavy import OBCHODNI_STAV_LABELS
 from .klienti_models import KlientHya, KlientModernik, KlientSektor, KlientSyncMeta
 from .modernik_client import ModernikApiError, seznam, zmeny
 
@@ -53,55 +56,28 @@ def _gps_z_api(val):
 
 
 def upsert_klient(item):
-    upr = parse_datetime(item.get('upraveno') or '') or timezone.now()
-    lat = _gps_z_api(item.get('latitude'))
-    lon = _gps_z_api(item.get('longitude'))
-    if lat == 0 and lon == 0:
-        lat, lon = None, None
-    KlientModernik.objects.update_or_create(
-        remote_id=item['id'],
-        defaults={
-            'jmeno': item.get('jmeno', '')[:200],
-            'email': item.get('email', '')[:254],
-            'telefon': item.get('telefon', '')[:200],
-            'web': item.get('web', '')[:400],
-            'adresa': item.get('adresa', ''),
-            'mesto': (item.get('mesto') or '')[:120],
-            'cast_obce': (item.get('cast_obce') or '')[:120],
-            'latitude': lat,
-            'longitude': lon,
-            'ico': item.get('ico', '')[:20],
-            'poznamka': item.get('poznamka', ''),
-            'stav': item.get('stav', '')[:32],
-            'stav_label': item.get('stav_label', '')[:80],
-            'sektor_remote_id': item.get('sektor_id'),
-            'sektor_nazev': (item.get('sektor_nazev') or '')[:80],
-            'remote_upraveno': upr,
-        },
-    )
+    incoming = defaults_from_api_item(item)
+    if incoming['remote_upraveno'] is None:
+        incoming['remote_upraveno'] = timezone.now()
+    rid = item['id']
+    existing = KlientModernik.objects.filter(remote_id=rid).first()
+    if existing:
+        incoming = merge_api_into_defaults(existing, incoming)
+    KlientModernik.objects.update_or_create(remote_id=rid, defaults=incoming)
 
 
 def upsert_klient_hya(client):
-    upr = parse_datetime(client.get('updated_on') or '') or timezone.now()
-    stav = (client.get('status') or '')[:32]
-    KlientHya.objects.update_or_create(
-        remote_id=client['id'],
-        defaults={
-            'jmeno': (client.get('company_name') or '')[:200],
-            'kontakt_jmeno': (client.get('contact_name') or '')[:200],
-            'email': (client.get('email') or '')[:254],
-            'telefon': (client.get('phone') or '')[:200],
-            'web': (client.get('web') or '')[:400],
-            'lokalita': (client.get('location') or '')[:200],
-            'zdroj': (client.get('source') or '')[:120],
-            'ma_web': _tri_cache(client.get('has_website'))[:12],
-            'ma_rezervace': _tri_cache(client.get('has_booking_system'))[:12],
-            'poznamka': (client.get('note') or client.get('description') or ''),
-            'stav': stav,
-            'stav_label': _stav_label_hya(stav),
-            'remote_upraveno': upr,
-        },
-    )
+    incoming = defaults_from_hya_api(client)
+    stav = incoming['stav']
+    incoming['stav_label'] = _stav_label_hya(stav) or OBCHODNI_STAV_LABELS.get(stav, stav)[:80]
+    if incoming['remote_upraveno'] is None:
+        incoming['remote_upraveno'] = timezone.now()
+    rid = client['id']
+    existing = KlientHya.objects.filter(remote_id=rid).first()
+    if existing:
+        incoming = merge_hya_api_into_defaults(existing, incoming)
+        incoming['stav_label'] = OBCHODNI_STAV_LABELS.get(incoming['stav'], incoming['stav'])[:80]
+    KlientHya.objects.update_or_create(remote_id=rid, defaults=incoming)
 
 
 def _sync_sektory(items):
@@ -122,8 +98,7 @@ def _delta_modernik(since=None):
         for item in resp.get('items', []):
             upsert_klient(item)
         updated += len(resp.get('items', []))
-        for row in resp.get('deleted', []):
-            KlientModernik.objects.filter(remote_id=row['id']).delete()
+        # Mazání z cache vypnuto — nezájem řeší obchodní stav v Moderníku.
         deleted += len(resp.get('deleted', []))
         if not sektory_seen:
             _sync_sektory(resp.get('sektory'))
@@ -211,7 +186,6 @@ def _delta_hya(since):
         resp = hya_smazane(since=offset_del, limit=500)
         rows = resp.get('deletions', [])
         for row in rows:
-            KlientHya.objects.filter(remote_id=row['id']).delete()
             dt = parse_datetime(row.get('deleted_at') or '')
             if dt and dt > cursor:
                 cursor = dt
@@ -262,19 +236,25 @@ def bootstrap_if_empty():
     }
 
 
-def maybe_auto_nocni_sync():
+def _nocni_potreba(pk):
     now = timezone.localtime()
     if now.hour > 6:
         return False
-    changed = False
-    for pk in (SYNC_META_MODERNIK, SYNC_META_HYA):
-        meta = _meta(pk)
-        if meta.posledni_nocni and (now - meta.posledni_nocni).total_seconds() < 86400:
-            continue
-        if meta.posledni_delta and (now - meta.posledni_delta).total_seconds() < 86400:
-            continue
-        changed = True
-    if not changed:
+    meta = _meta(pk)
+    if meta.posledni_nocni and (now - meta.posledni_nocni).total_seconds() < 86400:
         return False
-    synchronizuj_klienty(nocni=True)
+    if meta.posledni_delta and (now - meta.posledni_delta).total_seconds() < 86400:
+        return False
     return True
+
+
+def maybe_auto_nocni_sync():
+    """Noční sync Moderník a HYA odděleně, stejná logika jako ruční tlačítka."""
+    ran = False
+    if _nocni_potreba(SYNC_META_MODERNIK):
+        synchronizuj_modernik(nocni=True)
+        ran = True
+    if _nocni_potreba(SYNC_META_HYA):
+        synchronizuj_hya(nocni=True)
+        ran = True
+    return ran

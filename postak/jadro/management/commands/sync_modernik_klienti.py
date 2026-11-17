@@ -1,11 +1,11 @@
 from django.core.management.base import BaseCommand
 
-from jadro.klienti_sync import synchronizuj_klienty
+from jadro.klienti_sync import synchronizuj_modernik
 
 
 class Command(BaseCommand):
-    help = 'Ruční / noční synchronizace klientů Moderníku a HYA do cache Pošťáku'
+    help = 'Noční / ruční synchronizace klientů Moderníku do cache Pošťáku'
 
     def handle(self, *args, **options):
-        stats = synchronizuj_klienty(nocni=True)
+        stats = synchronizuj_modernik(nocni=True)
         self.stdout.write(self.style.SUCCESS(str(stats)))

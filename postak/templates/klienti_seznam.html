@@ -5,9 +5,13 @@
 <div class="row">
   <h1>Potenciální klienti</h1>
   <div class="card-actions">
-    <form method="post" action="{% url 'klienti_sync' %}" id="klienti-sync-form">
+    <form method="post" action="{% url 'klienti_sync_modernik' %}" id="klienti-sync-modernik-form" class="sync-form-inline">
       {% csrf_token %}
-      <button type="submit" class="btn btn-sync" id="klienti-sync-btn">SYNCHRONIZOVAT KLIENTY</button>
+      <button type="submit" class="btn btn-sync" id="klienti-sync-modernik-btn">SYNCHRONIZOVAT MODERNÍK</button>
+    </form>
+    <form method="post" action="{% url 'klienti_sync_hya' %}" id="klienti-sync-hya-form" class="sync-form-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn secondary" id="klienti-sync-hya-btn">SYNCHRONIZOVAT HYA</button>
     </form>
     <a class="btn" href="{% url 'klient_novy' %}">Nový klient</a>
   </div>
@@ -82,11 +86,7 @@
               {% csrf_token %}
               <input type="hidden" name="back_qs" value="{{ request.GET.urlencode }}">
               <select name="stav" onchange="this.form.submit()">
-                {% if k.projekt == 'modernik' %}
-                  {% for s in stavy_mod %}<option value="{{ s.kod }}" {% if k.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
-                {% else %}
-                  {% for s in stavy_hya %}<option value="{{ s.kod }}" {% if k.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
-                {% endif %}
+                {% for s in stavy_spolecne %}<option value="{{ s.kod }}" {% if k.stav == s.kod %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
               </select>
             </form>
           </td>
@@ -107,9 +107,12 @@
 </section>
 <script>
 (function () {
-  var f = document.getElementById('klienti-sync-form');
-  var b = document.getElementById('klienti-sync-btn');
-  if (f && b) f.addEventListener('submit', function () { b.disabled = true; b.textContent = 'Synchronizuji…'; });
+  [['klienti-sync-modernik-form', 'klienti-sync-modernik-btn', 'Moderník…'],
+   ['klienti-sync-hya-form', 'klienti-sync-hya-btn', 'HYA…']].forEach(function (row) {
+    var f = document.getElementById(row[0]);
+    var b = document.getElementById(row[1]);
+    if (f && b) f.addEventListener('submit', function () { b.disabled = true; b.textContent = 'Synchronizuji ' + row[2]; });
+  });
 })();
 </script>
 {% endblock %}

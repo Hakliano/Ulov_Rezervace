@@ -111,6 +111,91 @@ def _conflict(kontakt, expected_upraveno):
         }, status=409)
 
 
+def _kontakt_field_json(kontakt, field: str):
+    if field == 'sektor_id':
+        return kontakt.sektor_id
+    if field in ('latitude', 'longitude'):
+        val = getattr(kontakt, field)
+        return '' if val is None else str(val)
+    if field == 'stav':
+        return kontakt.stav
+    return getattr(kontakt, field) or ''
+
+
+def _field_conflict(kontakt, data: dict):
+    expected = data.get('expected_fields')
+    if not isinstance(expected, dict):
+        return None
+    conflicts = []
+    for field, exp_val in expected.items():
+        if field not in data:
+            continue
+        cur = _kontakt_field_json(kontakt, field)
+        exp_norm = '' if exp_val is None else exp_val
+        cur_norm = '' if cur is None else cur
+        if str(cur_norm).strip() != str(exp_norm).strip():
+            conflicts.append(field)
+    if not conflicts:
+        return None
+    return JsonResponse({
+        'ok': False,
+        'code': 'conflict',
+        'detail': 'Konflikt u polí: ' + ', '.join(conflicts),
+        'fields': conflicts,
+        'kontakt': _kontakt_json(kontakt),
+    }, status=409)
+
+
+_PATCH_META = frozenset({'expected_upraveno', 'expected_fields', 'zmenil'})
+
+
+def _aplikuj_patch(kontakt, data: dict, stary_stav: str):
+    """Použije jen klíče přítomné v data. Vrací JsonResponse chyby nebo None."""
+    jmeno_in = 'jmeno' in data
+    email_in = 'email' in data
+    jmeno = (data.get('jmeno') if jmeno_in else kontakt.jmeno) or ''
+    jmeno = jmeno.strip()
+    email = (data.get('email') if email_in else kontakt.email) or ''
+    email = email.strip().lower()
+    if jmeno_in or email_in:
+        if not jmeno or not email:
+            return JsonResponse({'ok': False, 'detail': 'Jméno a e-mail jsou povinné.'}, status=400)
+        if PotencialniKontakt.objects.exclude(pk=kontakt.pk).filter(email=email).exists():
+            return JsonResponse({'ok': False, 'detail': 'E-mail už používá jiný záznam.'}, status=400)
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({'ok': False, 'detail': 'Neplatný e-mail.'}, status=400)
+    if jmeno_in:
+        kontakt.jmeno = jmeno[:200]
+    if email_in:
+        kontakt.email = email
+    if 'telefon' in data:
+        kontakt.telefon = ('' if data['telefon'] is None else (data.get('telefon') or ''))[:200]
+    if 'web' in data:
+        kontakt.web = ('' if data['web'] is None else (data.get('web') or ''))[:400]
+    if 'ico' in data:
+        kontakt.ico = ('' if data['ico'] is None else (data.get('ico') or ''))[:20]
+    if 'poznamka' in data:
+        kontakt.poznamka = '' if data['poznamka'] is None else (data.get('poznamka') or '')
+    adresni_in = {k: data[k] for k in ('adresa', 'mesto', 'cast_obce', 'latitude', 'longitude') if k in data}
+    if adresni_in:
+        for fld, val in _adresni_z_api(adresni_in).items():
+            setattr(kontakt, fld, val)
+    if 'sektor_id' in data:
+        sid = data.get('sektor_id')
+        kontakt.sektor = PotencialniSektor.objects.filter(pk=sid).first() if sid else None
+    if 'stav' in data:
+        novy = (data.get('stav') or '').strip()
+        if novy in STAVY:
+            kontakt.stav = novy
+    kontakt.save()
+    if 'stav' in data:
+        _zapis_stav_historie(kontakt, stary_stav, kontakt.stav, data.get('zmenil', ''))
+    kontakt.refresh_from_db()
+    return None
+
+
 def _zapis_stav_historie(kontakt, stary, novy, kdo=''):
     if stary == novy:
         return
@@ -231,9 +316,6 @@ def detail(request, pk):
     if data is None and request.method != 'DELETE':
         return JsonResponse({'ok': False, 'detail': 'Neplatný JSON.'}, status=400)
     data = data or {}
-    conflict = _conflict(kontakt, data.get('expected_upraveno'))
-    if conflict:
-        return conflict
     if request.method == 'DELETE':
         kontakt_id = kontakt.id
         PotencialniKontaktTombstone.objects.update_or_create(
@@ -242,36 +324,19 @@ def detail(request, pk):
         )
         kontakt.delete()
         return JsonResponse({'ok': True, 'deleted_id': kontakt_id})
-    jmeno = (data.get('jmeno') or kontakt.jmeno).strip()
-    email = (data.get('email') or kontakt.email).strip().lower()
-    if not jmeno or not email:
-        return JsonResponse({'ok': False, 'detail': 'Jméno a e-mail jsou povinné.'}, status=400)
-    if PotencialniKontakt.objects.exclude(pk=pk).filter(email=email).exists():
-        return JsonResponse({'ok': False, 'detail': 'E-mail už používá jiný záznam.'}, status=400)
-    try:
-        validate_email(email)
-    except ValidationError:
-        return JsonResponse({'ok': False, 'detail': 'Neplatný e-mail.'}, status=400)
+    patch_data = {k: v for k, v in data.items() if k not in _PATCH_META}
+    if not patch_data:
+        return JsonResponse({'ok': False, 'detail': 'Žádné pole k úpravě.'}, status=400)
+    if data.get('expected_fields'):
+        conflict = _field_conflict(kontakt, data)
+    else:
+        conflict = _conflict(kontakt, data.get('expected_upraveno'))
+    if conflict:
+        return conflict
     stary_stav = kontakt.stav
-    kontakt.jmeno = jmeno[:200]
-    kontakt.email = email
-    kontakt.telefon = (data.get('telefon') if 'telefon' in data else kontakt.telefon)[:200]
-    kontakt.web = (data.get('web') if 'web' in data else kontakt.web)[:400]
-    for fld, val in _adresni_z_api(data).items():
-        setattr(kontakt, fld, val)
-    kontakt.ico = (data.get('ico') if 'ico' in data else kontakt.ico)[:20]
-    kontakt.poznamka = data.get('poznamka') if 'poznamka' in data else kontakt.poznamka
-    if 'sektor_id' in data:
-        sid = data.get('sektor_id')
-        kontakt.sektor = PotencialniSektor.objects.filter(pk=sid).first() if sid else None
-    if 'stav' in data:
-        novy = (data.get('stav') or '').strip()
-        if novy in STAVY:
-            kontakt.stav = novy
-    kontakt.save()
-    if 'stav' in data:
-        _zapis_stav_historie(kontakt, stary_stav, kontakt.stav, data.get('zmenil', ''))
-    kontakt.refresh_from_db()
+    err = _aplikuj_patch(kontakt, data, stary_stav)
+    if err:
+        return err
     return JsonResponse({'ok': True, 'kontakt': _kontakt_json(kontakt)})
 
 
@@ -283,7 +348,11 @@ def zmena_stavu(request, pk):
     data = _parse_body(request)
     if data is None:
         return JsonResponse({'ok': False, 'detail': 'Neplatný JSON.'}, status=400)
-    conflict = _conflict(kontakt, data.get('expected_upraveno'))
+    body = {'stav': data.get('stav'), 'expected_fields': data.get('expected_fields')}
+    if data.get('expected_fields'):
+        conflict = _field_conflict(kontakt, body)
+    else:
+        conflict = _conflict(kontakt, data.get('expected_upraveno'))
     if conflict:
         return conflict
     stav = (data.get('stav') or '').strip()

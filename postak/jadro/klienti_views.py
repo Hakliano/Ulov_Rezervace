@@ -10,7 +10,17 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .hya_client import HyaApiError, detail as hya_detail, meta_statuses, upravit as hya_upravit, vytvorit as hya_vytvorit, zmenit_stav as hya_zmenit_stav
 from .klienti_constants import PROJEKT_HYA, PROJEKT_MODERNIK, PROJEKTY, SYNC_META_HYA, SYNC_META_MODERNIK
 from .klienti_models import KlientHya, KlientModernik, KlientSektor, KlientStavHistorie, KlientSyncMeta
-from .klienti_sync import bootstrap_if_empty, maybe_auto_nocni_sync, synchronizuj_klienty, upsert_klient, upsert_klient_hya
+from .klienti_hya_merge import hya_patch_z_formulare
+from .klienti_merge import modernik_patch_z_formulare
+from .obchodni_stavy import kanon_do_hya_api, kanon_do_modernik, stavy_spolecne_pro_ui
+from .klienti_sync import (
+    bootstrap_if_empty,
+    maybe_auto_nocni_sync,
+    synchronizuj_hya,
+    synchronizuj_modernik,
+    upsert_klient,
+    upsert_klient_hya,
+)
 from .modernik_client import ModernikApiError, detail as api_detail, meta as api_meta, upravit as api_upravit, vytvorit as api_vytvorit, zmenit_stav as api_zmenit_stav
 from .kalendar_services import klient_udalosti_hya, klient_udalosti_modernik
 from .views import login_required_view
@@ -61,6 +71,8 @@ def _sync_historie(klient, rows):
 
 
 def _apply_modernik(request, data, ok_msg):
+    if data.get('ok') is False:
+        raise ModernikApiError(data.get('detail') or 'Moderník API odmítlo zápis.')
     k = data.get('kontakt')
     if not k:
         raise ModernikApiError('Moderník nevrátil záznam.')
@@ -70,6 +82,8 @@ def _apply_modernik(request, data, ok_msg):
 
 
 def _apply_hya(request, data, ok_msg):
+    if data.get('ok') is False:
+        raise HyaApiError(data.get('error') or 'HYA API odmítlo zápis.')
     k = data.get('client')
     if not k:
         raise HyaApiError('HYA nevrátil záznam.')
@@ -96,23 +110,11 @@ def _conflict_hya(request, exc):
     return False
 
 
-def _load_stavy(projekt, stavy_mod, stavy_hya):
-    if projekt == PROJEKT_MODERNIK:
-        return stavy_mod
-    if projekt == PROJEKT_HYA:
-        return stavy_hya
-    out = []
-    for s in stavy_mod:
-        row = dict(s)
-        row['label'] = f"Moderník — {s['label']}"
-        row['projekt'] = PROJEKT_MODERNIK
-        out.append(row)
-    for s in stavy_hya:
-        row = dict(s)
-        row['label'] = f"HereYouAre — {s['label']}"
-        row['projekt'] = PROJEKT_HYA
-        out.append(row)
-    return out
+def _load_stavy(projekt, _stavy_mod, _stavy_hya):
+    spolecne = stavy_spolecne_pro_ui()
+    if projekt in (PROJEKT_MODERNIK, PROJEKT_HYA, ''):
+        return spolecne
+    return spolecne
 
 
 def _fetch_meta():
@@ -228,10 +230,12 @@ def klienti_seznam(request):
     sync_mod = KlientSyncMeta.objects.filter(pk=SYNC_META_MODERNIK).first()
     sync_hya = KlientSyncMeta.objects.filter(pk=SYNC_META_HYA).first()
     prazdna_cache = not KlientModernik.objects.exists() and not KlientHya.objects.exists()
+    stavy_spolecne = stavy_spolecne_pro_ui()
     return render(request, 'klienti_seznam.html', {
         'stranka': page,
         'filtry': {'q': q, 'stav': stav, 'sektor': sektor, 'mesto': mesto, 'per_page': per_page, 'projekt': projekt},
         'stavy': stavy,
+        'stavy_spolecne': stavy_spolecne,
         'stavy_mod': stavy_mod,
         'stavy_hya': stavy_hya,
         'sektory': sektory,
@@ -244,24 +248,30 @@ def klienti_seznam(request):
 
 @login_required_view
 @require_POST
-def klienti_sync(request):
+def klienti_sync_modernik(request):
     bootstrap_if_empty()
-    stats = synchronizuj_klienty()
-    m, h = stats['modernik'], stats['hya']
+    m = synchronizuj_modernik()
     if m.get('ok'):
         messages.success(
             request,
-            f'Moderník: {m.get("updated", 0)} změn, {m.get("deleted", 0)} smazaných v cache.',
+            f'Moderník: {m.get("updated", 0)} změn v cache (smazání v cache se nesynchronizuje).',
         )
     else:
         messages.error(request, f'Moderník: {m.get("error", "chyba")}')
+    return redirect('klienti')
+
+
+@login_required_view
+@require_POST
+def klienti_sync_hya(request):
+    h = synchronizuj_hya()
     if h.get('ok'):
         messages.success(
             request,
             f'HereYouAre: {h.get("updated", 0)} změn, {h.get("deleted", 0)} smazaných v cache.',
         )
     else:
-        messages.warning(request, f'HereYouAre: {h.get("error", "chyba")}')
+        messages.error(request, f'HereYouAre: {h.get("error", "chyba")}')
     return redirect('klienti')
 
 
@@ -279,6 +289,7 @@ def klient_novy(request):
             return _odmitnout_zapis(request, projekt)
         try:
             if projekt == PROJEKT_HYA:
+                stav_api = kanon_do_hya_api(request.POST.get('stav', '') or 'lead_pred_webu')
                 body = {
                     'company_name': request.POST.get('jmeno', ''),
                     'contact_name': request.POST.get('kontakt_jmeno', ''),
@@ -288,7 +299,7 @@ def klient_novy(request):
                     'location': request.POST.get('lokalita', ''),
                     'source': request.POST.get('zdroj', ''),
                     'note': request.POST.get('poznamka', ''),
-                    'status': request.POST.get('stav', '') or 'lead_before_web',
+                    'status': stav_api,
                     'has_website': request.POST.get('ma_web') or None,
                     'has_booking_system': request.POST.get('ma_rezervace') or None,
                 }
@@ -307,7 +318,7 @@ def klient_novy(request):
                     'longitude': request.POST.get('longitude', ''),
                     'ico': request.POST.get('ico', ''),
                     'poznamka': request.POST.get('poznamka', ''),
-                    'stav': request.POST.get('stav', ''),
+                    'stav': kanon_do_modernik(request.POST.get('stav', '')),
                     'sektor_id': request.POST.get('sektor_id') or None,
                     'zmenil': _kdo(request),
                 }
@@ -345,38 +356,26 @@ def klient_detail(request, projekt, pk):
             return _odmitnout_zapis(request, projekt)
         try:
             if projekt == PROJEKT_HYA:
+                patch, expected = hya_patch_z_formulare(lokal, request.POST)
+                if not patch:
+                    messages.info(request, 'Žádná změna k uložení.')
+                    return redirect('klient_detail', projekt=projekt, pk=lokal.pk)
                 body = {
+                    **patch,
                     'updated_on': lokal.remote_upraveno.isoformat(),
-                    'company_name': request.POST.get('jmeno', ''),
-                    'contact_name': request.POST.get('kontakt_jmeno', ''),
-                    'email': request.POST.get('email', ''),
-                    'phone': request.POST.get('telefon', ''),
-                    'web': request.POST.get('web', ''),
-                    'location': request.POST.get('lokalita', ''),
-                    'source': request.POST.get('zdroj', ''),
-                    'note': request.POST.get('poznamka', ''),
-                    'status': request.POST.get('stav', ''),
-                    'has_website': request.POST.get('ma_web') or None,
-                    'has_booking_system': request.POST.get('ma_rezervace') or None,
+                    'expected_fields': expected,
                 }
                 resp = hya_upravit(lokal.remote_id, body)
                 klient = _apply_hya(request, resp, 'Uloženo v HereYouAre.')
             else:
+                patch, expected = modernik_patch_z_formulare(lokal, request.POST)
+                if not patch:
+                    messages.info(request, 'Žádná změna k uložení.')
+                    return redirect('klient_detail', projekt=projekt, pk=lokal.pk)
                 body = {
-                    'jmeno': request.POST.get('jmeno', ''),
-                    'email': request.POST.get('email', ''),
-                    'telefon': request.POST.get('telefon', ''),
-                    'web': request.POST.get('web', ''),
-                    'adresa': request.POST.get('adresa', ''),
-                    'mesto': request.POST.get('mesto', ''),
-                    'cast_obce': request.POST.get('cast_obce', ''),
-                    'latitude': request.POST.get('latitude', ''),
-                    'longitude': request.POST.get('longitude', ''),
-                    'ico': request.POST.get('ico', ''),
-                    'poznamka': request.POST.get('poznamka', ''),
-                    'stav': request.POST.get('stav', ''),
-                    'sektor_id': request.POST.get('sektor_id') or None,
+                    **patch,
                     'expected_upraveno': lokal.remote_upraveno.isoformat(),
+                    'expected_fields': expected,
                     'zmenil': _kdo(request),
                 }
                 resp = api_upravit(lokal.remote_id, body)
@@ -429,17 +428,23 @@ def klient_stav(request, projekt, pk):
     stav = (request.POST.get('stav') or '').strip()
     try:
         if projekt == PROJEKT_HYA:
+            stav_api = kanon_do_hya_api(stav)
             resp = hya_zmenit_stav(
                 lokal.remote_id,
-                {'status': stav, 'updated_on': lokal.remote_upraveno.isoformat()},
+                {
+                    'status': stav_api,
+                    'updated_on': lokal.remote_upraveno.isoformat(),
+                    'expected_fields': {'status': kanon_do_hya_api(lokal.stav)},
+                },
             )
             _apply_hya(request, resp, 'Stav uložen v HereYouAre.')
         else:
             resp = api_zmenit_stav(
                 lokal.remote_id,
                 {
-                    'stav': stav,
+                    'stav': kanon_do_modernik(stav),
                     'expected_upraveno': lokal.remote_upraveno.isoformat(),
+                    'expected_fields': {'stav': lokal.stav},
                     'zmenil': _kdo(request),
                 },
             )

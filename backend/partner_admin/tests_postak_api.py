@@ -64,6 +64,44 @@ class PostakApiTests(TestCase):
         self.assertIsNone(k.latitude)
         self.assertIsNone(k.longitude)
 
+    def test_patch_jen_telefon_field_conflict(self):
+        kontakt = PotencialniKontakt.objects.create(
+            jmeno='Firma', email='partial@test.cz', telefon='111', web='https://x.test'
+        )
+        stare_tel = kontakt.telefon
+        kontakt.web = 'https://jine.test'
+        kontakt.save()
+        r = self.client.patch(
+            reverse('partner_admin:postak_api_detail', args=[kontakt.pk]),
+            data=json.dumps({
+                'telefon': '222',
+                'expected_fields': {'telefon': stare_tel},
+            }),
+            content_type='application/json',
+            **self.h,
+        )
+        self.assertEqual(r.status_code, 200)
+        kontakt.refresh_from_db()
+        self.assertEqual(kontakt.telefon, '222')
+        self.assertEqual(kontakt.web, 'https://jine.test')
+
+    def test_patch_field_conflict_stejne_pole(self):
+        kontakt = PotencialniKontakt.objects.create(jmeno='X', email='conflict2@test.cz', telefon='111')
+        stare = kontakt.telefon
+        kontakt.telefon = '999'
+        kontakt.save()
+        r = self.client.patch(
+            reverse('partner_admin:postak_api_detail', args=[kontakt.pk]),
+            data=json.dumps({
+                'telefon': '222',
+                'expected_fields': {'telefon': stare},
+            }),
+            content_type='application/json',
+            **self.h,
+        )
+        self.assertEqual(r.status_code, 409)
+        self.assertIn('telefon', r.json().get('fields', []))
+
     def test_zmeny_strankuje_bez_since(self):
         for i in range(3):
             PotencialniKontakt.objects.create(jmeno=f'B{i}', email=f'page{i}@test.cz')
