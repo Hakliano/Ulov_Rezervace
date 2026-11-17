@@ -236,25 +236,14 @@ def bootstrap_if_empty():
     }
 
 
-def _nocni_potreba(pk):
-    now = timezone.localtime()
-    if now.hour > 6:
-        return False
-    meta = _meta(pk)
-    if meta.posledni_nocni and (now - meta.posledni_nocni).total_seconds() < 86400:
-        return False
-    if meta.posledni_delta and (now - meta.posledni_delta).total_seconds() < 86400:
-        return False
-    return True
+def synchronizuj_modernik_jako_tlacitko(*, nocni=False):
+    """Stejná logika jako POST /klienti/sync/modernik/."""
+    bootstrap_if_empty()
+    return synchronizuj_modernik(nocni=nocni)
 
 
-def maybe_auto_nocni_sync():
-    """Noční sync Moderník a HYA odděleně, stejná logika jako ruční tlačítka."""
-    ran = False
-    if _nocni_potreba(SYNC_META_MODERNIK):
-        synchronizuj_modernik(nocni=True)
-        ran = True
-    if _nocni_potreba(SYNC_META_HYA):
-        synchronizuj_hya(nocni=True)
-        ran = True
-    return ran
+def synchronizuj_hya_jako_tlacitko(*, nocni=False):
+    """Stejná logika jako POST /klienti/sync/hya/."""
+    return synchronizuj_hya(nocni=nocni)
+
+

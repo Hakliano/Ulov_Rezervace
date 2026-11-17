@@ -1,0 +1,5 @@
+# Pošťák LIVE — noční pull z Moderníku / HYA (jen do cache Pošťáku).
+# Instalace: install-postak-live-sync-cron.sh
+CRON_TZ=Europe/Prague
+15 2 * * * root flock -n /var/lock/postak-sync-modernik.lock /opt/ulov/deploy/postak/run-nightly-sync-modernik.sh >>/var/log/postak-sync-modernik.log 2>&1
+30 3 * * * root flock -n /var/lock/postak-sync-hya.lock /opt/ulov/deploy/postak/run-nightly-sync-hya.sh >>/var/log/postak-sync-hya.log 2>&1

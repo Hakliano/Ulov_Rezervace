@@ -14,13 +14,12 @@ from .klienti_hya_merge import hya_patch_z_formulare
 from .klienti_merge import modernik_patch_z_formulare
 from .obchodni_stavy import kanon_do_hya_api, kanon_do_modernik, stavy_spolecne_pro_ui
 from .klienti_sync import (
-    bootstrap_if_empty,
-    maybe_auto_nocni_sync,
-    synchronizuj_hya,
-    synchronizuj_modernik,
+    synchronizuj_hya_jako_tlacitko,
+    synchronizuj_modernik_jako_tlacitko,
     upsert_klient,
     upsert_klient_hya,
 )
+from .sync_lock import SyncAlreadyRunning, sync_file_lock
 from .modernik_client import ModernikApiError, detail as api_detail, meta as api_meta, upravit as api_upravit, vytvorit as api_vytvorit, zmenit_stav as api_zmenit_stav
 from .kalendar_services import klient_udalosti_hya, klient_udalosti_modernik
 from .views import login_required_view
@@ -206,10 +205,6 @@ def _collect_rows(projekt, q, stav, sektor, mesto=''):
 
 @login_required_view
 def klienti_seznam(request):
-    try:
-        maybe_auto_nocni_sync()
-    except (ModernikApiError, HyaApiError):
-        pass
     projekt = (request.GET.get('projekt') or '').strip()
     if projekt not in ('', PROJEKT_MODERNIK, PROJEKT_HYA):
         projekt = ''
@@ -249,8 +244,12 @@ def klienti_seznam(request):
 @login_required_view
 @require_POST
 def klienti_sync_modernik(request):
-    bootstrap_if_empty()
-    m = synchronizuj_modernik()
+    try:
+        with sync_file_lock('modernik'):
+            m = synchronizuj_modernik_jako_tlacitko()
+    except SyncAlreadyRunning:
+        messages.warning(request, 'Synchronizace Moderníku už běží — zkuste za chvíli.')
+        return redirect('klienti')
     if m.get('ok'):
         messages.success(
             request,
@@ -264,7 +263,12 @@ def klienti_sync_modernik(request):
 @login_required_view
 @require_POST
 def klienti_sync_hya(request):
-    h = synchronizuj_hya()
+    try:
+        with sync_file_lock('hya'):
+            h = synchronizuj_hya_jako_tlacitko()
+    except SyncAlreadyRunning:
+        messages.warning(request, 'Synchronizace HYA už běží — zkuste za chvíli.')
+        return redirect('klienti')
     if h.get('ok'):
         messages.success(
             request,
