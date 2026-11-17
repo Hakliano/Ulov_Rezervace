@@ -33,7 +33,11 @@ def _token():
 
 
 def _request(method, path, *, query=None, body=None, timeout=30):
-    url = _base() + path
+    base = _base()
+    from jadro.staging_api_guard import block_live_crm_write
+
+    block_live_crm_write(method, base, kind='hya')
+    url = base + path
     if query:
         qs = urllib.parse.urlencode({k: v for k, v in query.items() if v is not None and v != ''})
         if qs:

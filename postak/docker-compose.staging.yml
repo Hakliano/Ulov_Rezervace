@@ -29,6 +29,8 @@ services:
     container_name: ulov-staging-postak
     restart: unless-stopped
     env_file: .env
+    environment:
+      POSTAK_STAGING_MODE: ${POSTAK_STAGING_MODE:-1}
     depends_on:
       db:
         condition: service_healthy

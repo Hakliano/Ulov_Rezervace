@@ -73,6 +73,8 @@ HYA_POSTAK_API_TOKEN = os.environ.get('HYA_POSTAK_API_TOKEN', '').strip()
 # CRM zápisy do Moderníku/HYA — na LIVE výchozí vypnuto (jen čtení + lokální cache).
 POSTAK_MODERNIK_CRM_WRITE = _env_bool('POSTAK_MODERNIK_CRM_WRITE', DEBUG)
 POSTAK_HYA_CRM_WRITE = _env_bool('POSTAK_HYA_CRM_WRITE', False)
+# STAGING kontejner: zapnout v .env — ověření CRM URL při startu a před zápisem.
+POSTAK_STAGING_MODE = _env_bool('POSTAK_STAGING_MODE', False)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
