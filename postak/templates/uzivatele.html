@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load postak_tags %}
 {% block title %}Uživatelé · Pošťák{% endblock %}
 {% block content %}
 <div class="row">
@@ -14,6 +15,9 @@
         <th>E-mail</th>
         <th>Role</th>
         <th>Stav</th>
+        <th>Poslední přihlášení</th>
+        <th>Poslední aktivita</th>
+        <th>Online</th>
         <th></th>
       </tr>
     </thead>
@@ -25,6 +29,9 @@
         <td data-label="E-mail">{{ cil.email|default:"—" }}</td>
         <td data-label="Role">{% if cil.is_superuser %}SUPERUSER{% else %}USER{% endif %}</td>
         <td data-label="Stav">{% if cil.is_active %}Aktivní{% else %}Neaktivní{% endif %}</td>
+        <td data-label="Poslední přihlášení">{% if cil.last_login %}{{ cil.last_login|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+        <td data-label="Poslední aktivita">{% if cil|posledni_aktivita %}{{ cil|posledni_aktivita|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+        <td data-label="Online">{% if cil|user_online %}Ano{% else %}Ne{% endif %}</td>
         <td><a class="btn secondary" href="{% url 'uzivatel_detail' cil.pk %}">Upravit</a></td>
       </tr>
       {% endfor %}

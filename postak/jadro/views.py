@@ -25,6 +25,7 @@ from .forms import (
     UcetForm,
     VlastniHesloForm,
 )
+from .user_activity import historie_prihlaseni, uzivatel_je_online
 from .user_credentials import odeslat_prihlasovaci_udaje, prihlasovaci_email_uzivatele
 from .user_credentials_models import OdeslaniPrihlasovacich
 from .mail_prehled import email_prehled
@@ -184,7 +185,7 @@ def profil_foto(request, pk):
 @superuser_required
 def uzivatele(request):
     return render(request, 'uzivatele.html', {
-        'uzivatele': User.objects.order_by('username'),
+        'uzivatele': User.objects.select_related('profil').order_by('username'),
     })
 
 
@@ -227,12 +228,16 @@ def uzivatel_detail(request, pk):
             return redirect('uzivatel_detail', pk=cil.pk)
         else:
             raise Http404
+    profil, _ = Profil.objects.get_or_create(user=cil)
     return render(request, 'uzivatel_detail.html', {
         'cil': cil,
         'heslo_form': heslo_form,
         'ucet_form': ucet_form,
         'posledni': _posledni_aktivni_superuser(cil),
         'login_id': prihlasovaci_email_uzivatele(cil),
+        'profil': profil,
+        'uzivatel_je_online': uzivatel_je_online(profil),
+        'prihlaseni_historie': historie_prihlaseni(cil),
     })
 
 

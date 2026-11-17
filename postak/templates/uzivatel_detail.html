@@ -13,6 +13,9 @@
     {% if src %}<img class="avatar" src="{{ src }}" alt="">{% endif %}
     {% endwith %}
     <p class="muted">Stav: {% if cil.is_active %}aktivní{% else %}neaktivní{% endif %}</p>
+    <p class="muted">Poslední přihlášení: {% if cil.last_login %}{{ cil.last_login|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+    <p class="muted">Poslední aktivita: {% if profil.posledni_aktivita %}{{ profil.posledni_aktivita|date:"d.m.Y H:i" }}{% else %}—{% endif %}</p>
+    <p class="muted">Nyní online: {% if uzivatel_je_online %}ano{% else %}ne{% endif %}</p>
     <form method="post">
       {% csrf_token %}
       {% include "pole.html" with form=ucet_form %}
@@ -43,6 +46,19 @@
     <h2>Přístup e-mailem</h2>
     <p class="muted">Přihlašovací identifikátor: <strong>{{ login_id }}</strong></p>
     <a class="btn" href="{% url 'uzivatel_odeslat_prihlasovaci' cil.pk %}">Odeslat přihlašovací údaje</a>
+  </section>
+  <section class="card">
+    <h2>Historie přihlášení (30 dní)</h2>
+    <p class="muted">Evidence od nasazení. Starší záznamy se mažou automaticky.</p>
+    {% if prihlaseni_historie %}
+    <ul>
+      {% for radek in prihlaseni_historie %}
+      <li>{{ radek.vytvoreno|date:"d.m.Y H:i" }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Zatím žádné záznamy.</p>
+    {% endif %}
   </section>
   <section class="card">
     <h2>Nové heslo</h2>

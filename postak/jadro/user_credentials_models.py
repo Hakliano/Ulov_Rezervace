@@ -24,3 +24,19 @@ class OdeslaniPrihlasovacich(models.Model):
         ordering = ['-vytvoreno']
         verbose_name = 'odeslání přihlašovacích údajů'
         verbose_name_plural = 'odeslání přihlašovacích údajů'
+
+
+class PrihlaseniHistorie(models.Model):
+    """Úspěšné přihlášení — bez hesel a dalších údajů."""
+
+    uzivatel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='prihlaseni_historie',
+    )
+    vytvoreno = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-vytvoreno']
+        verbose_name = 'historie přihlášení'
+        verbose_name_plural = 'historie přihlášení'

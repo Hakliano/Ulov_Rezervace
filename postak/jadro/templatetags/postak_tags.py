@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from jadro.kontakt_odkazy import telefon_odkaz, web_odkaz
 from jadro.models import Profil
+from jadro.user_activity import uzivatel_je_online
 
 register = template.Library()
 
@@ -57,6 +58,23 @@ def telefon_kontakt(raw):
     if not odkaz:
         return {'ok': False}
     return {'ok': True, **odkaz}
+
+
+@register.filter
+def user_online(user):
+    try:
+        profil = user.profil
+    except Profil.DoesNotExist:
+        profil = None
+    return uzivatel_je_online(profil)
+
+
+@register.filter
+def posledni_aktivita(user):
+    try:
+        return user.profil.posledni_aktivita
+    except Profil.DoesNotExist:
+        return None
 
 
 @register.filter

@@ -16,6 +16,12 @@ class Profil(models.Model):
         'po přihlášení vynutit změnu hesla',
         default=False,
     )
+    posledni_aktivita = models.DateTimeField(
+        'poslední aktivita',
+        null=True,
+        blank=True,
+        db_index=True,
+    )
 
     class Meta:
         verbose_name = 'profil'
