@@ -1,0 +1,246 @@
+(() => {
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('nav');
+  toggle?.addEventListener('click', () => {
+    nav?.classList.toggle('is-open');
+  });
+
+  nav?.querySelectorAll('a').forEach((a) => {
+    a.addEventListener('click', () => nav.classList.remove('is-open'));
+  });
+
+  const form = document.getElementById('contact-form');
+  const msg = document.getElementById('form-msg');
+  const host = location.hostname;
+  const isLocal = host === '127.0.0.1' || host === '::1' || host === '[::1]' || (host && host.indexOf('.') === -1);
+  const isStaging = host.includes('staging');
+  const API_BASE = isLocal
+    ? `http://${host}:8000/api`
+    : (isStaging ? 'https://api-staging.ulovklienty.cz/api' : 'https://api.ulovklienty.cz/api');
+  const SALON_ID = 18;
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const jmeno = document.getElementById('f-jmeno')?.value.trim();
+    const email = document.getElementById('f-email')?.value.trim();
+    const telefon = document.getElementById('f-telefon')?.value.trim() || '';
+    const zprava = document.getElementById('f-zprava')?.value.trim();
+    const souhlas = document.getElementById('f-souhlas')?.checked;
+
+    const setMsg = (text, ok) => {
+      if (!msg) return;
+      msg.textContent = text;
+      msg.classList.toggle('is-ok', !!ok);
+      msg.classList.toggle('is-err', !ok);
+    };
+
+    if (!jmeno || !email || !zprava) {
+      setMsg('Vyplňte prosím jméno, e-mail a popis problému.', false);
+      return;
+    }
+    if (!souhlas) {
+      setMsg('Potvrďte souhlas se zpracováním údajů.', false);
+      return;
+    }
+
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = true;
+    setMsg('Odesílám…', true);
+
+    try {
+      const res = await fetch(`${API_BASE}/salon/${SALON_ID}/kontakt/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jmeno, email, telefon, zprava, souhlas: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Odeslání se nepodařilo.');
+      setMsg(data.message || 'Děkujeme — ozveme se vám co nejdříve.', true);
+      form.reset();
+    } catch (err) {
+      setMsg(err.message || 'Odeslání se nepodařilo.', false);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  const navCar = document.getElementById('nav-car');
+  const track = document.querySelector('.nav-road-track');
+  const stopLinks = [...document.querySelectorAll('.nav-stop')];
+
+  const sectionEls = {
+    top: document.querySelector('.hero'),
+    'o-nas': document.getElementById('o-nas'),
+    galerie: document.getElementById('galerie'),
+    personel: document.getElementById('personel'),
+    cenik: document.getElementById('cenik'),
+    novinky: document.getElementById('novinky'),
+    kontakt: document.getElementById('kontakt'),
+  };
+
+  const stops = stopLinks
+    .map((label) => {
+      const key = label.getAttribute('data-stop');
+      return { key, label, el: sectionEls[key] };
+    })
+    .filter((s) => s.el && s.label);
+
+  const spinWheels = (deg) => {
+    navCar?.querySelectorAll('.bp-wheel-group').forEach((g) => {
+      const wheel = g.querySelector('.bp-wheel');
+      const cx = Number(wheel?.getAttribute('cx') || 0);
+      const cy = Number(wheel?.getAttribute('cy') || 0);
+      g.setAttribute('transform', `rotate(${deg} ${cx} ${cy})`);
+    });
+  };
+
+  const sectionFocusY = (el) => {
+    const r = el.getBoundingClientRect();
+    return window.scrollY + r.top + Math.min(r.height * 0.25, 160);
+  };
+
+  const labelCenterX = (label) => {
+    const lr = label.getBoundingClientRect();
+    const tr = track.getBoundingClientRect();
+    return lr.left + lr.width / 2 - tr.left;
+  };
+
+  const updateNavCar = () => {
+    if (!navCar || !track || stops.length < 2) return;
+
+    const focus = window.scrollY + window.innerHeight * 0.28;
+    const ys = stops.map((s) => sectionFocusY(s.el));
+    const carW = navCar.offsetWidth || 140;
+
+    let i = 0;
+    for (; i < ys.length - 1; i += 1) {
+      if (focus < ys[i + 1]) break;
+    }
+
+    let t = 0;
+    let active = 0;
+    if (focus <= ys[0]) {
+      t = 0;
+      active = 0;
+      i = 0;
+    } else if (focus >= ys[ys.length - 1]) {
+      t = 1;
+      active = ys.length - 1;
+      i = ys.length - 2;
+    } else {
+      t = clamp((focus - ys[i]) / Math.max(ys[i + 1] - ys[i], 1), 0, 1);
+      active = t < 0.5 ? i : i + 1;
+    }
+
+    const x0 = labelCenterX(stops[i].label) - carW / 2;
+    const x1 = labelCenterX(stops[Math.min(i + 1, stops.length - 1)].label) - carW / 2;
+    const x = reduceMotion
+      ? labelCenterX(stops[active].label) - carW / 2
+      : lerp(x0, x1, t);
+
+    const maxX = Math.max(0, track.clientWidth - carW - 4);
+    navCar.style.transform = `translate3d(${clamp(x, 4, maxX).toFixed(1)}px, 0, 0)`;
+    spinWheels((reduceMotion ? active / (stops.length - 1) : (i + t) / (stops.length - 1)) * 540);
+
+    stops.forEach((s, idx) => {
+      s.label.classList.toggle('is-active', idx === active);
+    });
+  };
+
+  updateNavCar();
+  window.addEventListener('scroll', updateNavCar, { passive: true });
+  window.addEventListener('resize', updateNavCar, { passive: true });
+
+  /* Hero auto: scan + plynulý odjezd doprava jen uvnitř hero */
+  const hero = document.querySelector('.hero');
+  const heroStage = document.getElementById('hero-stage');
+  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2);
+
+  let heroTarget = 0;
+  let heroCurrent = 0;
+  let heroSpin = 0;
+  let heroRaf = 0;
+
+  const spinHeroWheels = (deg) => {
+    heroStage?.querySelectorAll('.bp-wheel-group').forEach((g) => {
+      const wheel = g.querySelector('.bp-wheel');
+      const cx = Number(wheel?.getAttribute('cx') || 0);
+      const cy = Number(wheel?.getAttribute('cy') || 0);
+      g.setAttribute('transform', `rotate(${deg} ${cx} ${cy})`);
+    });
+  };
+
+  const readHeroTarget = () => {
+    if (!hero) return 0;
+    const r = hero.getBoundingClientRect();
+    /* Delší dráha scrollu = méně trhavý odjezd */
+    return clamp(-r.top / Math.max(r.height * 1.05, 1), 0, 1);
+  };
+
+  const paintHeroCar = (p) => {
+    if (!heroStage) return;
+    const travel = Math.max(window.innerWidth * 0.9, (heroStage.offsetWidth || 400) + 100);
+    const x = travel * p;
+    heroStage.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+    heroStage.style.opacity = String(clamp(1 - p * 0.25, 0.55, 1));
+    spinHeroWheels(heroSpin);
+  };
+
+  const tickHeroCar = () => {
+    if (!hero || !heroStage) return;
+
+    if (reduceMotion) {
+      paintHeroCar(0);
+      return;
+    }
+
+    heroTarget = readHeroTarget();
+    /* Plynulé dohánění cíle — nezávislé na frekvenci scroll eventů */
+    const lag = 0.075;
+    const prev = heroCurrent;
+    heroCurrent += (heroTarget - heroCurrent) * lag;
+    if (Math.abs(heroTarget - heroCurrent) < 0.0004) heroCurrent = heroTarget;
+
+    const p = easeInOut(heroCurrent);
+    heroSpin += (heroCurrent - prev) * 420;
+    paintHeroCar(p);
+
+    heroRaf = requestAnimationFrame(tickHeroCar);
+  };
+
+  if (reduceMotion) {
+    paintHeroCar(0);
+  } else {
+    heroRaf = requestAnimationFrame(tickHeroCar);
+    window.addEventListener('pagehide', () => cancelAnimationFrame(heroRaf), { once: true });
+  }
+  window.addEventListener('resize', () => {
+    heroTarget = readHeroTarget();
+  }, { passive: true });
+  window.setTimeout(() => heroStage?.classList.add('is-drawn'), 2600);
+
+  const revealEls = [
+    ...document.querySelectorAll('.section-grid, .service-list li, .map-frame, .contact-form'),
+  ];
+  revealEls.forEach((el) => el.classList.add('reveal'));
+  if ('IntersectionObserver' in window && !reduceMotion) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    revealEls.forEach((el, i) => {
+      el.style.transitionDelay = `${Math.min(i % 6, 5) * 60}ms`;
+      io.observe(el);
+    });
+  } else {
+    revealEls.forEach((el) => el.classList.add('is-in'));
+  }
+})();

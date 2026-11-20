@@ -1,0 +1,25 @@
+# Produkční Docker image digests (read-only snapshot LIVE 2026-11-20).
+# Použití: přesná reprodukce běžícího kódu bez rebuild; žádné secrets.
+# Zdroj: deploy/live-reference/LIVE_MANIFEST.yaml (Etapa 1).
+
+schema_version: 1
+collected_at_utc: "2026-11-20T00:04:32+00:00"
+
+images:
+  ulov-api:
+    digest: sha256:8e222ac7c1d709c58c4c16a0169abf6578b83e9fdf501336cdf36ece250d54f7
+  ulov-worker:
+    digest: sha256:fe4e1374a3cc49d6113b59b8109b02132b19e7d1ff9a76a3f70f55d300f44b75
+  ulov-cron:
+    digest: sha256:966ff3a15f1890955a9906fa46dd8d30a21144986d58f442c5ecddf16a633c28
+  postak-live-web:
+    digest: sha256:402ebd6890772e8d1d4f348d7b56d80bfecf1fe1834c715f22b5765428111166
+  ulov-materialnik:
+    digest: sha256:10fd88d1e24b80422a971293f1cde9484d0dcd1a4e01eabed0921c96554ff40d
+  hya-live-hya-web:
+    digest: sha256:ea96f76d2eb55c0a0be001e5da318e5a4bd80b5e827525e2afbab05c06f59dbb
+
+notes:
+  - "Materiálník: image starší než API/Postak; git rebuild nemusí odpovídat LIVE — preferuj digest pin."
+  - "HYA app běží z /opt/hya-live; tento monorepo pin pokrývá jen nginx směrování + image referenci."
+  - "SEO modernik (robots/sitemap) na LIVE není — www snapshot odpovídá produkci."

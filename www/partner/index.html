@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner hub přesunut</title>
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="refresh" content="0;url=https://api.ulovklienty.cz/partner-admin/">
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.5; color: #172338; }
+    a { color: #0f1f35; font-weight: 700; }
+  </style>
+  <script>
+    (function () {
+      var staging = location.hostname.indexOf('staging') !== -1;
+      var target = staging
+        ? 'https://api-staging.ulovklienty.cz/partner-admin/'
+        : 'https://api.ulovklienty.cz/partner-admin/';
+      location.replace(target);
+    })();
+  </script>
+</head>
+<body>
+  <h1>Partner hub je zrušený</h1>
+  <p>Všechno nastavení za majitelku je teď v <a id="go" href="https://api.ulovklienty.cz/partner-admin/">/partner-admin/</a>.</p>
+  <script>
+    document.getElementById('go').href = location.hostname.indexOf('staging') !== -1
+      ? 'https://api-staging.ulovklienty.cz/partner-admin/'
+      : 'https://api.ulovklienty.cz/partner-admin/';
+  </script>
+</body>
+</html>
