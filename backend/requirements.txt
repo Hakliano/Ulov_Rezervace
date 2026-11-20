@@ -13,3 +13,4 @@ sentry-sdk>=2.0
 cryptography>=42.0
 redis>=5.0
 celery>=5.3
+packaging>=24.0
